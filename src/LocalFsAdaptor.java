@@ -7,7 +7,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
-class RepositoryAdapterExampleLocalDir implements 
+class LocalFsAdaptor implements 
     GsaCommunicationHandler.ContentProvider {
 
 private static byte[] toByteArray(File f) {
@@ -78,8 +78,8 @@ private static byte[] toByteArray(File f) {
   }
 
   public static void main(String a[]) {
-    RepositoryAdapterExampleLocalDir adapter
-        = new RepositoryAdapterExampleLocalDir();
+    LocalFsAdaptor adapter
+        = new LocalFsAdaptor();
 
     int port = SystemPreferences.getLocalPort();
     try {
