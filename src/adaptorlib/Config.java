@@ -1,11 +1,12 @@
+package adaptorlib;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /** Configuration values for this program like the GSA's hostname.
   Also several knobs, or controls, for changing the behaviour
   of the program. */
-class SystemPreferences {
+public class Config {
   private static Logger LOG
-      = Logger.getLogger(SystemPreferences.class.getName());
+      = Logger.getLogger(Config.class.getName());
 
   /* Preferences requiring you to set them: */
   /** Required to be set: GSA machine to send
@@ -18,7 +19,7 @@ class SystemPreferences {
   /* Preferences suggested you set them: */
   /** Suggested to be set: Local port, on this
    computer, onto which requests from GSA come in on. */
-  static int getLocalPort() {
+  public static int getLocalPort() {
     return 5678;
   }
 

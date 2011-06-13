@@ -1,3 +1,5 @@
+package localfs;
+import adaptorlib.*;
 import java.io.File;
 import java.util.Arrays;
 import java.util.ArrayList;

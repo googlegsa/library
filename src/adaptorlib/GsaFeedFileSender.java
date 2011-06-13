@@ -1,3 +1,4 @@
+package adaptorlib;
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -34,7 +35,7 @@ class GsaFeedFileSender {
 
   // All communications are expected to be tailored to GSA.
   private static final String ENCODING
-      = SystemPreferences.getGsaCharacterEncoding();
+      = Config.getGsaCharacterEncoding();
 
   // Feed file XML will not contain "<<".
   private static final String BOUNDARY = "<<";
@@ -75,7 +76,7 @@ class GsaFeedFileSender {
   /** Tries to get in touch with our GSA. */
   private static HttpURLConnection setupConnection(int len) 
       throws MalformedURLException, IOException {
-    String gsaHost = SystemPreferences.getGsaHostname();
+    String gsaHost = Config.getGsaHostname();
     URL feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
     HttpURLConnection uc = (HttpURLConnection) feedUrl.openConnection();
     uc.setDoInput(true);

@@ -1,3 +1,4 @@
+package adaptorlib;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -16,12 +17,12 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 /** This class handles the communications with GSA. */
-class GsaCommunicationHandler {
+public class GsaCommunicationHandler {
   private static Logger LOG
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
-  interface ContentProvider {
-    byte []getDocContent(DocId id);
+  public interface ContentProvider {
+    public byte []getDocContent(DocId id);
   }
 
   // Numbers for logging incoming and completed communications.
@@ -30,13 +31,13 @@ class GsaCommunicationHandler {
 
   private int port;
   private ContentProvider contentProvider;
-  GsaCommunicationHandler(int portNumber, ContentProvider contentProvider) {
+  public GsaCommunicationHandler(int portNumber, ContentProvider contentProvider) {
     this.port = portNumber;
     this.contentProvider = contentProvider;
   }
 
   /** Starts listening for communications from GSA. */
-  void beginListeningForConnections() throws IOException {
+  public void beginListeningForConnections() throws IOException {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/", new Handler());
@@ -55,7 +56,7 @@ class GsaCommunicationHandler {
     private byte []processGet(HttpExchange ex) throws IOException {
       URI uri = ex.getRequestURI();
       namedLog("uri: " + uri);
-      String prefix = SystemPreferences.getUrlBeginning();
+      String prefix = Config.getUrlBeginning();
       URL url = new URL(prefix + uri);
       namedLog("url: " + url);
       String id = DocId.decode(url);
@@ -137,20 +138,20 @@ class GsaCommunicationHandler {
         keepGoing = false;  // Sent.
       } catch (GsaFeedFileSender.FailedToConnect ftc) {
         LOG.warning("" + ftc);
-        keepGoing = SystemPreferences.handleFailedToConnect(ftc, ntries);
+        keepGoing = Config.handleFailedToConnect(ftc, ntries);
       } catch (GsaFeedFileSender.FailedWriting fw) {
         LOG.warning("" + fw);
-        keepGoing = SystemPreferences.handleFailedToConnect(fw, ntries);
+        keepGoing = Config.handleFailedToConnect(fw, ntries);
       } catch (GsaFeedFileSender.FailedReadingReply fr) {
         LOG.warning("" + fr);
-        keepGoing = SystemPreferences.handleFailedToConnect(fr, ntries);
+        keepGoing = Config.handleFailedToConnect(fr, ntries);
       }
     }
   }
 
   /** Makes and sends metadata-and-url feed files to GSA. */
-  static void pushDocIds(String feedSourceName, List<DocId> handles) {
-    final int MAX = SystemPreferences.getUrlsPerFeedFile();
+  public static void pushDocIds(String feedSourceName, List<DocId> handles) {
+    final int MAX = Config.getUrlsPerFeedFile();
     int totalPushed = 0;
     for (int i = 0; i < handles.size(); i += MAX) {
       int endIndex = i + MAX;

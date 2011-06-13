@@ -1,1 +1,2 @@
-javac -d classes src/*java
+mkdir -p classes
+javac -d classes src/adaptorlib/*java src/local-fs-adaptor/*java

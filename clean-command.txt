@@ -1,1 +1,1 @@
-(cd classes && rm *)
+(cd classes && rm -rf *)

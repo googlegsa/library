@@ -1,3 +1,4 @@
+package adaptorlib;
 /** A DeletedDocId is a DocId that when sent to GSA
   results in quickly removing referenced document
   from crawling and index.

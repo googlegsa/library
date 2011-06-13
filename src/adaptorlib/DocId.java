@@ -1,3 +1,4 @@
+package adaptorlib;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLDecoder;
@@ -12,12 +13,12 @@ import java.net.URLEncoder;
   out if a particular user has read permissions for it.
   For deleting document from GSA see DeletedDocId
   subclass. */
-class DocId {
+public class DocId {
   private final String uniqId;  // Not null.
   private final DocReadPermissions access;  // Who has access?
 
   /** Constructs DocId that is marked public (visible by all). */
-  DocId(String id) {
+  public DocId(String id) {
     this(id, DocReadPermissions.IS_PUBLIC);
   }
 
@@ -33,7 +34,7 @@ class DocId {
     this.access = acl;
   }
 
-  String getUniqueId() {
+  public String getUniqueId() {
     return uniqId;
   }
   DocReadPermissions getDocReadPermissions() {
@@ -47,7 +48,7 @@ class DocId {
 
   private String encode(String s) {
     try {
-      String encoding = SystemPreferences.getGsaCharacterEncoding();
+      String encoding = Config.getGsaCharacterEncoding();
       String parts[] = s.split("/", -1);
       StringBuilder encoded = new StringBuilder();
       for (int i = 0; i < parts.length; i++) {
@@ -63,10 +64,10 @@ class DocId {
   /** Provides URL used in feed file sent to GSA. */
   URL getFeedFileUrl() {
     try {
-      if (SystemPreferences.passDocIdToGsaWithoutModification()) {
+      if (Config.passDocIdToGsaWithoutModification()) {
         return new URL(uniqId);
       } else {
-        String prefix = SystemPreferences.getUrlBeginning(this);
+        String prefix = Config.getUrlBeginning(this);
         return new URL(prefix + encode(uniqId));
       }
     } catch (MalformedURLException e) {
@@ -81,12 +82,12 @@ class DocId {
 
   /** Given a URL that was used in feed file, convert back to doc id. */
   static String decode(URL url) {
-    if (SystemPreferences.passDocIdToGsaWithoutModification()) {
+    if (Config.passDocIdToGsaWithoutModification()) {
       return url.toString();
     } else {
       try {
         String path = url.getPath().substring(1);
-        String encoding = SystemPreferences.getGsaCharacterEncoding();
+        String encoding = Config.getGsaCharacterEncoding();
         String parts[] = path.split("/", -1);
         StringBuilder decoded = new StringBuilder();
         for (int i = 0; i < parts.length; i++) {

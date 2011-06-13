@@ -1,3 +1,5 @@
+package localfs;
+import adaptorlib.*;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -81,7 +83,7 @@ private static byte[] toByteArray(File f) {
     LocalFsAdaptor adapter
         = new LocalFsAdaptor();
 
-    int port = SystemPreferences.getLocalPort();
+    int port = Config.getLocalPort();
     try {
       new GsaCommunicationHandler(port, adapter).beginListeningForConnections();
     } catch (IOException e) {
