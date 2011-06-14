@@ -1,1 +1,1 @@
-java -cp classes localfs.LocalFsAdaptor
+java -cp classes templateadaptor.TemplateAdaptor

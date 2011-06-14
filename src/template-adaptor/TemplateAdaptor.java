@@ -7,7 +7,7 @@ import java.util.ArrayList;
 /** The bodies of getDocIds(), getDocContent() and main() are
   the responsibility of the connector developer.
 */
-class RepositoryConnector implements DocContentRetriever {
+class TemplateAdaptor implements DocContentRetriever {
   // TODO: Extend comments.
 
   static List<DocId> getDocIds() {
@@ -51,7 +51,7 @@ class RepositoryConnector implements DocContentRetriever {
 
   public static void main(String a[]) {
     int port = Config.getLocalPort();
-    DocContentRetriever retr = new RepositoryConnector();
+    DocContentRetriever retr = new TemplateAdaptor();
     try {
       new GsaCommunicationHandler(port, retr).beginListeningForConnections();
     } catch (IOException e) {
