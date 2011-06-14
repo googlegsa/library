@@ -21,17 +21,13 @@ public class GsaCommunicationHandler {
   private static Logger LOG
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
-  public interface ContentProvider {
-    public byte []getDocContent(DocId id);
-  }
-
   // Numbers for logging incoming and completed communications.
   private static int numberConnectionStarted = 0;
   private static int numberConnectionFinished = 0;
 
   private int port;
-  private ContentProvider contentProvider;
-  public GsaCommunicationHandler(int portNumber, ContentProvider contentProvider) {
+  private DocContentRetriever contentProvider;
+  public GsaCommunicationHandler(int portNumber, DocContentRetriever contentProvider) {
     this.port = portNumber;
     this.contentProvider = contentProvider;
   }

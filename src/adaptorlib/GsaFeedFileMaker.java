@@ -41,7 +41,7 @@ class GsaFeedFileMaker {
     record.setAttribute("action", docForGsa.getFeedFileAction());
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
-    boolean metadataPermitted = !(docForGsa instanceof DeletedDocId);
+    boolean metadataPermitted = true; // !(docForGsa instanceof DeletedDocId);
     if (metadataPermitted) {  // No metadata with deletes.
       // Make "metadata" element.
       Element metadata = doc.createElement("metadata");

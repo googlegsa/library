@@ -17,7 +17,7 @@ The summary is that GSA takes comma seperate values like
 A head request is a request from GSA with a user name
 and document id that happens just before search results
 are returned and filters results out for lack of permission.  */
-final class DocReadPermissions {
+final public class DocReadPermissions {
 
   /** Use to mark a document as visible by all. */
   static final DocReadPermissions IS_PUBLIC
@@ -34,7 +34,7 @@ final class DocReadPermissions {
   /** Makes a non-public DocReadPermissions that specifies 
     users and groups who can read a document.
     Cannot both be empty. Null is empty. All blank is empty. */
-  DocReadPermissions(String users, String groups) {
+  public DocReadPermissions(String users, String groups) {
     if (null != users && users.trim().isEmpty()) {
       users = null;
     }

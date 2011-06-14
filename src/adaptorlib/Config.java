@@ -163,7 +163,7 @@ public class Config {
   /* Preferences expected to never change: */
 
   /** Provides the character encoding the GSA prefers. */
-  static String getGsaCharacterEncoding() {
+  static public String getGsaCharacterEncoding() {
     return "UTF-8";
   }
 

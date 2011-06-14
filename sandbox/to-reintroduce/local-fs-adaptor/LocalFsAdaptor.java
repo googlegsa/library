@@ -9,8 +9,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Date;
-class LocalFsAdaptor implements 
-    GsaCommunicationHandler.ContentProvider {
+class LocalFsAdaptor implements DocContentRetriever {
 
 private static byte[] toByteArray(File f) {
     if (f.length() > Integer.MAX_VALUE) {
