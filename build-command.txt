@@ -1,4 +1,4 @@
 mkdir -p classes
-javac -d classes src/adaptorlib/*java src/template-adaptor/*java
+javac -d classes src/adaptorlib/*java src/templateadaptor/*java
 
 # TODO: Reintroduce src/local-fs-adaptor/*java .
