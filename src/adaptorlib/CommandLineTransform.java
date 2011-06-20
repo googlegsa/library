@@ -28,8 +28,8 @@ public class CommandLineTransform extends DocumentTransform {
                         Map<String, String> params) throws TransformException, IOException {
     // Java Processes can only take input on 1 channel, stdin. If we want
     // to have two separate channels, we would need to either:
-    // - Have two separate commands that get called for content and meta
-    // - Write each to separate files and pass filenames as params, or
+    // - Have two separate commands that get called for content and metadata
+    // - Write metadata to file and send filename as parameter.
     // - Send them both in through stdin with some separator.
     //
     // We don't yet support sending metadata at serve time, so this version of

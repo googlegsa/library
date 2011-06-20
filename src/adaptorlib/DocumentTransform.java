@@ -6,6 +6,8 @@ import java.io.OutputStream;
 import java.util.Map;
 
 /**
+ * Represents an individual transform in the transform pipeline.
+ * Subclass this to add your own custom behavior.
  *
  * @author brandoni@google.com (Brandon Iles)
  */
@@ -38,7 +40,7 @@ public class DocumentTransform  {
    * If this property is true, a failure of this transform will cause the entire
    * transform pipeline to abort. This is useful in the case where a particular
    * transform is required in order to server data. For example, a transform
-   * tasked with redacting or filtering data.
+   * tasked with redacting or filtering document content.
    *
    * If this is false and a error occurs, this transform is treated as a
    * identity transform.

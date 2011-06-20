@@ -30,14 +30,14 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
     ByteArrayOutputStream contentInTransit = new ByteArrayOutputStream();
     ByteArrayOutputStream metaInTransit = new ByteArrayOutputStream();
     contentIn.writeTo(contentInTransit);
-    metaDataIn.writeTo(contentInTransit);
+    metaDataIn.writeTo(metaInTransit);
     for (int i = 0; i < transformList.size(); i++) {
       DocumentTransform transform = transformList.get(i);
       try {
         transform.transform(contentInTransit, metaInTransit, contentOut, metaDataOut, params);
       }
       catch (TransformException e) {
-        // TODO: Log message here
+        // TODO: Log error
         if (transform.errorHaltsPipeline()) {
           contentOut.reset();
           metaDataOut.reset();
@@ -79,5 +79,5 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
     return transformList.size();
   }
 
-  private ArrayList<DocumentTransform> transformList;
+  private ArrayList<DocumentTransform> transformList = new ArrayList<DocumentTransform>();
 }
