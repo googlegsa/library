@@ -1,14 +1,17 @@
 package adaptorlib;
-import java.io.ByteArrayOutputStream;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URL;
+import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.Headers;
@@ -40,87 +43,6 @@ public class GsaCommunicationHandler {
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     LOG.info("server is listening on port #" + port);
-  }
-
-  private class Handler implements HttpHandler {
-    private String name;
-    private void namedLog(String msg) {
-      // LOG.info(name + ": " + msg);
-    }
-
-    /** Call into connector developer code to get document bytes. */
-    private byte []processGet(HttpExchange ex) throws IOException {
-      URI uri = ex.getRequestURI();
-      namedLog("uri: " + uri);
-      String prefix = Config.getUrlBeginning();
-      URL url = new URL(prefix + uri);
-      namedLog("url: " + url);
-      String id = DocId.decode(url);
-      namedLog("id: " + id);
-      byte content[] = contentProvider.getDocContent(new DocId(id));
-      return content; 
-    }
-
-    /** Sends response to GSA. */
-    private void respond(HttpExchange ex, int code, byte response[])
-        throws IOException {
-      Headers responseHeaders = ex.getResponseHeaders();
-      responseHeaders.set("Content-Type", "text/plain");
-      ex.sendResponseHeaders(code, 0);
-      OutputStream responseBody = ex.getResponseBody();
-      namedLog("before writing response");
-      responseBody.write(response);
-      namedLog("after writing response");
-      responseBody.close();
-      namedLog("after closing writer");
-    }
-
-    /** Determines kind of request (GET, HEAD, etc.) and dispatches
-      appropriately. */
-    private void meteredHandle(HttpExchange ex) throws IOException {
-      namedLog("got exchange");
-      String requestMethod = ex.getRequestMethod();
-      if (!requestMethod.equalsIgnoreCase("GET")) {
-        namedLog("got non-GET (" + requestMethod + ")");
-        respond(ex, 400, new byte[0]);
-      } else {
-        namedLog("got GET");
-        byte response[] = processGet(ex);
-        if (null == response) {
-          respond(ex, 404, new byte[0]);
-        } else {
-          int len = response.length;
-          namedLog("processed GET; response is size=" + len);
-          respond(ex, 200, response);
-        }
-        namedLog("responded to GET");
-      }
-      // TODO: Implement authorization handler.
-    }
-
-    /** Performs entry counting, calls meteredHandle, and 
-      performs exit counting.  Also logs. */
-    public void handle(HttpExchange exchange) {
-      try {
-        synchronized(Handler.class) { 
-          name = "HttpHandler" + numberConnectionStarted;
-          numberConnectionStarted++;
-          String countsStr = "in=" + numberConnectionStarted
-              + ",out=" + numberConnectionFinished;
-          namedLog("begining " + countsStr);
-        }
-        meteredHandle(exchange);
-      } catch (Exception e) {
-        namedLog("handling failed: " + e);
-      } finally {
-        synchronized(Handler.class) { 
-          numberConnectionFinished++;
-          String countsStr = "in=" + numberConnectionStarted
-              + ",out=" + numberConnectionFinished;
-          namedLog("ending " + countsStr);
-        }
-      }
-    }
   }
 
   private static void pushSizedBatchOfDocIds(String feedSourceName,
@@ -160,6 +82,238 @@ public class GsaCommunicationHandler {
     }
     if (handles.size() != totalPushed) {
       throw new IllegalStateException();
+    }
+  }
+
+  private class Handler extends AbstractHandler {
+    private HttpHandler ssoHandler = new SsoHandler();
+    private HttpHandler documentHandler
+        = new SecurityHandler(new DocumentHandler());
+
+    /**
+     * Determines kind of request (GET, HEAD, etc.) and dispatches
+     * appropriately.
+     */
+    private void meteredHandle(HttpExchange ex) throws IOException {
+      namedLog("got exchange");
+      logRequest(ex);
+      if ("/sso".equals(ex.getRequestURI().getPath())) {
+        ssoHandler.handle(ex);
+        return;
+      }
+
+      documentHandler.handle(ex);
+    }
+
+    /**
+     * Performs entry counting, calls meteredHandle, and performs exit counting.
+     * Also logs.
+     */
+    public void handle(HttpExchange exchange) {
+      try {
+        synchronized(Handler.class) {
+          name = "HttpHandler" + numberConnectionStarted;
+          numberConnectionStarted++;
+          String countsStr = "in=" + numberConnectionStarted
+              + ",out=" + numberConnectionFinished;
+          namedLog("begining " + countsStr);
+        }
+        meteredHandle(exchange);
+      } catch (Exception e) {
+        namedLog("handling failed: " + e);
+      } finally {
+        synchronized(Handler.class) {
+          numberConnectionFinished++;
+          String countsStr = "in=" + numberConnectionStarted
+              + ",out=" + numberConnectionFinished;
+          namedLog("ending " + countsStr);
+        }
+      }
+    }
+  }
+
+  private class SecurityHandler extends AbstractHandler {
+    private static final boolean useHttpBasic = true;
+
+    private HttpHandler nestedHandler;
+
+    private SecurityHandler(HttpHandler nestedHandler) {
+      this.nestedHandler = nestedHandler;
+    }
+
+    public void handle(HttpExchange ex) throws IOException {
+      String id = DocId.decode(getRequestUri(ex));
+      if (useHttpBasic) {
+        boolean isPublic = "1001".equals(id)
+            || ex.getRequestHeaders().getFirst("Authorization") != null;
+
+        if (!isPublic) {
+          ex.getResponseHeaders().add("WWW-Authenticate",
+                                      "Basic realm=\"Test\"");
+          respond(ex, 401, "text/plain", "Not public");
+          return;
+        }
+      } else {
+        // Using HTTP SSO
+        boolean isPublic = "1001".equals(id)
+            || ex.getRequestHeaders().getFirst("Cookie") != null;
+
+        if (!isPublic) {
+          ex.getResponseHeaders().add("Location",
+                                      Config.getUrlBeginning() + "/sso");
+          respond(ex, 307, "text/plain", "Must sign in via SSO");
+          return;
+        }
+      }
+
+     nestedHandler.handle(ex);
+    }
+  }
+
+  private class DocumentHandler extends AbstractHandler {
+    public void handle(HttpExchange ex) throws IOException {
+      String requestMethod = ex.getRequestMethod();
+      if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
+        boolean isGet = "GET".equals(requestMethod);
+        /* Call into connector developer code to get document bytes. */
+        // TODO(ejona): Need to namespace all docids to allow random support URLs
+        String id = DocId.decode(getRequestUri(ex));
+        namedLog("id: " + id);
+
+        DocId docId = new DocId(id);
+
+        // TODO(ejona): support different mime types of content
+        // TODO(ejona): if text, support providing encoding
+        byte content[] = contentProvider.getDocContent(docId);
+        String contentType = "text/plain"; // "application/octet-stream"
+        if (null == content) {
+          if (isGet)
+            respond(ex, 404, "text/plain", "Unknown document");
+          else
+            respondToHead(ex, 404, "text/plain");
+        } else {
+          int len = content.length;
+          namedLog("processed request; response is size=" + len);
+          if (isGet)
+            respond(ex, 200, "text/plain", content);
+          else
+            respondToHead(ex, 200, "text/plain");
+        }
+      } else {
+        respond(ex, 405, "text/plain", "Unsupported request method");
+      }
+    }
+  }
+
+  private class SsoHandler extends AbstractHandler {
+    public void handle(HttpExchange ex) throws IOException {
+      if ("GET".equals(ex.getRequestMethod())) {
+        if (ex.getRequestHeaders().getFirst("Cookie") == null) {
+          respond(ex, 200, "text/html",
+                  "<html><body><form action='/sso' method='POST'>"
+                  + "<input name='user'><input name='password'>"
+                  + "<input type='submit'>"
+                  + "</form></body></html>");
+        } else {
+          respond(ex, 200, "text/html",
+                  "<html><body>You are logged in</body></html>");
+        }
+      } else if ("HEAD".equals(ex.getRequestMethod())) {
+        respondToHead(ex, 200, "text/html");
+      } else if ("POST".equals(ex.getRequestMethod())) {
+        ex.getResponseHeaders().add("Set-Cookie", "user=something");
+        respond(ex, 200, "text/plain", "You are logged in");
+      } else {
+        respond(ex, 405, "text/plain", "Unhandled request method");
+      }
+    }
+  }
+
+  private abstract class AbstractHandler implements HttpHandler {
+    protected String name;
+    protected void namedLog(String msg) {
+      LOG.fine(name + ": " + msg);
+    }
+
+    protected String getLoggableRequestHeaders(HttpExchange ex) {
+      StringBuilder sb = new StringBuilder();
+      boolean first = true;
+      for (Map.Entry<String,List<String>> me
+           : ex.getRequestHeaders().entrySet()) {
+        for (String value : me.getValue()) {
+          if (!first)
+            sb.append(", ");
+          else
+            first = false;
+
+          sb.append(me.getKey());
+          sb.append(": ");
+          sb.append(value);
+        }
+      }
+      return sb.toString();
+    }
+
+    protected void logRequest(HttpExchange ex) {
+      if (LOG.isLoggable(Level.FINE)) {
+        LOG.log(Level.FINE, "received {1} request to {0}. Headers: '{'{2}'}'",
+                new Object[] {ex.getRequestURI(), ex.getRequestMethod(),
+                              getLoggableRequestHeaders(ex)});
+      }
+    }
+
+    protected URI getRequestUri(HttpExchange ex) {
+      String host = ex.getRequestHeaders().getFirst("Host");
+      if (host == null) {
+        // Client must be using HTTP/1.0
+        host = Config.getBaseUri().getAuthority();
+      }
+      URI base;
+      try {
+        base = new URI("http", host, "/", null, null);
+      } catch (URISyntaxException e) {
+        throw new IllegalStateException(e);
+      }
+      URI requestedUri = ex.getRequestURI();
+      // If uri is already absolute (e.g., a proxy is involved), then this
+      // does nothing, otherwise it resolves the URI for us based on who we
+      // think we are
+      requestedUri = base.resolve(requestedUri);
+      LOG.log(Level.FINE, "Resolved original URI to: {0}", requestedUri);
+      return requestedUri;
+    }
+
+    protected void respondToHead(HttpExchange ex, int code, String contentType)
+        throws IOException {
+      ex.getResponseHeaders().set("Transfer-Encoding", "chunked");
+      respond(ex, code, contentType, (byte[])null);
+    }
+
+    /** Sends response to GSA. */
+    protected void respond(HttpExchange ex, int code, String contentType,
+                         String response) throws IOException {
+      respond(ex, code, contentType,
+              response.getBytes(Config.getGsaCharacterEncoding()));
+    }
+
+    /** Sends response to GSA. */
+    protected void respond(HttpExchange ex, int code, String contentType,
+                         byte response[]) throws IOException {
+      Headers responseHeaders = ex.getResponseHeaders();
+      responseHeaders.set("Content-Type", contentType);
+      if (response == null) {
+        // No body. Required for HEAD requests
+        ex.sendResponseHeaders(code, -1);
+      } else {
+        // Chuncked encoding
+        ex.sendResponseHeaders(code, 0);
+        OutputStream responseBody = ex.getResponseBody();
+        namedLog("before writing response");
+        responseBody.write(response);
+        namedLog("after writing response");
+      }
+      ex.close();
+      namedLog("after closing exchange");
     }
   }
 }

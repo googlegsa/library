@@ -1,6 +1,7 @@
 package adaptorlib;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -56,6 +57,10 @@ public class Config {
       throw new RuntimeException(
           "Could not automatically determine service URL.", ex);
     }
+  }
+
+  static URI getBaseUri() {
+    return URI.create(Config.getUrlBeginning());
   }
 
   /** Optional:

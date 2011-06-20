@@ -1,4 +1,6 @@
+set -e
 mkdir -p classes
 javac -d classes src/adaptorlib/*java src/templateadaptor/*java
+cp src/logging.properties classes/
 
 # TODO: Reintroduce src/local-fs-adaptor/*java .
