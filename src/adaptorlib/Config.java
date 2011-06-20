@@ -1,4 +1,6 @@
 package adaptorlib;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /** Configuration values for this program like the GSA's hostname.
@@ -46,8 +48,13 @@ public class Config {
     The document ids are put at the end of this URL beginning
     (encoded if necessary) to create full URLs.  */
   static String getUrlBeginning() {
-    // TODO: Figure out current host.
-    return "http://moses.mtv.corp.google.com" + ":" + getLocalPort();
+    try {
+      String hostname = InetAddress.getLocalHost().getHostName();
+      return "http://" + hostname + ":" + getLocalPort();
+    } catch(UnknownHostException ex) {
+      throw new RuntimeException(
+          "Could not automatically determine service URL.", ex);
+    }
   }
 
   /** Optional:
