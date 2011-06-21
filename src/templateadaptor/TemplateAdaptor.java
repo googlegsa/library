@@ -4,16 +4,26 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.List;
 import java.util.ArrayList;
-/** The bodies of getDocIds(), getDocContent() and main() are
-  the responsibility of the connector developer.
-*/
-class TemplateAdaptor implements DocContentRetriever {
-  // TODO: Extend comments.
+import java.util.logging.Logger;
+/**
+ * Demonstrates the functions that are necessary
+ * for putting public content onto a GSA.
+ * The key operations are A) pushing document ids
+ * and B) providing the bytes of documents.
+ */
+class TemplateAdaptor extends Adaptor {
+  private static Logger LOG = Logger.getLogger(Adaptor.class.getName());
 
-  static List<DocId> getDocIds() {
-    // TODO: Provide binary calling implementation.
-    // TODO: Test with large document counts.
-    // TODO: Test with variety of schedules.
+  public void pushDocIds() {
+    /* Called on schedule. */
+    LOG.info("about to get doc ids");
+    List<DocId> handles = getDocIds();
+    LOG.info("about to push doc ids");
+    GsaCommunicationHandler.pushDocIds("testfeed", handles);
+    LOG.info("done pushing doc ids");
+  }
+
+  private List<DocId> getDocIds() {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     DocReadPermissions indexPerms
         = new DocReadPermissions("bob, alice", "bowlers, golfers");
@@ -21,7 +31,6 @@ class TemplateAdaptor implements DocContentRetriever {
     DocReadPermissions cssPerms
         = new DocReadPermissions("carol, chat", "  ");
     mockDocIds.add(new DocId("1002", cssPerms));
-    // mockDocIds.add(new DeletedDocId("1005"));
     return mockDocIds;
   }
 
@@ -42,23 +51,13 @@ class TemplateAdaptor implements DocContentRetriever {
     return null;
   }
 
-  /** Answers whether particular user is allowed access to 
-    referenced document. */
-  boolean isAllowedAccess(DocId id, String username) {
-    // TODO: Consider and enrich credentials structure.
-    return true;
-  }
-
   public static void main(String a[]) {
-    int port = Config.getLocalPort();
-    DocContentRetriever retr = new TemplateAdaptor();
+    Adaptor mock = new TemplateAdaptor();
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(mock);
     try {
-      new GsaCommunicationHandler(port, retr).beginListeningForConnections();
+      gsa.begin();
     } catch (IOException e) {
-      throw new RuntimeException("Could not listen on " + port, e);
+      throw new RuntimeException("could not start", e);
     }
-    // TODO: Replace single push with schedule from Config.
-    List<DocId> handles = getDocIds();
-    GsaCommunicationHandler.pushDocIds("testFeed", handles);
   }
 }
