@@ -3,11 +3,12 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 /** Takes an XML feed file for the GSA, sends it to GSA and
   then reads reply from GSA. */
-class GsaFeedFileSender { 
+class GsaFeedFileSender {
   private static String CLASS_NAME = GsaFeedFileSender.class.getName();
   private static Logger LOG = Logger.getLogger(CLASS_NAME);
 
@@ -34,7 +35,7 @@ class GsaFeedFileSender {
   }
 
   // All communications are expected to be tailored to GSA.
-  private static final String ENCODING
+  private static final Charset ENCODING
       = Config.getGsaCharacterEncoding();
 
   // Feed file XML will not contain "<<".
@@ -45,11 +46,7 @@ class GsaFeedFileSender {
 
   // Get bytes of string in communication's encoding.
   private static byte []toEncodedBytes(String s) {
-    try {
-      return s.getBytes(ENCODING);
-    } catch (java.io.UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
-    }
+    return s.getBytes(ENCODING);
   }
 
   /** Helper method for creating a multipart/form-data HTTP post.

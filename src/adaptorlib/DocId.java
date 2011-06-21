@@ -48,7 +48,7 @@ public class DocId {
 
   private String encode(String s) {
     try {
-      String encoding = Config.getGsaCharacterEncoding();
+      String encoding = Config.getGsaCharacterEncodingName();
       String parts[] = s.split("/", -1);
       StringBuilder encoded = new StringBuilder();
       for (int i = 0; i < parts.length; i++) {
@@ -87,7 +87,7 @@ public class DocId {
     } else {
       try {
         String path = url.getPath().substring(1);
-        String encoding = Config.getGsaCharacterEncoding();
+        String encoding = Config.getGsaCharacterEncodingName();
         String parts[] = path.split("/", -1);
         StringBuilder decoded = new StringBuilder();
         for (int i = 0; i < parts.length; i++) {

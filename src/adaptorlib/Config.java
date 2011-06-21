@@ -1,6 +1,7 @@
 package adaptorlib;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /** Configuration values for this program like the GSA's hostname.
@@ -170,8 +171,13 @@ public class Config {
   /* Preferences expected to never change: */
 
   /** Provides the character encoding the GSA prefers. */
-  static public String getGsaCharacterEncoding() {
+  public static String getGsaCharacterEncodingName() {
     return "UTF-8";
+  }
+
+  /** Provides the character encoding the GSA prefers. */
+  public static Charset getGsaCharacterEncoding() {
+    return Charset.forName(getGsaCharacterEncodingName());
   }
 
   /** Provides max number of URLs (equal to number of
