@@ -2,8 +2,8 @@ package adaptorlib;
 import java.util.Calendar;
 import java.util.Date;
 /**
- * A ScheduleOncePerDay class provides a sequence of dates
- * on consecutive days representing the same time each day.
+ * ScheduleOncePerDay provides a sequence of Dates 1 day
+ * apart at the same hour/minute/second each day.
  * <p>
  * Gratitude to
  * http://www.ibm.com/developerworks/java/library/j-schedule/index.html
@@ -36,7 +36,7 @@ public class ScheduleOncePerDay implements ScheduleIterator {
   }
 
   public static void main(String a[]) {
-    ScheduleIterator it = new ScheduleOncePerDay(17,0,0);
+    ScheduleIterator it = new ScheduleOncePerDay(7, 0, 0);
     for (int i = 0; i < 5; i++) {
       Date d = it.next();
       System.out.println("" + d);

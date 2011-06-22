@@ -27,38 +27,20 @@ public class GsaCommunicationHandler {
 
   private final int port;
   private final Adaptor adaptor;
-  private final Scheduler pushScheduler;
 
   public GsaCommunicationHandler(Adaptor adaptor) {
     this.port = Config.getLocalPort();
     this.adaptor = adaptor;
-    pushScheduler = new Scheduler();
   }
 
   /** Starts listening for communications from GSA. */
-  public void begin() throws IOException {
-    beginListeningForConnections();
-    beginScheduledPushes();
-  }
-
-  private void beginListeningForConnections() throws IOException {
+  public void beginListeningForContentRequests() throws IOException {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/", new Handler());
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     LOG.info("server is listening on port #" + port);
-  }
-
-  private void beginScheduledPushes() throws IOException {
-     // TODO: Pull schedule from config.
-     // TODO: Pull feed name from config.
-     pushScheduler.schedule(new SchedulerTask() {
-       public void run() {
-         adaptor.pushDocIds();
-       }
-     }, new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-     LOG.info("doc id pushing has been put on schedule");
   }
 
   private class Handler implements HttpHandler {
