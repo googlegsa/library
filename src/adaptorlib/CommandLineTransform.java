@@ -13,8 +13,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
- *
- * @author brandoni@google.com (Brandon Iles)
+ * A conduit that allows a simple way to create a document transform based on
+ * a command line program.
  */
 public class CommandLineTransform extends DocumentTransform {
 
@@ -48,7 +48,7 @@ public class CommandLineTransform extends DocumentTransform {
     }
 
     ProcessBuilder pb = new ProcessBuilder(command);
-    pb.redirectErrorStream(false);  // We want 2 streams to come out for stdin and stderr
+    pb.redirectErrorStream(false);  // We want 2 streams to come out for stdout and stderr.
     if (workingDirectory != null && !workingDirectory.isEmpty())
       pb.directory(new File(workingDirectory));
 

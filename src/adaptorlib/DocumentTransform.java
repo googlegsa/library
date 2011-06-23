@@ -19,8 +19,9 @@ public class DocumentTransform  {
 
   /**
    * Override this function to do the actual data transformation.
-   * Read data from the byte arrays, and write them to the OutputStreams.
-   * Any changes to the params map will be passed on the subsequent transforms.
+   * Read data from the ByteArrayOutputStream instances holding the incoming data,
+   * and write them to the OutputStreams. Any changes to the params map will be
+   * passed on the subsequent transforms.
    *
    * @throws TransformException
    * @throws IOException
