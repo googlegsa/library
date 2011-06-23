@@ -59,8 +59,19 @@ public class Config {
     }
   }
 
+  /**
+   * {@link #getUrlBeginning} provided as a URI.
+   */
   static URI getBaseUri() {
     return URI.create(Config.getUrlBeginning());
+  }
+
+  /**
+   * Path below {@link #getUrlBeginning(DocId)} where documents are namespaced.
+   * Should be at least "/".
+   */
+  static String getDocIdPath() {
+    return "/doc/";
   }
 
   /** Optional:
@@ -89,6 +100,10 @@ public class Config {
    */
   static String getUrlBeginning(DocId docId) {
     return getUrlBeginning();
+  }
+
+  static URI getBaseUri(DocId docId) {
+    return URI.create(getUrlBeginning(docId));
   }
 
   /** Optional (default false):

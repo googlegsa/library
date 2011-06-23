@@ -46,14 +46,15 @@ public class DocId {
     return "DocId(" + uniqId + "|" + access + ")";
   }
 
-  private URI encode(String s) {
+  private URI encode() {
     if (Config.passDocIdToGsaWithoutModification()) {
-      return URI.create(s);
+      return URI.create(uniqId);
     } else {
-      URI base = Config.getBaseUri();
+      URI base = Config.getBaseUri(this);
       URI resource;
       try {
-        resource = new URI(null, null, base.getPath() + "/" + s, null);
+        resource = new URI(null, null, base.getPath() + Config.getDocIdPath()
+                           + uniqId, null);
       } catch (URISyntaxException ex) {
         throw new IllegalStateException(ex);
       }
@@ -64,7 +65,7 @@ public class DocId {
   /** Provides URL used in feed file sent to GSA. */
   URL getFeedFileUrl() {
     try {
-      return encode(uniqId).toURL();
+      return encode().toURL();
     } catch (MalformedURLException e) {
       throw new IllegalStateException("unable to safely encode " + this, e);
     }
@@ -76,13 +77,14 @@ public class DocId {
   } 
 
   /** Given a URI that was used in feed file, convert back to doc id. */
-  static String decode(URI uri) {
+  static DocId decode(URI uri) {
     if (Config.passDocIdToGsaWithoutModification()) {
-      return uri.toString();
+      return new DocId(uri.toString());
     } else {
-      // +1 for "/" separator
       String basePath = Config.getBaseUri().getPath();
-      return uri.getPath().substring(basePath.length() + 1);
+      String id = uri.getPath().substring(basePath.length()
+                                          + Config.getDocIdPath().length());
+      return new DocId(id);
     }
   }
 
