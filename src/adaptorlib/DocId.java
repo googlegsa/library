@@ -4,14 +4,14 @@ import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 /** DocId refers to a unique document in repository.
-  You give the GSA a DocId to have it insert your
+  You give the adaptorlib a DocId to have it insert your
   document for crawl and index.
-  The GSA provides the DocId when it asks your code
+  The adaptorlib provides the DocId when it asks your code
   for some information about a particular document in
-  repository.  For example when the GSA wants the bytes
+  repository.  For example when the adaptorlib wants the bytes
   of a particular document or when it wants to find
   out if a particular user has read permissions for it.
-  For deleting document from GSA see DeletedDocId
+  For deleting document from adaptorlib see DeletedDocId
   subclass. */
 public class DocId {
   private final String uniqId;  // Not null.

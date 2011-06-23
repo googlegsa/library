@@ -47,6 +47,7 @@ public class GsaCommunicationHandler {
     Scheduler pushScheduler = new Scheduler();
     pushScheduler.schedule(new Scheduler.Task() {
       public void run() {
+        // TODO: Prevent two simultenous calls.
         adaptor.pushDocIds();
       }
     }, it);
@@ -59,7 +60,7 @@ public class GsaCommunicationHandler {
     }
 
     /** Call into connector developer code to get document bytes. */
-    private byte []processGet(HttpExchange ex) throws IOException {
+    private byte[] processGet(HttpExchange ex) throws IOException {
       URI uri = ex.getRequestURI();
       namedLog("uri: " + uri);
       String prefix = Config.getUrlBeginning();

@@ -7,7 +7,7 @@ import java.util.logging.Logger;
 /** Demonstrates what code is necessary
  *  for putting public content onto a GSA.
  *  The key operations are A) pushing document ids
- *  and B) providing the bytes of documents. */
+ *  and B) providing document bytes given a document id. */
 // TODO: Link to configuration steps.
 class TemplateAdaptor extends Adaptor {
   private static Logger LOG = Logger.getLogger(Adaptor.class.getName());
@@ -34,7 +34,7 @@ class TemplateAdaptor extends Adaptor {
 
   /** Gives the bytes of a document referenced with id. Returns
    *  null if such a document doesn't exist. */
-  public byte []getDocContent(DocId id) {
+  public byte[] getDocContent(DocId id) {
     if ("1001".equals(id.getUniqueId())) {
       return "Document 1001 says hello and apple orange"
           .getBytes(Config.getGsaCharacterEncoding());

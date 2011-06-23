@@ -103,13 +103,14 @@ public class Config {
     return false;
   }
 
-  /** Optional (default false):
-    Adds no-follow bit with sent records in feed file.
-    No-follow means that if document content has links
-    they are not followed. */
-  static boolean useNoFollowBit() {
-    return false;
-  }
+// TODO: Implement on GSA
+//  /** Optional (default false):
+//    Adds no-follow bit with sent records in feed file.
+//    No-follow means that if document content has links
+//    they are not followed. */
+//  static boolean useNoFollowBit() {
+//    return false;
+//  }
 
   /** Optional: GsaCommunicationHandler.pushDocIds had
     a failure connecting with GSA to send a batch.  The

@@ -62,7 +62,7 @@ private static byte[] toByteArray(File f) {
 
   /** Gives the bytes of a document referenced with id. Returns
     null if such a document doesn't exist.  */
-  public byte []getDocContent(DocId id) {
+  public byte[] getDocContent(DocId id) {
     File f = new File(d, id.getUniqueId());
     if (f.exists()) {
       return toByteArray(f);
