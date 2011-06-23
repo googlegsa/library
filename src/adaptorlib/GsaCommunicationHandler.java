@@ -25,21 +25,31 @@ public class GsaCommunicationHandler {
   private static int numberConnectionStarted = 0;
   private static int numberConnectionFinished = 0;
 
-  private int port;
-  private DocContentRetriever contentProvider;
-  public GsaCommunicationHandler(int portNumber, DocContentRetriever contentProvider) {
-    this.port = portNumber;
-    this.contentProvider = contentProvider;
+  private final int port;
+  private final Adaptor adaptor;
+
+  public GsaCommunicationHandler(Adaptor adaptor) {
+    this.port = Config.getLocalPort();
+    this.adaptor = adaptor;
   }
 
   /** Starts listening for communications from GSA. */
-  public void beginListeningForConnections() throws IOException {
+  public void beginListeningForContentRequests() throws IOException {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/", new Handler());
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     LOG.info("server is listening on port #" + port);
+  }
+
+  public void beginPushingDocIds(ScheduleIterator it) {
+    Scheduler pushScheduler = new Scheduler();
+    pushScheduler.schedule(new Scheduler.Task() {
+      public void run() {
+        adaptor.pushDocIds();
+      }
+    }, it);
   }
 
   private class Handler implements HttpHandler {
@@ -57,7 +67,7 @@ public class GsaCommunicationHandler {
       namedLog("url: " + url);
       String id = DocId.decode(url);
       namedLog("id: " + id);
-      byte content[] = contentProvider.getDocContent(new DocId(id));
+      byte content[] = adaptor.getDocContent(new DocId(id));
       return content; 
     }
 

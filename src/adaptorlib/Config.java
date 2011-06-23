@@ -22,7 +22,7 @@ public class Config {
   /* Preferences suggested you set them: */
   /** Suggested to be set: Local port, on this
    computer, onto which requests from GSA come in on. */
-  public static int getLocalPort() {
+  static int getLocalPort() {
     return 5678;
   }
 
