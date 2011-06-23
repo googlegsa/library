@@ -1,9 +1,8 @@
 package templateadaptor;
 import adaptorlib.*;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 /** Demonstrates what code is necessary
  *  for putting public content onto a GSA.
@@ -49,16 +48,16 @@ class TemplateAdaptor extends Adaptor {
 
   /** An example main for an adaptor. */
   public static void main(String a[]) {
-    final Adaptor adaptor = new TemplateAdaptor();
+    Adaptor adaptor = new TemplateAdaptor();
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
 
     // Setup providing content:
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
     try {
       gsa.beginListeningForContentRequests();
+      LOG.info("doc content serving started");
     } catch (IOException e) {
-      throw new RuntimeException("could not start", e);
+      throw new RuntimeException("could not start serving", e);
     }
-    LOG.info("doc content serving started");
 
     // Uncomment next line to push once at program start.
     // adaptor.pushDocIds();
