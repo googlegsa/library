@@ -5,14 +5,26 @@ import java.text.MessageFormat;
 import java.util.Date;
 import java.util.logging.*;
 
+/**
+ * Custom log formatter for ease of development. It is specifically targeted to
+ * use in console output on Unix terminals.
+ */
 public class CustomFormatter extends Formatter {
   private static final String newline = System.getProperty("line.separator");
   private Date date = new Date();
+  // The format for a color is '\x1b[30;40m' where 30 and 40 are the foreground
+  // and background colors, respectively. The ';' isn't required. If you don't
+  // provide a foreground or background, it will be set to the default.
   private MessageFormat formatter = new MessageFormat(
-      "\u001b[3{5}m{0,date,HH:mm:ss.SSS} {1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
+      "\u001b[3{5}m{0,date,HH:mm:ss.SSS} \u001b[3{6}m{1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
   private StringBuffer buffer = new StringBuffer();
   private PrintWriter writer = new PrintWriter(new StringBufferWriter(buffer));
+  /**
+   * Default highlight color is a cyan on my terminal. This color needs to be
+   * readable on both light-on-dark and dark-on-light setups.
+   */
   private int highlightColor = 6;
+  /** Colors range from 30-37 for foreground and 40-47 for background */
   private final int numberOfColors = 8;
 
   public synchronized String format(LogRecord record) {
@@ -24,8 +36,9 @@ public class CustomFormatter extends Formatter {
       threadName = Thread.currentThread().getName();
     else
       threadName = "" + record.getThreadID();
-    int backgroundColor = (record.getThreadID() % (numberOfColors - 1)) + 1;
-    threadName = "\u001b[3" + backgroundColor + "m" + threadName;
+    // We know that one of the colors is used for the background. The default
+    // for terminals is 40, so we avoid using color 30 here.
+    int threadColor = (record.getThreadID() % (numberOfColors - 1)) + 1;
     String method = record.getSourceClassName() + "."
         + record.getSourceMethodName() + "()";
     if (method.length() > 30)
@@ -33,7 +46,7 @@ public class CustomFormatter extends Formatter {
     formatter.format(
         new Object[] {date, threadName, method,
           record.getLevel().getLocalizedName(), formatMessage(record),
-          highlightColor
+          highlightColor, threadColor
         }, buffer, null);
     buffer.append(newline);
     if (record.getThrown() != null)
