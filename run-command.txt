@@ -1,1 +1,1 @@
-java -cp classes templateadaptor.TemplateAdaptor
+java -Djava.util.logging.config.file=classes/logging.properties -cp classes templateadaptor.TemplateAdaptor

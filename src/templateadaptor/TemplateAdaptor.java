@@ -28,16 +28,12 @@ class TemplateAdaptor implements DocContentRetriever {
   /** Gives the bytes of a document referenced with id. Returns
     null if such a document doesn't exist.  */
   public byte []getDocContent(DocId id) {
-    try {
-      if ("1001".equals(id.getUniqueId())) {
-        return "Document 1001 says hello and apple orange"
-            .getBytes(Config.getGsaCharacterEncoding());
-      } else if ("1002".equals(id.getUniqueId())) {
-        return "Document 1002 says hello and banana strawberry"
-            .getBytes(Config.getGsaCharacterEncoding());
-      }
-    } catch (UnsupportedEncodingException e) {
-      throw new RuntimeException(e);
+    if ("1001".equals(id.getUniqueId())) {
+      return "Document 1001 says hello and apple orange"
+          .getBytes(Config.getGsaCharacterEncoding());
+    } else if ("1002".equals(id.getUniqueId())) {
+      return "Document 1002 says hello and banana strawberry"
+          .getBytes(Config.getGsaCharacterEncoding());
     }
     return null;
   }

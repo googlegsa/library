@@ -1,4 +1,8 @@
 package adaptorlib;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 /** Configuration values for this program like the GSA's hostname.
@@ -46,8 +50,28 @@ public class Config {
     The document ids are put at the end of this URL beginning
     (encoded if necessary) to create full URLs.  */
   static String getUrlBeginning() {
-    // TODO: Figure out current host.
-    return "http://moses.mtv.corp.google.com" + ":" + getLocalPort();
+    try {
+      String hostname = InetAddress.getLocalHost().getHostName();
+      return "http://" + hostname + ":" + getLocalPort();
+    } catch(UnknownHostException ex) {
+      throw new RuntimeException(
+          "Could not automatically determine service URL.", ex);
+    }
+  }
+
+  /**
+   * {@link #getUrlBeginning} provided as a URI.
+   */
+  static URI getBaseUri() {
+    return URI.create(Config.getUrlBeginning());
+  }
+
+  /**
+   * Path below {@link #getUrlBeginning(DocId)} where documents are namespaced.
+   * Should be at least "/".
+   */
+  static String getDocIdPath() {
+    return "/doc/";
   }
 
   /** Optional:
@@ -76,6 +100,10 @@ public class Config {
    */
   static String getUrlBeginning(DocId docId) {
     return getUrlBeginning();
+  }
+
+  static URI getBaseUri(DocId docId) {
+    return URI.create(getUrlBeginning(docId));
   }
 
   /** Optional (default false):
@@ -163,8 +191,13 @@ public class Config {
   /* Preferences expected to never change: */
 
   /** Provides the character encoding the GSA prefers. */
-  static public String getGsaCharacterEncoding() {
+  public static String getGsaCharacterEncodingName() {
     return "UTF-8";
+  }
+
+  /** Provides the character encoding the GSA prefers. */
+  public static Charset getGsaCharacterEncoding() {
+    return Charset.forName(getGsaCharacterEncodingName());
   }
 
   /** Provides max number of URLs (equal to number of

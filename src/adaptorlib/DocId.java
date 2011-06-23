@@ -1,8 +1,8 @@
 package adaptorlib;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
-import java.net.URLDecoder;
-import java.net.URLEncoder;
 /** DocId refers to a unique document in repository.
   You give the GSA a DocId to have it insert your
   document for crawl and index.
@@ -46,32 +46,28 @@ public class DocId {
     return "DocId(" + uniqId + "|" + access + ")";
   }
 
-  private String encode(String s) {
-    try {
-      String encoding = Config.getGsaCharacterEncoding();
-      String parts[] = s.split("/", -1);
-      StringBuilder encoded = new StringBuilder();
-      for (int i = 0; i < parts.length; i++) {
-        encoded.append("/");
-        encoded.append(URLEncoder.encode(parts[i], encoding));
+  private URI encode() {
+    if (Config.passDocIdToGsaWithoutModification()) {
+      return URI.create(uniqId);
+    } else {
+      URI base = Config.getBaseUri(this);
+      URI resource;
+      try {
+        resource = new URI(null, null, base.getPath() + Config.getDocIdPath()
+                           + uniqId, null);
+      } catch (URISyntaxException ex) {
+        throw new IllegalStateException(ex);
       }
-      return "" + encoded; 
-    } catch (java.io.UnsupportedEncodingException uee) {
-      throw new IllegalStateException(uee);
+      return base.resolve(resource);
     }
   }
 
   /** Provides URL used in feed file sent to GSA. */
   URL getFeedFileUrl() {
     try {
-      if (Config.passDocIdToGsaWithoutModification()) {
-        return new URL(uniqId);
-      } else {
-        String prefix = Config.getUrlBeginning(this);
-        return new URL(prefix + encode(uniqId));
-      }
+      return encode().toURL();
     } catch (MalformedURLException e) {
-      throw new IllegalStateException("unable to safely encode " + this);
+      throw new IllegalStateException("unable to safely encode " + this, e);
     }
   }
 
@@ -80,24 +76,15 @@ public class DocId {
     return "add";
   } 
 
-  /** Given a URL that was used in feed file, convert back to doc id. */
-  static String decode(URL url) {
+  /** Given a URI that was used in feed file, convert back to doc id. */
+  static DocId decode(URI uri) {
     if (Config.passDocIdToGsaWithoutModification()) {
-      return url.toString();
+      return new DocId(uri.toString());
     } else {
-      try {
-        String path = url.getPath().substring(1);
-        String encoding = Config.getGsaCharacterEncoding();
-        String parts[] = path.split("/", -1);
-        StringBuilder decoded = new StringBuilder();
-        for (int i = 0; i < parts.length; i++) {
-          decoded.append("/");
-          decoded.append(URLDecoder.decode(parts[i], encoding));
-        }
-        return decoded.substring(1); 
-      } catch (java.io.UnsupportedEncodingException uee) {
-        throw new IllegalStateException(uee);
-      }
+      String basePath = Config.getBaseUri().getPath();
+      String id = uri.getPath().substring(basePath.length()
+                                          + Config.getDocIdPath().length());
+      return new DocId(id);
     }
   }
 

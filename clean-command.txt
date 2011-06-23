@@ -1,1 +1,2 @@
 (cd classes && rm -rf *)
+(cd javadoc && rm -rf *)
