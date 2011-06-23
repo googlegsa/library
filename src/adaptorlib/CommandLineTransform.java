@@ -8,6 +8,8 @@ import java.io.OutputStream;
 import java.lang.InterruptedException;
 import java.lang.ProcessBuilder;
 import java.lang.Process;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -23,8 +25,8 @@ public class CommandLineTransform extends DocumentTransform {
   }
 
   @Override
-  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        ByteArrayOutputStream metaDataIn, OutputStream metaDataOut,
+  public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
+                        OutputStream contentOut, OutputStream metadataOut,
                         Map<String, String> params) throws TransformException, IOException {
     // Java Processes can only take input on 1 channel, stdin. If we want
     // to have two separate channels, we would need to either:
@@ -32,26 +34,30 @@ public class CommandLineTransform extends DocumentTransform {
     // - Write metadata to file and send filename as parameter.
     // - Send them both in through stdin with some separator.
     //
-    // We don't yet support sending metadata at serve time, so this version of
+    // We don't yet support sending metadata with content, so this version of
     // CommandLineTransform only handles the content. In the case of HTML, the
     // metadata is baked in anyway.
 
-    StringBuilder commandBuilder = new StringBuilder(transformCommand);
+    List<String> command = Arrays.asList(transformCommand.split(" "));
     if (commandAcceptsParameters) {
       for(Map.Entry<String, String> param : params.entrySet()) {
-        commandBuilder.append(" -");
-        commandBuilder.append(param.getKey());
-        commandBuilder.append(" ");
-        commandBuilder.append(param.getValue());
+        // TODO: escaping would be a good idea here.
+        command.add("-" + param.getKey() + " ");
+        command.add(param.getValue());
       }
     }
 
-    ProcessBuilder pb = new ProcessBuilder(commandBuilder.toString());
+    ProcessBuilder pb = new ProcessBuilder(command);
     pb.redirectErrorStream(false);  // We want 2 streams to come out for stdin and stderr
     if (workingDirectory != null && !workingDirectory.isEmpty())
       pb.directory(new File(workingDirectory));
 
     Process p = pb.start();
+
+    // Streams can be confusing because an input to one component is an output
+    // to another based on the frame of reference.
+    // Here, stdin is an OutputStream, because we write to it.
+    // stdout and stderr are InputStreams, because we read from them.
     OutputStream stdin = p.getOutputStream();
     InputStream stdout = p.getInputStream();
     InputStream stderr = p.getErrorStream();
@@ -59,6 +65,7 @@ public class CommandLineTransform extends DocumentTransform {
     try {
       // Run it
       contentIn.writeTo(stdin);
+      stdin.close();  // Necessary for some commands that expect EOF.
       int exitCode = p.waitFor();
 
       // Handle stderr
@@ -81,6 +88,7 @@ public class CommandLineTransform extends DocumentTransform {
       stdin.close();
       stdout.close();
       stderr.close();
+      p.destroy();
     }
   }
 

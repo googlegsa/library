@@ -25,12 +25,12 @@ public class DocumentTransform  {
    * @throws TransformException
    * @throws IOException
    */
-  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        ByteArrayOutputStream metaDataIn, OutputStream metaDataOut,
+  public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
+                        OutputStream contentOut, OutputStream metadataOut,
                         Map<String, String> params) throws TransformException, IOException {
     // Defaults to identity transform
     contentIn.writeTo(contentOut);
-    metaDataIn.writeTo(metaDataOut);
+    metadataIn.writeTo(metadataOut);
   }
 
   public void name(String name) { this.name = name; }
@@ -53,6 +53,6 @@ public class DocumentTransform  {
     return errorHaltsPipeline;
   }
 
-  private boolean errorHaltsPipeline = false;
+  private boolean errorHaltsPipeline = true;
   private String name = "";
 }

@@ -14,33 +14,33 @@ import java.util.Map;
 public class TransformPipeline extends AbstractList<DocumentTransform> {
 
   /**
-   * ContentIn and metaDataIn are guaranteed to remain unchanged.
+   * ContentIn and metadataIn are guaranteed to remain unchanged.
    */
   public void transform(ByteArrayOutputStream contentIn,
-                        ByteArrayOutputStream metaDataIn,
+                        ByteArrayOutputStream metadataIn,
                         ByteArrayOutputStream contentOut,
-                        ByteArrayOutputStream metaDataOut,
+                        ByteArrayOutputStream metadataOut,
                         Map<String, String> params) throws TransformException, IOException {
     if (transformList.isEmpty()) {
       contentIn.writeTo(contentOut);
-      metaDataIn.writeTo(metaDataOut);
+      metadataIn.writeTo(metadataOut);
       return;
     }
 
     ByteArrayOutputStream contentInTransit = new ByteArrayOutputStream();
     ByteArrayOutputStream metaInTransit = new ByteArrayOutputStream();
     contentIn.writeTo(contentInTransit);
-    metaDataIn.writeTo(metaInTransit);
+    metadataIn.writeTo(metaInTransit);
     for (int i = 0; i < transformList.size(); i++) {
       DocumentTransform transform = transformList.get(i);
       try {
-        transform.transform(contentInTransit, metaInTransit, contentOut, metaDataOut, params);
+        transform.transform(contentInTransit, metaInTransit, contentOut, metadataOut, params);
       }
       catch (TransformException e) {
         // TODO: Log error
         if (transform.errorHaltsPipeline()) {
           contentOut.reset();
-          metaDataOut.reset();
+          metadataOut.reset();
           throw e;
         }
         else {
@@ -49,7 +49,7 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
       }
       if (i < transformList.size() - 1) {
         contentOut.writeTo(contentInTransit);
-        metaDataOut.writeTo(metaInTransit);
+        metadataOut.writeTo(metaInTransit);
       }
     }
   }
