@@ -17,7 +17,6 @@ class TemplateAdaptor extends Adaptor {
    *  the same document ids multiple times because the operation
    *  is fast. */
   public void pushDocIds() {
-    /* Called on schedule. */
     LOG.info("about to get doc ids");
     List<DocId> handles = getDocIds();
     LOG.info("about to push " + handles.size() + " doc ids");
@@ -25,7 +24,8 @@ class TemplateAdaptor extends Adaptor {
     LOG.info("done pushing doc ids");
   }
 
-  /** Provides a couple mock ids. */
+  /** Provides a couple mock ids.  Replace with code 
+   *  that lists your repository. */
   private List<DocId> getDocIds() {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     mockDocIds.add(new DocId("1001"));
@@ -51,32 +51,29 @@ class TemplateAdaptor extends Adaptor {
     return null;
   }
 
-  /** An example main for an adaptor.  This mains controls
-   *  the event loop pushing the document ids. */
+  /** An example main for an adaptor. */
   public static void main(String a[]) {
     final Adaptor adaptor = new TemplateAdaptor();
+
+    // Setup providing content:
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
     try {
       gsa.beginListeningForContentRequests();
     } catch (IOException e) {
       throw new RuntimeException("could not start", e);
     }
-    // TODO: Consider that pushDocIds() is static and begin() is not.
-    Scheduler pushScheduler = new Scheduler();
+    LOG.info("doc content serving started");
 
-    // If want to push on program start uncomment next line:
+    // Uncomment next line to push once at program start.
     // adaptor.pushDocIds();
 
-    // A once a day scheduled push of doc ids:
-    ScheduleOncePerDay atNite = new ScheduleOncePerDay(/*hour*/3,
+    // Setup regular pushing of doc ids:
+    ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
         /*minute*/0, /*second*/0);
-    pushScheduler.schedule(new Scheduler.Task() {
-      public void run() {
-        adaptor.pushDocIds();
-      }
-    }, atNite);
+    gsa.beginPushingDocIds(everyNite);
     LOG.info("doc id pushing has been put on schedule");
   }
 }
+
 // TODO: Write SecuredByAclTemplateAdaptor.
 // TODO: Write SecuredByRequestTemplateAdaptor.

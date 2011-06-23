@@ -43,6 +43,15 @@ public class GsaCommunicationHandler {
     LOG.info("server is listening on port #" + port);
   }
 
+  public void beginPushingDocIds(ScheduleIterator it) {
+    Scheduler pushScheduler = new Scheduler();
+    pushScheduler.schedule(new Scheduler.Task() {
+      public void run() {
+        adaptor.pushDocIds();
+      }
+    }, it);
+  }
+
   private class Handler implements HttpHandler {
     private String name;
     private void namedLog(String msg) {

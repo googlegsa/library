@@ -35,6 +35,7 @@ public class ScheduleOncePerDay implements ScheduleIterator {
     return calendar.getTime();
   }
 
+  /** Small main that prints 7AM on a few consecutive days. */
   public static void main(String a[]) {
     ScheduleIterator it = new ScheduleOncePerDay(7, 0, 0);
     for (int i = 0; i < 5; i++) {

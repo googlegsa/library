@@ -2,7 +2,12 @@ package adaptorlib;
 import java.util.Date;
 import java.util.Timer;
 import java.util.TimerTask;
-public class Scheduler {
+/* TODO: Improve code quality of this package private class. */
+/**
+ * Gratitude to
+ * http://www.ibm.com/developerworks/java/library/j-schedule/index.html
+ */
+class Scheduler {
 
   private class SchedulerTimerTask extends TimerTask {
     private Task schedulerTask;
@@ -64,7 +69,7 @@ public class Scheduler {
 /**
  * Gratitude to http://www.ibm.com/developerworks/java/library/j-schedule/index.html
  */
-public static abstract class Task implements Runnable {
+static abstract class Task implements Runnable {
   private int state = VIRGIN;
   private final Object lock = new Object();
 
