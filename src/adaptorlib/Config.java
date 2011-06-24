@@ -23,7 +23,7 @@ public class Config {
   /* Preferences suggested you set them: */
   /** Suggested to be set: Local port, on this
    computer, onto which requests from GSA come in on. */
-  public static int getLocalPort() {
+  static int getLocalPort() {
     return 5678;
   }
 
@@ -123,13 +123,14 @@ public class Config {
     return false;
   }
 
-  /** Optional (default false):
-    Adds no-follow bit with sent records in feed file.
-    No-follow means that if document content has links
-    they are not followed. */
-  static boolean useNoFollowBit() {
-    return false;
-  }
+// TODO: Implement on GSA
+//  /** Optional (default false):
+//    Adds no-follow bit with sent records in feed file.
+//    No-follow means that if document content has links
+//    they are not followed. */
+//  static boolean useNoFollowBit() {
+//    return false;
+//  }
 
   /** Optional: GsaCommunicationHandler.pushDocIds had
     a failure connecting with GSA to send a batch.  The

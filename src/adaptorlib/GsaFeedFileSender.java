@@ -45,7 +45,7 @@ class GsaFeedFileSender {
   private static final String CRLF = "\r\n";
 
   // Get bytes of string in communication's encoding.
-  private static byte []toEncodedBytes(String s) {
+  private static byte[] toEncodedBytes(String s) {
     return s.getBytes(ENCODING);
   }
 
@@ -60,7 +60,7 @@ class GsaFeedFileSender {
     sb.append(CRLF).append(value).append(CRLF);
   }
 
-  private static byte []buildMessage(String datasource, String feedtype,
+  private static byte[] buildMessage(String datasource, String feedtype,
       String xmlDocument) {
     StringBuilder sb = new StringBuilder();
     buildPostParameter(sb, "datasource", "text/plain", datasource);

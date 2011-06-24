@@ -25,15 +25,20 @@ public class GsaCommunicationHandler {
   private static final Logger LOG
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
-  private int port;
-  private DocContentRetriever contentProvider;
-  public GsaCommunicationHandler(int portNumber, DocContentRetriever contentProvider) {
-    this.port = portNumber;
-    this.contentProvider = contentProvider;
+  // Numbers for logging incoming and completed communications.
+  private static int numberConnectionStarted = 0;
+  private static int numberConnectionFinished = 0;
+
+  private final int port;
+  private final Adaptor adaptor;
+
+  public GsaCommunicationHandler(Adaptor adaptor) {
+    this.port = Config.getLocalPort();
+    this.adaptor = adaptor;
   }
 
   /** Starts listening for communications from GSA. */
-  public void beginListeningForConnections() throws IOException {
+  public void beginListeningForContentRequests() throws IOException {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/sso", new SsoHandler());
@@ -42,6 +47,16 @@ public class GsaCommunicationHandler {
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     LOG.info("server is listening on port #" + port);
+  }
+
+  public void beginPushingDocIds(ScheduleIterator it) {
+    Scheduler pushScheduler = new Scheduler();
+    pushScheduler.schedule(new Scheduler.Task() {
+      public void run() {
+        // TODO: Prevent two simultenous calls.
+        adaptor.pushDocIds();
+      }
+    }, it);
   }
 
   private static void pushSizedBatchOfDocIds(String feedSourceName,
@@ -149,7 +164,7 @@ public class GsaCommunicationHandler {
         // TODO(ejona): support different mime types of content
         // TODO(ejona): if text, support providing encoding
         // TODO(ejona): don't retrieve the document contents for HEAD request
-        byte content[] = contentProvider.getDocContent(docId);
+        byte content[] = adaptor.getDocContent(docId);
         String contentType = "text/plain"; // "application/octet-stream"
         if (null == content) {
           cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
