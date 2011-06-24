@@ -8,9 +8,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Map;
 
-/**
- * @author brandoni@google.com (Brandon Iles)
- */
+/** */
 public class TransformPipeline extends AbstractList<DocumentTransform> {
 
   /**

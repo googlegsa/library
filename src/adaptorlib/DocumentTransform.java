@@ -8,8 +8,6 @@ import java.util.Map;
 /**
  * Represents an individual transform in the transform pipeline.
  * Subclass this to add your own custom behavior.
- *
- * @author brandoni@google.com (Brandon Iles)
  */
 public class DocumentTransform  {
 

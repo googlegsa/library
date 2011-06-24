@@ -2,10 +2,7 @@
 package adaptorlib;
 import java.lang.Exception;
 
-/**
- *
- * @author brandoni@google.com (Brandon Iles)
- */
+/** */
 public class TransformException extends Exception {
   public TransformException(Exception e) {
     super(e);

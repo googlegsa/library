@@ -11,9 +11,6 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.HashMap;
 
-/**
- * @author brandoni@google.com (Brandon Iles)
- */
 public class TransformPipelineTest {
 
   public static void main(String[] args) {

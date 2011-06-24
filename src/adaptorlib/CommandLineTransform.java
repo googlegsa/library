@@ -41,8 +41,7 @@ public class CommandLineTransform extends DocumentTransform {
     List<String> command = Arrays.asList(transformCommand.split(" "));
     if (commandAcceptsParameters) {
       for(Map.Entry<String, String> param : params.entrySet()) {
-        // TODO: escaping would be a good idea here.
-        command.add("-" + param.getKey() + " ");
+        command.add("-" + param.getKey());
         command.add(param.getValue());
       }
     }
