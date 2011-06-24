@@ -42,8 +42,9 @@ public class GsaCommunicationHandler {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/sso", new SsoHandler());
+    // Disable SecurityHandler until it can query adapter for configuration
     server.createContext(Config.getDocIdPath(),
-                         new SecurityHandler(new DocumentHandler()));
+                         /*new SecurityHandler(*/new DocumentHandler()/*)*/);
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     LOG.info("server is listening on port #" + port);
