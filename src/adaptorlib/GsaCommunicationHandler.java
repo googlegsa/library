@@ -43,7 +43,7 @@ public class GsaCommunicationHandler {
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/sso", new SsoHandler());
     // Disable SecurityHandler until it can query adapter for configuration
-    server.createContext(Config.getDocIdPath(),
+    server.createContext(Config.getBaseUri().getPath() + Config.getDocIdPath(),
                          /*new SecurityHandler(*/new DocumentHandler()/*)*/);
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
@@ -119,6 +119,7 @@ public class GsaCommunicationHandler {
 
       DocId docId = DocId.decode(getRequestUri(ex));
       if (useHttpBasic) {
+        // TODO(ejona): implement authorization and authentication
         boolean isPublic = "1001".equals(docId.getUniqueId())
             || ex.getRequestHeaders().getFirst("Authorization") != null;
 
@@ -131,12 +132,20 @@ public class GsaCommunicationHandler {
         }
       } else {
         // Using HTTP SSO
+        // TODO(ejona): implement authorization
         boolean isPublic = "1001".equals(docId.getUniqueId())
             || ex.getRequestHeaders().getFirst("Cookie") != null;
 
         if (!isPublic) {
-          ex.getResponseHeaders().add("Location",
-                                      Config.getUrlBeginning() + "/sso");
+          URI uri;
+          try {
+            uri = new URI(null, null, Config.getBaseUri().getPath() + "/sso",
+                          null);
+          } catch (URISyntaxException e) {
+            throw new IllegalStateException(e);
+          }
+          uri = Config.getBaseUri().resolve(uri);
+          ex.getResponseHeaders().add("Location", uri.toString());
           cannedRespond(ex, HttpURLConnection.HTTP_SEE_OTHER, "text/plain",
                         "Must sign in via SSO");
           return;

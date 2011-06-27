@@ -56,27 +56,27 @@ public class CustomFormatter extends Formatter {
     buffer.delete(0, buffer.length());
     return formatted;
   }
-}
 
-class StringBufferWriter extends Writer {
-  private StringBuffer sb;
+  private static class StringBufferWriter extends Writer {
+    private StringBuffer sb;
 
-  public StringBufferWriter(StringBuffer sb) {
-    this.sb = sb;
-  }
+    public StringBufferWriter(StringBuffer sb) {
+      this.sb = sb;
+    }
 
-  public void close() {
-    sb = null;
-  }
+    public void close() {
+      sb = null;
+    }
 
-  public void flush() throws IOException {
-    if (sb == null)
-      throw new IOException("Writer closed");
-  }
+    public void flush() throws IOException {
+      if (sb == null)
+        throw new IOException("Writer closed");
+    }
 
-  public void write(char[] cbuf, int off, int len) throws IOException {
-    if (sb == null)
-      throw new IOException("Writer closed");
-    sb.append(cbuf, off, len);
+    public void write(char[] cbuf, int off, int len) throws IOException {
+      if (sb == null)
+        throw new IOException("Writer closed");
+      sb.append(cbuf, off, len);
+    }
   }
 }

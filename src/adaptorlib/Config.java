@@ -42,68 +42,63 @@ public class Config {
     return false;
   }
 
-  /** Optional:
-    This host's URL beginning, consisting of protocol
-    and hostname and port, likely already has a good
-    default.  Used by GSA to get in touch with this program.
-    The GSA requests information about a document id you gave.
-    The document ids are put at the end of this URL beginning
-    (encoded if necessary) to create full URLs.  */
-  static String getUrlBeginning() {
-    try {
-      String hostname = InetAddress.getLocalHost().getHostName();
-      return "http://" + hostname + ":" + getLocalPort();
-    } catch(UnknownHostException ex) {
-      throw new RuntimeException(
-          "Could not automatically determine service URL.", ex);
-    }
-  }
-
   /**
-   * {@link #getUrlBeginning} provided as a URI.
+   * Optional: Returns this host's base URI which other paths will be resolved
+   * against. It is used to construct URIs to provide to the GSA for it to
+   * contact this server for various services. For documents (which is probably
+   * what you care about), the {@link #getBaseUri(DocId)} version is used
+   * instead.
+   *
+   * <p>It must contain the protocol, hostname, and port, but may optionally
+   * contain a path like {@code /yourfavoritepath}. By default, the protocol,
+   * hostname, and port are retrieved automatically and no path is set.
    */
   static URI getBaseUri() {
-    return URI.create(Config.getUrlBeginning());
+    String hostname;
+    try {
+      hostname = InetAddress.getLocalHost().getHostName();
+    } catch(UnknownHostException ex) {
+      throw new RuntimeException(
+          "Could not automatically determine service URI.", ex);
+    }
+    return URI.create("http://" + hostname + ":" + getLocalPort());
   }
 
   /**
-   * Path below {@link #getUrlBeginning(DocId)} where documents are namespaced.
-   * Should be at least "/".
+   * Optional: Path below {@link #getBaseUri(DocId)} where documents are
+   * namespaced. Generally, should be at least {@code "/"} and end with a slash.
    */
   static String getDocIdPath() {
     return "/doc/";
   }
 
-  /** Optional:
-    Returns the host and port which GSA will contact for
-    document information including document contents, looks like
-    http://my.computer.hostname.com:5678 .  By
-    default it equates with getUrlBeginning().  However
-    if you would like to direct GSA's queries for contents
-    to go to other computers/binaries then you can change
-    this method.
-    <p> For example imagine that you want five binaries
-    to serve the contents of files to the GSA.  In this
-    case you could split the document ids into five
-    categories using something like:<pre>
-    DocId inputId = new DocId("procurement/lastmonth/2323423432.sta");
-    String urlBeginnings[] = new String[] {
-      "http://content-server-A:5678/",
-      "http://content-server-B:5678/",
-      "http://backup-server-A:5678/",
-      "http://backup-server-B:5678/",
-      "http://new-server:7878/"
-    };
-    int shard = inputId.getUniqueId().hashCode() % 5;
-    return urlBeginnings[shard];
-    </pre>
+  /**
+   * Optional: Returns the host's base URI which GSA will contact for document
+   * information, including document contents. By default it returns {@link
+   * #getBaseUri()}.  However, if you would like to direct GSA's queries for
+   * contents to go to other computers/binaries then you can change this method.
+   *
+   * <p>For example, imagine that you want five binaries to serve the contents
+   * of files to the GSA.  In this case you could split the document ids into
+   * five categories using something like:
+   *
+   * <pre>String urlBeginnings[] = new String[] {
+   *   "http://content-server-A:5678",
+   *   "http://content-server-B:5678",
+   *   "http://backup-server-A:5678",
+   *   "http://backup-server-B:5678",
+   *   "http://new-server:7878"
+   * };
+   * int shard = docId.getUniqueId().hashCode() % 5;
+   * return URI.create(urlBeginnings[shard]);</pre>
+   *
+   * <p>Note that this URI is used in conjunction with {@link #getDocIdPath} and
+   * the document ID to form the full URL. In addition, by using {@link
+   * #getBaseUri()} and {@code getDocIdPath()}, we have to be able to parse back
+   * the original document ID when a request comes to this server.
    */
-  static String getUrlBeginning(DocId docId) {
-    return getUrlBeginning();
-  }
-
   static URI getBaseUri(DocId docId) {
-    return URI.create(getUrlBeginning(docId));
+    return getBaseUri();
   }
 
   /** Optional (default false):
