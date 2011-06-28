@@ -50,14 +50,18 @@ public class GsaCommunicationHandler {
     LOG.info("server is listening on port #" + port);
   }
 
-  public void beginPushingDocIds(ScheduleIterator it) {
+  public void beginPushingDocIds(ScheduleIterator schedule) {
     Scheduler pushScheduler = new Scheduler();
     pushScheduler.schedule(new Scheduler.Task() {
       public void run() {
         // TODO: Prevent two simultenous calls.
-        adaptor.pushDocIds();
+        LOG.info("about to get doc ids");
+        List<DocId> handles = adaptor.getDocIds();
+        LOG.info("about to push " + handles.size() + " doc ids");
+        GsaCommunicationHandler.pushDocIds("testfeed", handles);
+        LOG.info("done pushing doc ids");
       }
-    }, it);
+    }, schedule);
   }
 
   private static void pushSizedBatchOfDocIds(String feedSourceName,
