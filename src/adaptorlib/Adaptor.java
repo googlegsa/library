@@ -5,8 +5,8 @@ public abstract class Adaptor {
   /** Provides bytes of particular document. */
   abstract public byte[] getDocContent(DocId id);
 
-  /** Responsible for pushing doc ids to GSA; called on a schedule. */
-  abstract public void pushDocIds();
+  /** Provides doc ids that are to be indexed. */
+  abstract public List<DocId> getDocIds();
 
 
   /* Default implementations. */
