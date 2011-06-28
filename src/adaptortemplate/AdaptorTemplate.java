@@ -8,7 +8,7 @@ import java.util.logging.Logger;
  * Demonstrates what code is necessary for putting public
  * content onto a GSA.  The key operations are A) providing
  * document ids and B) providing document bytes given a
- * document id.
+ * document id.  TODO: Link to more advanced templates.
  */
 class AdaptorTemplate extends Adaptor {
   private final static Logger LOG = Logger.getLogger(Adaptor.class.getName());
@@ -46,9 +46,6 @@ class AdaptorTemplate extends Adaptor {
     } catch (IOException e) {
       throw new RuntimeException("could not start serving", e);
     }
-
-    // Uncomment next line to push at program start.
-    // adaptor.pushDocIds();
 
     // Setup scheduled pushing of doc ids.
     ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
