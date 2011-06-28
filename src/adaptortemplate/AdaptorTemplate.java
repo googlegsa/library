@@ -1,4 +1,4 @@
-package templateadaptor;
+package adaptortemplate;
 import adaptorlib.*;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.logging.Logger;
 /**
  * Demonstrates what code is necessary for putting public
- * content onto a GSA.  The key operations are A) pushing
+ * content onto a GSA.  The key operations are A) providing
  * document ids and B) providing document bytes given a
  * document id.
  */
