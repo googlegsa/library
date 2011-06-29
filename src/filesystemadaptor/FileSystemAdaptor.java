@@ -17,18 +17,7 @@ class FileSystemAdaptor extends Adaptor {
     this.serveDir = file.getAbsoluteFile();
   }
 
-  /** Acquires and pushes document ids to GSA.  It's OK to push
-   *  the same document ids multiple times because the operation
-   *  is fast. */
-  public void pushDocIds() {
-    log.info("about to get doc ids");
-    List<DocId> handles = getDocIds();
-    log.info("about to push " + handles.size() + " doc ids");
-    GsaCommunicationHandler.pushDocIds("testfeed", handles);
-    log.info("done pushing doc ids");
-  }
-
-  private List<DocId> getDocIds() {
+  public List<DocId> getDocIds() {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     String parent = serveDir.toString();
     for (File file : new RecursiveFileIterator(serveDir)) {
