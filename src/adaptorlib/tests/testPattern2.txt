@@ -1,0 +1,4 @@
+This is a document with no head element.
+If there were a HEAD element, then the
+transform would be inserting metadata somewhere in this doc.
+  We should end up with the same output as input.

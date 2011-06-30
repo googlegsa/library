@@ -8,26 +8,29 @@ import adaptorlib.TransformException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.Map;
 import java.util.HashMap;
 
 public class TransformPipelineTest {
+  private static Logger LOG = Logger.getLogger(TransformPipelineTest.class.getName());
 
   public static void main(String[] args) {
     new TransformPipelineTest().run();
   }
 
   private void run() {
-    System.out.println("Running TransformPipeline tests");
+    LOG.log(Level.INFO, "Running TransformPipeline tests");
     testNoOp();
     testNoOpWithInput();
     testSed();
     testModifyParams();
-    System.out.println("TransformPipeline tests finished.");
+    LOG.log(Level.INFO, "TransformPipeline tests finished.");
   }
 
-  public void testNoOp() {
-    System.out.println("Running TestNoOp...");
+  private void testNoOp() {
+    LOG.log(Level.INFO, "Running TestNoOp...");
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
@@ -40,7 +43,7 @@ public class TransformPipelineTest {
       pipeline.transform(contentIn, metadataIn, contentOut, metadataOut, params);
     }
     catch (Exception e) {
-      System.out.println(e.toString());
+      LOG.log(Level.WARNING, e.toString());
       assert false;
     }
 
@@ -52,8 +55,8 @@ public class TransformPipelineTest {
     assert params.keySet().size() == 1;
   }
 
-  public void testNoOpWithInput() {
-    System.out.println("Running TestNoOpWithInput...");
+  private void testNoOpWithInput() {
+    LOG.log(Level.INFO, "Running TestNoOpWithInput...");
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
@@ -67,7 +70,7 @@ public class TransformPipelineTest {
       pipeline.transform(contentIn, metadataIn, contentOut, metadataOut, params);
     }
     catch (Exception e) {
-      System.out.println(e.toString());
+      LOG.log(Level.WARNING, e.toString());
       assert false;
     }
 
@@ -79,8 +82,8 @@ public class TransformPipelineTest {
     assert params.keySet().size() == 1;
   }
 
-  public void testSed() {
-    System.out.println("Running TestSed...");
+  private void testSed() {
+    LOG.log(Level.INFO, "Running TestSed...");
     try {
       TransformPipeline pipeline = new TransformPipeline();
       ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
@@ -105,13 +108,13 @@ public class TransformPipelineTest {
       assert params.keySet().size() == 1;
     }
     catch (Exception e) {
-      System.err.println(e.toString());
+      LOG.log(Level.WARNING, e.toString());
       assert false;
     }
   }
 
-  public void testModifyParams() {
-    System.out.println("testModifyParams...");
+  private void testModifyParams() {
+    LOG.log(Level.INFO, "testModifyParams...");
     try {
       Map<String, String> params = new HashMap<String, String>();
       params.put("key1", "value1");
@@ -133,7 +136,7 @@ public class TransformPipelineTest {
       assert params.keySet().size() == 2;
     }
     catch (Exception e) {
-      System.err.println(e.toString());
+      LOG.log(Level.WARNING, e.toString());
       assert false;
     }
   }
