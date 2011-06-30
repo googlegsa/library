@@ -7,7 +7,7 @@ import java.util.logging.*;
 
 /**
  * Custom log formatter for ease of development. It is specifically targeted to
- * use in console output on Unix terminals.
+ * use in console output and is able to produce color output on Unix terminals.
  */
 public class CustomFormatter extends Formatter {
   private static final String newline = System.getProperty("line.separator");
@@ -17,8 +17,17 @@ public class CustomFormatter extends Formatter {
   // provide a foreground or background, it will be set to the default.
   private MessageFormat formatter = new MessageFormat(
       "\u001b[3{5}m{0,date,HH:mm:ss.SSS} \u001b[3{6}m{1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
+  /** Is identical to {@link #formatter} except for colors */
+  private MessageFormat noColorFormatter = new MessageFormat(
+      "{0,date,HH:mm:ss.SSS} {1} {2} {3}: {4}");
   private StringBuffer buffer = new StringBuffer();
   private PrintWriter writer = new PrintWriter(new StringBufferWriter(buffer));
+  /**
+   * Flag for whether color escapes should be used. Defaults to false on
+   * Windows and true on all other platforms. Can be overridden with the
+   * {@code adaptorlib.CustomFormatter.useColor} logging configuration property.
+   */
+  private boolean useColor = !System.getProperty("os.name").contains("Windows");
   /**
    * Default highlight color is a cyan on my terminal. This color needs to be
    * readable on both light-on-dark and dark-on-light setups.
@@ -27,34 +36,59 @@ public class CustomFormatter extends Formatter {
   /** Colors range from 30-37 for foreground and 40-47 for background */
   private final int numberOfColors = 8;
 
+  public CustomFormatter() {
+    LogManager manager = LogManager.getLogManager();
+    String className = getClass().getName();
+
+    String value = manager.getProperty(className + ".useColor");
+    if (value != null) {
+      setUseColor(Boolean.parseBoolean(value));
+    }
+  }
+
   public synchronized String format(LogRecord record) {
     buffer.delete(0, buffer.length());
 
     date.setTime(record.getMillis());
     String threadName;
-    if (record.getThreadID() == Thread.currentThread().getId())
+    if (record.getThreadID() == Thread.currentThread().getId()) {
       threadName = Thread.currentThread().getName();
-    else
+    } else {
       threadName = "" + record.getThreadID();
+    }
     // We know that one of the colors is used for the background. The default
     // for terminals is 40, so we avoid using color 30 here.
     int threadColor = (record.getThreadID() % (numberOfColors - 1)) + 1;
     String method = record.getSourceClassName() + "."
         + record.getSourceMethodName() + "()";
-    if (method.length() > 30)
+    if (method.length() > 30) {
       method = method.substring(method.length() - 30);
-    formatter.format(
+    }
+    getActiveFormat().format(
         new Object[] {date, threadName, method,
           record.getLevel().getLocalizedName(), formatMessage(record),
           highlightColor, threadColor
         }, buffer, null);
     buffer.append(newline);
-    if (record.getThrown() != null)
+    if (record.getThrown() != null) {
       record.getThrown().printStackTrace(writer);
+    }
 
     String formatted = buffer.toString();
     buffer.delete(0, buffer.length());
     return formatted;
+  }
+
+  private MessageFormat getActiveFormat() {
+    return useColor ? formatter : noColorFormatter;
+  }
+
+  public boolean isUseColor() {
+    return useColor;
+  }
+
+  public void setUseColor(boolean useColor) {
+    this.useColor = useColor;
   }
 
   private static class StringBufferWriter extends Writer {
@@ -69,13 +103,15 @@ public class CustomFormatter extends Formatter {
     }
 
     public void flush() throws IOException {
-      if (sb == null)
+      if (sb == null) {
         throw new IOException("Writer closed");
+      }
     }
 
     public void write(char[] cbuf, int off, int len) throws IOException {
-      if (sb == null)
+      if (sb == null) {
         throw new IOException("Writer closed");
+      }
       sb.append(cbuf, off, len);
     }
   }
