@@ -12,10 +12,15 @@ import org.w3c.dom.*;
   http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html
  */
 class GsaFeedFileMaker {
+  private GsaCommunicationHandler commHandler;
+
+  public GsaFeedFileMaker(GsaCommunicationHandler commHandler) {
+    this.commHandler = commHandler;
+  }
 
   /** Adds header to document's root.
       @param srcName Used as datasource name. */
-  private static void constructMetadataAndUrlFeedFileHead(Document doc,
+  private void constructMetadataAndUrlFeedFileHead(Document doc,
       Element root, String srcName) {
     Comment comment = doc.createComment("GSA EasyConnector");
     root.appendChild(comment);
@@ -33,11 +38,11 @@ class GsaFeedFileMaker {
 
   /** Adds a single record to feed-file-document's group,
       communicating the information represented by DocId. */
-  private static void constructSingleMetadataAndUrlFeedFileRecord(
+  private void constructSingleMetadataAndUrlFeedFileRecord(
       Document doc, Element group, DocId docForGsa) {
     Element record = doc.createElement("record");
     group.appendChild(record);
-    record.setAttribute("url", "" + docForGsa.getFeedFileUrl());
+    record.setAttribute("url", "" + commHandler.encodeDocId(docForGsa));
     record.setAttribute("action", docForGsa.getFeedFileAction());
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
@@ -51,7 +56,8 @@ class GsaFeedFileMaker {
       Element displayurl = doc.createElement("meta");
       metadata.appendChild(displayurl);
       displayurl.setAttribute("name", "displayurl");
-      displayurl.setAttribute("content", "" + docForGsa.getFeedFileUrl());
+      displayurl.setAttribute("content",
+                              "" + commHandler.encodeDocId(docForGsa));
 
       // Add present permissions as "meta" elements.
       DocReadPermissions permits = docForGsa.getDocReadPermissions();
@@ -83,7 +89,7 @@ class GsaFeedFileMaker {
 
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
-  private static void constructMetadataAndUrlFeedFileBody(Document doc,
+  private void constructMetadataAndUrlFeedFileBody(Document doc,
       Element root, List<DocId> handles) {
     Element group = doc.createElement("group");
     root.appendChild(group);
@@ -94,7 +100,7 @@ class GsaFeedFileMaker {
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
-  private static void constructMetadataAndUrlFeedFile(Document doc,
+  private void constructMetadataAndUrlFeedFile(Document doc,
       String srcName, List<DocId> handles) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
@@ -103,7 +109,7 @@ class GsaFeedFileMaker {
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
-  private static String documentToString(Document doc)
+  private String documentToString(Document doc)
       throws TransformerConfigurationException, TransformerException {
     TransformerFactory transfac = TransformerFactory.newInstance();
     Transformer trans = transfac.newTransformer();
@@ -122,7 +128,7 @@ class GsaFeedFileMaker {
   /** Makes a metadata-and-url feed file from upto 
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
-  static String makeMetadataAndUrlXml(String srcName, List<DocId> handles) {
+  public String makeMetadataAndUrlXml(String srcName, List<DocId> handles) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();

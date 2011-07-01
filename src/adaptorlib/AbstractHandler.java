@@ -4,6 +4,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -19,6 +20,27 @@ abstract class AbstractHandler implements HttpHandler {
   // Numbers for logging incoming and completed communications.
   private int numberConnectionStarted = 0;
   private int numberConnectionFinished = 0;
+
+  /**
+   * The hostname is sometimes needed to generate the correct DocId; in the case
+   * that it is needed and the host is an old HTTP/1.0 client, this value will
+   * be used.
+   */
+  protected final String fallbackHostname;
+  /**
+   * Default encoding to encode simple response messages.
+   */
+  protected final Charset defaultEncoding;
+
+  /**
+   * @param fallbackHostname Fallback hostname in case we talk to an old HTTP
+   *    client
+   * @param defaultEncoding Encoding to use when sending simple text responses
+   */
+  protected AbstractHandler(String fallbackHostname, Charset defaultEncoding) {
+    this.fallbackHostname = fallbackHostname;
+    this.defaultEncoding = defaultEncoding;
+  }
 
   protected String getLoggableRequestHeaders(HttpExchange ex) {
     StringBuilder sb = new StringBuilder();
@@ -51,7 +73,7 @@ abstract class AbstractHandler implements HttpHandler {
     String host = ex.getRequestHeaders().getFirst("Host");
     if (host == null) {
       // Client must be using HTTP/1.0
-      host = Config.getBaseUri().getAuthority();
+      host = fallbackHostname;
     }
     URI base;
     try {
@@ -87,11 +109,11 @@ abstract class AbstractHandler implements HttpHandler {
    */
   protected void cannedRespond(HttpExchange ex, int code, String contentType,
                                String response) throws IOException {
-    if ("HEAD".equals(ex.getRequestMethod()))
+    if ("HEAD".equals(ex.getRequestMethod())) {
       respondToHead(ex, code, contentType);
-    else
-      respond(ex, code, contentType,
-              response.getBytes(Config.getGsaCharacterEncoding()));
+    } else {
+      respond(ex, code, contentType, response.getBytes(defaultEncoding));
+    }
   }
 
   /**

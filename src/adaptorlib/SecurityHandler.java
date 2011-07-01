@@ -3,7 +3,7 @@ package adaptorlib;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
+import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -16,9 +16,15 @@ class SecurityHandler extends AbstractHandler {
       = Logger.getLogger(SecurityHandler.class.getName());
   private static final boolean useHttpBasic = true;
 
+  private GsaCommunicationHandler commHandler;
   private HttpHandler nestedHandler;
 
-  private SecurityHandler(HttpHandler nestedHandler) {
+  private SecurityHandler(String defaultHostname,
+                          Charset defaultCharset,
+                          GsaCommunicationHandler commHandler,
+                          HttpHandler nestedHandler) {
+    super(defaultHostname, defaultCharset);
+    this.commHandler = commHandler;
     this.nestedHandler = nestedHandler;
   }
 
@@ -30,7 +36,7 @@ class SecurityHandler extends AbstractHandler {
       return;
     }
 
-    DocId docId = DocId.decode(getRequestUri(ex));
+    DocId docId = commHandler.decodeDocId(getRequestUri(ex));
     if (useHttpBasic) {
       // TODO(ejona): implement authorization and authentication.
       boolean isPublic = !"1002".equals(docId.getUniqueId())
@@ -50,14 +56,7 @@ class SecurityHandler extends AbstractHandler {
           || ex.getRequestHeaders().getFirst("Cookie") != null;
 
       if (!isPublic) {
-        URI uri;
-        try {
-          uri = new URI(null, null, Config.getBaseUri().getPath() + "/sso",
-                        null);
-        } catch (URISyntaxException e) {
-          throw new IllegalStateException(e);
-        }
-        uri = Config.getBaseUri().resolve(uri);
+        URI uri = commHandler.formNamespacedUri("/sso");
         ex.getResponseHeaders().add("Location", uri.toString());
         cannedRespond(ex, HttpURLConnection.HTTP_SEE_OTHER, "text/plain",
                       "Must sign in via SSO");

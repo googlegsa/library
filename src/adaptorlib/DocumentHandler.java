@@ -2,6 +2,7 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -10,9 +11,14 @@ import com.sun.net.httpserver.HttpHandler;
 class DocumentHandler extends AbstractHandler {
   private static final Logger LOG
       = Logger.getLogger(AbstractHandler.class.getName());
+
+  private GsaCommunicationHandler commHandler;
   private Adaptor adaptor;
 
-  public DocumentHandler(Adaptor adaptor) {
+  public DocumentHandler(String defaultHostname, Charset defaultCharset,
+                         GsaCommunicationHandler commHandler, Adaptor adaptor) {
+    super(defaultHostname, defaultCharset);
+    this.commHandler = commHandler;
     this.adaptor = adaptor;
   }
 
@@ -25,7 +31,7 @@ class DocumentHandler extends AbstractHandler {
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
       // TODO(ejona): Need to namespace all docids to allow random support URLs
-      DocId docId = DocId.decode(getRequestUri(ex));
+      DocId docId = commHandler.decodeDocId(getRequestUri(ex));
       LOG.fine("id: " + docId.getUniqueId());
 
       // TODO(ejona): support different mime types of content

@@ -22,13 +22,10 @@ public class DocId {
     this(id, DocReadPermissions.IS_PUBLIC);
   }
 
-  /** Creates with id and specific permissions. */
+  /** Creates with id and specific permissions. Arugments may not be null. */
   public DocId(String id, DocReadPermissions acl) {
-    if (null == id) {
-      throw new IllegalArgumentException("id cannot be null");
-    }
-    if (null == acl) {
-      throw new IllegalArgumentException("permissions must be provided");
+    if (id == null || acl == null) {
+      throw new NullPointerException();
     }
     this.uniqId = id;
     this.access = acl;
@@ -37,56 +34,20 @@ public class DocId {
   public String getUniqueId() {
     return uniqId;
   }
-  DocReadPermissions getDocReadPermissions() {
+
+  public DocReadPermissions getDocReadPermissions() {
     return access;
-  }    
+  }
 
   /** "DocId(" + uniqId + "|" + access + ")" */
   public String toString() {
     return "DocId(" + uniqId + "|" + access + ")";
   }
 
-  private URI encode() {
-    if (Config.passDocIdToGsaWithoutModification()) {
-      return URI.create(uniqId);
-    } else {
-      URI base = Config.getBaseUri(this);
-      URI resource;
-      try {
-        resource = new URI(null, null, base.getPath() + Config.getDocIdPath()
-                           + uniqId, null);
-      } catch (URISyntaxException ex) {
-        throw new IllegalStateException(ex);
-      }
-      return base.resolve(resource);
-    }
-  }
-
-  /** Provides URL used in feed file sent to GSA. */
-  URL getFeedFileUrl() {
-    try {
-      return encode().toURL();
-    } catch (MalformedURLException e) {
-      throw new IllegalStateException("unable to safely encode " + this, e);
-    }
-  }
-
   /** This default action is "add". */
   String getFeedFileAction() {
     return "add";
   } 
-
-  /** Given a URI that was used in feed file, convert back to doc id. */
-  static DocId decode(URI uri) {
-    if (Config.passDocIdToGsaWithoutModification()) {
-      return new DocId(uri.toString());
-    } else {
-      String basePath = Config.getBaseUri().getPath();
-      String id = uri.getPath().substring(basePath.length()
-                                          + Config.getDocIdPath().length());
-      return new DocId(id);
-    }
-  }
 
   public boolean equals(Object o) {
     boolean same = false;

@@ -88,8 +88,11 @@ class FileSystemAdaptor extends Adaptor {
 
   /** An example main for an adaptor. */
   public static void main(String a[]) {
-    Adaptor adaptor = new FileSystemAdaptor(new File("."));
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
+    Config config = new Config();
+    config.autoConfig(a);
+    String source = config.getValueOrDefault("filesystemadaptor.src", ".");
+    Adaptor adaptor = new FileSystemAdaptor(new File(source));
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
     // Setup providing content:
     try {

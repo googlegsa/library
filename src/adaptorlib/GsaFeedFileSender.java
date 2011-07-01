@@ -35,8 +35,7 @@ class GsaFeedFileSender {
   }
 
   // All communications are expected to be tailored to GSA.
-  private static final Charset ENCODING
-      = Config.getGsaCharacterEncoding();
+  private final Charset encoding;
 
   // Feed file XML will not contain "<<".
   private static final String BOUNDARY = "<<";
@@ -44,14 +43,18 @@ class GsaFeedFileSender {
   // Another frequently used constant of sent message.
   private static final String CRLF = "\r\n";
 
+  public GsaFeedFileSender(Charset encoding) {
+    this.encoding = encoding;
+  }
+
   // Get bytes of string in communication's encoding.
-  private static byte[] toEncodedBytes(String s) {
-    return s.getBytes(ENCODING);
+  private byte[] toEncodedBytes(String s) {
+    return s.getBytes(encoding);
   }
 
   /** Helper method for creating a multipart/form-data HTTP post.
     Creates a post parameter made of a name and value. */
-  private static void buildPostParameter(StringBuilder sb, String name,
+  private void buildPostParameter(StringBuilder sb, String name,
       String mimetype, String value) {
     sb.append("--").append(BOUNDARY).append(CRLF);
     sb.append("Content-Disposition: form-data;");
@@ -60,7 +63,7 @@ class GsaFeedFileSender {
     sb.append(CRLF).append(value).append(CRLF);
   }
 
-  private static byte[] buildMessage(String datasource, String feedtype,
+  private byte[] buildMessage(String datasource, String feedtype,
       String xmlDocument) {
     StringBuilder sb = new StringBuilder();
     buildPostParameter(sb, "datasource", "text/plain", datasource);
@@ -71,9 +74,8 @@ class GsaFeedFileSender {
   }
 
   /** Tries to get in touch with our GSA. */
-  private static HttpURLConnection setupConnection(int len) 
+  private HttpURLConnection setupConnection(String gsaHost, int len) 
       throws MalformedURLException, IOException {
-    String gsaHost = Config.getGsaHostname();
     URL feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
     HttpURLConnection uc = (HttpURLConnection) feedUrl.openConnection();
     uc.setDoInput(true);
@@ -85,8 +87,8 @@ class GsaFeedFileSender {
   }
 
   /** Put bytes onto output stream. */
-  private static void writeToGsa(OutputStream outputStream,
-      byte msgbytes[]) throws IOException {
+  private void writeToGsa(OutputStream outputStream, byte msgbytes[])
+      throws IOException {
     try {
       // TODO: Remove System.out .
       //System.out.write(msgbytes);
@@ -102,12 +104,12 @@ class GsaFeedFileSender {
   }
 
   /** Get GSA's response. */
-  private static String readGsaReply(HttpURLConnection uc) throws IOException {
+  private String readGsaReply(HttpURLConnection uc) throws IOException {
     StringBuilder buf = new StringBuilder();
     BufferedReader br = null;
     try {
       InputStream inputStream = uc.getInputStream();
-      br = new BufferedReader(new InputStreamReader(inputStream, ENCODING));
+      br = new BufferedReader(new InputStreamReader(inputStream, encoding));
       String line;
       while ((line = br.readLine()) != null) {
         buf.append(line);
@@ -127,7 +129,7 @@ class GsaFeedFileSender {
     return buf.toString();
   }
 
-  private static void handleGsaReply(String reply) {
+  private void handleGsaReply(String reply) {
     if ("Success".equals(reply)) {
       LOG.info("success message received");
     } else {
@@ -149,7 +151,7 @@ class GsaFeedFileSender {
   /** Sends XML with provided datasoruce name
     and feedtype "metadata-and-url".  Datasource name 
     is limited to [a-zA-Z0-9_]. */
-  static void sendMetadataAndUrl(String datasource, String xmlString) 
+  void sendMetadataAndUrl(String host, String datasource, String xmlString)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
     // TODO: Check datasource characters for valid name.
     String feedtype = "metadata-and-url";
@@ -158,7 +160,7 @@ class GsaFeedFileSender {
     HttpURLConnection uc;
     OutputStream outputStream;
     try {
-      uc = setupConnection(msg.length);
+      uc = setupConnection(host, msg.length);
       outputStream = uc.getOutputStream();
     } catch (IOException ioe) {
       throw new FailedToConnect(ioe);

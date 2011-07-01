@@ -1,2 +1,3 @@
 ^classes/
 ^javadoc/
+^adaptor-config.properties

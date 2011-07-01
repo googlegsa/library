@@ -16,7 +16,7 @@
     <li>Modify the Config class at {@code src/adaptorlib/Config.java}. You need
       to change {@link adaptorlib.Config#getGsaHostname} to the hostname of your
       GSA. If you want, you can also modify the port to use for the built-in
-      HTTP server in {@link adaptorlib.Config#getLocalPort}.</li>
+      HTTP server in {@link adaptorlib.Config#getServerPort}.</li>
     <li>Add the IP address of the computer that hosts the adaptor to the <b>List
       of Trusted IP Addresses</b> on the GSA.
       <p>In the GSA's Admin Console, go to <b>Crawl and Index &gt; Feeds</b>,
@@ -28,7 +28,7 @@
       scroll down to <b>Follow and Crawl Only URLs with the Following
       Patterns</b>. Add an entry like {@code hostname:port/} where {@code
       hostname} is the hostname of the machine that hosts the adaptor and {@code
-      port} matches the one in {@link adaptorlib.Config#getLocalPort}.</p></li>
+      port} matches the one in {@link adaptorlib.Config#getServerPort}.</p></li>
   </ol>
 
   <h3>Running the Adaptor Template, as an initial test</h3>

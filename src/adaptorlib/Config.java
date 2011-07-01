@@ -1,82 +1,111 @@
 package adaptorlib;
+
+import java.io.*;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-/** Configuration values for this program like the GSA's hostname.
-  Also several knobs, or controls, for changing the behaviour
-  of the program. */
+import java.text.MessageFormat;
+import java.util.Arrays;
+import java.util.Properties;
+
+/**
+ * Configuration values for this program like the GSA's hostname. Also several
+ * knobs, or controls, for changing the behaviour of the program.
+ */
 public class Config {
-  private static Logger LOG
-      = Logger.getLogger(Config.class.getName());
+  /** Default configuration values */
+  protected final Properties defaultConfig = new Properties();
+  /** Overriding configuration values loaded from file and command line */
+  protected Properties config = new Properties(defaultConfig);
+  protected static final String defaultConfigFile = "adaptor-config.properties";
+
+  public Config() {
+    String hostname = null;
+    try {
+      hostname = InetAddress.getLocalHost().getHostName();
+    } catch (UnknownHostException ex) {
+      // Ignore
+    }
+    defaultConfig.setProperty("server.hostname", hostname);
+    defaultConfig.setProperty("server.port", "5678");
+    defaultConfig.setProperty("server.docIdPath", "/doc/");
+    // No default
+    //defaultConfig.setProperty("gsa.hostname", null);
+    defaultConfig.setProperty("gsa.characterEncoding", "UTF-8");
+    defaultConfig.setProperty("docId.isUrl", "false");
+    defaultConfig.setProperty("feed.noRecrawlBitEnabled", "false");
+    defaultConfig.setProperty("feed.crawlImmediatelyBitEnabled", "false");
+    //defaultConfig.setProperty("feed.noFollowBitEnabled", "false");
+    defaultConfig.setProperty("feed.maxUrls", "5000");
+  }
 
   /* Preferences requiring you to set them: */
-  /** Required to be set: GSA machine to send
-    document ids to. This is the hostname of
-    your GSA on your network. */
-  static String getGsaHostname() {
-    return "stdiom39";
+  /**
+   * Required to be set: GSA machine to send document ids to. This is the
+   * hostname of your GSA on your network.
+   */
+  public String getGsaHostname() {
+    return getValue("gsa.hostname");
   }
 
   /* Preferences suggested you set them: */
-  /** Suggested to be set: Local port, on this
-   computer, onto which requests from GSA come in on. */
-  static int getLocalPort() {
-    return 5678;
+  public String getServerHostname() {
+    return getValue("server.hostname");
   }
 
-  /* More sophisticated preferences that can be left 
+  /**
+   * Suggested to be set: Local port, on this computer, onto which requests from
+   * GSA come in on.
+   */
+  public int getServerPort() {
+    return Integer.parseInt(getValue("server.port"));
+  }
+
+  /* More sophisticated preferences that can be left
    unmodified for simple deployment and initial POC: */
-  /** Optional (default false):
-   If your DocIds are already valid URLs you can
-   have this method return true and they will
-   be sent to GSA unmodified. If your DocId is like
-   http://procurement.corp.company.com/internal/011212.html"
-   you can turn this true and that URL will be handed to
-   the GSA.
-   <p> By default DocIds are URL encoded and prefixed
-   with http:// and this host's name and port.  */
-  static boolean passDocIdToGsaWithoutModification() {
-    return false;
+  /**
+   * Optional (default false): If your DocIds are already valid URLs you can
+   * have this method return true and they will be sent to GSA unmodified. If
+   * your DocId is like http://procurement.corp.company.com/internal/011212.html
+   * you can turn this true and that URL will be handed to the GSA.
+   *
+   * <p>By default DocIds are URL encoded and prefixed with http:// and this
+   * host's name and port.
+   */
+  public boolean isDocIdUrl() {
+    return Boolean.parseBoolean(getValue("docId.isUrl"));
   }
 
   /**
    * Optional: Returns this host's base URI which other paths will be resolved
    * against. It is used to construct URIs to provide to the GSA for it to
    * contact this server for various services. For documents (which is probably
-   * what you care about), the {@link #getBaseUri(DocId)} version is used
+   * what you care about), the {@link #getServerBaseUri(DocId)} version is used
    * instead.
    *
    * <p>It must contain the protocol, hostname, and port, but may optionally
    * contain a path like {@code /yourfavoritepath}. By default, the protocol,
    * hostname, and port are retrieved automatically and no path is set.
    */
-  static URI getBaseUri() {
-    String hostname;
-    try {
-      hostname = InetAddress.getLocalHost().getHostName();
-    } catch(UnknownHostException ex) {
-      throw new RuntimeException(
-          "Could not automatically determine service URI.", ex);
-    }
-    return URI.create("http://" + hostname + ":" + getLocalPort());
+  public URI getServerBaseUri() {
+    return URI.create("http://" + getServerHostname() + ":" + getServerPort());
   }
 
   /**
-   * Optional: Path below {@link #getBaseUri(DocId)} where documents are
+   * Optional: Path below {@link #getServerBaseUri(DocId)} where documents are
    * namespaced. Generally, should be at least {@code "/"} and end with a slash.
    */
-  static String getDocIdPath() {
-    return "/doc/";
+  public String getServerDocIdPath() {
+    return getValue("server.docIdPath");
   }
 
   /**
    * Optional: Returns the host's base URI which GSA will contact for document
    * information, including document contents. By default it returns {@link
-   * #getBaseUri()}.  However, if you would like to direct GSA's queries for
-   * contents to go to other computers/binaries then you can change this method.
+   * #getServerBaseUri()}.  However, if you would like to direct GSA's queries
+   * for contents to go to other computers/binaries then you can change this
+   * method.
    *
    * <p>For example, imagine that you want five binaries to serve the contents
    * of files to the GSA.  In this case you could split the document ids into
@@ -92,113 +121,149 @@ public class Config {
    * int shard = docId.getUniqueId().hashCode() % 5;
    * return URI.create(urlBeginnings[shard]);</pre>
    *
-   * <p>Note that this URI is used in conjunction with {@link #getDocIdPath} and
-   * the document ID to form the full URL. In addition, by using {@link
-   * #getBaseUri()} and {@code getDocIdPath()}, we have to be able to parse back
-   * the original document ID when a request comes to this server.
+   * <p>Note that this URI is used in conjunction with {@link
+   * #getServerDocIdPath} and the document ID to form the full URL. In addition,
+   * by using {@link #getServerBaseUri()} and {@code getDocIdPath()}, we have to
+   * be able to parse back the original document ID when a request comes to this
+   * server.
    */
-  static URI getBaseUri(DocId docId) {
-    return getBaseUri();
+  public URI getServerBaseUri(DocId docId) {
+    return getServerBaseUri();
   }
 
-  /** Optional (default false):
-   Adds no-recrawl bit with sent records in feed file.
-   If connector handles updates and deletes 
-   then GSA does not have to recrawl periodically to 
-   notice that a document is changed or deleted. */ 
-  static boolean useNoRecrawlBit() {
-    return false;
+  /**
+   * Optional (default false): Adds no-recrawl bit with sent records in feed
+   * file. If connector handles updates and deletes then GSA does not have to
+   * recrawl periodically to notice that a document is changed or deleted.
+   */
+  public boolean isFeedNoRecrawlBitEnabled() {
+    return Boolean.getBoolean(getValue("feed.noRecrawlBitEnabled"));
   }
 
-  /** Optional (default false):
-    Adds crawl-immediately bit with sent records
-    in feed file.  This bit makes the sent URL get crawl
-    priority. */ 
-  static boolean useCrawlImmediatelyBit() {
-    return false;
+  /**
+   * Optional (default false): Adds crawl-immediately bit with sent records in
+   * feed file.  This bit makes the sent URL get crawl priority.
+   */
+  public boolean isCrawlImmediatelyBitEnabled() {
+    return Boolean.parseBoolean(getValue("feed.crawlImmediatelyBitEnabled"));
   }
 
-// TODO: Implement on GSA
-//  /** Optional (default false):
-//    Adds no-follow bit with sent records in feed file.
-//    No-follow means that if document content has links
-//    they are not followed. */
-//  static boolean useNoFollowBit() {
-//    return false;
+// TODO(pjo): Implement on GSA
+//  /**
+//   * Optional (default false): Adds no-follow bit with sent records in feed
+//   * file. No-follow means that if document content has links they are not
+//   * followed.
+//   */
+//  public boolean isNoFollowBitEnabled() {
+//    return Boolean.parseBoolean(getValue("feed.noFollowBitEnabled"));
 //  }
-
-  /** Optional: GsaCommunicationHandler.pushDocIds had
-    a failure connecting with GSA to send a batch.  The
-    thrown exception is provided as well the number of times
-    that this batch was attempted to be sent. Return true
-    to retry, perhaps after a Thread.sleep() of some time. */
-  static boolean handleFailedToConnect(
-      GsaFeedFileSender.FailedToConnect ftc, int ntries) {
-    if (ntries > 12) {
-      throw new RuntimeException(ftc);
-    }
-    try {
-      Thread.sleep(5000 * ntries);
-      return true;
-    } catch (InterruptedException e) {
-      LOG.log(Level.WARNING, "", e);
-      return false;
-    }
-  }
-
-  /** Optional: GsaCommunicationHandler.pushDocIds had
-    a failure writing to the GSA while sending a batch.  The
-    thrown exception is provided as well the number of times
-    that this batch was attempted to be sent. Return true
-    to retry, perhaps after a Thread.sleep() of some time. */
-  static boolean handleFailedToConnect(
-      GsaFeedFileSender.FailedWriting fw, int ntries) {
-    if (ntries > 12) {
-      throw new RuntimeException(fw);
-    }
-    try {
-      Thread.sleep(5000 * ntries);
-      return true;
-    } catch (InterruptedException e) {
-      LOG.log(Level.WARNING, "", e);
-      return false;
-    }
-  }
-
-  /** Optional: GsaCommunicationHandler.pushDocIds had
-    a failure reading response from GSA.  The
-    thrown exception is provided as well the number of times
-    that this batch was attempted to be sent. Return true
-    to retry, perhaps after a Thread.sleep() of some time. */
-  static boolean handleFailedToConnect(
-      GsaFeedFileSender.FailedReadingReply fr, int ntries) {
-    if (ntries > 12) {
-      throw new RuntimeException(fr);
-    }
-    try {
-      Thread.sleep(5000 * ntries);
-      return true;
-    } catch (InterruptedException e) {
-      LOG.log(Level.WARNING, "", e);
-      return false;
-    }
-  }
 
   /* Preferences expected to never change: */
 
   /** Provides the character encoding the GSA prefers. */
-  public static String getGsaCharacterEncodingName() {
-    return "UTF-8";
+  public Charset getGsaCharacterEncoding() {
+    return Charset.forName(getValue("gsa.characterEncoding"));
   }
 
-  /** Provides the character encoding the GSA prefers. */
-  public static Charset getGsaCharacterEncoding() {
-    return Charset.forName(getGsaCharacterEncodingName());
+  /**
+   * Provides max number of URLs (equal to number of document ids) that are sent
+   * to the GSA per feed file.
+   */
+  public int getFeedMaxUrls() {
+    return Integer.parseInt(getValue("feed.maxUrls"));
   }
 
-  /** Provides max number of URLs (equal to number of
-    document ids) that are sent to the GSA per feed file. */
-  static int getUrlsPerFeedFile() {
-    return 5000;
+  /**
+   * Load user-provided configuration file.
+   */
+  public void load(String configFile) throws IOException {
+    load(new File(configFile));
+  }
+
+  /**
+   * Load user-provided configuration file.
+   */
+  public void load(File configFile) throws IOException {
+    load(new InputStreamReader(new FileInputStream(configFile),
+                               Charset.forName("UTF-8")));
+  }
+
+  /**
+   * Load user-provided configuration file.
+   */
+  public void load(Reader configFile) throws IOException {
+    config.load(configFile);
+  }
+
+  /**
+   * Loads {@code adaptor-config.properties} in the current directory, if it
+   * exists. It squelches any errors so that you are free to call it without
+   * error handling, since this is typically non-fatal.
+   */
+  public void loadDefaultConfigFile() {
+    File confFile = new File(defaultConfigFile);
+    if (confFile.exists() && confFile.isFile()) {
+      try {
+        load(confFile);
+      } catch (IOException ex) {
+        System.err.println("Exception when reading " + defaultConfigFile);
+        ex.printStackTrace(System.err);
+      }
+    }
+  }
+
+  /**
+   * Load default configuration file and parse command line options.
+   *
+   * @return unused command line arguments
+   */
+  public String[] autoConfig(String[] args) {
+    loadDefaultConfigFile();
+    int i;
+    for (i = 0; i < args.length; i++) {
+      if (!args[i].startsWith("-D")) {
+        break;
+      }
+      String arg = args[i].substring(2);
+      String[] parts = arg.split("=", 2);
+      if (parts.length < 2) {
+        break;
+      }
+      config.setProperty(parts[0], parts[1]);
+    }
+    if (i == 0) {
+      return args;
+    } else {
+      return Arrays.copyOfRange(args, i, args.length);
+    }
+  }
+
+  /**
+   * Get a configuration value, without thrown an exception if it is unset.
+   */
+  public String getPossiblyUnsetValue(String key) {
+    return config.getProperty(key);
+  }
+
+  /**
+   * Get a configuration value, using {@code default} if it is unset.
+   */
+  public String getValueOrDefault(String key, String defaultValue) {
+    String value = getPossiblyUnsetValue(key);
+    return (value == null) ? defaultValue : value;
+  }
+
+  /**
+   * Get a configuration value. Never returns {@code null}.
+   *
+   * @throws IllegalStateException if {@code key} has no value
+   */
+  public String getValue(String key) {
+    String value = getPossiblyUnsetValue(key);
+    if (value == null) {
+      throw new IllegalStateException(MessageFormat.format(
+          "You must set configuration key ''{0}''.", key));
+    }
+    return value;
   }
 }

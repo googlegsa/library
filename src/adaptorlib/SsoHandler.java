@@ -2,12 +2,17 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 class SsoHandler extends AbstractHandler {
+  public SsoHandler(String defaultHostname, Charset defaultCharset) {
+    super(defaultHostname, defaultCharset);
+  }
+
   protected void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
