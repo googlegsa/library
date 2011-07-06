@@ -64,6 +64,8 @@ class DbAdaptorTemplate extends Adaptor {
       ResultSetMetaData rsMetaData = rs.getMetaData();
       int numberOfColumns = rsMetaData.getColumnCount();
       if (0 == numberOfColumns) {
+        LOG.warning("no columns in results");
+        // TODO: Cause some sort of error code.
         return "no columns in database result".getBytes(Config.getGsaCharacterEncoding());
       }
 
@@ -95,7 +97,7 @@ class DbAdaptorTemplate extends Adaptor {
 
   /** An example main for an adaptor. */
   public static void main(String a[]) throws Exception {
-    Class.forName("org.gjt.mm.mysql.Driver").newInstance();
+    Class.forName("org.gjt.mm.mysql.Driver");
     LOG.info("loaded driver");
     Adaptor adaptor = new DbAdaptorTemplate();
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
