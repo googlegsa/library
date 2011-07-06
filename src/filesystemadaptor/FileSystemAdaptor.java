@@ -35,23 +35,16 @@ class FileSystemAdaptor extends Adaptor {
 
   /** Gives the bytes of a document referenced with id. Returns
    *  null if such a document doesn't exist. */
-  public byte[] getDocContent(DocId id) {
+  public byte[] getDocContent(DocId id) throws IOException {
     File file = new File(serveDir, id.getUniqueId()).getAbsoluteFile();
     if (!isFileDescendantOfServeDir(file)) {
-      return null;
+      throw new FileNotFoundException();
     }
-    InputStream input;
-    try {
-      input = new FileInputStream(file);
-    } catch (FileNotFoundException ex) {
-      return null;
-    }
+    InputStream input = new FileInputStream(file);
     ByteArrayOutputStream output = new ByteArrayOutputStream(
         (int) file.length());
     try {
       copyStream(input, output);
-    } catch (IOException ex) {
-      throw new RuntimeException(ex);
     } finally {
       try {
         input.close();
