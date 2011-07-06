@@ -1,5 +1,6 @@
 package dbadaptortemplate;
 import adaptorlib.*;
+import java.nio.charset.Charset;
 import java.io.*;
 import java.sql.*;
 import java.util.*;
@@ -11,6 +12,8 @@ import java.util.logging.*;
 class DbAdaptorTemplate extends Adaptor {
   private final static Logger LOG
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
+  // TODO: Get encoding from config.
+  private Charset encoding = Charset.forName("UTF-8");
 
   private static Connection makeNewConnection() throws SQLException {
     // TODO: DB connection pooling.
@@ -66,7 +69,7 @@ class DbAdaptorTemplate extends Adaptor {
       if (0 == numberOfColumns) {
         LOG.warning("no columns in results");
         // TODO: Cause some sort of error code.
-        return "no columns in database result".getBytes(Config.getGsaCharacterEncoding());
+        return "no columns in database result".getBytes(encoding);
       }
 
       // If we have data then create lines of resulting document.
@@ -86,7 +89,7 @@ class DbAdaptorTemplate extends Adaptor {
       }
       String document = line1.substring(1) + "\n"
           + line2.substring(1) + "\n" + line3.substring(1) + "\n";
-      return document.getBytes(Config.getGsaCharacterEncoding());
+      return document.getBytes(encoding);
     } catch (SQLException problem) {
       LOG.log(Level.SEVERE, "failed getting ids", problem);
       throw new IOException("retrieval error", problem);
@@ -99,8 +102,10 @@ class DbAdaptorTemplate extends Adaptor {
   public static void main(String a[]) throws Exception {
     Class.forName("org.gjt.mm.mysql.Driver");
     LOG.info("loaded driver");
+    Config config = new Config();
+    config.autoConfig(a);
     Adaptor adaptor = new DbAdaptorTemplate();
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
     // Setup providing content.
     try {
@@ -111,7 +116,8 @@ class DbAdaptorTemplate extends Adaptor {
     }
 
     List<DocId> handles = adaptor.getDocIds();
-    GsaCommunicationHandler.pushDocIds("testfeed", handles);
+    // TODO: Get feedname from config.
+    gsa.pushDocIds("testfeed", handles);
 
     // Setup scheduled pushing of doc ids.
     ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,

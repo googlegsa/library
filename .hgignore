@@ -1,3 +1,4 @@
 ^classes/
 ^javadoc/
 ^src/dbadaptortemplate/mysql.jar$
+^adaptor-config.properties

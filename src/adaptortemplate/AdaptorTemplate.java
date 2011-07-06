@@ -1,8 +1,11 @@
 package adaptortemplate;
+
 import adaptorlib.*;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.Logger;
+
 /**
  * Demonstrates what code is necessary for putting public
  * content onto a GSA.  The key operations are A) providing
@@ -11,6 +14,8 @@ import java.util.logging.Logger;
  */
 class AdaptorTemplate extends Adaptor {
   private final static Logger LOG = Logger.getLogger(Adaptor.class.getName());
+  // TODO: Get encoding from config.
+  private Charset encoding = Charset.forName("UTF-8");
 
   /** Replace with code that lists your repository. */
   public List<DocId> getDocIds() {
@@ -23,11 +28,10 @@ class AdaptorTemplate extends Adaptor {
   /** Gives the bytes of a document referenced with id. */
   public byte[] getDocContent(DocId id) throws IOException {
     if ("1001".equals(id.getUniqueId())) {
-      return "Document 1001 says hello and apple orange"
-          .getBytes(Config.getGsaCharacterEncoding());
+      return "Document 1001 says hello and apple orange".getBytes(encoding);
     } else if ("1002".equals(id.getUniqueId())) {
       return "Document 1002 says hello and banana strawberry"
-          .getBytes(Config.getGsaCharacterEncoding());
+          .getBytes(encoding);
     } else {
       throw new FileNotFoundException(id.getUniqueId());
     }
@@ -35,8 +39,10 @@ class AdaptorTemplate extends Adaptor {
 
   /** An example main for an adaptor that enables serving. */
   public static void main(String a[]) {
+    Config config = new Config();
+    config.autoConfig(a);
     Adaptor adaptor = new AdaptorTemplate();
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor);
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
     // Setup providing content.
     try {

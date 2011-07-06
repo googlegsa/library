@@ -1,95 +1,58 @@
 <body>
-<p>
-Good day,
-<p>
-If you don't want to get your repository contents into
-the GSA you can stop reading now.
-<p>
-This package contains source code for a "feed program"
-that moves repository contents to the GSA.  This code is
-written in Java and is intended for repositories that
-can be contacted using Java.  
-<p>
-If you can provide binaries to list repository instead:<br>
-&nbsp;&nbsp;TODO_link_to_binary_running_template_version
-<p>
-<hr>
+  <p>Easily provide repository data to a Google Search Appliance (GSA). This is
+  accomplished by a combination of a document feed, pushed to the GSA, that
+  provides a list of files to load and an accompanying HTTP server that provides
+  the file contents upon request. This code is written in Java and is intended
+  for repositories that can be contacted using Java.</p>
 
-Important stages of job to get contents onto GSA:
-<p>
-<ol>
-<li> Configure hostnames and ports.
-<li> Tell GSA to trust your connector.
-<li> Compile the source code.
-<li> Run a test of configuration parameters.
-<li> View Feed info on GSA.
-<li> Implement connector methods in RepositoryConnector.java
-<li> Compile, test, inspect the GSA.
-<li> Declare success for getting content from custom repository to GSA.
-</ol>
-<hr>
+  <p>If your repository can be accessed purely by a non-interactive command line
+  application, see if the {@link consoleadaptor.CommandLineAdaptor} fits your
+  needs. Otherwise, you will need to create your own {@link adaptorlib.Adaptor}.
+  </p>
 
-<ol>
-<li> Configure hostnames and ports.<br>
-<p>
- Put GSA IP address (or hostname) into SystemPreferences.java
- Provide port number for feed program.
-<hr>
+  <h3>Basic Setup</h3>
+  <p>Before any adaptor can work, you must:</p>
+  <ol>
+    <li>Modify the Config class at {@code src/adaptorlib/Config.java}. You need
+      to change {@link adaptorlib.Config#getGsaHostname} to the hostname of your
+      GSA. If you want, you can also modify the port to use for the built-in
+      HTTP server in {@link adaptorlib.Config#getServerPort}.</li>
+    <li>Add the IP address of the computer that hosts the adaptor to the <b>List
+      of Trusted IP Addresses</b> on the GSA.
+      <p>In the GSA's Admin Console, go to <b>Crawl and Index &gt; Feeds</b>,
+      and scroll down to <b>List of Trusted IP Addresses</b>. Add the IP address
+      for the adaptor to the list.</p></li>
+    <li>Add the URLs provided by the adaptor to the <b>Follow and Crawl Only
+      URLs with the Following Patterns</b> on the GSA.
+      <p>In the Admin console, go to <b>Crawl And Index &gt; Crawl URLs</b>, and
+      scroll down to <b>Follow and Crawl Only URLs with the Following
+      Patterns</b>. Add an entry like {@code hostname:port/} where {@code
+      hostname} is the hostname of the machine that hosts the adaptor and {@code
+      port} matches the one in {@link adaptorlib.Config#getServerPort}.</p></li>
+  </ol>
 
-<li> Tell GSA to trust your connector.<br>
-<p>
- The IP address of the computer that hosts this feed
- program must be in the List of Trusted IP Addresses.
- In the Admin Console, go to Crawl and Index > Feeds,
- and scroll down to List of Trusted IP Addresses.
- Verify that the IP address for this feed program 
- appears in this list. 
-<p>
- The URLs provided by this feed program must match
- an entry in Follow and Crawl Only URLs with the
- Following Patterns.  The URLs from this feed program
- look like http://host:port/path-to-document.
- In the Admin console, go to Crawl And Index > Crawl
- URLs, and scroll down to Follow and Crawl Only URLs
- with the Following Patterns.  Verify that the patterns
- match the URLs coming from this feed program.
-<hr>
+  <h3>Running the Adaptor Template, as an initial test</h3>
+  <ol>
+    <li>Compile the source code. You need JDK 6 or higher. For Windows:
+      <pre>{@code build-command.bat}</pre>
+      <p>For Unix:</p>
+      <pre>{@code ./build-command.sh}</pre></li>
+    <li>Start the Adaptor Template:
+      <pre>{@code java -cp classes templateadaptor.TemplateAdaptor}</pre></li>
+    <li>(TODO: modify the Adaptor Template to push immediately to help with this
+      step?) After the adaptor has pushed an initial feed (TODO: how do they
+      know this happened), in the GSA go to <b>Crawl and Index &gt; Feeds</b>.
+      In the <b>Current Feeds</b> section, you should see an entry for a
+      "testfeed".</li>
+  </ol>
 
-<li> Compile the source code (more below).
-<p>
-
-This source code can be compiled using Java version 6
-and higher with the following command:<br>
-<p>
-`javac *java'
-<hr>
-
-<li> Run a test of configuration parameters.
-<p>
-java RepositoryConnector
-<hr>
-
-<li> View Feed info on GSA.
-<p>
-<hr>
-
-<li> Implement connector methods in RepositoryConnector.java
-<p>
-<hr>
-
-<li> Compile, test, inspect the GSA.
-<p>
-<hr>
-
-<li> Declare success for getting content from custom repository to GSA.
-<p>
-<hr>
-
-</ol>
-
-<hr>
-
-Thank you,
-Google
-
+  <h3>Creating your own Adaptor</h3>
+  <ol>
+    <li>Copy TemplateAdaptor and begin modifying it for your own use. TODO:
+      describe how to provide feed name in Config</li>
+    <li>Compile, run, and verify the results like you did before, except use
+      your new class.</li>
+    <li>Declare success for getting content from your custom repository to the
+      GSA.</li>
+  </ol>
 </body>
