@@ -1,8 +1,7 @@
 package adaptortemplate;
 import adaptorlib.*;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.*;
+import java.util.*;
 import java.util.logging.Logger;
 /**
  * Demonstrates what code is necessary for putting public
@@ -22,7 +21,7 @@ class AdaptorTemplate extends Adaptor {
   }
 
   /** Gives the bytes of a document referenced with id. */
-  public byte[] getDocContent(DocId id) {
+  public byte[] getDocContent(DocId id) throws IOException {
     if ("1001".equals(id.getUniqueId())) {
       return "Document 1001 says hello and apple orange"
           .getBytes(Config.getGsaCharacterEncoding());
@@ -30,7 +29,7 @@ class AdaptorTemplate extends Adaptor {
       return "Document 1002 says hello and banana strawberry"
           .getBytes(Config.getGsaCharacterEncoding());
     } else {
-      return null;
+      throw new FileNotFoundException(id.getUniqueId());
     }
   }
 

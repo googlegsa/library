@@ -17,7 +17,7 @@ public class Config {
     document ids to. This is the hostname of
     your GSA on your network. */
   static String getGsaHostname() {
-    return "stdiom39";
+    return "entzn02.hot";
   }
 
   /* Preferences suggested you set them: */

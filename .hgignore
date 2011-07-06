@@ -1,2 +1,3 @@
 ^classes/
 ^javadoc/
+^src/dbadaptortemplate/mysql.jar$
