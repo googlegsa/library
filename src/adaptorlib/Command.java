@@ -96,32 +96,6 @@ public class Command {
     return stderr;
   }
 
-  public static void main(String[] args) throws IOException,
-         InterruptedException {
-    Command command = new Command();
-    if (true) {
-      command.exec(new String[] {"cat"}, "hello".getBytes());
-    } else {
-      final Thread mainThread = Thread.currentThread();
-      Thread interruptThread = new Thread() {
-        public void run() {
-          try {
-            Thread.sleep(1000);
-          } catch (InterruptedException ex) {
-            // ignore, but stop sleep
-          }
-          mainThread.interrupt();
-        }
-      };
-      interruptThread.setDaemon(true);
-      interruptThread.start();
-      command.exec(new String[] {"sleep", "1m"});
-    }
-    System.out.println("" + command.getReturnCode() + "\n"
-                       + new String(command.getStderr()) + "\n"
-                       + new String(command.getStdout()) + "\n");
-  }
-
   private static class StreamCopyRunnable implements Runnable {
     private InputStream is;
     private OutputStream os;
