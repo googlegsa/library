@@ -35,7 +35,7 @@
 
   <target name="run-db" depends="build" description="Run database adaptor">
     <java classpath="${build.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
-      fork="true" classname="dbadaptortemplate.DBAdaptorTemplate">
+      fork="true" classname="dbadaptortemplate.DbAdaptorTemplate">
       <sysproperty key="java.util.logging.config.file"
         value="${build.dir}/logging.properties"/>
       <arg line="${adaptor.args}"/>

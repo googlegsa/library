@@ -35,6 +35,7 @@ public class Config {
     //defaultConfig.setProperty("gsa.hostname", null);
     defaultConfig.setProperty("gsa.characterEncoding", "UTF-8");
     defaultConfig.setProperty("docId.isUrl", "false");
+    defaultConfig.setProperty("feed.name", "testfeed");
     defaultConfig.setProperty("feed.noRecrawlBitEnabled", "false");
     defaultConfig.setProperty("feed.crawlImmediatelyBitEnabled", "false");
     //defaultConfig.setProperty("feed.noFollowBitEnabled", "false");
@@ -51,8 +52,9 @@ public class Config {
   }
 
   /* Preferences suggested you set them: */
-  public String getServerHostname() {
-    return getValue("server.hostname");
+
+  public String getFeedName() {
+    return getValue("feed.name");
   }
 
   /**
@@ -76,6 +78,11 @@ public class Config {
    */
   public boolean isDocIdUrl() {
     return Boolean.parseBoolean(getValue("docId.isUrl"));
+  }
+
+  /** Without changes contains InetAddress.getLocalHost().getHostName(). */
+  public String getServerHostname() {
+    return getValue("server.hostname");
   }
 
   /**

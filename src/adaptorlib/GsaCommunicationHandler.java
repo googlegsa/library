@@ -55,7 +55,7 @@ public class GsaCommunicationHandler {
         LOG.info("about to get doc ids");
         List<DocId> handles = adaptor.getDocIds();
         LOG.info("about to push " + handles.size() + " doc ids");
-        pushDocIds("testfeed", handles);
+        pushDocIds(config.getFeedName(), handles);
         LOG.info("done pushing doc ids");
       }
     }, schedule);

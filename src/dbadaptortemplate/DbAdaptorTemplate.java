@@ -116,7 +116,7 @@ class DbAdaptorTemplate extends Adaptor {
 
     List<DocId> handles = adaptor.getDocIds();
     // TODO: Get feedname from config.
-    gsa.pushDocIds("testfeed", handles);
+    gsa.pushDocIds(config.getFeedName(), handles);
 
     // Setup scheduled pushing of doc ids.
     ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
