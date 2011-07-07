@@ -1,1 +1,0 @@
-java -Djava.util.logging.config.file=classes/logging.properties -cp 'classes:./src/dbadaptortemplate/mysql.jar' dbadaptortemplate.DbAdaptorTemplate "$@"

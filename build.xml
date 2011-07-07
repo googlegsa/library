@@ -1,0 +1,53 @@
+<project name="plexi" default="build" basedir=".">
+  <description>GSA Adaptor library</description>
+  <property name="src.dir" location="src"/>
+  <property name="build.dir" location="classes"/>
+  <property name="javadoc.dir" location="javadoc"/>
+  <property name="adaptor.class" value="adaptortemplate.AdaptorTemplate"/>
+  <property name="adaptor.args" value=""/>
+
+  <target name="build" description="Build source">
+    <mkdir dir="${build.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${build.dir}"/>
+    <copy file="${src.dir}/logging.properties" todir="${build.dir}"/>
+  </target>
+
+  <target name="javadoc" description="Build JavaDocs">
+    <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}">
+      <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
+      <link href="http://download.oracle.com/javase/6/docs/api/"/>
+      <arg value="-quiet"/>
+    </javadoc>
+  </target>
+
+  <target name="clean" description="Remove build output">
+    <delete dir="${build.dir}"/>
+    <delete dir="${javadoc.dir}"/>
+  </target>
+
+  <target name="run" depends="build" description="Run default adaptor">
+    <java classpath="${build.dir}" fork="true" classname="${adaptor.class}">
+      <sysproperty key="java.util.logging.config.file"
+        value="${build.dir}/logging.properties"/>
+      <arg line="${adaptor.args}"/>
+    </java>
+  </target>
+
+  <target name="run-db" depends="build" description="Run database adaptor">
+    <java classpath="${build.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
+      fork="true" classname="dbadaptortemplate.DBAdaptorTemplate">
+      <sysproperty key="java.util.logging.config.file"
+        value="${build.dir}/logging.properties"/>
+      <arg line="${adaptor.args}"/>
+    </java>
+  </target>
+
+  <target name="run-fs" depends="build" description="Run filesystem adaptor">
+    <java classpath="${build.dir}" fork="true"
+      classname="filesystemadaptor.FileSystemAdaptor">
+      <sysproperty key="java.util.logging.config.file"
+        value="${build.dir}/logging.properties"/>
+      <arg line="${adaptor.args}"/>
+    </java>
+  </target>
+</project>

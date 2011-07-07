@@ -1,1 +1,0 @@
-javadoc -private -sourcepath src -d javadoc -link http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/ -link http://download.oracle.com/javase/6/docs/api/ adaptorlib adaptortemplate
