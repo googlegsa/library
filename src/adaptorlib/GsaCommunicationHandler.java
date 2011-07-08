@@ -108,10 +108,13 @@ public class GsaCommunicationHandler {
     } else {
       URI base = config.getServerBaseUri(docId);
       URI resource;
+      String uniqueId = docId.getUniqueId();
+      // Add two dots to any sequence of only dots. This is to allow "/../" and
+      // "/./" within DocIds.
+      uniqueId = uniqueId.replaceAll("(^|/)(\\.+)(?=$|/)", "$1$2..");
       try {
         resource = new URI(null, null, base.getPath()
-                           + config.getServerDocIdPath() + docId.getUniqueId(),
-                           null);
+                           + config.getServerDocIdPath() + uniqueId, null);
       } catch (URISyntaxException ex) {
         throw new IllegalStateException(ex);
       }
@@ -127,6 +130,9 @@ public class GsaCommunicationHandler {
       String basePath = config.getServerBaseUri().getPath();
       String id = uri.getPath().substring(basePath.length()
           + config.getServerDocIdPath().length());
+      // Remove two dots from any sequence of only dots. This is to remove the
+      // addition we did in {@link #encodeDocId}.
+      id = id.replaceAll("(^|/)(\\.+)\\.\\.(?=$|/)", "$1$2");
       return new DocId(id);
     }
   }
@@ -140,5 +146,13 @@ public class GsaCommunicationHandler {
       throw new IllegalStateException(e);
     }
     return config.getServerBaseUri().resolve(uri);
+  }
+
+  public static void main(String[] args) {
+    GsaCommunicationHandler gsa
+        = new GsaCommunicationHandler(null, new Config());
+    URI uri = gsa.encodeDocId(new DocId(".././hi/.h/"));
+    System.out.println(uri.toString());
+    System.out.println(gsa.decodeDocId(uri).getUniqueId());
   }
 }
