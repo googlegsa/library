@@ -98,10 +98,9 @@ class FileSystemAdaptor extends Adaptor {
     // Uncomment next line to push once at program start.
     gsa.pushDocIds(config.getFeedName(), adaptor.getDocIds());
 
-    // Setup regular pushing of doc ids:
-    ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
-        /*minute*/0, /*second*/0);
-    gsa.beginPushingDocIds(everyNite);
+    // Setup regular pushing of doc ids for once per day.
+    gsa.beginPushingDocIds(
+        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
     log.info("doc id pushing has been put on schedule");
   }
 }

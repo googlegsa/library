@@ -7,8 +7,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.MalformedURLException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpServer;
@@ -47,7 +49,7 @@ public class GsaCommunicationHandler {
     LOG.info("server is listening on port #" + port);
   }
 
-  public void beginPushingDocIds(ScheduleIterator schedule) {
+  public void beginPushingDocIds(Iterator<Date> schedule) {
     Scheduler pushScheduler = new Scheduler();
     pushScheduler.schedule(new Scheduler.Task() {
       public void run() {

@@ -52,10 +52,9 @@ class AdaptorTemplate extends Adaptor {
       throw new RuntimeException("could not start serving", e);
     }
 
-    // Setup scheduled pushing of doc ids.
-    ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
-        /*minute*/0, /*second*/0);
-    gsa.beginPushingDocIds(everyNite);
+    // Setup scheduled pushing of doc ids for once per day.
+    gsa.beginPushingDocIds(
+        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
     LOG.info("doc id pushing has been put on schedule");
   }
 }

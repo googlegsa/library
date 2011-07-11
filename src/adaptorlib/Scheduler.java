@@ -1,6 +1,7 @@
 package adaptorlib;
 
 import java.util.Date;
+import java.util.Iterator;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -18,7 +19,7 @@ class Scheduler {
       timer.cancel();
   }
 
-  public void schedule(Task schedulerTask, ScheduleIterator iterator) {
+  public void schedule(Task schedulerTask, Iterator<Date> iterator) {
     Date time = iterator.next();
     if (time == null) {
       schedulerTask.cancel();
@@ -35,7 +36,7 @@ class Scheduler {
     }
   }
 
-  private void reschedule(Task schedulerTask, ScheduleIterator iterator) {
+  private void reschedule(Task schedulerTask, Iterator<Date> iterator) {
     Date time = iterator.next();
     if (time == null) {
       schedulerTask.cancel();
@@ -52,9 +53,9 @@ class Scheduler {
 
   private class SchedulerTimerTask extends TimerTask {
     private Task schedulerTask;
-    private ScheduleIterator iterator;
+    private Iterator<Date> iterator;
 
-    public SchedulerTimerTask(Task schedulerTask, ScheduleIterator iterator) {
+    public SchedulerTimerTask(Task schedulerTask, Iterator<Date> iterator) {
       this.schedulerTask = schedulerTask;
       this.iterator = iterator;
     }
