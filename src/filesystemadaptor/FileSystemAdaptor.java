@@ -13,8 +13,8 @@ class FileSystemAdaptor extends Adaptor {
   private static Logger log = Logger.getLogger(FileSystemAdaptor.class.getName());
   private final File serveDir;
 
-  public FileSystemAdaptor(File file) {
-    this.serveDir = file.getAbsoluteFile();
+  public FileSystemAdaptor(File file) throws IOException {
+    this.serveDir = file.getCanonicalFile();
   }
 
   public List<DocId> getDocIds() {
@@ -36,7 +36,7 @@ class FileSystemAdaptor extends Adaptor {
   /** Gives the bytes of a document referenced with id. Returns
    *  null if such a document doesn't exist. */
   public byte[] getDocContent(DocId id) throws IOException {
-    File file = new File(serveDir, id.getUniqueId()).getAbsoluteFile();
+    File file = new File(serveDir, id.getUniqueId()).getCanonicalFile();
     if (!isFileDescendantOfServeDir(file)) {
       throw new FileNotFoundException();
     }
@@ -80,7 +80,7 @@ class FileSystemAdaptor extends Adaptor {
   }
 
   /** An example main for an adaptor. */
-  public static void main(String a[]) {
+  public static void main(String a[]) throws IOException {
     Config config = new Config();
     config.autoConfig(a);
     String source = config.getValueOrDefault("filesystemadaptor.src", ".");
