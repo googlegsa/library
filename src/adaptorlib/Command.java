@@ -110,11 +110,7 @@ public class Command {
 
     public void run() {
       try {
-        byte[] buffer = new byte[1024];
-        int read;
-        while ((read = is.read(buffer)) != -1) {
-          os.write(buffer, 0, read);
-        }
+        IOHelper.copyStream(is, os);
       } catch (IOException ex) {
         // Ignore, but stop thread
       } finally {

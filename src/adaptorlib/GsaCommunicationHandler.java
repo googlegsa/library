@@ -26,7 +26,8 @@ public class GsaCommunicationHandler {
   private final GsaFeedFileMaker fileMaker;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
-    this.adaptor = adaptor;
+    // TODO(ejona): allow the adaptor to choose whether it wants this feature
+    this.adaptor = new AutoUnzipAdaptor(adaptor);
     this.config = config;
     this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding());
     this.fileMaker = new GsaFeedFileMaker(this);

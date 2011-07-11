@@ -75,10 +75,7 @@ public class CommandLineTransform extends DocumentTransform {
       }
 
       // Copy stdout
-      byte[] buf = new byte[8192]; // 8kB chunks
-      int len = -1;
-      while ((len = stdout.read(buf)) >= 0)
-        contentOut.write(buf, 0, len);
+      IOHelper.copyStream(stdout, contentOut);
     }
     catch(InterruptedException e) {
       throw new TransformException(e);

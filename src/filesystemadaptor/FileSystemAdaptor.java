@@ -44,7 +44,7 @@ class FileSystemAdaptor extends Adaptor {
     ByteArrayOutputStream output = new ByteArrayOutputStream(
         (int) file.length());
     try {
-      copyStream(input, output);
+      IOHelper.copyStream(input, output);
     } finally {
       try {
         input.close();
@@ -58,15 +58,6 @@ class FileSystemAdaptor extends Adaptor {
       }
     }
     return output.toByteArray();
-  }
-
-  private void copyStream(InputStream input, OutputStream output)
-      throws IOException {
-    byte[] buffer = new byte[1024];
-    int read;
-    while ((read = input.read(buffer)) != -1) {
-      output.write(buffer, 0, read);
-    }
   }
 
   private boolean isFileDescendantOfServeDir(File file) {

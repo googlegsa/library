@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
+import java.util.logging.Level;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -37,12 +38,24 @@ class DocumentHandler extends AbstractHandler {
       byte content[];
       try {
         content = adaptor.getDocContent(docId);
+        if (content == null) {
+          throw new IOException("Adaptor did not provide content");
+        }
       } catch (FileNotFoundException e) {
         cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "Unknown document");
+                      "Unknown document: " + e.getMessage());
+        return;
+      } catch (IOException e) {
+        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
+                      "IO Exception: " + e.getMessage());
+        return;
+      } catch (Exception e) {
+        LOG.log(Level.WARNING, "Unexpected exception from getDocContent", e);
+        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
+                      "Exception (" + e.getClass().getName() + "): "
+                      + e.getMessage());
         return;
       }
-      // TODO: content is null?
       // String contentType = "text/plain"; // "application/octet-stream"
       LOG.finer("processed request; response is size=" + content.length);
       if ("GET".equals(requestMethod))
