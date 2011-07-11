@@ -45,13 +45,4 @@ public class ScheduleOncePerDay implements Iterator<Date> {
   public void remove() {
     throw new UnsupportedOperationException();
   }
-
-  /** Small main that prints 7AM on a few consecutive days. */
-  public static void main(String a[]) {
-    ScheduleOncePerDay it = new ScheduleOncePerDay(7, 0, 0);
-    for (int i = 0; i < 5; i++) {
-      Date d = it.next();
-      System.out.println("" + d);
-    }
-  }
 }

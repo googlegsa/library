@@ -150,12 +150,4 @@ public class GsaCommunicationHandler {
     }
     return config.getServerBaseUri().resolve(uri);
   }
-
-  public static void main(String[] args) {
-    GsaCommunicationHandler gsa
-        = new GsaCommunicationHandler(null, new Config());
-    URI uri = gsa.encodeDocId(new DocId(".././hi/.h/"));
-    System.out.println(uri.toString());
-    System.out.println(gsa.decodeDocId(uri).getUniqueId());
-  }
 }
