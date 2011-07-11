@@ -23,11 +23,7 @@ class DocumentHandler extends AbstractHandler {
     this.adaptor = adaptor;
   }
 
-  protected void meteredHandle(HttpExchange ex) {
-    throw new UnsupportedOperationException();
-  }
-
-  public void handle(HttpExchange ex) throws IOException {
+  public void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
