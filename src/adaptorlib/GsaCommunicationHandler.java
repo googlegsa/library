@@ -143,7 +143,7 @@ public class GsaCommunicationHandler {
   URI formNamespacedUri(String namespace) {
     URI uri;
     try {
-      uri = new URI(null, null, config.getServerBaseUri().getPath() + "/sso",
+      uri = new URI(null, null, config.getServerBaseUri().getPath() + namespace,
                     null);
     } catch (URISyntaxException e) {
       throw new IllegalStateException(e);
