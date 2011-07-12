@@ -7,8 +7,6 @@ import adaptorlib.MetaTaggerTransform;
 import adaptorlib.TransformException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.Map;
 import java.util.HashMap;
 
