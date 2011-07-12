@@ -6,14 +6,8 @@ import java.util.HashMap;
 import org.junit.Test;
 
 public class DocReadPermissionsTest {
-  private static void assureHashSame(Object apple, Object orange) {
-    if (apple.hashCode() != orange.hashCode()) {
-      throw new RuntimeException("" + apple + " hash mismatch with "
-          + orange);
-    }
-  }
 
-  private static void assureDifferent(Object apple, Object orange) {
+  private static void assertNotEquals(Object apple, Object orange) {
     assertFalse(apple.equals(orange));
   }
 
@@ -23,8 +17,8 @@ public class DocReadPermissionsTest {
     DocReadPermissions perm2 = new DocReadPermissions("chad", "chap");
     DocReadPermissions perm3 = DocReadPermissions.IS_PUBLIC;
     DocReadPermissions perm4 = DocReadPermissions.IS_PUBLIC;
-    assureHashSame(perm, perm2);
-    assureHashSame(perm3, perm4);
+    assertEquals("hash mismatch", perm.hashCode(), perm2.hashCode());
+    assertEquals("hash mismatch", perm3.hashCode(), perm4.hashCode());
     HashMap<Object, Object> m = new HashMap<Object, Object>();
     m.put(perm, m);
     assertEquals(m.get(perm2), m);
@@ -42,10 +36,10 @@ public class DocReadPermissionsTest {
     DocReadPermissions perm6 = new DocReadPermissions("cory", null);
     assertEquals(perm, perm2);
     assertEquals(perm3, perm4);
-    assureDifferent(perm, perm3);
-    assureDifferent(perm, perm5);
-    assureDifferent(perm, perm6);
-    assureDifferent(perm3, perm5);
-    assureDifferent(perm3, perm6);
+    assertNotEquals(perm, perm3);
+    assertNotEquals(perm, perm5);
+    assertNotEquals(perm, perm6);
+    assertNotEquals(perm3, perm5);
+    assertNotEquals(perm3, perm6);
   }
 }
