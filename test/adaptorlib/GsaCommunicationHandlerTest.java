@@ -55,4 +55,26 @@ public class GsaCommunicationHandlerTest {
     assertTrue(uriStr.contains(docId));
     assertEquals(docId, gsa.decodeDocId(uri).getUniqueId());
   }
+
+  private void decodeAndEncode(String id) {
+    URI uri = gsa.encodeDocId(new DocId(id));
+    assertEquals(id, gsa.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testAssortedNonDotIds() {
+    decodeAndEncode("simple-id");
+    decodeAndEncode("harder-id/");
+    decodeAndEncode("harder-id/./");
+    decodeAndEncode("harder-id///&?///");
+    decodeAndEncode("");
+    decodeAndEncode(" ");
+    decodeAndEncode(" \n\t  ");
+    decodeAndEncode("/");
+    decodeAndEncode("//");
+    decodeAndEncode("drop/table/now");
+    decodeAndEncode("/drop/table/now");
+    decodeAndEncode("//drop/table/now");
+    decodeAndEncode("//d&op/t+b+e/n*w");
+  }
 }

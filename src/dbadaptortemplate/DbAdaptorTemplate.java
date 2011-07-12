@@ -145,7 +145,7 @@ class DbAdaptorTemplate extends Adaptor {
     boolean containsSpecialChar = s.contains(",")
         || s.contains("\n") || s.contains(doubleQuote);
     if (containsSpecialChar) {
-      s = s.replaceAll(doubleQuote, doubleQuote + doubleQuote);
+      s = s.replace(doubleQuote, doubleQuote + doubleQuote);
       s = doubleQuote + s + doubleQuote;
     }
     return s;
