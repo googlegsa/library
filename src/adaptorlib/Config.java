@@ -12,7 +12,7 @@ import java.util.Properties;
 
 /**
  * Configuration values for this program like the GSA's hostname. Also several
- * knobs, or controls, for changing the behaviour of the program.
+ * knobs, or controls, for changing the behavior of the program.
  */
 public class Config {
   /** Default configuration values */

@@ -44,6 +44,7 @@ public class GsaCommunicationHandler {
                             config.getGsaCharacterEncoding(), this, adaptor));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
+    LOG.info("GSA host name: " + config.getGsaHostname());
     LOG.info("server is listening on port #" + port);
   }
 
@@ -53,9 +54,15 @@ public class GsaCommunicationHandler {
       public void run() {
         // TODO: Prevent two simultenous calls.
         LOG.info("about to get doc ids");
-        List<DocId> handles = adaptor.getDocIds();
-        LOG.info("about to push " + handles.size() + " doc ids");
-        pushDocIds("testfeed", handles);
+           List<DocId> handles;
+          try {
+            handles = adaptor.getDocIds();
+            LOG.info("about to push " + handles.size() + " doc ids");
+            pushDocIds("testfeed", handles);
+          } catch (IOException e) {
+            // TODO(johnfelton): Improve error recording when "journal" is available.
+            LOG.severe(e.getMessage());
+          }
         LOG.info("done pushing doc ids");
       }
     }, schedule);
@@ -68,6 +75,7 @@ public class GsaCommunicationHandler {
     boolean keepGoing = true;
     for (int ntries = 0; keepGoing; ntries++) {
       try {
+        LOG.info("Sending feed to GSA host name: " + config.getGsaHostname());
         fileSender.sendMetadataAndUrl(config.getGsaHostname(), feedSourceName,
                                   xmlFeedFile);
         keepGoing = false;  // Sent.

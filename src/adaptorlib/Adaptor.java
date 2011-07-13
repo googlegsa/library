@@ -1,4 +1,5 @@
 package adaptorlib;
+import adaptorlib.DocId;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -11,7 +12,7 @@ public abstract class Adaptor {
   abstract public byte[] getDocContent(DocId id) throws IOException;
 
   /** Provides doc ids that are to be indexed. */
-  abstract public List<DocId> getDocIds();
+  abstract public List<DocId> getDocIds()  throws IOException;
 
   /* Default implementations. */
 
