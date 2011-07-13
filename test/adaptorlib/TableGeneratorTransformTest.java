@@ -3,16 +3,15 @@ package adaptorlib;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
-import adaptorlib.TableGeneratorTransform;
-import adaptorlib.TransformException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
+/**
+ * Tests for {@link TableGeneratorTransform}.
+ */
 public class TableGeneratorTransformTest {
-  private static String TEST_DIR = "src/adaptorlib/tests/";
-
   @Test
   public void testNoInput() throws IOException, TransformException {
     TableGeneratorTransform transform = new TableGeneratorTransform();

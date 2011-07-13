@@ -1,34 +1,36 @@
 package dbadaptortemplate;
+
 import adaptorlib.*;
-import java.nio.charset.Charset;
 import java.io.*;
+import java.nio.charset.Charset;
 import java.sql.*;
 import java.util.*;
 import java.util.logging.*;
+
 /**
  * Demonstrates what code is necessary for putting DB
  * content onto a GSA.
  */
 class DbAdaptorTemplate extends Adaptor {
-  private final static Logger LOG
+  private static final Logger log
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   private static Connection makeNewConnection() throws SQLException {
-    // TODO: DB connection pooling.
+    // TODO(pjo): DB connection pooling.
     String url = "jdbc:mysql://127.0.0.1/adaptor1";
-    LOG.fine("about to connect");
+    log.fine("about to connect");
     Connection conn = DriverManager.getConnection(url, "root", "test");
-    LOG.fine("connected");
+    log.fine("connected");
     return conn;
   }
 
   private static ResultSet getFromDb(Connection conn, String query)
       throws SQLException {
     Statement st = conn.createStatement();
-    LOG.info("about to query");
+    log.info("about to query");
     ResultSet rs = st.executeQuery(query);
-    LOG.info("queried");
+    log.info("queried");
     return rs;
   }
 
@@ -47,7 +49,7 @@ class DbAdaptorTemplate extends Adaptor {
     } finally {
       tryClosingConnection(conn);
     }
-    LOG.info("primary keys: " + primaryKeys);
+    log.info("primary keys: " + primaryKeys);
     return primaryKeys;
   }
 
@@ -66,8 +68,8 @@ class DbAdaptorTemplate extends Adaptor {
       ResultSetMetaData rsMetaData = rs.getMetaData();
       int numberOfColumns = rsMetaData.getColumnCount();
       if (0 == numberOfColumns) {
-        LOG.warning("no columns in results");
-        // TODO: Cause some sort of error code.
+        log.warning("no columns in results");
+        // TODO(pjo): Cause some sort of error code.
         return "no columns in database result".getBytes(encoding);
       }
 
@@ -90,7 +92,7 @@ class DbAdaptorTemplate extends Adaptor {
           + line2.substring(1) + "\n" + line3.substring(1) + "\n";
       return document.getBytes(encoding);
     } catch (SQLException problem) {
-      LOG.log(Level.SEVERE, "failed getting ids", problem);
+      log.log(Level.SEVERE, "failed getting ids", problem);
       throw new IOException("retrieval error", problem);
     } finally {
       tryClosingConnection(conn);
@@ -100,7 +102,7 @@ class DbAdaptorTemplate extends Adaptor {
   /** An example main for an adaptor. */
   public static void main(String a[]) throws Exception {
     Class.forName("org.gjt.mm.mysql.Driver");
-    LOG.info("loaded driver");
+    log.info("loaded driver");
     Config config = new Config();
     config.autoConfig(a);
     Adaptor adaptor = new DbAdaptorTemplate();
@@ -109,7 +111,7 @@ class DbAdaptorTemplate extends Adaptor {
     // Setup providing content.
     try {
       gsa.beginListeningForContentRequests();
-      LOG.info("doc content serving started");
+      log.info("doc content serving started");
     } catch (IOException e) {
       throw new RuntimeException("could not start serving", e);
     }
@@ -120,15 +122,15 @@ class DbAdaptorTemplate extends Adaptor {
     // Setup scheduled pushing of doc ids for once a day.
     gsa.beginPushingDocIds(
         new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    LOG.info("doc id pushing has been put on schedule");
+    log.info("doc id pushing has been put on schedule");
   }
 
   private static void tryClosingConnection(Connection conn) {
     if (null != conn) {
       try {
         conn.close();
-      } catch(SQLException e) {
-        LOG.log(Level.WARNING, "close failed", e);
+      } catch (SQLException e) {
+        log.log(Level.WARNING, "close failed", e);
       }
     }
   }

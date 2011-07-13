@@ -1,17 +1,18 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 package adaptorlib;
-import java.util.regex.Pattern;
-import java.util.Comparator;
-import java.util.Scanner;
+
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Comparator;
+import java.util.Map;
+import java.util.Scanner;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.Map;
-import java.util.SortedMap;
+import java.util.regex.Pattern;
 
 /**
  * The transform examines the document for regex patterns. If a pattern is found,
@@ -19,7 +20,7 @@ import java.util.SortedMap;
  * HTML. If no HEAD section exists, nothing gets inserted.
  */
 public class MetaTaggerTransform extends DocumentTransform {
-  private static Logger LOG = Logger.getLogger(MetaTaggerTransform.class.getName());
+  private static final Logger log = Logger.getLogger(MetaTaggerTransform.class.getName());
 
   public MetaTaggerTransform() {
     super("MetaTaggerTransform");
@@ -29,9 +30,8 @@ public class MetaTaggerTransform extends DocumentTransform {
     super("MetaTaggerTransform");
     try {
       loadPatternFile(patternFile);
-    }
-    catch (IOException ex) {
-      LOG.log(Level.SEVERE, "MetaTaggerTransform encountered an error while " +
+    } catch (IOException ex) {
+      log.log(Level.SEVERE, "MetaTaggerTransform encountered an error while " +
               "loading pattern file: " + patternFile, ex);
     }
   }
@@ -59,16 +59,16 @@ public class MetaTaggerTransform extends DocumentTransform {
     while (sc.hasNextLine()) {
       String line = sc.nextLine().trim();
       int sepIndex = line.indexOf(PATTERN_FILE_SEP);
-      if (line.isEmpty() || sepIndex < 0)
+      if (line.isEmpty() || sepIndex < 0) {
         continue;
+      }
 
       Pattern pattern = Pattern.compile(line.substring(0, sepIndex));
-      String metadata = line.substring(sepIndex+1, line.length());
+      String metadata = line.substring(sepIndex + 1, line.length());
       String existing = patternMappings.get(pattern);
       if (existing == null) {
         patternMappings.put(pattern, metadata + "\n");
-      }
-      else {
+      } else {
         patternMappings.put(pattern, existing + metadata + "\n");
       }
     }
@@ -86,7 +86,7 @@ public class MetaTaggerTransform extends DocumentTransform {
   private SortedMap<Pattern, String> patternMappings =
       new TreeMap<Pattern, String>(new PatternComparator());
 
-  private char PATTERN_FILE_SEP = ' ';
+  private static final char PATTERN_FILE_SEP = ' ';
 
   private class PatternComparator implements Comparator<Pattern> {
     public int compare(Pattern p1, Pattern p2) {

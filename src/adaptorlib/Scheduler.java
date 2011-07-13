@@ -24,7 +24,7 @@ class Scheduler {
     if (time == null) {
       schedulerTask.cancel();
     } else {
-      synchronized(schedulerTask.lock) {
+      synchronized (schedulerTask.lock) {
         if (schedulerTask.state != Task.VIRGIN) {
           throw new IllegalStateException("already scheduled or cancelled");
         }
@@ -41,7 +41,7 @@ class Scheduler {
     if (time == null) {
       schedulerTask.cancel();
     } else {
-      synchronized(schedulerTask.lock) {
+      synchronized (schedulerTask.lock) {
         if (schedulerTask.state != Task.CANCELLED) {
           schedulerTask.timerTask
               = new SchedulerTimerTask(schedulerTask, iterator);
@@ -70,7 +70,7 @@ class Scheduler {
    * Gratitude to
    * http://www.ibm.com/developerworks/java/library/j-schedule/index.html
    */
-  public static abstract class Task implements Runnable {
+  public abstract static class Task implements Runnable {
     private int state = VIRGIN;
     private final Object lock = new Object();
 
@@ -86,7 +86,7 @@ class Scheduler {
     public abstract void run();
 
     public boolean cancel() {
-      synchronized(lock) {
+      synchronized (lock) {
         if (timerTask != null) {
           timerTask.cancel();
         }
@@ -97,7 +97,7 @@ class Scheduler {
     }
 
     public long scheduledExecutionTime() {
-      synchronized(lock) {
+      synchronized (lock) {
         return timerTask == null ? 0 : timerTask.scheduledExecutionTime();
       }
     }

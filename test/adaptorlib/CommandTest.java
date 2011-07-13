@@ -2,10 +2,17 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
+/**
+ * Tests for {@link Command}.
+ */
 public class CommandTest {
   private Command command = new Command();
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testStdinStdout() throws java.io.IOException,
@@ -18,11 +25,12 @@ public class CommandTest {
     assertEquals(0, command.getStderr().length);
   }
 
-  @Test(expected=InterruptedException.class)
+  @Test
   public void testInterrupted() throws java.io.IOException,
          InterruptedException {
     // Only sets flag, does not immediately throw InterruptedException
     Thread.currentThread().interrupt();
+    thrown.expect(InterruptedException.class);
     command.exec(new String[] {"sleep", "10"});
   }
 }

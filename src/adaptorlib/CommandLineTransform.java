@@ -1,13 +1,11 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 package adaptorlib;
+
 import java.io.ByteArrayOutputStream;
-import java.io.InputStream;
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.InterruptedException;
-import java.lang.ProcessBuilder;
-import java.lang.Process;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -18,7 +16,7 @@ import java.util.Map;
  */
 public class CommandLineTransform extends DocumentTransform {
 
-  private final int STDERR_BUFFER_SIZE = 51200; // 50 kB
+  private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB
 
   public CommandLineTransform(String name) {
     super(name);
@@ -40,7 +38,7 @@ public class CommandLineTransform extends DocumentTransform {
 
     List<String> command = Arrays.asList(transformCommand.split(" "));
     if (commandAcceptsParameters) {
-      for(Map.Entry<String, String> param : params.entrySet()) {
+      for (Map.Entry<String, String> param : params.entrySet()) {
         command.add("-" + param.getKey());
         command.add(param.getValue());
       }
@@ -48,8 +46,9 @@ public class CommandLineTransform extends DocumentTransform {
 
     ProcessBuilder pb = new ProcessBuilder(command);
     pb.redirectErrorStream(false);  // We want 2 streams to come out for stdout and stderr.
-    if (workingDirectory != null && !workingDirectory.isEmpty())
+    if (workingDirectory != null && !workingDirectory.isEmpty()) {
       pb.directory(new File(workingDirectory));
+    }
 
     Process p = pb.start();
 
@@ -76,11 +75,9 @@ public class CommandLineTransform extends DocumentTransform {
 
       // Copy stdout
       IOHelper.copyStream(stdout, contentOut);
-    }
-    catch(InterruptedException e) {
+    } catch (InterruptedException e) {
       throw new TransformException(e);
-    }
-    finally {
+    } finally {
       stdin.close();
       stdout.close();
       stderr.close();
@@ -120,7 +117,7 @@ public class CommandLineTransform extends DocumentTransform {
    */
   public boolean workingDirectory(String dir) {
     File file = new File(dir);
-    if(file.isDirectory()) {
+    if (file.isDirectory()) {
       workingDirectory = dir;
       return true;
     }

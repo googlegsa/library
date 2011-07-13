@@ -1,12 +1,10 @@
 package adaptorlib;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
-import java.util.logging.Logger;
-
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 
 class SsoHandler extends AbstractHandler {
   public SsoHandler(String defaultHostname, Charset defaultCharset) {

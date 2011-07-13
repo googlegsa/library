@@ -3,15 +3,16 @@ package adaptorlib;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
-import adaptorlib.MetaTaggerTransform;
-import adaptorlib.TransformException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
+/**
+ * Tests for {@link MetaTaggerTransform}.
+ */
 public class MetaTaggerTransformTest {
-  private static String TEST_DIR = "test/adaptorlib/";
+  private static final String TEST_DIR = "test/adaptorlib/";
 
   @Test
   public void testNoInput() throws IOException, TransformException {

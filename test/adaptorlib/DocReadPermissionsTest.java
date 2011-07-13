@@ -2,9 +2,13 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import java.util.HashMap;
 import org.junit.Test;
 
+import java.util.HashMap;
+
+/**
+ * Tests for {@link DocReadPermissions}.
+ */
 public class DocReadPermissionsTest {
 
   private static void assertNotEquals(Object apple, Object orange) {

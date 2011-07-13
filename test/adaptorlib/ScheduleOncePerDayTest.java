@@ -2,10 +2,14 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import java.util.Calendar;
-import java.util.Date;
 import org.junit.Test;
 
+import java.util.Calendar;
+import java.util.Date;
+
+/**
+ * Tests for {@link ScheduleOncePerDay}.
+ */
 public class ScheduleOncePerDayTest {
   @Test
   public void testIteration() {

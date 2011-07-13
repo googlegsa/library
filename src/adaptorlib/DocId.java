@@ -1,8 +1,5 @@
 package adaptorlib;
-import java.net.MalformedURLException;
-import java.net.URI;
-import java.net.URISyntaxException;
-import java.net.URL;
+
 /** DocId refers to a unique document in repository.
   You give the adaptorlib a DocId to have it insert your
   document for crawl and index.

@@ -1,24 +1,21 @@
 package adaptorlib;
 
-import java.io.FileNotFoundException;
+import com.sun.net.httpserver.HttpServer;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.MalformedURLException;
 import java.util.Date;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.Executors;
-import java.util.Iterator;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.sun.net.httpserver.HttpServer;
-
 /** This class handles the communications with GSA. */
 public class GsaCommunicationHandler {
-  private static final Logger LOG
+  private static final Logger log
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
   private final Adaptor adaptor;
@@ -48,8 +45,8 @@ public class GsaCommunicationHandler {
                             config.getGsaCharacterEncoding(), this, adaptor));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
-    LOG.info("GSA host name: " + config.getGsaHostname());
-    LOG.info("server is listening on port #" + port);
+    log.info("GSA host name: " + config.getGsaHostname());
+    log.info("server is listening on port #" + port);
   }
 
   public void beginPushingDocIds(Iterator<Date> schedule) {
@@ -73,25 +70,25 @@ public class GsaCommunicationHandler {
     boolean keepGoing = true;
     for (int ntries = 1; keepGoing; ntries++) {
       try {
-        LOG.info("Sending feed to GSA host name: " + config.getGsaHostname());
+        log.info("Sending feed to GSA host name: " + config.getGsaHostname());
         fileSender.sendMetadataAndUrl(config.getGsaHostname(), feedSourceName,
                                   xmlFeedFile);
         keepGoing = false;  // Sent.
       } catch (GsaFeedFileSender.FailedToConnect ftc) {
-        LOG.log(Level.WARNING, "Unable to connect to the GSA", ftc);
+        log.log(Level.WARNING, "Unable to connect to the GSA", ftc);
         keepGoing = adaptor.handleFailedToConnect(
-            (Exception)ftc.getCause(), ntries);
+            (Exception) ftc.getCause(), ntries);
       } catch (GsaFeedFileSender.FailedWriting fw) {
-        LOG.log(Level.WARNING, "Unable to write request to the GSA", fw);
+        log.log(Level.WARNING, "Unable to write request to the GSA", fw);
         keepGoing = adaptor.handleFailedWriting(
-            (Exception)fw.getCause(), ntries);
+            (Exception) fw.getCause(), ntries);
       } catch (GsaFeedFileSender.FailedReadingReply fr) {
-        LOG.log(Level.WARNING, "Unable to read reply from GSA", fr);
+        log.log(Level.WARNING, "Unable to read reply from GSA", fr);
         keepGoing = adaptor.handleFailedReadingReply(
-            (Exception)fr.getCause(), ntries);
+            (Exception) fr.getCause(), ntries);
       }
       if (keepGoing) {
-        LOG.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+        log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       }
     }
   }
@@ -101,19 +98,19 @@ public class GsaCommunicationHandler {
    * until all DocIds are sent or retrying failed.
    */
   public void pushDocIds() throws InterruptedException {
-    LOG.info("Getting list of DocIds");
+    log.info("Getting list of DocIds");
     List<DocId> handles;
-    for (int ntries = 1; ; ntries++) {
+    for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
       try {
         handles = adaptor.getDocIds();
         break; // Success
       } catch (Exception ex) {
-        LOG.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
+        log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
         keepGoing = adaptor.handleFailedToGetDocIds(ex, ntries);
       }
       if (keepGoing) {
-        LOG.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+        log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       } else {
         return; // Bail
       }
@@ -128,11 +125,11 @@ public class GsaCommunicationHandler {
    * This method blocks until all DocIds are sent or retrying failed.
    */
   public void pushDocIds(List<DocId> handles) throws InterruptedException {
-    LOG.log(Level.INFO, "Pushing {0} DocIds", handles.size());
-    final int MAX = config.getFeedMaxUrls();
+    log.log(Level.INFO, "Pushing {0} DocIds", handles.size());
+    final int max = config.getFeedMaxUrls();
     int totalPushed = 0;
-    for (int i = 0; i < handles.size(); i += MAX) {
-      int endIndex = i + MAX;
+    for (int i = 0; i < handles.size(); i += max) {
+      int endIndex = i + max;
       if (endIndex > handles.size()) {
         endIndex = handles.size();
       }
@@ -143,7 +140,7 @@ public class GsaCommunicationHandler {
     if (handles.size() != totalPushed) {
       throw new IllegalStateException();
     }
-    LOG.info("Pushed DocIds");
+    log.info("Pushed DocIds");
   }
 
   URI encodeDocId(DocId docId) {

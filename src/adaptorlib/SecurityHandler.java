@@ -1,5 +1,8 @@
 package adaptorlib;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -7,12 +10,9 @@ import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-
 // WARNING: the isPublic checking is only good for testing at the moment.
 class SecurityHandler extends AbstractHandler {
-  private static final Logger LOG
+  private static final Logger log
       = Logger.getLogger(SecurityHandler.class.getName());
   private static final boolean useHttpBasic = true;
 
@@ -64,7 +64,7 @@ class SecurityHandler extends AbstractHandler {
       }
     }
 
-    LOG.log(Level.FINE, "Security checks passed. Processing with nested {0}",
+    log.log(Level.FINE, "Security checks passed. Processing with nested {0}",
             nestedHandler.getClass().getName());
     nestedHandler.handle(ex);
   }

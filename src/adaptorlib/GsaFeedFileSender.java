@@ -1,4 +1,5 @@
 package adaptorlib;
+
 import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
@@ -9,29 +10,29 @@ import java.util.logging.Logger;
 /** Takes an XML feed file for the GSA, sends it to GSA and
   then reads reply from GSA. */
 class GsaFeedFileSender {
-  private static String CLASS_NAME = GsaFeedFileSender.class.getName();
-  private static Logger LOG = Logger.getLogger(CLASS_NAME);
+  private static final Logger log
+      = Logger.getLogger(GsaFeedFileSender.class.getName());
 
   /** Indicates failure creating connection to GSA. */
   static class FailedToConnect extends Exception {
     private FailedToConnect(IOException e) {
       super(e);
     }
-    // TODO: Add corrective tips.
+    // TODO(pjo): Add corrective tips.
   }
   /** Indicates failure to send XML feed file to GSA. */
   static class FailedWriting extends Exception {
     private FailedWriting(IOException e) {
       super(e);
     }
-    // TODO: Add corrective tips.
+    // TODO(pjo): Add corrective tips.
   }
   /** Indicates failure to read response to sent XML feed file. */
   static class FailedReadingReply extends Exception {
     private FailedReadingReply(IOException e) {
       super(e);
     }
-    // TODO: Add corrective tips.
+    // TODO(pjo): Add corrective tips.
   }
 
   // All communications are expected to be tailored to GSA.
@@ -90,15 +91,13 @@ class GsaFeedFileSender {
   private void writeToGsa(OutputStream outputStream, byte msgbytes[])
       throws IOException {
     try {
-      // TODO: Remove System.out .
-      //System.out.write(msgbytes);
       outputStream.write(msgbytes);
       outputStream.flush();
     } finally {
       try {
         outputStream.close();
       } catch (IOException e) {
-        LOG.warning("failed to close output stream");
+        log.warning("failed to close output stream");
       }
     }
   }
@@ -120,7 +119,7 @@ class GsaFeedFileSender {
           br.close();
         }
       } catch (IOException e) {
-        LOG.warning("failed to close buffered reader");
+        log.warning("failed to close buffered reader");
       }
       if (null != uc) {
         uc.disconnect();
@@ -131,14 +130,14 @@ class GsaFeedFileSender {
 
   private void handleGsaReply(String reply) {
     if ("Success".equals(reply)) {
-      LOG.info("success message received");
+      log.info("success message received");
     } else {
       throw new IllegalStateException("GSA reply: " + reply);
     }
 
-    /* TODO: Recognize additional replies.
+    /* TODO(pjo): Recognize additional replies.
     if ("Error - Unauthorized Request".equals(reply)) {
-        // TODO: Improve message with Admin Console details.
+        // TODO(pjo): Improve message with Admin Console details.
         throw new IllegalStateException("GSA is not configured "
             + "to accept feeds from this IP.  Please add <IP> "
             + "to permitted machines.");
@@ -148,12 +147,13 @@ class GsaFeedFileSender {
     */
   }
 
-  /** Sends XML with provided datasoruce name
-    and feedtype "metadata-and-url".  Datasource name 
-    is limited to [a-zA-Z0-9_]. */
+  /**
+   * Sends XML with provided datasoruce name and feedtype "metadata-and-url".
+   * Datasource name is limited to [a-zA-Z0-9_].
+   */
   void sendMetadataAndUrl(String host, String datasource, String xmlString)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
-    // TODO: Check datasource characters for valid name.
+    // TODO(pjo): Check datasource characters for valid name.
     String feedtype = "metadata-and-url";
     byte msg[] = buildMessage(datasource, feedtype, xmlString);
 
@@ -172,8 +172,6 @@ class GsaFeedFileSender {
     } finally {
       try {
         String reply = readGsaReply(uc);
-        // TODO: Remove System.out .
-        // System.out.println("REPLY:\n\n" + reply);
         handleGsaReply(reply);
       } catch (IOException ioe) {
         throw new FailedReadingReply(ioe);

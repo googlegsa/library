@@ -9,13 +9,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
-import java.nio.MappedByteBuffer;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * This transform takes in a CSV file, generates an HTML table with the data,
@@ -24,7 +24,7 @@ import java.util.Map;
  * to be inserted.
  */
 public class TableGeneratorTransform extends DocumentTransform {
-  private static Logger LOG = Logger.getLogger(TableGeneratorTransform.class.getName());
+  private static final Logger log = Logger.getLogger(TableGeneratorTransform.class.getName());
 
   public TableGeneratorTransform() {
     super("TableGeneratorTransform");
@@ -34,9 +34,8 @@ public class TableGeneratorTransform extends DocumentTransform {
     super("TableGeneratorTransform");
     try {
       loadTemplateFile(templateFile);
-    }
-    catch (IOException e) {
-      LOG.log(Level.WARNING, "TableGeneratorTransform could not load templateFile: " +
+    } catch (IOException e) {
+      log.log(Level.WARNING, "TableGeneratorTransform could not load templateFile: " +
               templateFile, e);
     }
   }
@@ -72,8 +71,7 @@ public class TableGeneratorTransform extends DocumentTransform {
       FileChannel fc = stream.getChannel();
       MappedByteBuffer bb = fc.map(FileChannel.MapMode.READ_ONLY, 0, fc.size());
       htmlTemplate = Charset.defaultCharset().decode(bb).toString();
-    }
-    finally {
+    } finally {
       stream.close();
     }
   }

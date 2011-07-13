@@ -10,11 +10,11 @@ import java.util.logging.Logger;
  * Demonstrates what code is necessary for putting public
  * content onto a GSA.  The key operations are A) providing
  * document ids and B) providing document bytes given a
- * document id.  TODO: Link to more advanced templates.
+ * document id.  TODO(pjo): Link to more advanced templates.
  */
 class AdaptorTemplate extends Adaptor {
-  private final static Logger LOG = Logger.getLogger(Adaptor.class.getName());
-  // TODO: Get encoding from config.
+  private static final Logger log
+      = Logger.getLogger(AdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   /** Replace with code that lists your repository. */
@@ -47,7 +47,7 @@ class AdaptorTemplate extends Adaptor {
     // Setup providing content.
     try {
       gsa.beginListeningForContentRequests();
-      LOG.info("doc content serving started");
+      log.info("doc content serving started");
     } catch (IOException e) {
       throw new RuntimeException("could not start serving", e);
     }
@@ -58,6 +58,6 @@ class AdaptorTemplate extends Adaptor {
     // Setup scheduled pushing of doc ids for once per day.
     gsa.beginPushingDocIds(
         new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    LOG.info("doc id pushing has been put on schedule");
+    log.info("doc id pushing has been put on schedule");
   }
 }

@@ -2,12 +2,19 @@ package filesystemadaptor;
 
 import static org.junit.Assert.*;
 
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 import java.io.File;
 import java.util.Iterator;
 
+/**
+ * Tests for {@link RecursiveFileIterator}.
+ */
 public class RecursiveFileIteratorTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   @Test
   public void testIteration() {
     File dir = new MockFile("parent", new File[] {
@@ -31,7 +38,7 @@ public class RecursiveFileIteratorTest {
     assertFalse(iter.hasNext());
   }
 
-  @Test(expected=RecursiveFileIterator.WrappedIOException.class)
+  @Test
   public void testIOExceptionNext() {
     Iterator<File> iter = new RecursiveFileIterator(new File("trash") {
       @Override
@@ -45,10 +52,11 @@ public class RecursiveFileIteratorTest {
         return true;
       }
     });
+    thrown.expect(RecursiveFileIterator.WrappedIOException.class);
     iter.next();
   }
 
-  @Test(expected=RecursiveFileIterator.WrappedIOException.class)
+  @Test
   public void testIOExceptionHasNext() {
     Iterator<File> iter = new RecursiveFileIterator(new File("trash") {
       @Override
@@ -62,6 +70,7 @@ public class RecursiveFileIteratorTest {
         return true;
       }
     });
+    thrown.expect(RecursiveFileIterator.WrappedIOException.class);
     iter.hasNext();
   }
 

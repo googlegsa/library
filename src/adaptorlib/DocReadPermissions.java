@@ -1,23 +1,27 @@
 package adaptorlib;
+
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-/** Identifies who has ability to read a document.  
-  <ul><li> Is document public?
-      <li> Or should head requests be used to figure out access? 
-      <li> Or is it accessible by named users and named groups?
-  <p>
-  Named users and groups are sent to GSA inside
-  a metadata tag like described in
-http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html .
-The summary is that GSA takes comma seperate values like
-"alice, bob" and "eng, marketing, admin".
-  <p>
-A head request is a request from GSA with a user name
-and document id that happens just before search results
-are returned and filters results out for lack of permission.  */
-final public class DocReadPermissions {
+
+/**
+ * Identifies who has ability to read a document.
+ * <ul>
+ *   <li> Is document public?
+ *   <li> Or should head requests be used to figure out access?
+ *   <li> Or is it accessible by named users and named groups?
+ * </ul>
+ *
+ * <p>Named users and groups are sent to GSA inside a metadata tag like
+ * described in
+ * <a href="http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html">
+ * Feeds Protocol Developer's Guide</a>.
+ * The summary is that GSA takes comma seperate values like "alice, bob" and
+ * "eng, marketing, admin".
+ *
+ * <p>A head request is a request from GSA with a user name and document id
+ * that happens just before search results are returned and filters results out
+ * for lack of permission.
+ */
+public final class DocReadPermissions {
 
   /** Use to mark a document as visible by all. */
   static final DocReadPermissions IS_PUBLIC
@@ -31,9 +35,11 @@ final public class DocReadPermissions {
   private final String groups;
   private final boolean isPublic;
 
-  /** Makes a non-public DocReadPermissions that specifies 
-    users and groups who can read a document.
-    Cannot both be empty. Null is empty. All blank is empty. */
+  /**
+   * Makes a non-public DocReadPermissions that specifies users and groups who
+   * can read a document. Cannot both be empty. Null is empty. All blank is
+   * empty.
+   */
   public DocReadPermissions(String users, String groups) {
     if (null != users && users.trim().isEmpty()) {
       users = null;

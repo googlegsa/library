@@ -2,7 +2,6 @@ package adaptorlib;
 
 import java.io.*;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
@@ -19,7 +18,8 @@ public class Config {
   protected final Properties defaultConfig = new Properties();
   /** Overriding configuration values loaded from file and command line */
   protected Properties config = new Properties(defaultConfig);
-  protected static final String defaultConfigFile = "adaptor-config.properties";
+  protected static final String DEFAULT_CONFIG_FILE
+      = "adaptor-config.properties";
 
   public Config() {
     String hostname = null;
@@ -209,12 +209,12 @@ public class Config {
    * error handling, since this is typically non-fatal.
    */
   public void loadDefaultConfigFile() {
-    File confFile = new File(defaultConfigFile);
+    File confFile = new File(DEFAULT_CONFIG_FILE);
     if (confFile.exists() && confFile.isFile()) {
       try {
         load(confFile);
       } catch (IOException ex) {
-        System.err.println("Exception when reading " + defaultConfigFile);
+        System.err.println("Exception when reading " + DEFAULT_CONFIG_FILE);
         ex.printStackTrace(System.err);
       }
     }

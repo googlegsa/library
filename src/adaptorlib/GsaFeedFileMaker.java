@@ -1,11 +1,13 @@
 package adaptorlib;
+
+import org.w3c.dom.*;
+
 import java.io.*;
 import java.util.*;
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
-import org.w3c.dom.*;
 
 /** Makes XML metadata-and-url feed file from DocIds.
   This code is based on information provided by Google at
@@ -82,9 +84,9 @@ class GsaFeedFileMaker {
         aclGroups.setAttribute("content", groups);
       }
     }
-    // TODO: Add "no-recrawl" signal.
-    // TODO: Add "crawl-immediately" signal.
-    // TODO: Add "no-follow" signal.
+    // TODO(pjo): Add "no-recrawl" signal.
+    // TODO(pjo): Add "crawl-immediately" signal.
+    // TODO(pjo): Add "no-follow" signal.
   }
 
   /** Adds all the DocIds into feed-file-document one record

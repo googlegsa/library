@@ -1,5 +1,8 @@
 package adaptorlib;
 
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -10,11 +13,8 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
-
 abstract class AbstractHandler implements HttpHandler {
-  private static final Logger LOG
+  private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
 
   // Numbers for logging incoming and completed communications.
@@ -44,7 +44,7 @@ abstract class AbstractHandler implements HttpHandler {
 
   protected String getLoggableRequestHeaders(HttpExchange ex) {
     StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String,List<String>> me
+    for (Map.Entry<String, List<String>> me
          : ex.getRequestHeaders().entrySet()) {
       for (String value : me.getValue()) {
         sb.append(me.getKey());
@@ -58,8 +58,8 @@ abstract class AbstractHandler implements HttpHandler {
   }
 
   protected void logRequest(HttpExchange ex) {
-    if (LOG.isLoggable(Level.FINER)) {
-      LOG.log(Level.FINER, "Received {1} request to {0}. Headers: '{'{2}'}'",
+    if (log.isLoggable(Level.FINER)) {
+      log.log(Level.FINER, "Received {1} request to {0}. Headers: '{'{2}'}'",
               new Object[] {ex.getRequestURI(), ex.getRequestMethod(),
                             getLoggableRequestHeaders(ex)});
     }
@@ -86,7 +86,7 @@ abstract class AbstractHandler implements HttpHandler {
     // does nothing, otherwise it resolves the URI for us based on who we
     // think we are
     requestedUri = base.resolve(requestedUri);
-    LOG.log(Level.FINER, "Resolved original URI to: {0}", requestedUri);
+    log.log(Level.FINER, "Resolved original URI to: {0}", requestedUri);
     return requestedUri;
   }
 
@@ -97,7 +97,7 @@ abstract class AbstractHandler implements HttpHandler {
   protected void respondToHead(HttpExchange ex, int code, String contentType)
       throws IOException {
     ex.getResponseHeaders().set("Transfer-Encoding", "chunked");
-    respond(ex, code, contentType, (byte[])null);
+    respond(ex, code, contentType, (byte[]) null);
   }
 
   /**
@@ -131,14 +131,15 @@ abstract class AbstractHandler implements HttpHandler {
       // Chuncked encoding
       ex.sendResponseHeaders(code, 0);
       OutputStream responseBody = ex.getResponseBody();
-      LOG.finest("before writing response");
+      log.finest("before writing response");
       responseBody.write(response);
+      // These shouldn't be needed, but without them one developer had trouble
       responseBody.flush();
       responseBody.close();
-      LOG.finest("after writing response");
+      log.finest("after writing response");
     }
     ex.close();
-    LOG.finest("after closing exchange");
+    log.finest("after closing exchange");
   }
 
   protected abstract void meteredHandle(HttpExchange ex) throws IOException;
@@ -149,23 +150,23 @@ abstract class AbstractHandler implements HttpHandler {
    */
   public void handle(HttpExchange ex) throws IOException {
     try {
-      synchronized(this) {
+      synchronized (this) {
         numberConnectionStarted++;
-        LOG.log(Level.FINE, "begining in={0},out={1}", new Object[] {
+        log.log(Level.FINE, "begining in={0},out={1}", new Object[] {
           numberConnectionStarted, numberConnectionFinished});
       }
       logRequest(ex);
-      LOG.log(Level.FINE, "Processing request with {0}",
+      log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
       meteredHandle(ex);
     } catch (Exception e) {
-      LOG.log(Level.WARNING,
+      log.log(Level.WARNING,
               "Unexpected exception propagated to top-level request handling",
               e);
     } finally {
-      synchronized(this) {
+      synchronized (this) {
         numberConnectionFinished++;
-        LOG.log(Level.FINE, "ending in={0},out={1}", new Object[] {
+        log.log(Level.FINE, "ending in={0},out={1}", new Object[] {
           numberConnectionStarted, numberConnectionFinished});
       }
     }

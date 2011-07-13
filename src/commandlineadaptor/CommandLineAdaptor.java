@@ -1,11 +1,11 @@
 package commandlineadaptor;
+
 import adaptorlib.Adaptor;
+import adaptorlib.Command;
 import adaptorlib.Config;
 import adaptorlib.DocId;
 import adaptorlib.GsaCommunicationHandler;
 import adaptorlib.ScheduleOncePerDay;
-
-import adaptorlib.Command;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -18,16 +18,16 @@ import java.util.logging.Logger;
  * Command Line Adaptor
  */
 class CommandLineAdaptor extends Adaptor {
-  private final static Logger LOG = Logger.getLogger(CommandLineAdaptor.class.getName());
+  private static final Logger log = Logger.getLogger(CommandLineAdaptor.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   @Override
   public List<DocId> getDocIds() throws IOException {
     int commandResult;
     Command command = new Command();
-    
+
     try {
-      LOG.finest("Command: ./list-doc-ids-filesystem.sh");
+      log.finest("Command: ./list-doc-ids-filesystem.sh");
       commandResult = command.exec(new String[] {"./list-doc-ids-filesystem.sh"});
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
@@ -41,7 +41,7 @@ class CommandLineAdaptor extends Adaptor {
       ArrayList<DocId> docIds = new ArrayList<DocId>();
       for (String docId : docIdString.split("\n")) {
         docIds.add(new DocId(docId));
-        LOG.finest("Pushing Doc ID: '" + docId + "'");
+        log.finest("Pushing Doc ID: '" + docId + "'");
       }
       return docIds;
     }
@@ -52,10 +52,11 @@ class CommandLineAdaptor extends Adaptor {
   public byte[] getDocContent(DocId id) throws IOException {
     int commandResult;
     Command command = new Command();
-    
+
     try {
-      LOG.finest("Command: ./get-doc-contents-filesystem.sh " + id.getUniqueId());
-      commandResult = command.exec(new String[] {"./get-doc-contents-filesystem.sh", id.getUniqueId()});
+      log.finest("Command: ./get-doc-contents-filesystem.sh " + id.getUniqueId());
+      commandResult = command.exec(
+          new String[] {"./get-doc-contents-filesystem.sh", id.getUniqueId()});
     } catch (InterruptedException e) {
       throw new IOException("Thread intrupted while waiting for external command.", e);
     } catch (IOException e) {
@@ -66,7 +67,7 @@ class CommandLineAdaptor extends Adaptor {
     } else if (commandResult != 0) {
       throw new IOException("External command error. code=" + commandResult + ".");
     } else {
-      LOG.finest("Returning document contents for ID '" + id.getUniqueId() + ".");
+      log.finest("Returning document contents for ID '" + id.getUniqueId() + ".");
       return command.getStdout();
     }
   }
@@ -81,7 +82,7 @@ class CommandLineAdaptor extends Adaptor {
     // Setup providing content.
     try {
       gsa.beginListeningForContentRequests();
-      LOG.info("doc content serving started");
+      log.info("doc content serving started");
     } catch (IOException e) {
       throw new RuntimeException("could not start serving", e);
     }
@@ -92,6 +93,6 @@ class CommandLineAdaptor extends Adaptor {
     // Setup regular pushing of doc ids for once per day.
     gsa.beginPushingDocIds(
       new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    LOG.info("doc id pushing has been put on schedule");
+    log.info("doc id pushing has been put on schedule");
   }
 }

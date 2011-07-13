@@ -104,7 +104,7 @@ class RecursiveFileIterator implements Iterator<File>, Iterable<File> {
     }
 
     public IOException getCause() {
-      return (IOException)super.getCause();
+      return (IOException) super.getCause();
     }
   }
 }

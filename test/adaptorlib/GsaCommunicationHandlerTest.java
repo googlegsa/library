@@ -2,9 +2,13 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import java.net.URI;
 import org.junit.Test;
 
+import java.net.URI;
+
+/**
+ * Tests for {@link GsaCommunicationHandler}.
+ */
 public class GsaCommunicationHandlerTest {
   private GsaCommunicationHandler gsa
       = new GsaCommunicationHandler(null, new Config());

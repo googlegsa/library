@@ -1,17 +1,16 @@
 package adaptorlib;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
-import java.util.logging.Logger;
 import java.util.logging.Level;
-
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
+import java.util.logging.Logger;
 
 class DocumentHandler extends AbstractHandler {
-  private static final Logger LOG
+  private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
 
   private GsaCommunicationHandler commHandler;
@@ -30,7 +29,7 @@ class DocumentHandler extends AbstractHandler {
       /* Call into adaptor developer code to get document bytes. */
       // TODO(ejona): Need to namespace all docids to allow random support URLs
       DocId docId = commHandler.decodeDocId(getRequestUri(ex));
-      LOG.fine("id: " + docId.getUniqueId());
+      log.fine("id: " + docId.getUniqueId());
 
       // TODO(ejona): support different mime types of content
       // TODO(ejona): if text, support providing encoding
@@ -50,18 +49,19 @@ class DocumentHandler extends AbstractHandler {
                       "IO Exception: " + e.getMessage());
         return;
       } catch (Exception e) {
-        LOG.log(Level.WARNING, "Unexpected exception from getDocContent", e);
+        log.log(Level.WARNING, "Unexpected exception from getDocContent", e);
         cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
                       "Exception (" + e.getClass().getName() + "): "
                       + e.getMessage());
         return;
       }
       // String contentType = "text/plain"; // "application/octet-stream"
-      LOG.finer("processed request; response is size=" + content.length);
-      if ("GET".equals(requestMethod))
+      log.finer("processed request; response is size=" + content.length);
+      if ("GET".equals(requestMethod)) {
         respond(ex, HttpURLConnection.HTTP_OK, "text/plain", content);
-      else
+      } else {
         respondToHead(ex, HttpURLConnection.HTTP_OK, "text/plain");
+      }
     } else {
       cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
                     "Unsupported request method");

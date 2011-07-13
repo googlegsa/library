@@ -1,11 +1,10 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
 package adaptorlib;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.lang.Exception;
 import java.util.AbstractList;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Map;
 
 /** */
@@ -33,15 +32,13 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
       DocumentTransform transform = transformList.get(i);
       try {
         transform.transform(contentInTransit, metaInTransit, contentOut, metadataOut, params);
-      }
-      catch (TransformException e) {
-        // TODO: Log error
+      } catch (TransformException e) {
+        // TODO(brandoni): Log error
         if (transform.errorHaltsPipeline()) {
           contentOut.reset();
           metadataOut.reset();
           throw e;
-        }
-        else {
+        } else {
           continue;
         }
       }

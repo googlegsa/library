@@ -4,20 +4,18 @@ package adaptorlib;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
-import adaptorlib.TransformPipeline;
-import adaptorlib.DocumentTransform;
-import adaptorlib.CommandLineTransform;
-import adaptorlib.TransformException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.logging.Logger;
 
+/**
+ * Tests for {@link TransformPipeline}.
+ */
 public class TransformPipelineTest {
-  private static Logger LOG = Logger.getLogger(TransformPipelineTest.class.getName());
+  private static final Logger log = Logger.getLogger(TransformPipelineTest.class.getName());
 
   @Test
   public void testNoOp() throws IOException, TransformException {
