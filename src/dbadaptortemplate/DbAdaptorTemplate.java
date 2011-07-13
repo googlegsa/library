@@ -12,7 +12,6 @@ import java.util.logging.*;
 class DbAdaptorTemplate extends Adaptor {
   private final static Logger LOG
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
-  // TODO: Get encoding from config.
   private Charset encoding = Charset.forName("UTF-8");
 
   private static Connection makeNewConnection() throws SQLException {
@@ -81,11 +80,11 @@ class DbAdaptorTemplate extends Adaptor {
         String columnName = rsMetaData.getColumnName(i);
         Object value = rs.getObject(i);
         line1.append(",");
-        line1.append(tableName);
+        line1.append(makeIntoCsvField(tableName));
         line2.append(",");
-        line2.append(columnName);
+        line2.append(makeIntoCsvField(columnName));
         line3.append(",");
-        line3.append("" + value);
+        line3.append(makeIntoCsvField("" + value));
       }
       String document = line1.substring(1) + "\n"
           + line2.substring(1) + "\n" + line3.substring(1) + "\n";
@@ -117,12 +116,11 @@ class DbAdaptorTemplate extends Adaptor {
 
     List<DocId> handles = adaptor.getDocIds();
     // TODO: Get feedname from config.
-    gsa.pushDocIds("testfeed", handles);
+    gsa.pushDocIds(config.getFeedName(), handles);
 
-    // Setup scheduled pushing of doc ids.
-    ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
-        /*minute*/0, /*second*/0);
-    gsa.beginPushingDocIds(everyNite);
+    // Setup scheduled pushing of doc ids for once a day.
+    gsa.beginPushingDocIds(
+        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
     LOG.info("doc id pushing has been put on schedule");
   }
 
@@ -134,5 +132,22 @@ class DbAdaptorTemplate extends Adaptor {
         LOG.log(Level.WARNING, "close failed", e);
       }
     }
+  }
+
+  private static String makeIntoCsvField(String s) {
+    /*
+     * Fields that contain a special character (comma, newline,
+     * or double quote), must be enclosed in double quotes.
+     * <...> If a field's value contains a double quote character
+     * it is escaped by placing another double quote character next to it.
+     */
+    String doubleQuote = "\"";
+    boolean containsSpecialChar = s.contains(",")
+        || s.contains("\n") || s.contains(doubleQuote);
+    if (containsSpecialChar) {
+      s = s.replace(doubleQuote, doubleQuote + doubleQuote);
+      s = doubleQuote + s + doubleQuote;
+    }
+    return s;
   }
 }

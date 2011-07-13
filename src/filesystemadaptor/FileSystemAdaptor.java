@@ -13,8 +13,8 @@ class FileSystemAdaptor extends Adaptor {
   private static Logger log = Logger.getLogger(FileSystemAdaptor.class.getName());
   private final File serveDir;
 
-  public FileSystemAdaptor(File file) {
-    this.serveDir = file.getAbsoluteFile();
+  public FileSystemAdaptor(File file) throws IOException {
+    this.serveDir = file.getCanonicalFile();
   }
 
   public List<DocId> getDocIds() {
@@ -36,7 +36,7 @@ class FileSystemAdaptor extends Adaptor {
   /** Gives the bytes of a document referenced with id. Returns
    *  null if such a document doesn't exist. */
   public byte[] getDocContent(DocId id) throws IOException {
-    File file = new File(serveDir, id.getUniqueId()).getAbsoluteFile();
+    File file = new File(serveDir, id.getUniqueId()).getCanonicalFile();
     if (!isFileDescendantOfServeDir(file)) {
       throw new FileNotFoundException();
     }
@@ -44,7 +44,7 @@ class FileSystemAdaptor extends Adaptor {
     ByteArrayOutputStream output = new ByteArrayOutputStream(
         (int) file.length());
     try {
-      copyStream(input, output);
+      IOHelper.copyStream(input, output);
     } finally {
       try {
         input.close();
@@ -60,15 +60,6 @@ class FileSystemAdaptor extends Adaptor {
     return output.toByteArray();
   }
 
-  private void copyStream(InputStream input, OutputStream output)
-      throws IOException {
-    byte[] buffer = new byte[1024];
-    int read;
-    while ((read = input.read(buffer)) != -1) {
-      output.write(buffer, 0, read);
-    }
-  }
-
   private boolean isFileDescendantOfServeDir(File file) {
     while (file != null) {
       if (file.equals(serveDir)) {
@@ -80,7 +71,7 @@ class FileSystemAdaptor extends Adaptor {
   }
 
   /** An example main for an adaptor. */
-  public static void main(String a[]) {
+  public static void main(String a[]) throws IOException {
     Config config = new Config();
     config.autoConfig(a);
     String source = config.getValueOrDefault("filesystemadaptor.src", ".");
@@ -96,12 +87,11 @@ class FileSystemAdaptor extends Adaptor {
     }
 
     // Uncomment next line to push once at program start.
-    // adaptor.pushDocIds();
+    gsa.pushDocIds(config.getFeedName(), adaptor.getDocIds());
 
-    // Setup regular pushing of doc ids:
-    ScheduleIterator everyNite = new ScheduleOncePerDay(/*hour*/3,
-        /*minute*/0, /*second*/0);
-    gsa.beginPushingDocIds(everyNite);
+    // Setup regular pushing of doc ids for once per day.
+    gsa.beginPushingDocIds(
+        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
     log.info("doc id pushing has been put on schedule");
   }
 }

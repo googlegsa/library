@@ -7,8 +7,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.net.MalformedURLException;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.Iterator;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpServer;
@@ -24,7 +26,8 @@ public class GsaCommunicationHandler {
   private final GsaFeedFileMaker fileMaker;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
-    this.adaptor = adaptor;
+    // TODO(ejona): allow the adaptor to choose whether it wants this feature
+    this.adaptor = new AutoUnzipAdaptor(adaptor);
     this.config = config;
     this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding());
     this.fileMaker = new GsaFeedFileMaker(this);
@@ -48,21 +51,22 @@ public class GsaCommunicationHandler {
     LOG.info("server is listening on port #" + port);
   }
 
-  public void beginPushingDocIds(ScheduleIterator schedule) {
+  public void beginPushingDocIds(Iterator<Date> schedule) {
     Scheduler pushScheduler = new Scheduler();
     pushScheduler.schedule(new Scheduler.Task() {
       public void run() {
         // TODO: Prevent two simultenous calls.
         LOG.info("about to get doc ids");
-           List<DocId> handles;
-          try {
-            handles = adaptor.getDocIds();
-            LOG.info("about to push " + handles.size() + " doc ids");
-            pushDocIds("testfeed", handles);
-          } catch (IOException e) {
-            // TODO(johnfelton): Improve error recording when "journal" is available.
-            LOG.severe(e.getMessage());
-          }
+        List<DocId> handles;
+        try {
+          handles = adaptor.getDocIds();
+        } catch (IOException e) {
+          // TODO(johnfelton): Improve error recording when "journal" is available.
+          LOG.severe(e.getMessage());
+          LOG.info("doc id pushing aborted");
+          return;
+        }
+        pushDocIds(config.getFeedName(), handles);
         LOG.info("done pushing doc ids");
       }
     }, schedule);
@@ -116,10 +120,13 @@ public class GsaCommunicationHandler {
     } else {
       URI base = config.getServerBaseUri(docId);
       URI resource;
+      String uniqueId = docId.getUniqueId();
+      // Add two dots to any sequence of only dots. This is to allow "/../" and
+      // "/./" within DocIds.
+      uniqueId = uniqueId.replaceAll("(^|/)(\\.+)(?=$|/)", "$1$2..");
       try {
         resource = new URI(null, null, base.getPath()
-                           + config.getServerDocIdPath() + docId.getUniqueId(),
-                           null);
+                           + config.getServerDocIdPath() + uniqueId, null);
       } catch (URISyntaxException ex) {
         throw new IllegalStateException(ex);
       }
@@ -135,6 +142,9 @@ public class GsaCommunicationHandler {
       String basePath = config.getServerBaseUri().getPath();
       String id = uri.getPath().substring(basePath.length()
           + config.getServerDocIdPath().length());
+      // Remove two dots from any sequence of only dots. This is to remove the
+      // addition we did in {@link #encodeDocId}.
+      id = id.replaceAll("(^|/)(\\.+)\\.\\.(?=$|/)", "$1$2");
       return new DocId(id);
     }
   }
@@ -142,7 +152,7 @@ public class GsaCommunicationHandler {
   URI formNamespacedUri(String namespace) {
     URI uri;
     try {
-      uri = new URI(null, null, config.getServerBaseUri().getPath() + "/sso",
+      uri = new URI(null, null, config.getServerBaseUri().getPath() + namespace,
                     null);
     } catch (URISyntaxException e) {
       throw new IllegalStateException(e);

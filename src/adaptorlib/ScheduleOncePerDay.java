@@ -1,6 +1,9 @@
 package adaptorlib;
+
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Iterator;
+
 /**
  * ScheduleOncePerDay provides a sequence of Dates 1 day
  * apart at the same hour/minute/second each day.
@@ -8,7 +11,7 @@ import java.util.Date;
  * Gratitude to
  * http://www.ibm.com/developerworks/java/library/j-schedule/index.html
  */
-public class ScheduleOncePerDay implements ScheduleIterator {
+public class ScheduleOncePerDay implements Iterator<Date> {
   private final int hourOfDay, minute, second;
   private final Calendar calendar = Calendar.getInstance();
 
@@ -30,17 +33,16 @@ public class ScheduleOncePerDay implements ScheduleIterator {
     }
   }
 
+  public boolean hasNext() {
+    return true;
+  }
+
   public Date next() {
     calendar.add(Calendar.DATE, 1);
     return calendar.getTime();
   }
 
-  /** Small main that prints 7AM on a few consecutive days. */
-  public static void main(String a[]) {
-    ScheduleIterator it = new ScheduleOncePerDay(7, 0, 0);
-    for (int i = 0; i < 5; i++) {
-      Date d = it.next();
-      System.out.println("" + d);
-    }
+  public void remove() {
+    throw new UnsupportedOperationException();
   }
 }

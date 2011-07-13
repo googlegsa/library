@@ -1,14 +1,25 @@
 <project name="plexi" default="build" basedir=".">
   <description>GSA Adaptor library</description>
   <property name="src.dir" location="src"/>
+  <property name="test.dir" location="test"/>
   <property name="build.dir" location="classes"/>
+  <property name="build-test.dir" location="classes"/>
   <property name="javadoc.dir" location="javadoc"/>
+  <property name="lib.dir" location="lib"/>
+  <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
+  <property name="opencsv.jar" location="${lib.dir}/opencsv-2.3.jar"/>
   <property name="adaptor.class" value="adaptortemplate.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
 
   <target name="build" description="Build source">
     <mkdir dir="${build.dir}"/>
-    <javac srcdir="${src.dir}" destdir="${build.dir}"/>
+    <mkdir dir="${build-test.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${build.dir}">
+      <classpath location="${opencsv.jar}"/>
+    </javac>
+    <javac srcdir="${test.dir}" destdir="${build-test.dir}">
+      <classpath location="${junit.jar}"/>
+    </javac>
     <copy file="${src.dir}/logging.properties" todir="${build.dir}"/>
   </target>
 
@@ -35,7 +46,7 @@
 
   <target name="run-db" depends="build" description="Run database adaptor">
     <java classpath="${build.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
-      fork="true" classname="dbadaptortemplate.DBAdaptorTemplate">
+      fork="true" classname="dbadaptortemplate.DbAdaptorTemplate">
       <sysproperty key="java.util.logging.config.file"
         value="${build.dir}/logging.properties"/>
       <arg line="${adaptor.args}"/>
@@ -49,5 +60,20 @@
         value="${build.dir}/logging.properties"/>
       <arg line="${adaptor.args}"/>
     </java>
+  </target>
+
+  <target name="test" depends="build" description="Run JUnit tests">
+    <junit printsummary="yes" haltonfailure="yes">
+      <classpath location="${junit.jar}"/>
+      <classpath location="${opencsv.jar}"/>
+      <classpath location="${build.dir}"/>
+      <classpath location="${build-test.dir}"/>
+      <formatter type="plain" usefile="false"/>
+      <batchtest fork="yes">
+        <fileset dir="${test.dir}">
+          <include name="**/*Test*.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
   </target>
 </project>
