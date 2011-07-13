@@ -31,6 +31,40 @@ public class RecursiveFileIteratorTest {
     assertFalse(iter.hasNext());
   }
 
+  @Test(expected=RecursiveFileIterator.WrappedIOException.class)
+  public void testIOExceptionNext() {
+    Iterator<File> iter = new RecursiveFileIterator(new File("trash") {
+      @Override
+      public File[] listFiles() {
+        // Indicates error
+        return null;
+      }
+
+      @Override
+      public boolean isDirectory() {
+        return true;
+      }
+    });
+    iter.next();
+  }
+
+  @Test(expected=RecursiveFileIterator.WrappedIOException.class)
+  public void testIOExceptionHasNext() {
+    Iterator<File> iter = new RecursiveFileIterator(new File("trash") {
+      @Override
+      public File[] listFiles() {
+        // Indicates error
+        return null;
+      }
+
+      @Override
+      public boolean isDirectory() {
+        return true;
+      }
+    });
+    iter.hasNext();
+  }
+
   private static class MockFile extends File {
     private boolean isDirectory;
     private String name;

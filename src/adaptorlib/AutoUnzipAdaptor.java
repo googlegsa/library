@@ -50,6 +50,9 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
       try {
         content = super.getDocContent(docId);
       } catch (IOException ex) {
+        // We don't throw this exception because we want to remain as
+        // transparent as possible. This should be a additional feature that
+        // doesn't bring down the world when things go wrong.
         log.log(Level.FINE, "Exception trying to auto-expand a zip", ex);
         continue;
       }

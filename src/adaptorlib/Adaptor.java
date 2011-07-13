@@ -1,5 +1,4 @@
 package adaptorlib;
-import adaptorlib.DocId;
 import java.io.IOException;
 import java.util.List;
 import java.util.logging.Level;
@@ -12,7 +11,7 @@ public abstract class Adaptor {
   abstract public byte[] getDocContent(DocId id) throws IOException;
 
   /** Provides doc ids that are to be indexed. */
-  abstract public List<DocId> getDocIds()  throws IOException;
+  abstract public List<DocId> getDocIds() throws IOException;
 
   /* Default implementations. */
 
@@ -21,62 +20,66 @@ public abstract class Adaptor {
   }
 
   /**
-   * GsaCommunicationHandler.pushDocIds had a failure connecting with GSA to
-   * send a batch. The thrown exception is provided as well the number of times
-   * that this batch was attempted to be sent. Return true to retry, perhaps
-   * after a Thread.sleep() of some time.
-   */
-  public boolean handleFailedToConnect(GsaFeedFileSender.FailedToConnect ftc,
-                                       int ntries) {
-    if (ntries > 12) {
-      throw new RuntimeException(ftc);
-    }
-    try {
-      Thread.sleep(5000 * ntries);
-      return true;
-    } catch (InterruptedException e) {
-      log.log(Level.WARNING, "", e);
-      return false;
-    }
-  }
-
-  /**
-   * GsaCommunicationHandler.pushDocIds had a failure writing to the GSA while
-   * sending a batch.  The thrown exception is provided as well the number of
+   * {@link GsaCommunicationHandler#pushDocIds} had a failure connecting with
+   * GSA to send a batch. The thrown exception is provided as well the number of
    * times that this batch was attempted to be sent. Return true to retry,
    * perhaps after a Thread.sleep() of some time.
+   *
+   * <p>By default, calls {@link #handleGeneric}.
    */
-  public boolean handleFailedToConnect(GsaFeedFileSender.FailedWriting fw,
-                                       int ntries) {
-    if (ntries > 12) {
-      throw new RuntimeException(fw);
-    }
-    try {
-      Thread.sleep(5000 * ntries);
-      return true;
-    } catch (InterruptedException e) {
-      log.log(Level.WARNING, "", e);
-      return false;
-    }
+  public boolean handleFailedToConnect(Exception ex, int ntries)
+      throws InterruptedException {
+    return handleGeneric(ex, ntries);
   }
 
   /**
-   * GsaCommunicationHandler.pushDocIds had a failure reading response from GSA.
-   * The thrown exception is provided as well the number of times that this
-   * batch was attempted to be sent. Return true to retry, perhaps after a
-   * Thread.sleep() of some time.
+   * {@link GsaCommunicationHandler#pushDocIds} had a failure writing to the GSA
+   * while sending a batch.  The thrown exception is provided as well the number
+   * of times that this batch was attempted to be sent. Return true to retry,
+   * perhaps after a Thread.sleep() of some time.
+   *
+   * <p>By default, calls {@link #handleGeneric}.
    */
-  public boolean handleFailedToConnect(GsaFeedFileSender.FailedReadingReply fr,
-                                       int ntries) {
+  public boolean handleFailedWriting(Exception ex, int ntries)
+      throws InterruptedException {
+    return handleGeneric(ex, ntries);
+  }
+
+  /**
+   * {@link GsaCommunicationHandler#pushDocIds} had a failure reading response
+   * from GSA. The thrown exception is provided as well the number of times that
+   * this batch was attempted to be sent. Return true to retry, perhaps after a
+   * Thread.sleep() of some time.
+   *
+   * <p>By default, calls {@link #handleGeneric}.
+   */
+  public boolean handleFailedReadingReply(Exception ex, int ntries)
+      throws InterruptedException {
+    return handleGeneric(ex, ntries);
+  }
+
+  /**
+   * {@link GsaCommunicationHandler#pushDocIds} had a failure reading from this
+   * adaptor's {@link Adaptor#getDocIds}. The thrown exception is provided as
+   * well as the number of times that this batch was attempted to be sent.
+   * Return true to retry, perhaps after a Thread.sleep() of some time.
+   *
+   * <p>By default, calls {@link #handleGeneric}.
+   */
+  public boolean handleFailedToGetDocIds(Exception ex, int ntries)
+      throws InterruptedException {
+    return handleGeneric(ex, ntries);
+  }
+
+  /**
+   * Common handle method for generic error handling.
+   */
+  protected boolean handleGeneric(Exception ex, int ntries)
+      throws InterruptedException {
     if (ntries > 12) {
-      throw new RuntimeException(fr);
-    }
-    try {
-      Thread.sleep(5000 * ntries);
-      return true;
-    } catch (InterruptedException e) {
-      log.log(Level.WARNING, "", e);
       return false;
     }
+    Thread.sleep(5000 * ntries);
+    return true;
   }
 }

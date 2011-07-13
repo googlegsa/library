@@ -32,7 +32,7 @@ class DbAdaptorTemplate extends Adaptor {
     return rs;
   }
 
-  public List<DocId> getDocIds() {
+  public List<DocId> getDocIds() throws IOException {
     ArrayList<DocId> primaryKeys = new ArrayList<DocId>();
     Connection conn = null;
     try {
@@ -43,7 +43,7 @@ class DbAdaptorTemplate extends Adaptor {
         primaryKeys.add(id);
       }
     } catch (SQLException problem) {
-      LOG.log(Level.SEVERE, "failed getting ids", problem);
+      throw new IOException(problem);
     } finally {
       tryClosingConnection(conn);
     }
@@ -114,9 +114,8 @@ class DbAdaptorTemplate extends Adaptor {
       throw new RuntimeException("could not start serving", e);
     }
 
-    List<DocId> handles = adaptor.getDocIds();
-    // TODO: Get feedname from config.
-    gsa.pushDocIds(config.getFeedName(), handles);
+    // Push once at program start.
+    gsa.pushDocIds();
 
     // Setup scheduled pushing of doc ids for once a day.
     gsa.beginPushingDocIds(

@@ -24,6 +24,7 @@ class AdaptorTemplate extends Adaptor {
     mockDocIds.add(new DocId("1002"));
     return mockDocIds;
   }
+
   /** Gives the bytes of a document referenced with id. */
   public byte[] getDocContent(DocId id) throws IOException {
     if ("1001".equals(id.getUniqueId())) {
@@ -37,7 +38,7 @@ class AdaptorTemplate extends Adaptor {
   }
 
   /** An example main for an adaptor that enables serving. */
-  public static void main(String a[]) {
+  public static void main(String a[]) throws InterruptedException {
     Config config = new Config();
     config.autoConfig(a);
     Adaptor adaptor = new AdaptorTemplate();
@@ -50,14 +51,9 @@ class AdaptorTemplate extends Adaptor {
     } catch (IOException e) {
       throw new RuntimeException("could not start serving", e);
     }
-    
-    
-    try {
-      gsa.pushDocIds("adaptorTemplate", adaptor.getDocIds());
-    } catch (IOException e) {
-      // TODO(johnfelton): Improve error recording when "journal" is available.
-      LOG.severe(e.getMessage());
-    }
+
+    // Push once at program start.
+    gsa.pushDocIds();
 
     // Setup scheduled pushing of doc ids for once per day.
     gsa.beginPushingDocIds(

@@ -24,7 +24,7 @@
   </target>
 
   <target name="javadoc" description="Build JavaDocs">
-    <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}">
+    <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}" access="package">
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="http://download.oracle.com/javase/6/docs/api/"/>
       <arg value="-quiet"/>

@@ -17,18 +17,22 @@ class FileSystemAdaptor extends Adaptor {
     this.serveDir = file.getCanonicalFile();
   }
 
-  public List<DocId> getDocIds() {
+  public List<DocId> getDocIds() throws IOException {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     String parent = serveDir.toString();
-    for (File file : new RecursiveFileIterator(serveDir)) {
-      String name = file.toString();
-      if (!name.startsWith(parent)) {
-        throw new IllegalStateException(
-            "Internal problem: the file's path begins with its parent.");
+    try {
+      for (File file : new RecursiveFileIterator(serveDir)) {
+        String name = file.toString();
+        if (!name.startsWith(parent)) {
+          throw new IllegalStateException(
+              "Internal problem: the file's path begins with its parent.");
+        }
+        // +1 for slash
+        name = name.substring(parent.length() + 1);
+        mockDocIds.add(new DocId(name));
       }
-      // +1 for slash
-      name = name.substring(parent.length() + 1);
-      mockDocIds.add(new DocId(name));
+    } catch (RecursiveFileIterator.WrappedIOException ex) {
+      throw ex.getCause();
     }
     return mockDocIds;
   }
@@ -71,7 +75,7 @@ class FileSystemAdaptor extends Adaptor {
   }
 
   /** An example main for an adaptor. */
-  public static void main(String a[]) throws IOException {
+  public static void main(String a[]) throws IOException, InterruptedException {
     Config config = new Config();
     config.autoConfig(a);
     String source = config.getValueOrDefault("filesystemadaptor.src", ".");
@@ -86,8 +90,8 @@ class FileSystemAdaptor extends Adaptor {
       throw new RuntimeException("could not start serving", e);
     }
 
-    // Uncomment next line to push once at program start.
-    gsa.pushDocIds(config.getFeedName(), adaptor.getDocIds());
+    // Push once at program start.
+    gsa.pushDocIds();
 
     // Setup regular pushing of doc ids for once per day.
     gsa.beginPushingDocIds(

@@ -3,7 +3,6 @@ import adaptorlib.Adaptor;
 import adaptorlib.Config;
 import adaptorlib.DocId;
 import adaptorlib.GsaCommunicationHandler;
-import adaptorlib.ScheduleIterator;
 import adaptorlib.ScheduleOncePerDay;
 
 import adaptorlib.Command;
@@ -73,7 +72,7 @@ class CommandLineAdaptor extends Adaptor {
   }
 
   /** An example main for an adaptor that enables serving. */
-  public static void main(String a[]) {
+  public static void main(String a[]) throws InterruptedException {
     Config config = new Config();
     config.autoConfig(a);
     Adaptor adaptor = new CommandLineAdaptor();
@@ -87,17 +86,12 @@ class CommandLineAdaptor extends Adaptor {
       throw new RuntimeException("could not start serving", e);
     }
 
-    try {
-      gsa.pushDocIds("commandLineAdaptor", adaptor.getDocIds());
-    } catch (IOException e) {
-      // TODO(johnfelton): Improve error recording when "journal" is available.
-      LOG.severe(e.getMessage());
-    }
+    // Push once at program start.
+    gsa.pushDocIds();
 
-    // Setup scheduled pushing of doc ids.
-    ScheduleIterator everyNight = new ScheduleOncePerDay(/*hour*/3,
-        /*minute*/0, /*second*/0);
-    gsa.beginPushingDocIds(everyNight);
+    // Setup regular pushing of doc ids for once per day.
+    gsa.beginPushingDocIds(
+      new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
     LOG.info("doc id pushing has been put on schedule");
   }
 }

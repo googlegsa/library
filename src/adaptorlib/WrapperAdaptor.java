@@ -30,20 +30,26 @@ abstract class WrapperAdaptor extends Adaptor {
   }
 
   @Override
-  public boolean handleFailedToConnect(GsaFeedFileSender.FailedToConnect ftc,
-                                       int ntries) {
-    return adaptor.handleFailedToConnect(ftc, ntries);
+  public boolean handleFailedToConnect(Exception ex, int ntries)
+      throws InterruptedException {
+    return adaptor.handleFailedToConnect(ex, ntries);
   }
 
   @Override
-  public boolean handleFailedToConnect(GsaFeedFileSender.FailedWriting fw,
-                                       int ntries) {
-    return adaptor.handleFailedToConnect(fw, ntries);
+  public boolean handleFailedWriting(Exception ex, int ntries)
+      throws InterruptedException {
+    return adaptor.handleFailedWriting(ex, ntries);
   }
 
   @Override
-  public boolean handleFailedToConnect(GsaFeedFileSender.FailedReadingReply fr,
-                                       int ntries) {
-    return adaptor.handleFailedToConnect(fr, ntries);
+  public boolean handleFailedReadingReply(Exception ex, int ntries)
+      throws InterruptedException {
+    return adaptor.handleFailedReadingReply(ex, ntries);
+  }
+
+  @Override
+  public boolean handleFailedToGetDocIds(Exception ex, int ntries)
+      throws InterruptedException {
+    return adaptor.handleFailedToGetDocIds(ex, ntries);
   }
 }
