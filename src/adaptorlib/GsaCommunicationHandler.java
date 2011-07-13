@@ -48,6 +48,7 @@ public class GsaCommunicationHandler {
                             config.getGsaCharacterEncoding(), this, adaptor));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
+    LOG.info("GSA host name: " + config.getGsaHostname());
     LOG.info("server is listening on port #" + port);
   }
 
@@ -72,6 +73,7 @@ public class GsaCommunicationHandler {
     boolean keepGoing = true;
     for (int ntries = 1; keepGoing; ntries++) {
       try {
+        LOG.info("Sending feed to GSA host name: " + config.getGsaHostname());
         fileSender.sendMetadataAndUrl(config.getGsaHostname(), feedSourceName,
                                   xmlFeedFile);
         keepGoing = false;  // Sent.
