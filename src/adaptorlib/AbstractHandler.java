@@ -160,7 +160,7 @@ abstract class AbstractHandler implements HttpHandler {
     String encodingList = ex.getRequestHeaders().getFirst("Accept-Encoding");
     Collection<String> encodings = Arrays.asList(encodingList.split(","));
     if (encodings.contains("gzip")) {
-      LOG.finer("Enabling gzip compression for response");
+      log.finer("Enabling gzip compression for response");
       ex.getResponseHeaders().set("Content-Encoding", "gzip");
     }
   }
