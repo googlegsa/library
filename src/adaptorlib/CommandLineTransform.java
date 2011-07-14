@@ -113,7 +113,7 @@ public class CommandLineTransform extends DocumentTransform {
 
   /**
    * Sets the working directory. Must be valid.
-   * @returns true on success.
+   * @return true on success.
    */
   public boolean workingDirectory(String dir) {
     File file = new File(dir);
@@ -125,7 +125,7 @@ public class CommandLineTransform extends DocumentTransform {
   }
 
   /**
-   * @returns The working directory for the command line process.
+   * @return The working directory for the command line process.
    */
   public String workingDirectory() {
     return workingDirectory;
