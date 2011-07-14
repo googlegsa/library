@@ -57,6 +57,8 @@ class DocumentHandler extends AbstractHandler {
       }
       // String contentType = "text/plain"; // "application/octet-stream"
       log.finer("processed request; response is size=" + content.length);
+      // TODO(ejona): decide when to use compression based on mime-type
+      enableCompressionIfSupported(ex);
       if ("GET".equals(requestMethod)) {
         respond(ex, HttpURLConnection.HTTP_OK, "text/plain", content);
       } else {

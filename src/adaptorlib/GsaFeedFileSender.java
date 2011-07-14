@@ -6,6 +6,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
 
 /** Takes an XML feed file for the GSA, sends it to GSA and
   then reads reply from GSA. */
@@ -75,15 +76,23 @@ class GsaFeedFileSender {
   }
 
   /** Tries to get in touch with our GSA. */
-  private HttpURLConnection setupConnection(String gsaHost, int len) 
+  private HttpURLConnection setupConnection(String gsaHost, int len,
+                                            boolean useCompression)
       throws MalformedURLException, IOException {
     URL feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
     HttpURLConnection uc = (HttpURLConnection) feedUrl.openConnection();
     uc.setDoInput(true);
     uc.setDoOutput(true);
-    uc.setFixedLengthStreamingMode(len);
+    if (useCompression) {
+      uc.setChunkedStreamingMode(0);
+    } else {
+      uc.setFixedLengthStreamingMode(len);
+    }
     uc.setRequestProperty("Content-Type",
         "multipart/form-data; boundary=" + BOUNDARY);
+    // GSA can handle gziped content, although there isn't a way to find out
+    // other than just trying
+    uc.setRequestProperty("Content-Encoding", "gzip");
     return uc;
   }
 
@@ -156,16 +165,22 @@ class GsaFeedFileSender {
     // TODO(pjo): Check datasource characters for valid name.
     String feedtype = "metadata-and-url";
     byte msg[] = buildMessage(datasource, feedtype, xmlString);
+    // GSA only allows request content up to 1 MB to be compressed
+    boolean useCompression = msg.length < 1 * 1024 * 1024;
 
     HttpURLConnection uc;
     OutputStream outputStream;
     try {
-      uc = setupConnection(host, msg.length);
+      uc = setupConnection(host, msg.length, useCompression);
       outputStream = uc.getOutputStream();
     } catch (IOException ioe) {
       throw new FailedToConnect(ioe);
     }
     try {
+      if (useCompression) {
+        // setupConnection set Content-Encoding: gzip
+        outputStream = new GZIPOutputStream(outputStream);
+      }
       writeToGsa(outputStream, msg);
     } catch (IOException ioe) {
       throw new FailedWriting(ioe);

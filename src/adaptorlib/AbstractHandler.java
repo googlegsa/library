@@ -8,10 +8,13 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.zip.GZIPOutputStream;
 
 abstract class AbstractHandler implements HttpHandler {
   private static final Logger log
@@ -130,6 +133,12 @@ abstract class AbstractHandler implements HttpHandler {
     } else {
       // Chuncked encoding
       ex.sendResponseHeaders(code, 0);
+      // Check to see if enableCompressionIfSupported was called
+      if ("gzip".equals(ex.getResponseHeaders().getFirst("Content-Encoding"))) {
+        // Creating the GZIPOutputStream must happen after sendResponseHeaders
+        // since the constructor writes data to the provided OutputStream
+        ex.setStreams(null, new GZIPOutputStream(ex.getResponseBody()));
+      }
       OutputStream responseBody = ex.getResponseBody();
       log.finest("before writing response");
       responseBody.write(response);
@@ -140,6 +149,20 @@ abstract class AbstractHandler implements HttpHandler {
     }
     ex.close();
     log.finest("after closing exchange");
+  }
+
+  /**
+   * If the client supports it, set the correct headers and make {@link
+   * #respond} provide GZIPed response data to the client.
+   */
+  protected void enableCompressionIfSupported(HttpExchange ex)
+      throws IOException {
+    String encodingList = ex.getRequestHeaders().getFirst("Accept-Encoding");
+    Collection<String> encodings = Arrays.asList(encodingList.split(","));
+    if (encodings.contains("gzip")) {
+      LOG.finer("Enabling gzip compression for response");
+      ex.getResponseHeaders().set("Content-Encoding", "gzip");
+    }
   }
 
   protected abstract void meteredHandle(HttpExchange ex) throws IOException;
