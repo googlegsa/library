@@ -16,10 +16,10 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
    * DocIds.
    */
   private static final String DELIMITER = "!";
-  // Escape normal '!' by doubling them
-  private static final String ESCAPE_DELIMITER = "!!";
-  // Matches strings that contain a lone '!'
-  private static final String DELIMITER_MATCHER = "(?<!!)!(?!!)";
+  // Escape normal '!' using '\\!' (single backslash, bang)
+  private static final String ESCAPE_DELIMITER = "\\\\!";
+  // Matches strings that contain a '!' with no preceding backslash
+  private static final String DELIMITER_MATCHER = "(?<!\\\\)!";
 
   /**
    * Wrap {@code adaptor} with auto-unzip functionality.
@@ -30,8 +30,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
 
   /**
    * Auto-expand all ZIPs listed by the wrapped adaptor in addition to the
-   * normal contents the wrapped adaptor provideds.
-   * @throws IOException 
+   * normal contents the wrapped adaptor provides.
    */
   @Override
   public List<DocId> getDocIds() throws IOException {
@@ -186,13 +185,13 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
    * names within a zip file.
    */
   private static String escape(String string) {
-    return string.replace(DELIMITER, ESCAPE_DELIMITER);
+    return string.replaceAll(DELIMITER, ESCAPE_DELIMITER);
   }
 
   /**
    * Remove escapes added by {@link #escape}.
    */
   private static String unescape(String string) {
-    return string.replace(ESCAPE_DELIMITER, DELIMITER);
+    return string.replaceAll(ESCAPE_DELIMITER, DELIMITER);
   }
 }
