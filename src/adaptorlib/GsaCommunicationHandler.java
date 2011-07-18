@@ -36,6 +36,7 @@ public class GsaCommunicationHandler {
     int port = config.getServerPort();
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
+    server.createContext("/dashboard", new DashboardHandler(config));
     server.createContext("/sso", new SsoHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding()));
     // Disable SecurityHandler until it can query adapter for configuration
@@ -116,6 +117,7 @@ public class GsaCommunicationHandler {
       }
     }
     pushDocIds(handles);
+    Journal.recordDocIdPush(handles);
   }
 
   /**

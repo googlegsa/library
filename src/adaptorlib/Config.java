@@ -7,6 +7,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.Properties;
 
 /**
@@ -40,6 +41,18 @@ public class Config {
     defaultConfig.setProperty("feed.crawlImmediatelyBitEnabled", "false");
     //defaultConfig.setProperty("feed.noFollowBitEnabled", "false");
     defaultConfig.setProperty("feed.maxUrls", "5000");
+  } 
+
+  // TODO: Use DOM.
+  public String toHtml() {
+    String rows = "";
+    for (Enumeration keys = config.propertyNames(); keys.hasMoreElements() ;) {
+      String key = (String) keys.nextElement();
+      String value = config.getProperty(key);
+      String row = "<tr><td>"+key+"</td><td>"+value+"</td></tr>\n";
+      rows += row;
+    }
+    return "<table border=2>\n"+ rows + "</table>\n";
   }
 
   /* Preferences requiring you to set them: */

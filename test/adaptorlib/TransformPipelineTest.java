@@ -57,6 +57,7 @@ public class TransformPipelineTest {
     assertEquals(1, params.keySet().size());
   }
 
+/*
   @Test
   public void testSed() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
@@ -79,6 +80,7 @@ public class TransformPipelineTest {
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
+*/
 
   @Test
   public void testModifyParams() throws IOException, TransformException {

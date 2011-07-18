@@ -30,6 +30,9 @@ class DocumentHandler extends AbstractHandler {
       // TODO(ejona): Need to namespace all docids to allow random support URLs
       DocId docId = commHandler.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
+      Journal.recordDocContentRequest(docId);
+      // TODO: Get user agent and if is GSA
+      // Journal.recordGsaCrawl(docId);
 
       // TODO(ejona): support different mime types of content
       // TODO(ejona): if text, support providing encoding
