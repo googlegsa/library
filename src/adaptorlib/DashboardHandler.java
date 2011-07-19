@@ -3,6 +3,7 @@ package adaptorlib;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -29,21 +30,41 @@ class DashboardHandler extends AbstractHandler {
     }
   }
 
-  // TODO: Create using DOM.
   private String makeHtmlPage() {
-    String page = "<html><title>" + config.getFeedName() + "</title><body>";
-    page += "Stats:<br>\n";
-    page += "# Document ids pushed: "
-        + Journal.numUniqueDocIdsPushed() + "<br>\n";
-    page += "# Document content requests: "
-        + Journal.numUniqueDocContentRequests() + "<br>\n";
-    page += "# Time per content request: "
-        + "NA" + "<br>\n";
-    page += "Program started at: " + Journal.whenStarted() + "<br>\n";
-    page += "<hr>\n";
-    page += "# Adaptor's configuration:<br>\n";
-    page += config.toHtml();
-    page += "</body></html>";
-    return page;
+    StringBuilder page = new StringBuilder();
+    page.append("<html><title>" + config.getFeedName() + "</title><body>");
+    page.append("Stats:<br>\n");
+    page.append("# total document requests: "
+        + Journal.numTotalQueries() + "<br>\n");
+    page.append("# total document requests by GSA: "
+        + Journal.numTotalGsaQueries() + "<br>\n");
+    page.append("# total document ids pushed: "
+        + Journal.numTotalDocIdsPushed() + "<br>\n");
+    page.append("# unique documents requested: "
+        + Journal.numUniqueDocContentRequests() + "<br>\n");
+    page.append("# unique documents requested by GSA: "
+        + Journal.numUniqueGsaCrawled() + "<br>\n");
+    page.append("# unique document ids pushed: "
+        + Journal.numUniqueDocIdsPushed() + "<br>\n");
+    page.append("Program started at: " + Journal.whenStarted() + "<br>\n");
+    page.append("<hr>\n");
+    page.append("# Adaptor's configuration:<br>\n");
+    page.append(makeConfigHtml());
+    page.append("</body></html>");
+    return "" + page;
+  }
+
+  private String makeConfigHtml() {
+    StringBuilder table = new StringBuilder();
+    table.append("<table border=2>\n");
+    Map<String, String> map = config.toMap();
+    for (Map.Entry<String, String> e : map.entrySet()) {
+      String key = e.getKey();
+      String value = e.getValue();
+      String row = "<tr><td>" + key + "</td><td>" + value + "</td></tr>\n";
+      table.append(row);
+    }
+    table.append("</table>\n");
+    return "" + table;
   }
 }

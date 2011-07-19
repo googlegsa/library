@@ -9,16 +9,16 @@ class Journal {
   private Journal() {
   }
 
-  private static HashMap<DocId, Integer> timesPushed;
-  private static HashMap<DocId, Integer> timesQueried;
-  private static HashMap<DocId, Integer> timesGsaCrawled;
-  private static Date startedAt;
-
-  static {
-    startedAt = new Date();
-    timesPushed = new HashMap<DocId, Integer>();
-    timesQueried = new HashMap<DocId, Integer>();
-  }
+  private static HashMap<DocId, Integer> timesPushed
+      = new HashMap<DocId, Integer>();
+  private static HashMap<DocId, Integer> timesQueried
+      = new HashMap<DocId, Integer>();
+  private static HashMap<DocId, Integer> timesGsaCrawled
+      = new HashMap<DocId, Integer>();
+  private static long totalPushes;
+  private static long totalQueries;
+  private static long totalGsaQueries;
+  private static Date startedAt = new Date();
 
   static int numUniqueDocIdsPushed() {
     return timesPushed.size(); 
@@ -32,6 +32,17 @@ class Journal {
     return timesGsaCrawled.size(); 
   }
 
+  static long numTotalDocIdsPushed() {
+    return totalPushes;
+  } 
+
+  static long numTotalQueries() {
+    return totalQueries;
+  }
+
+  static long numTotalGsaQueries() {
+    return totalGsaQueries;
+  }
 
   static Date whenStarted() {
     return startedAt;
@@ -41,14 +52,17 @@ class Journal {
     for (DocId id : pushed) {
       increment(timesPushed, id);
     }
+    totalPushes += pushed.size();
   }
 
   static void recordDocContentRequest(DocId requested) {
     increment(timesQueried, requested); 
+    totalQueries++;
   }
 
   static void recordGsaCrawl(DocId docId) {
     increment(timesGsaCrawled, docId); 
+    totalGsaQueries++;
   }
 
   static private void increment(HashMap<DocId, Integer> counts, DocId id) {

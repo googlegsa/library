@@ -8,6 +8,8 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 /**
@@ -43,16 +45,14 @@ public class Config {
     defaultConfig.setProperty("feed.maxUrls", "5000");
   } 
 
-  // TODO: Use DOM.
-  public String toHtml() {
-    String rows = "";
+  public Map<String, String> toMap() {
+    Map<String, String> map = new HashMap<String, String>();
     for (Enumeration keys = config.propertyNames(); keys.hasMoreElements() ;) {
       String key = (String) keys.nextElement();
       String value = config.getProperty(key);
-      String row = "<tr><td>"+key+"</td><td>"+value+"</td></tr>\n";
-      rows += row;
+      map.put(key, value);
     }
-    return "<table border=2>\n"+ rows + "</table>\n";
+    return map;
   }
 
   /* Preferences requiring you to set them: */

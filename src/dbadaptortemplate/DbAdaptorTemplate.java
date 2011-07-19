@@ -18,8 +18,7 @@ class DbAdaptorTemplate extends Adaptor {
 
   private static Connection makeNewConnection() throws SQLException {
     // TODO(pjo): DB connection pooling.
-    // String url = "jdbc:mysql://127.0.0.1/adaptor1";
-    String url = "jdbc:mysql://moses.mtv.corp.google.com/adaptor1";
+    String url = "jdbc:mysql://127.0.0.1/adaptor1";
     log.fine("about to connect");
     Connection conn = DriverManager.getConnection(url, "root", "test");
     log.fine("connected");
@@ -59,8 +58,7 @@ class DbAdaptorTemplate extends Adaptor {
     Connection conn = null;
     try {
       conn = makeNewConnection();
-      ResultSet rs = getFromDb(conn,
-          "select * from backlog where id = " + id.getUniqueId());
+      ResultSet rs = getFromDb(conn, "select * from backlog where id = " + id.getUniqueId());
 
       // First handle cases with no data to return.
       boolean hasResult = rs.next();
@@ -108,8 +106,7 @@ class DbAdaptorTemplate extends Adaptor {
     Config config = new Config();
     config.autoConfig(a);
     Adaptor adaptor = new DbAdaptorTemplate();
-    GsaCommunicationHandler gsa
-        = new GsaCommunicationHandler(adaptor, config);
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
     // Setup providing content.
     try {

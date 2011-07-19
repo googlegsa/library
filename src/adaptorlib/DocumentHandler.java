@@ -22,6 +22,11 @@ class DocumentHandler extends AbstractHandler {
     this.commHandler = commHandler;
     this.adaptor = adaptor;
   }
+  
+  private static boolean requestIsFromGsa(HttpExchange ex) {
+     String userAgent = ex.getRequestHeaders().getFirst("User-Agent");
+     return (null != userAgent) && userAgent.startsWith("gsa-crawler");
+  }
 
   public void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
@@ -30,9 +35,11 @@ class DocumentHandler extends AbstractHandler {
       // TODO(ejona): Need to namespace all docids to allow random support URLs
       DocId docId = commHandler.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
+
       Journal.recordDocContentRequest(docId);
-      // TODO: Get user agent and if is GSA
-      // Journal.recordGsaCrawl(docId);
+      if (requestIsFromGsa(ex)) {
+        Journal.recordGsaCrawl(docId);
+      }
 
       // TODO(ejona): support different mime types of content
       // TODO(ejona): if text, support providing encoding
