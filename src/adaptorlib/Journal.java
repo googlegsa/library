@@ -11,61 +11,65 @@ class Journal {
 
   private HashMap<DocId, Integer> timesPushed
       = new HashMap<DocId, Integer>();
-  private HashMap<DocId, Integer> timesQueried
-      = new HashMap<DocId, Integer>();
-  private HashMap<DocId, Integer> timesGsaCrawled
-      = new HashMap<DocId, Integer>();
   private long totalPushes;
-  private long totalQueries;
-  private long totalGsaQueries;
+
+  private HashMap<DocId, Integer> timesGsaRequested
+      = new HashMap<DocId, Integer>();
+  private long totalGsaRequests;
+
+  private HashMap<DocId, Integer> timesNonGsaRequested
+      = new HashMap<DocId, Integer>();
+  private long totalNonGsaRequests;
+
   private Date startedAt = new Date();
 
   int numUniqueDocIdsPushed() {
     return timesPushed.size(); 
   }
 
-  int numUniqueDocContentRequests() {
-    return timesQueried.size(); 
-  }
-
-  int numUniqueGsaCrawled() {
-    return timesGsaCrawled.size(); 
-  }
-
   long numTotalDocIdsPushed() {
     return totalPushes;
   } 
 
-  long numTotalQueries() {
-    return totalQueries;
+  int numUniqueGsaRequests() {
+    return timesGsaRequested.size(); 
   }
 
-  long numTotalGsaQueries() {
-    return totalGsaQueries;
+  long numTotalGsaRequests() {
+    return totalGsaRequests;
+  }
+
+  int numUniqueNonGsaRequests() {
+    return timesNonGsaRequested.size(); 
+  }
+
+  long numTotalNonGsaRequests() {
+    return totalNonGsaRequests;
   }
 
   Date whenStarted() {
     return startedAt;
   }
 
-  void recordDocIdPush(List<DocId> pushed) {
+  synchronized void recordDocIdPush(List<DocId> pushed) {
     for (DocId id : pushed) {
       increment(timesPushed, id);
     }
     totalPushes += pushed.size();
   }
 
-  void recordDocContentRequest(DocId requested) {
-    increment(timesQueried, requested); 
-    totalQueries++;
+  synchronized void recordGsaContentRequest(DocId docId) {
+    increment(timesGsaRequested, docId); 
+    totalGsaRequests++;
   }
 
-  void recordGsaCrawl(DocId docId) {
-    increment(timesGsaCrawled, docId); 
-    totalGsaQueries++;
+  synchronized void recordNonGsaContentRequest(DocId requested) {
+    increment(timesNonGsaRequested, requested); 
+    totalNonGsaRequests++;
   }
 
-  static private void increment(HashMap<DocId, Integer> counts, DocId id) {
+  static private void increment(
+      HashMap<DocId, Integer> counts, DocId id) {
     if (!counts.containsKey(id)) {
       counts.put(id, 0);
     }

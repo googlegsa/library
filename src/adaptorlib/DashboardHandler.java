@@ -36,19 +36,21 @@ class DashboardHandler extends AbstractHandler {
     StringBuilder page = new StringBuilder();
     page.append("<html><title>" + config.getFeedName() + "</title><body>");
     page.append("Stats:<br>\n");
-    page.append("# total document requests: "
-        + journal.numTotalQueries() + "<br>\n");
-    page.append("# total document requests by GSA: "
-        + journal.numTotalGsaQueries() + "<br>\n");
-    page.append("# total document ids pushed: "
-        + journal.numTotalDocIdsPushed() + "<br>\n");
-    page.append("# unique documents requested: "
-        + journal.numUniqueDocContentRequests() + "<br>\n");
-    page.append("# unique documents requested by GSA: "
-        + journal.numUniqueGsaCrawled() + "<br>\n");
-    page.append("# unique document ids pushed: "
-        + journal.numUniqueDocIdsPushed() + "<br>\n");
-    page.append("Program started at: " + journal.whenStarted() + "<br>\n");
+    synchronized(journal) {
+      page.append("# total document ids pushed: "
+          + journal.numTotalDocIdsPushed() + "<br>\n");
+      page.append("# unique document ids pushed: "
+          + journal.numUniqueDocIdsPushed() + "<br>\n");
+      page.append("# total document requests by GSA: "
+          + journal.numTotalGsaRequests() + "<br>\n");
+      page.append("# unique document requests by GSA: "
+          + journal.numUniqueGsaRequests() + "<br>\n");
+      page.append("# total document requests not by GSA: "
+          + journal.numTotalNonGsaRequests() + "<br>\n");
+      page.append("# unique document requests not by GSA: "
+          + journal.numUniqueNonGsaRequests() + "<br>\n");
+      page.append("Program started at: " + journal.whenStarted() + "<br>\n");
+    }
     page.append("<hr>\n");
     page.append("# Adaptor's configuration:<br>\n");
     page.append(makeConfigHtml());
