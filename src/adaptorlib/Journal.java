@@ -23,7 +23,7 @@ class Journal {
 
   private Date startedAt = new Date();
 
-  int numUniqueDocIdsPushed() {
+  synchronized int numUniqueDocIdsPushed() {
     return timesPushed.size(); 
   }
 
@@ -31,7 +31,7 @@ class Journal {
     return totalPushes;
   } 
 
-  int numUniqueGsaRequests() {
+  synchronized int numUniqueGsaRequests() {
     return timesGsaRequested.size(); 
   }
 
@@ -39,7 +39,7 @@ class Journal {
     return totalGsaRequests;
   }
 
-  int numUniqueNonGsaRequests() {
+  synchronized int numUniqueNonGsaRequests() {
     return timesNonGsaRequested.size(); 
   }
 

@@ -36,7 +36,7 @@ class DashboardHandler extends AbstractHandler {
     StringBuilder page = new StringBuilder();
     page.append("<html><title>" + config.getFeedName() + "</title><body>");
     page.append("Stats:<br>\n");
-    synchronized(journal) {
+    synchronized (journal) {
       page.append("# total document ids pushed: "
           + journal.numTotalDocIdsPushed() + "<br>\n");
       page.append("# unique document ids pushed: "
