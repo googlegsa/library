@@ -36,9 +36,9 @@ class DocumentHandler extends AbstractHandler {
       DocId docId = commHandler.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
 
-      Journal.recordDocContentRequest(docId);
+      commHandler.getJournal().recordDocContentRequest(docId);
       if (requestIsFromGsa(ex)) {
-        Journal.recordGsaCrawl(docId);
+        commHandler.getJournal().recordGsaCrawl(docId);
       }
 
       // TODO(ejona): support different mime types of content

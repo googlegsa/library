@@ -12,11 +12,13 @@ import com.sun.net.httpserver.HttpHandler;
 class DashboardHandler extends AbstractHandler {
 
   private Config config;
+  private Journal journal;
 
-  public DashboardHandler(Config configuration) {
+  public DashboardHandler(Config configuration, Journal journal) {
     super(configuration.getServerHostname(),
         configuration.getGsaCharacterEncoding());
     this.config = configuration;
+    this.journal = journal;
   }
 
   protected void meteredHandle(HttpExchange ex) throws IOException {
@@ -35,18 +37,18 @@ class DashboardHandler extends AbstractHandler {
     page.append("<html><title>" + config.getFeedName() + "</title><body>");
     page.append("Stats:<br>\n");
     page.append("# total document requests: "
-        + Journal.numTotalQueries() + "<br>\n");
+        + journal.numTotalQueries() + "<br>\n");
     page.append("# total document requests by GSA: "
-        + Journal.numTotalGsaQueries() + "<br>\n");
+        + journal.numTotalGsaQueries() + "<br>\n");
     page.append("# total document ids pushed: "
-        + Journal.numTotalDocIdsPushed() + "<br>\n");
+        + journal.numTotalDocIdsPushed() + "<br>\n");
     page.append("# unique documents requested: "
-        + Journal.numUniqueDocContentRequests() + "<br>\n");
+        + journal.numUniqueDocContentRequests() + "<br>\n");
     page.append("# unique documents requested by GSA: "
-        + Journal.numUniqueGsaCrawled() + "<br>\n");
+        + journal.numUniqueGsaCrawled() + "<br>\n");
     page.append("# unique document ids pushed: "
-        + Journal.numUniqueDocIdsPushed() + "<br>\n");
-    page.append("Program started at: " + Journal.whenStarted() + "<br>\n");
+        + journal.numUniqueDocIdsPushed() + "<br>\n");
+    page.append("Program started at: " + journal.whenStarted() + "<br>\n");
     page.append("<hr>\n");
     page.append("# Adaptor's configuration:<br>\n");
     page.append(makeConfigHtml());

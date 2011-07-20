@@ -22,6 +22,7 @@ public class GsaCommunicationHandler {
   private final Config config;
   private final GsaFeedFileSender fileSender;
   private final GsaFeedFileMaker fileMaker;
+  private final Journal journal = new Journal();
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     // TODO(ejona): allow the adaptor to choose whether it wants this feature
@@ -36,7 +37,7 @@ public class GsaCommunicationHandler {
     int port = config.getServerPort();
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
-    server.createContext("/dashboard", new DashboardHandler(config));
+    server.createContext("/dashboard", new DashboardHandler(config, journal));
     server.createContext("/sso", new SsoHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding()));
     // Disable SecurityHandler until it can query adapter for configuration
@@ -117,7 +118,7 @@ public class GsaCommunicationHandler {
       }
     }
     pushDocIds(handles);
-    Journal.recordDocIdPush(handles);
+    journal.recordDocIdPush(handles);
   }
 
   /**
@@ -189,5 +190,9 @@ public class GsaCommunicationHandler {
       throw new IllegalStateException(e);
     }
     return config.getServerBaseUri().resolve(uri);
+  }
+
+  Journal getJournal() {
+    return journal;
   }
 }
