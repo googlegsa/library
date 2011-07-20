@@ -2,6 +2,7 @@
 package adaptorlib;
 
 import static org.junit.Assert.*;
+import org.junit.Assume;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -57,9 +58,12 @@ public class TransformPipelineTest {
     assertEquals(1, params.keySet().size());
   }
 
-/*
   @Test
   public void testSed() throws IOException, TransformException {
+    String osName = System.getProperty("os.name");
+    boolean isWindows = osName.toLowerCase().startsWith("windows");
+    Assume.assumeTrue(!isWindows);
+
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
@@ -80,7 +84,6 @@ public class TransformPipelineTest {
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
-*/
 
   @Test
   public void testModifyParams() throws IOException, TransformException {

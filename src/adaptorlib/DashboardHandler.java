@@ -3,7 +3,7 @@ package adaptorlib;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
-import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -57,10 +57,9 @@ class DashboardHandler extends AbstractHandler {
   private String makeConfigHtml() {
     StringBuilder table = new StringBuilder();
     table.append("<table border=2>\n");
-    Map<String, String> map = config.toMap();
-    for (Map.Entry<String, String> e : map.entrySet()) {
-      String key = e.getKey();
-      String value = e.getValue();
+    Set<String> configKeys = config.getAllKeys();
+    for (String key : configKeys) {
+      String value = config.getValue(key);
       String row = "<tr><td>" + key + "</td><td>" + value + "</td></tr>\n";
       table.append(row);
     }

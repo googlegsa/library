@@ -8,8 +8,7 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Arrays;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.Set;
 import java.util.Properties;
 
 /**
@@ -45,14 +44,8 @@ public class Config {
     defaultConfig.setProperty("feed.maxUrls", "5000");
   } 
 
-  public Map<String, String> toMap() {
-    Map<String, String> map = new HashMap<String, String>();
-    for (Enumeration keys = config.propertyNames(); keys.hasMoreElements() ;) {
-      String key = (String) keys.nextElement();
-      String value = config.getProperty(key);
-      map.put(key, value);
-    }
-    return map;
+  public Set<String> getAllKeys() {
+    return config.stringPropertyNames() ;
   }
 
   /* Preferences requiring you to set them: */
