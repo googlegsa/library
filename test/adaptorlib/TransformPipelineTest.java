@@ -57,9 +57,7 @@ public class TransformPipelineTest {
 
   @Test
   public void testSed() throws IOException, TransformException {
-    String osName = System.getProperty("os.name");
-    boolean isWindows = osName.toLowerCase().startsWith("windows");
-    Assume.assumeTrue(!isWindows);
+    TestHelper.assumeOsIsNotWindows();
 
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();

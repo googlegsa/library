@@ -17,6 +17,8 @@ public class CommandTest {
   @Test
   public void testStdinStdout() throws java.io.IOException,
          InterruptedException {
+    TestHelper.assumeOsIsNotWindows();
+
     final String value = "hello";
     final String encoding = "US-ASCII";
     command.exec(new String[] {"cat"}, value.getBytes(encoding));
@@ -28,6 +30,8 @@ public class CommandTest {
   @Test
   public void testInterrupted() throws java.io.IOException,
          InterruptedException {
+    TestHelper.assumeOsIsNotWindows();
+
     // Only sets flag, does not immediately throw InterruptedException
     Thread.currentThread().interrupt();
     thrown.expect(InterruptedException.class);
