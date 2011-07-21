@@ -10,14 +10,11 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 /**
  * Tests for {@link TransformPipeline}.
  */
 public class TransformPipelineTest {
-  private static final Logger log = Logger.getLogger(TransformPipelineTest.class.getName());
-
   @Test
   public void testNoOp() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();

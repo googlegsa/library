@@ -2,7 +2,6 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.util.List;
-import java.util.logging.Logger;
 
 /**
  * Base class for all user-specific implementation details of an Adaptor.
@@ -10,8 +9,6 @@ import java.util.logging.Logger;
  * @see adaptortemplate.AdaptorTemplate
  */
 public abstract class Adaptor {
-  private static final Logger log = Logger.getLogger(Adaptor.class.getName());
-
   /** Provides bytes of particular document. */
   public abstract byte[] getDocContent(DocId id) throws IOException;
 
