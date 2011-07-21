@@ -14,57 +14,51 @@ import java.util.NoSuchElementException;
  */
 class RecursiveFileIterator implements Iterator<File>, Iterable<File> {
   /**
-   * The recursive call stack of directory content we have encountered. As we
-   * recursively descend into directories, we add one item in the outer list for
-   * each directory. The contents of the inner List are the files and folders
-   * within that directory. The stack is pushed and poped from the front, so the
-   * top-most directory contents are at the end. Things are removed from the
-   * inner list as they are consumed by next().
+   * List of all directory contents we have encountered and not returned or
+   * descended into. We only return the File at the front of the list. If a
+   * directory is at the front of the list, then we descend into it, remove it
+   * from the list, and add its children to the front of the list.
    */
-  private List<List<File>> traversalStateStack = new LinkedList<List<File>>();
+  private List<File> traversalStateStack = new LinkedList<File>();
 
+  /**
+   * @param rootFile directory to recursively list contents
+   */
   public RecursiveFileIterator(File rootFile) {
-    List<File> roots = new LinkedList<File>();
-    roots.add(rootFile);
-    traversalStateStack.add(roots);
+    traversalStateStack.add(rootFile);
   }
 
+  /**
+   * Returns {@code this} to allow using with foreach loops.
+   */
   public Iterator<File> iterator() {
     return this;
   }
 
   /**
-   * Make {@code traversalStateStack.get(0).get(0)} be the file that would be
-   * returned by {@link #next}, or have tranversalStateStack be empty. If things
-   * are already in the right place, then no action is performed.
+   * Make {@code traversalStateStack.get(0)} be the file that would be returned
+   * by {@link #next}, or have traversalStateStack be empty. If things are
+   * already in the right place, then no action is performed.
    */
   private void setPositionToNextFile() throws IOException {
-    while (traversalStateStack.size() > 0) {
-      List<File> l = traversalStateStack.get(0);
-
-      if (l.isEmpty()) {
-        traversalStateStack.remove(0);
-      } else {
-        File f = l.get(0);
-        if (f.isDirectory()) {
-          l.remove(0);
-          File[] files = f.listFiles();
-          if (files == null) {
-            throw new IOException(
-                "Exception while getting directory listing for: "
-                + f.getName());
-          }
-          List<File> child = Arrays.asList(files);
-          traversalStateStack.add(0, new LinkedList<File>(child));
-        } else {
-          // Everything looks good
-          return;
-        }
+    while (!traversalStateStack.isEmpty()
+           && traversalStateStack.get(0).isDirectory()) {
+      File dir = traversalStateStack.remove(0);
+      File[] files = dir.listFiles();
+      if (files == null) {
+        throw new IOException("Exception while getting directory listing for: "
+                              + dir.getName());
       }
+      traversalStateStack.addAll(0, Arrays.asList(files));
     }
   }
 
   /**
+   * Returns {@code true} if the iteration has more elements. Even if this
+   * method throws a WrappedIOException, the iterator can continue to list
+   * files. However, each exception would note a directory that could not be
+   * descended into.
+   *
    * @throws WrappedIOException if there was an IOException
    */
   public boolean hasNext() {
@@ -77,17 +71,22 @@ class RecursiveFileIterator implements Iterator<File>, Iterable<File> {
   }
 
   /**
+   * Returns the next file in the iteratior. Even if this method throws a
+   * WrappedIOException, the iterator can continue to list files. However, each
+   * exception would note a directory that could not be descended into.
+   *
    * @throws WrappedIOException if there was an IOException
    */
   public File next() {
     if (!hasNext()) {
       throw new NoSuchElementException();
     }
-    File next = traversalStateStack.get(0).remove(0);
-    return next;
+    return traversalStateStack.remove(0);
   }
 
   /**
+   * Unsupported.
+   *
    * @throws UnsupportedOperationException always
    */
   public void remove() {
@@ -95,7 +94,7 @@ class RecursiveFileIterator implements Iterator<File>, Iterable<File> {
   }
 
   /**
-   * Allows throwing IOExceptions and allow the caller to unpack and rethrow
+   * Allows throwing IOExceptions and allowing the caller to unpack and rethrow
    * them with certainty.
    */
   public class WrappedIOException extends RuntimeException {
