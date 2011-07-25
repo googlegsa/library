@@ -1,24 +1,24 @@
 package adaptorlib;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.nio.charset.Charset;
 import java.util.Set;
-import java.util.logging.Logger;
-
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
+import java.util.logging.LogManager;
 
 class DashboardHandler extends AbstractHandler {
 
   private Config config;
   private Journal journal;
+  private CircularBufferHandler circularLog = new CircularBufferHandler();
 
   public DashboardHandler(Config configuration, Journal journal) {
     super(configuration.getServerHostname(),
         configuration.getGsaCharacterEncoding());
     this.config = configuration;
     this.journal = journal;
+    LogManager.getLogManager().getLogger("").addHandler(circularLog);
   }
 
   protected void meteredHandle(HttpExchange ex) throws IOException {
@@ -54,6 +54,11 @@ class DashboardHandler extends AbstractHandler {
     page.append("<hr>\n");
     page.append("# Adaptor's configuration:<br>\n");
     page.append(makeConfigHtml());
+    page.append("<pre style='height: 20em; overflow: auto'>");
+    String log = circularLog.writeOut();
+    log = log.replace("&", "&amp;").replace("<", "&lt;");
+    page.append(log);
+    page.append("</pre>");
     page.append("</body></html>");
     return "" + page;
   }
