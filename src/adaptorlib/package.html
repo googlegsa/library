@@ -1,59 +1,8 @@
 <body>
-  <p>Easily provide repository data to a Google Search Appliance (GSA). This is
-  accomplished by a combination of a document feed, pushed to the GSA, that
-  provides a list of files to load and an accompanying HTTP server that provides
-  the file contents upon request. This code is written in Java and is intended
-  for repositories that can be contacted using Java.</p>
-
-  <p>If your repository can be accessed purely by a non-interactive command line
-  application, see if the {@link commandlineadaptor.CommandLineAdaptor} fits
-  your needs. Otherwise, you will need to create your own {@link
-  adaptorlib.Adaptor}.
-  </p>
-
-  <h3>Basic Setup</h3>
-  <p>Before any adaptor can work, you must:</p>
-  <ol>
-    <li>Modify the Config class at {@code src/adaptorlib/Config.java}. You need
-      to change {@link adaptorlib.Config#getGsaHostname} to the hostname of your
-      GSA. If you want, you can also modify the port to use for the built-in
-      HTTP server in {@link adaptorlib.Config#getServerPort}.</li>
-    <li>Add the IP address of the computer that hosts the adaptor to the <b>List
-      of Trusted IP Addresses</b> on the GSA.
-      <p>In the GSA's Admin Console, go to <b>Crawl and Index &gt; Feeds</b>,
-      and scroll down to <b>List of Trusted IP Addresses</b>. Add the IP address
-      for the adaptor to the list.</p></li>
-    <li>Add the URLs provided by the adaptor to the <b>Follow and Crawl Only
-      URLs with the Following Patterns</b> on the GSA.
-      <p>In the Admin console, go to <b>Crawl And Index &gt; Crawl URLs</b>, and
-      scroll down to <b>Follow and Crawl Only URLs with the Following
-      Patterns</b>. Add an entry like {@code hostname:port/} where {@code
-      hostname} is the hostname of the machine that hosts the adaptor and {@code
-      port} matches the one in {@link adaptorlib.Config#getServerPort}.</p></li>
-  </ol>
-
-  <h3>Running the Adaptor Template, as an initial test</h3>
-  <ol>
-    <li>Compile the source code. You need JDK 6 or higher. For Windows:
-      <pre>{@code build-command.bat}</pre>
-      <p>For Unix:</p>
-      <pre>{@code ./build-command.sh}</pre></li>
-    <li>Start the Adaptor Template:
-      <pre>{@code java -cp classes templateadaptor.TemplateAdaptor}</pre></li>
-    <li>(TODO: modify the Adaptor Template to push immediately to help with this
-      step?) After the adaptor has pushed an initial feed (TODO: how do they
-      know this happened), in the GSA go to <b>Crawl and Index &gt; Feeds</b>.
-      In the <b>Current Feeds</b> section, you should see an entry for a
-      "testfeed".</li>
-  </ol>
-
-  <h3>Creating your own Adaptor</h3>
-  <ol>
-    <li>Copy TemplateAdaptor and begin modifying it for your own use. TODO:
-      describe how to provide feed name in Config</li>
-    <li>Compile, run, and verify the results like you did before, except use
-      your new class.</li>
-    <li>Declare success for getting content from your custom repository to the
-      GSA.</li>
-  </ol>
+  Adaptor interfaces and implementation.  Uses combination of a
+  document feed and an accompanying HTTP server.
+  <p>
+  Feed files, with lists of ids encoded as URLs, are pushed to GSA.
+  <p>
+  GSA crawls by making requests for file contents.
 </body>

@@ -1,0 +1,61 @@
+<body>
+  <p>Easily provide repository data to a Google Search Appliance (GSA).
+
+  <p> If you'd like to use a language other than Java see if
+  {@link commandlineadaptor.CommandLineAdaptor} fits your needs. 
+  </p>
+
+  <h3>Basic Setup</h3>
+  <ol>
+    <li>Add the IP address of the computer that hosts the adaptor to the <b>List
+      of Trusted IP Addresses</b> on the GSA.
+      <p>In the GSA's Admin Console, go to <b>Crawl and Index &gt; Feeds</b>,
+      and scroll down to <b>List of Trusted IP Addresses</b>. Add the IP address
+      for the adaptor to the list.</p>
+    <li>Add the URLs provided by the adaptor to the <b>Follow and Crawl Only
+      URLs with the Following Patterns</b> on the GSA.
+      <p>In the Admin console, go to <b>Crawl And Index &gt; Crawl URLs</b>, and
+      scroll down to <b>Follow and Crawl Only URLs with the Following
+      Patterns</b>. Add an entry like {@code hostname:port/} where {@code
+      hostname} is the hostname of the machine that hosts the adaptor and {@code
+      port} defaults to 5678 (read on to change port #).</p>
+  </ol>
+
+  <h3>Running the Adaptor Template, as an initial test</h3>
+  <ol>
+    <li> Compile the source code. You need ant and JDK 6 or higher. 
+      <p><pre> ant build </pre>
+    <li>Start the Adaptor Template:
+      <p><pre> ant run -Dadaptor.args=-Dgsa.hostname=mygsahostname</pre>
+      <p>Alternatively create an adaptor-config.properties file that looks like:
+      <pre>
+        gsa.hostname=mygsahostname
+      </pre>
+      <p>And then run:
+      <pre> ant run</pre>
+      <p>You can add more configuraiton into the adaptor-config.properties file:
+      <pre>
+        gsa.hostname=mygsahostname
+        server.port=6677
+        feed.name=mydocfeedtogsa
+      </pre>
+    <li> Confirm things ran successfully.
+      <p>
+      In the GSA go to <b>Crawl and Index &gt; Feeds</b>.
+      In the <b>Current Feeds</b> section, you should see an entry for a
+      "testfeed".
+      <p>
+      In the adaptor log look to see document ids being pushed and
+      requests for document contents being served.
+  </ol>
+
+  <h3>Creating your own Adaptor</h3>
+  <ol>
+    <li>Either modify adaptortemplate/AdaptorTemplate.java or copy it first 
+      and create a new ant build target in build.xml .
+    <li>Compile, run, and verify the results like you did before, except use
+      your new class.
+    <li>Declare success for getting content from your custom repository to the
+      GSA.
+  </ol>
+</body>

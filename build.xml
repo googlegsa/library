@@ -33,7 +33,8 @@
   </target>
 
   <target name="javadoc" description="Build JavaDocs">
-    <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}" access="package">
+    <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}" access="package"
+        overview="${src.dir}/overview.html">
       <classpath location="${opencsv.jar}"/>
       <classpath location="${j-calais.jar}"/>
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
