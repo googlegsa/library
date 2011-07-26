@@ -8,18 +8,19 @@ import java.util.logging.Logger;
 
 /**
  * Demonstrates what code is necessary for putting public
- * content onto a GSA.  The key operations are A) providing
- * document ids and B) providing document bytes given a
- * document id.  TODO(pjo): Link to more advanced templates.
+ * content onto a GSA.  The key operations are:
+ * <ol><li> providing document ids,
+ *   <li> providing document bytes given a document id.</ol>
  */
 class AdaptorTemplate extends Adaptor {
   private static final Logger log
       = Logger.getLogger(AdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
-  /** Replace with code that lists your repository. */
+  /** Gives list of document ids that you'd like on the GSA. */
   public List<DocId> getDocIds() {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
+    /* Replace this mock data with code that lists your repository. */
     mockDocIds.add(new DocId("1001"));
     mockDocIds.add(new DocId("1002"));
     return mockDocIds;
@@ -38,7 +39,7 @@ class AdaptorTemplate extends Adaptor {
   }
 
   /** An example main for an adaptor that:<br>
-   * <ol><li> enables serving doc contents
+   * <ol><li> enables serving doc contents,
    *   <li> sends docs ids at program start
    *   <li> and sends doc ids on schedule.</ol>
    */

@@ -34,6 +34,7 @@ class DbAdaptorTemplate extends Adaptor {
     return rs;
   }
 
+  /** Get all doc ids from database. */
   public List<DocId> getDocIds() throws IOException {
     ArrayList<DocId> primaryKeys = new ArrayList<DocId>();
     Connection conn = null;
