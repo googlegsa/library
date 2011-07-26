@@ -37,7 +37,11 @@ class AdaptorTemplate extends Adaptor {
     }
   }
 
-  /** An example main for an adaptor that enables serving. */
+  /** An example main for an adaptor that:<br>
+   * <ol><li> enables serving doc contents
+   *   <li> sends docs ids at program start
+   *   <li> and sends doc ids on schedule.</ol>
+   */
   public static void main(String a[]) throws InterruptedException {
     Config config = new Config();
     config.autoConfig(a);
@@ -55,7 +59,7 @@ class AdaptorTemplate extends Adaptor {
     // Push once at program start.
     gsa.pushDocIds();
 
-    // Setup scheduled pushing of doc ids for once per day.
+    // Schedule pushing of doc ids once per day.
     gsa.beginPushingDocIds(
         new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
     log.info("doc id pushing has been put on schedule");

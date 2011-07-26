@@ -28,9 +28,9 @@ class DbAdaptorTemplate extends Adaptor {
   private static ResultSet getFromDb(Connection conn, String query)
       throws SQLException {
     Statement st = conn.createStatement();
-    log.info("about to query");
+    log.fine("about to query");
     ResultSet rs = st.executeQuery(query);
-    log.info("queried");
+    log.fine("queried");
     return rs;
   }
 
@@ -45,11 +45,14 @@ class DbAdaptorTemplate extends Adaptor {
         primaryKeys.add(id);
       }
     } catch (SQLException problem) {
+      log.log(Level.SEVERE, "failed getting ids", problem);
       throw new IOException(problem);
     } finally {
       tryClosingConnection(conn);
     }
-    log.info("primary keys: " + primaryKeys);
+    if (log.isLoggable(Level.FINEST)) {
+      log.finest("primary keys: " + primaryKeys);
+    }
     return primaryKeys;
   }
 
@@ -92,7 +95,7 @@ class DbAdaptorTemplate extends Adaptor {
           + line2.substring(1) + "\n" + line3.substring(1) + "\n";
       return document.getBytes(encoding);
     } catch (SQLException problem) {
-      log.log(Level.SEVERE, "failed getting ids", problem);
+      log.log(Level.SEVERE, "failed getting content", problem);
       throw new IOException("retrieval error", problem);
     } finally {
       tryClosingConnection(conn);
