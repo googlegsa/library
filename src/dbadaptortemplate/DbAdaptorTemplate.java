@@ -28,7 +28,7 @@ class DbAdaptorTemplate extends Adaptor {
   private static ResultSet getFromDb(Connection conn, String query)
       throws SQLException {
     Statement st = conn.createStatement();
-    log.fine("about to query");
+    log.fine("about to query: " + query);
     ResultSet rs = st.executeQuery(query);
     log.fine("queried");
     return rs;

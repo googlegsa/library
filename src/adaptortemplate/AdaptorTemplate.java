@@ -9,8 +9,8 @@ import java.util.logging.Logger;
 /**
  * Demonstrates what code is necessary for putting public
  * content onto a GSA.  The key operations are:
- * <ol><li> providing document ids,
- *   <li> providing document bytes given a document id.</ol>
+ * <ol><li> providing document ids
+ *   <li> providing document bytes given a document id</ol>
  */
 class AdaptorTemplate extends Adaptor {
   private static final Logger log
