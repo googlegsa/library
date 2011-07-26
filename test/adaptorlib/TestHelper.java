@@ -9,9 +9,18 @@ public class TestHelper {
   // Prevent instantiation
   private TestHelper() {}
 
-  public static void assumeOsIsNotWindows() {
+  private static boolean isRunningOnWindows() {
     String osName = System.getProperty("os.name");
     boolean isWindows = osName.toLowerCase().startsWith("windows");
-    assumeTrue(!isWindows);
+    return isWindows;
   }
+
+  public static void assumeOsIsNotWindows() {
+    assumeTrue(!isRunningOnWindows());
+  }
+
+  public static void assumeOsIsWindows() {
+    assumeTrue(isRunningOnWindows());
+  }
+
 }
