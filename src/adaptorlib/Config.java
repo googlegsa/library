@@ -7,15 +7,17 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.Arrays;
-import java.util.Enumeration;
-import java.util.Set;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 
 /**
  * Configuration values for this program like the GSA's hostname. Also several
  * knobs, or controls, for changing the behavior of the program.
  */
 public class Config {
+  /** Configuration keys whose default value is {@code null}. */
+  protected final Set<String> noDefaultConfig = new HashSet<String>();
   /** Default configuration values */
   protected final Properties defaultConfig = new Properties();
   /** Overriding configuration values loaded from file and command line */
@@ -30,22 +32,21 @@ public class Config {
     } catch (UnknownHostException ex) {
       // Ignore
     }
-    defaultConfig.setProperty("server.hostname", hostname);
-    defaultConfig.setProperty("server.port", "5678");
-    defaultConfig.setProperty("server.docIdPath", "/doc/");
-    // No default
-    //defaultConfig.setProperty("gsa.hostname", null);
-    defaultConfig.setProperty("gsa.characterEncoding", "UTF-8");
-    defaultConfig.setProperty("docId.isUrl", "false");
-    defaultConfig.setProperty("feed.name", "testfeed");
-    defaultConfig.setProperty("feed.noRecrawlBitEnabled", "false");
-    defaultConfig.setProperty("feed.crawlImmediatelyBitEnabled", "false");
-    //defaultConfig.setProperty("feed.noFollowBitEnabled", "false");
-    defaultConfig.setProperty("feed.maxUrls", "5000");
-  } 
+    addKey("server.hostname", hostname);
+    addKey("server.port", "5678");
+    addKey("server.docIdPath", "/doc/");
+    addKey("gsa.hostname", null);
+    addKey("gsa.characterEncoding", "UTF-8");
+    addKey("docId.isUrl", "false");
+    addKey("feed.name", "testfeed");
+    addKey("feed.noRecrawlBitEnabled", "false");
+    addKey("feed.crawlImmediatelyBitEnabled", "false");
+    //addKey("feed.noFollowBitEnabled", "false");
+    addKey("feed.maxUrls", "5000");
+  }
 
   public Set<String> getAllKeys() {
-    return config.stringPropertyNames() ;
+    return config.stringPropertyNames();
   }
 
   /* Preferences requiring you to set them: */
@@ -230,6 +231,7 @@ public class Config {
    * Load default configuration file and parse command line options.
    *
    * @return unused command line arguments
+   * @throws IllegalStateException when not all configuration keys have values
    */
   public String[] autoConfig(String[] args) {
     loadDefaultConfigFile();
@@ -245,6 +247,15 @@ public class Config {
       }
       config.setProperty(parts[0], parts[1]);
     }
+    Set<String> unset = new HashSet<String>();
+    for (String key : noDefaultConfig) {
+      if (config.getProperty(key) == null) {
+        unset.add(key);
+      }
+    }
+    if (unset.size() != 0) {
+      throw new IllegalStateException("Missing configuration values: " + unset);
+    }
     if (i == 0) {
       return args;
     } else {
@@ -253,31 +264,31 @@ public class Config {
   }
 
   /**
-   * Get a configuration value, without thrown an exception if it is unset.
-   */
-  public String getPossiblyUnsetValue(String key) {
-    return config.getProperty(key);
-  }
-
-  /**
-   * Get a configuration value, using {@code default} if it is unset.
-   */
-  public String getValueOrDefault(String key, String defaultValue) {
-    String value = getPossiblyUnsetValue(key);
-    return (value == null) ? defaultValue : value;
-  }
-
-  /**
    * Get a configuration value. Never returns {@code null}.
    *
    * @throws IllegalStateException if {@code key} has no value
    */
   public String getValue(String key) {
-    String value = getPossiblyUnsetValue(key);
+    String value = config.getProperty(key);
     if (value == null) {
       throw new IllegalStateException(MessageFormat.format(
           "You must set configuration key ''{0}''.", key));
     }
     return value;
+  }
+
+  /**
+   * Add configuration key. If defaultValue is {@code null}, then no default
+   * value is used.
+   */
+  public void addKey(String key, String defaultValue) {
+    if (defaultConfig.contains(key) || noDefaultConfig.contains(key)) {
+      throw new IllegalStateException("Key already added: " + key);
+    }
+    if (defaultValue == null) {
+      noDefaultConfig.add(key);
+    } else {
+      defaultConfig.setProperty(key, defaultValue);
+    }
   }
 }

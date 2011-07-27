@@ -77,8 +77,9 @@ class FileSystemAdaptor extends Adaptor {
   /** An example main for an adaptor. */
   public static void main(String a[]) throws IOException, InterruptedException {
     Config config = new Config();
+    config.addKey("filesystemadaptor.src", ".");
     config.autoConfig(a);
-    String source = config.getValueOrDefault("filesystemadaptor.src", ".");
+    String source = config.getValue("filesystemadaptor.src");
     Adaptor adaptor = new FileSystemAdaptor(new File(source));
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
