@@ -12,33 +12,22 @@ package adaptorlib;
   subclass. */
 public class DocId {
   private final String uniqId;  // Not null.
-  private final DocReadPermissions access;  // Who has access?
 
-  /** Constructs DocId that is marked public (visible by all). */
+  /** Constructs DocId */
   public DocId(String id) {
-    this(id, DocReadPermissions.IS_PUBLIC);
-  }
-
-  /** Creates with id and specific permissions. Arugments may not be null. */
-  public DocId(String id, DocReadPermissions acl) {
-    if (id == null || acl == null) {
+    if (id == null) {
       throw new NullPointerException();
     }
     this.uniqId = id;
-    this.access = acl;
   }
 
   public String getUniqueId() {
     return uniqId;
   }
 
-  public DocReadPermissions getDocReadPermissions() {
-    return access;
-  }
-
   /** "DocId(" + uniqId + "|" + access + ")" */
   public String toString() {
-    return "DocId(" + uniqId + "|" + access + ")";
+    return "DocId(" + uniqId + ")";
   }
 
   /** This default action is "add". */
@@ -47,13 +36,11 @@ public class DocId {
   } 
 
   public boolean equals(Object o) {
-    boolean same = false;
-    if (null != o && getClass().equals(o.getClass())) {
-      DocId d = (DocId) o;
-      same = this.uniqId.equals(d.uniqId)
-          && this.access.equals(d.access);
+    if (null == o || !getClass().equals(o.getClass())) {
+      return false;
     }
-    return same;
+    DocId d = (DocId) o;
+    return this.uniqId.equals(d.uniqId);
   }
 
   public int hashCode() {

@@ -1,5 +1,6 @@
 package commandlineadaptor;
 
+import adaptorlib.AbstractAdaptor;
 import adaptorlib.Adaptor;
 import adaptorlib.Command;
 import adaptorlib.Config;
@@ -11,18 +12,18 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * Command Line Adaptor
  */
-class CommandLineAdaptor extends Adaptor {
+class CommandLineAdaptor extends AbstractAdaptor {
   private static final Logger log = Logger.getLogger(CommandLineAdaptor.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   @Override
-  public List<DocId> getDocIds() throws IOException {
+  public void getDocIds(DocIdPusher pusher) throws IOException,
+         InterruptedException {
     int commandResult;
     Command command = new Command();
 
@@ -43,13 +44,14 @@ class CommandLineAdaptor extends Adaptor {
         docIds.add(new DocId(docId));
         log.finest("Pushing Doc ID: '" + docId + "'");
       }
-      return docIds;
+      pusher.pushDocIds(docIds);
     }
   }
 
   /** Gives the bytes of a document referenced with id. */
   @Override
-  public byte[] getDocContent(DocId id) throws IOException {
+  public void getDocContent(Request req, Response resp) throws IOException {
+    DocId id = req.getDocId();
     int commandResult;
     Command command = new Command();
 
@@ -68,8 +70,8 @@ class CommandLineAdaptor extends Adaptor {
       throw new IOException("External command error. code=" + commandResult + ".");
     } else {
       log.finest("Returning document contents for ID '" + id.getUniqueId() + ".");
-      return command.getStdout();
     }
+    resp.getOutputStream().write(command.getStdout());
   }
 
   /** An example main for an adaptor that enables serving. */

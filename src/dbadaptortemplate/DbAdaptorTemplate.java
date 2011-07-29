@@ -11,7 +11,7 @@ import java.util.logging.*;
  * Demonstrates what code is necessary for putting DB
  * content onto a GSA.
  */
-class DbAdaptorTemplate extends Adaptor {
+class DbAdaptorTemplate extends AbstractAdaptor {
   private static final Logger log
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
@@ -35,7 +35,9 @@ class DbAdaptorTemplate extends Adaptor {
   }
 
   /** Get all doc ids from database. */
-  public List<DocId> getDocIds() throws IOException {
+  @Override
+  public void getDocIds(DocIdPusher pusher) throws IOException,
+         InterruptedException {
     ArrayList<DocId> primaryKeys = new ArrayList<DocId>();
     Connection conn = null;
     try {
@@ -54,11 +56,13 @@ class DbAdaptorTemplate extends Adaptor {
     if (log.isLoggable(Level.FINEST)) {
       log.finest("primary keys: " + primaryKeys);
     }
-    return primaryKeys;
+    pusher.pushDocIds(primaryKeys);
   }
 
   /** Gives the bytes of a document referenced with id. */
-  public byte[] getDocContent(DocId id) throws IOException {
+  @Override
+  public void getDocContent(Request req, Response resp) throws IOException {
+    DocId id = req.getDocId();
     Connection conn = null;
     try {
       conn = makeNewConnection();
@@ -74,7 +78,9 @@ class DbAdaptorTemplate extends Adaptor {
       if (0 == numberOfColumns) {
         log.warning("no columns in results");
         // TODO(pjo): Cause some sort of error code.
-        return "no columns in database result".getBytes(encoding);
+        resp.getOutputStream().write(
+            "no columns in database result".getBytes(encoding));
+        return;
       }
 
       // If we have data then create lines of resulting document.
@@ -94,7 +100,7 @@ class DbAdaptorTemplate extends Adaptor {
       }
       String document = line1.substring(1) + "\n"
           + line2.substring(1) + "\n" + line3.substring(1) + "\n";
-      return document.getBytes(encoding);
+      resp.getOutputStream().write(document.getBytes(encoding));
     } catch (SQLException problem) {
       log.log(Level.SEVERE, "failed getting content", problem);
       throw new IOException("retrieval error", problem);

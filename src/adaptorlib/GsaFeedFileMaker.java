@@ -62,7 +62,8 @@ class GsaFeedFileMaker {
                               "" + commHandler.encodeDocId(docForGsa));
 
       // Add present permissions as "meta" elements.
-      DocReadPermissions permits = docForGsa.getDocReadPermissions();
+      // TODO(ejona): migrate to during crawling
+      /*DocReadPermissions permits = docForGsa.getDocReadPermissions();
       Element isPublic = doc.createElement("meta");
       metadata.appendChild(isPublic);
       isPublic.setAttribute("name", "google:ispublic");
@@ -82,7 +83,7 @@ class GsaFeedFileMaker {
         aclGroups.setAttribute("name", "google:aclgroups");
         String groups = permits.getGroups();
         aclGroups.setAttribute("content", groups);
-      }
+      }*/
     }
     // TODO(pjo): Add "no-recrawl" signal.
     // TODO(pjo): Add "crawl-immediately" signal.
@@ -92,22 +93,22 @@ class GsaFeedFileMaker {
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<DocId> handles) {
+      Element root, List<DocId> docIds) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (int i = 0; i < handles.size(); i++) {
-      DocId h = handles.get(i);
+    for (int i = 0; i < docIds.size(); i++) {
+      DocId h = docIds.get(i);
       constructSingleMetadataAndUrlFeedFileRecord(doc, group, h);
     }
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<DocId> handles) {
+      String srcName, List<DocId> docIds) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
-    constructMetadataAndUrlFeedFileBody(doc, root, handles);
+    constructMetadataAndUrlFeedFileBody(doc, root, docIds);
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
@@ -130,12 +131,12 @@ class GsaFeedFileMaker {
   /** Makes a metadata-and-url feed file from upto 
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
-  public String makeMetadataAndUrlXml(String srcName, List<DocId> handles) {
+  public String makeMetadataAndUrlXml(String srcName, List<DocId> docIds) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
-      constructMetadataAndUrlFeedFile(doc, srcName, handles);
+      constructMetadataAndUrlFeedFile(doc, srcName, docIds);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {

@@ -11,7 +11,7 @@ import java.net.URI;
  */
 public class GsaCommunicationHandlerTest {
   private GsaCommunicationHandler gsa
-      = new GsaCommunicationHandler(null, new Config());
+      = new GsaCommunicationHandler(new NullAdaptor(), new Config());
 
   @Test
   public void testRelativeDot() {
@@ -80,5 +80,17 @@ public class GsaCommunicationHandlerTest {
     decodeAndEncode("/drop/table/now");
     decodeAndEncode("//drop/table/now");
     decodeAndEncode("//d&op/t+b+e/n*w");
+  }
+
+  private static class NullAdaptor extends AbstractAdaptor {
+    @Override
+    public void getDocIds(DocIdPusher pusher) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void getDocContent(Request req, Response Resp) {
+      throw new UnsupportedOperationException();
+    }
   }
 }

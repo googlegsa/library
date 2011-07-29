@@ -16,8 +16,8 @@ public class JournalTest {
     Journal journal = new Journal();
     DocId id  = new DocId("id1");
     DocId id2 = new DocId("id2");
-    DocId id3 = new DocId("id3", DocReadPermissions.USE_HEAD_REQUEST);
-    DocId id4 = new DocId("id4", DocReadPermissions.USE_HEAD_REQUEST);
+    DocId id3 = new DocId("id3");
+    DocId id4 = new DocId("id4");
     ArrayList<DocId> docs = new ArrayList<DocId>();
     docs.add(id);
     docs.add(id2);

@@ -125,8 +125,9 @@ abstract class AbstractHandler implements HttpHandler {
    */
   protected void respond(HttpExchange ex, int code, String contentType,
                          byte response[]) throws IOException {
-    // TODO(johnfelton) : For now, don't set the content type.
-    // ex.getResponseHeaders().set("Content-Type", contentType);
+    if (contentType != null) {
+      ex.getResponseHeaders().set("Content-Type", contentType);
+    }
     if (response == null) {
       // No body. Required for HEAD requests
       ex.sendResponseHeaders(code, -1);

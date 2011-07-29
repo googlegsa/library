@@ -3,13 +3,12 @@ package filesystemadaptor;
 import adaptorlib.*;
 import java.io.*;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Logger;
 
 /**
  * Adaptor serving files from current directory
  */
-class FileSystemAdaptor extends Adaptor {
+class FileSystemAdaptor extends AbstractAdaptor {
   private static Logger log = Logger.getLogger(FileSystemAdaptor.class.getName());
   private final File serveDir;
 
@@ -17,7 +16,9 @@ class FileSystemAdaptor extends Adaptor {
     this.serveDir = file.getCanonicalFile();
   }
 
-  public List<DocId> getDocIds() throws IOException {
+  @Override
+  public void getDocIds(DocIdPusher pusher) throws IOException,
+         InterruptedException {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     String parent = serveDir.toString();
     try {
@@ -34,34 +35,22 @@ class FileSystemAdaptor extends Adaptor {
     } catch (RecursiveFileIterator.WrappedIOException ex) {
       throw ex.getCause();
     }
-    return mockDocIds;
+    pusher.pushDocIds(mockDocIds);
   }
 
-  /** Gives the bytes of a document referenced with id. Returns
-   *  null if such a document doesn't exist. */
-  public byte[] getDocContent(DocId id) throws IOException {
+  @Override
+  public void getDocContent(Request req, Response resp) throws IOException {
+    DocId id = req.getDocId();
     File file = new File(serveDir, id.getUniqueId()).getCanonicalFile();
     if (!isFileDescendantOfServeDir(file)) {
       throw new FileNotFoundException();
     }
     InputStream input = new FileInputStream(file);
-    ByteArrayOutputStream output = new ByteArrayOutputStream(
-        (int) file.length());
     try {
-      IOHelper.copyStream(input, output);
+      IOHelper.copyStream(input, resp.getOutputStream());
     } finally {
-      try {
-        input.close();
-      } catch (IOException ex) {
-        // Ignore. Nothing we can do.
-      }
-      try {
-        output.close();
-      } catch (IOException ex) {
-        // Ignore. Nothing we can do.
-      }
+      input.close();
     }
-    return output.toByteArray();
   }
 
   private boolean isFileDescendantOfServeDir(File file) {

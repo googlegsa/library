@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -23,10 +24,15 @@ public class GsaCommunicationHandler {
   private final GsaFeedFileSender fileSender;
   private final GsaFeedFileMaker fileMaker;
   private final Journal journal = new Journal();
+  private final Adaptor.DocIdPusher pusher = new InnerDocIdPusher();
+  private final Adaptor.GetDocIdsErrorHandler defaultErrorHandler
+      = new DefaultGetDocIdsErrorHandler();
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     // TODO(ejona): allow the adaptor to choose whether it wants this feature
     this.adaptor = new AutoUnzipAdaptor(adaptor);
+    this.adaptor.setDocIdPusher(pusher);
+
     this.config = config;
     this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding());
     this.fileMaker = new GsaFeedFileMaker(this);
@@ -51,12 +57,28 @@ public class GsaCommunicationHandler {
     log.info("server is listening on port #" + port);
   }
 
+  /**
+   * Schedule {@link Adaptor#getDocIds} to be called when defined by the {@code
+   * schedule}. Equivalent to {@code beginPushingDocIds(schedule, null)}.
+   *
+   * @see #beginPushingDocIds(Iterator, Adaptor.GetDocIdsErrorHandler)
+   */
   public void beginPushingDocIds(Iterator<Date> schedule) {
+    beginPushingDocIds(schedule, null);
+  }
+
+  /**
+   * Schedule {@link Adaptor#getDocIds} to be called when defined by the {@code
+   * schedule}. If {@code handler} is {@code null}, then a default error handler
+   * will be used.
+   */
+  public void beginPushingDocIds(Iterator<Date> schedule,
+                                 final Adaptor.GetDocIdsErrorHandler handler) {
     Scheduler pushScheduler = new Scheduler();
     pushScheduler.schedule(new Scheduler.Task() {
       public void run() {
         try {
-          pushDocIds();
+          pushDocIds(handler);
         } catch (InterruptedException ex) {
           Thread.currentThread().interrupt();
         }
@@ -64,52 +86,69 @@ public class GsaCommunicationHandler {
     }, schedule);
   }
 
-  private void pushSizedBatchOfDocIds(List<DocId> handles)
+  private DocId pushSizedBatchOfDocIds(List<DocId> docIds,
+                                       Adaptor.PushErrorHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
     String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(
-        feedSourceName, handles);
+        feedSourceName, docIds);
     boolean keepGoing = true;
+    boolean success = false;
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("Sending feed to GSA host name: " + config.getGsaHostname());
         fileSender.sendMetadataAndUrl(config.getGsaHostname(), feedSourceName,
-                                  xmlFeedFile);
+                                      xmlFeedFile);
         keepGoing = false;  // Sent.
+        success = true;
       } catch (GsaFeedFileSender.FailedToConnect ftc) {
         log.log(Level.WARNING, "Unable to connect to the GSA", ftc);
-        keepGoing = adaptor.handleFailedToConnect(
+        keepGoing = handler.handleFailedToConnect(
             (Exception) ftc.getCause(), ntries);
       } catch (GsaFeedFileSender.FailedWriting fw) {
         log.log(Level.WARNING, "Unable to write request to the GSA", fw);
-        keepGoing = adaptor.handleFailedWriting(
+        keepGoing = handler.handleFailedWriting(
             (Exception) fw.getCause(), ntries);
       } catch (GsaFeedFileSender.FailedReadingReply fr) {
         log.log(Level.WARNING, "Unable to read reply from GSA", fr);
-        keepGoing = adaptor.handleFailedReadingReply(
+        keepGoing = handler.handleFailedReadingReply(
             (Exception) fr.getCause(), ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       }
     }
+    return success ? null : docIds.get(0);
   }
 
   /**
    * Makes and sends metadata-and-url feed files to GSA. This method blocks
-   * until all DocIds are sent or retrying failed.
+   * until all DocIds are sent or retrying failed. Equivalent to {@code
+   * pushDocIds(null)}.
    */
   public void pushDocIds() throws InterruptedException {
+    pushDocIds(null);
+  }
+
+  /**
+   * Makes and sends metadata-and-url feed files to GSA. This method blocks
+   * until all DocIds are sent or retrying failed. If {@code handler} is {@code
+   * null}, then a default error handler is used.
+   */
+  public void pushDocIds(Adaptor.GetDocIdsErrorHandler handler)
+      throws InterruptedException {
+    if (handler == null) {
+      handler = defaultErrorHandler;
+    }
     log.info("Getting list of DocIds");
-    List<DocId> handles;
     for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
       try {
-        handles = adaptor.getDocIds();
+        adaptor.getDocIds(pusher);
         break; // Success
       } catch (Exception ex) {
         log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
-        keepGoing = adaptor.handleFailedToGetDocIds(ex, ntries);
+        keepGoing = handler.handleFailedToGetDocIds(ex, ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
@@ -117,8 +156,6 @@ public class GsaCommunicationHandler {
         return; // Bail
       }
     }
-    pushDocIds(handles);
-    journal.recordDocIdPush(handles);
   }
 
   /**
@@ -127,23 +164,29 @@ public class GsaCommunicationHandler {
    * push just a few DocIds to the GSA manually, this is the method to use.
    * This method blocks until all DocIds are sent or retrying failed.
    */
-  public void pushDocIds(List<DocId> handles) throws InterruptedException {
-    log.log(Level.INFO, "Pushing {0} DocIds", handles.size());
+  private DocId pushDocIds(Iterator<DocId> docIds,
+                           Adaptor.PushErrorHandler handler)
+      throws InterruptedException {
+    log.log(Level.INFO, "Pushing DocIds");
     final int max = config.getFeedMaxUrls();
-    int totalPushed = 0;
-    for (int i = 0; i < handles.size(); i += max) {
-      int endIndex = i + max;
-      if (endIndex > handles.size()) {
-        endIndex = handles.size();
+    while (docIds.hasNext()) {
+      List<DocId> batch = new ArrayList<DocId>();
+      for (int j = 0; j < max; j++) {
+        if (!docIds.hasNext()) {
+          break;
+        }
+        batch.add(docIds.next());
       }
-      List<DocId> batch = handles.subList(i, endIndex);
-      pushSizedBatchOfDocIds(batch);
-      totalPushed += batch.size();
-    }
-    if (handles.size() != totalPushed) {
-      throw new IllegalStateException();
+      log.log(Level.INFO, "Pushing group of {0} DocIds", batch.size());
+      DocId failedId = pushSizedBatchOfDocIds(batch, handler);
+      if (failedId != null) {
+        log.info("Failed to push all ids. Failed on docId: " + failedId);
+        return failedId;
+      }
+      journal.recordDocIdPush(batch);
     }
     log.info("Pushed DocIds");
+    return null;
   }
 
   URI encodeDocId(DocId docId) {
@@ -194,5 +237,25 @@ public class GsaCommunicationHandler {
 
   Journal getJournal() {
     return journal;
+  }
+
+  private class InnerDocIdPusher implements Adaptor.DocIdPusher {
+    private Adaptor.PushErrorHandler defaultErrorHandler
+        = new DefaultPushErrorHandler();
+
+    public DocId pushDocIds(Iterable<DocId> docIds)
+        throws InterruptedException {
+      return pushDocIds(docIds, null);
+    }
+
+    public DocId pushDocIds(Iterable<DocId> docIds,
+                            Adaptor.PushErrorHandler handler)
+        throws InterruptedException {
+      if (handler == null) {
+        handler = defaultErrorHandler;
+      }
+      return GsaCommunicationHandler.this.pushDocIds(docIds.iterator(),
+                                                     handler);
+    }
   }
 }

@@ -12,30 +12,37 @@ import java.util.logging.Logger;
  * <ol><li> providing document ids
  *   <li> providing document bytes given a document id</ol>
  */
-class AdaptorTemplate extends Adaptor {
+class AdaptorTemplate extends AbstractAdaptor {
   private static final Logger log
       = Logger.getLogger(AdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   /** Gives list of document ids that you'd like on the GSA. */
-  public List<DocId> getDocIds() {
+  @Override
+  public void getDocIds(DocIdPusher pusher) throws InterruptedException {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     /* Replace this mock data with code that lists your repository. */
     mockDocIds.add(new DocId("1001"));
     mockDocIds.add(new DocId("1002"));
-    return mockDocIds;
+    pusher.pushDocIds(mockDocIds);
   }
 
   /** Gives the bytes of a document referenced with id. */
-  public byte[] getDocContent(DocId id) throws IOException {
+  @Override
+  public void getDocContent(Request req, Response resp) throws IOException {
+    DocId id = req.getDocId();
+    String str;
     if ("1001".equals(id.getUniqueId())) {
-      return "Document 1001 says hello and apple orange".getBytes(encoding);
+      str = "Document 1001 says hello and apple orange";
     } else if ("1002".equals(id.getUniqueId())) {
-      return "Document 1002 says hello and banana strawberry"
-          .getBytes(encoding);
+      str = "Document 1002 says hello and banana strawberry";
     } else {
       throw new FileNotFoundException(id.getUniqueId());
     }
+    // Must get the OutputStream after any possibility of throwing a
+    // FileNotFoundException
+    OutputStream os = resp.getOutputStream();
+    os.write(str.getBytes(encoding));
   }
 
   /** An example main for an adaptor that:<br>
