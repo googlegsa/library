@@ -1,0 +1,100 @@
+<html><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1"><title>testfeed</title></head><body>
+Yo MA-ma!<br>
+<hr>
+
+Stats:<br>
+# total document ids pushed: 2<br>
+# unique document ids pushed: 2<br>
+# total document requests by GSA: 2<br>
+# unique document requests by GSA: 2<br>
+# total document requests not by GSA: 0<br>
+# unique document requests not by GSA: 0<br>
+Program started at: Mon Aug 01 16:41:46 PDT 2011<br>
+<hr>
+# Adaptor's configuration:<br>
+<table border="2">
+<tbody><tr><td>feed.crawlImmediatelyBitEnabled</td><td>false</td></tr>
+<tr><td>gsa.characterEncoding</td><td>UTF-8</td></tr>
+<tr><td>server.port</td><td>5678</td></tr>
+<tr><td>docId.isUrl</td><td>false</td></tr>
+<tr><td>feed.name</td><td>testfeed</td></tr>
+<tr><td>feed.noRecrawlBitEnabled</td><td>false</td></tr>
+<tr><td>gsa.hostname</td><td>entzn02.hot</td></tr>
+<tr><td>feed.maxUrls</td><td>5000</td></tr>
+<tr><td>server.docIdPath</td><td>/doc/</td></tr>
+<tr><td>server.hostname</td><td>moses.mtv.corp.google.com</td></tr>
+</tbody></table>
+<pre style="height: 20em; overflow: auto;">Aug 1, 2011 4:41:46 PM sun.net.httpserver.ServerImpl createContext
+CONFIG: context created: /dashboard
+Aug 1, 2011 4:41:46 PM sun.net.httpserver.ServerImpl createContext
+CONFIG: context created: /sso
+Aug 1, 2011 4:41:46 PM sun.net.httpserver.ServerImpl createContext
+CONFIG: context created: /doc/
+Aug 1, 2011 4:41:46 PM adaptorlib.GsaCommunicationHandler beginListeningForContentRequests
+INFO: GSA host name: entzn02.hot
+Aug 1, 2011 4:41:46 PM adaptorlib.GsaCommunicationHandler beginListeningForContentRequests
+INFO: server is listening on port #5678
+Aug 1, 2011 4:41:46 PM adaptortemplate.AdaptorTemplate main
+INFO: doc content serving started
+Aug 1, 2011 4:41:46 PM adaptorlib.GsaCommunicationHandler pushDocIds
+INFO: Getting list of DocIds
+Aug 1, 2011 4:41:46 PM adaptorlib.GsaCommunicationHandler pushDocIds
+INFO: Pushing DocIds
+Aug 1, 2011 4:41:46 PM adaptorlib.GsaCommunicationHandler pushDocIds
+INFO: Pushing group of 2 DocIds
+Aug 1, 2011 4:41:46 PM adaptorlib.GsaCommunicationHandler pushSizedBatchOfDocIds
+INFO: Sending feed to GSA host name: entzn02.hot
+Aug 1, 2011 4:41:47 PM adaptorlib.GsaFeedFileSender handleGsaReply
+INFO: success message received
+Aug 1, 2011 4:41:47 PM adaptorlib.GsaCommunicationHandler pushDocIds
+INFO: Pushed DocIds
+Aug 1, 2011 4:41:47 PM adaptortemplate.AdaptorTemplate main
+INFO: doc id pushing has been put on schedule
+Aug 1, 2011 4:41:52 PM sun.net.httpserver.ServerImpl logReply
+FINE: GET /robots.txt HTTP/1.0 [404  Not Found] (No context found for request)
+Aug 1, 2011 4:41:52 PM sun.net.httpserver.ServerImpl logReply
+FINE: GET /robots.txt HTTP/1.0 [404  Not Found] (No context found for request)
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler handle
+FINE: begining in=1,out=0
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler logRequest
+FINER: Received GET request to /doc/1001. Headers: {Host: moses.mtv.corp.google.com:5678, Accept-encoding: gzip, User-agent: gsa-crawler (Enterprise; S5-RPTJAC7Q4EJJT; nobody@google.com), Accept: text/html,text/plain,application/*}
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler handle
+FINE: begining in=2,out=0
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler handle
+FINE: Processing request with adaptorlib.DocumentHandler
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler logRequest
+FINER: Received GET request to /doc/1002. Headers: {Host: moses.mtv.corp.google.com:5678, Accept-encoding: gzip, User-agent: gsa-crawler (Enterprise; S5-RPTJAC7Q4EJJT; nobody@google.com), Accept: text/html,text/plain,application/*}
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler getRequestUri
+FINER: Resolved original URI to: http://moses.mtv.corp.google.com:5678/doc/1001
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler handle
+FINE: Processing request with adaptorlib.DocumentHandler
+Aug 1, 2011 4:41:52 PM adaptorlib.DocumentHandler meteredHandle
+FINE: id: 1001
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler getRequestUri
+FINER: Resolved original URI to: http://moses.mtv.corp.google.com:5678/doc/1002
+Aug 1, 2011 4:41:52 PM adaptorlib.DocumentHandler meteredHandle
+FINE: id: 1002
+Aug 1, 2011 4:41:52 PM adaptorlib.DocumentHandler meteredHandle
+FINER: processed request; response is size=41
+Aug 1, 2011 4:41:52 PM adaptorlib.DocumentHandler meteredHandle
+FINER: processed request; response is size=46
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler enableCompressionIfSupported
+FINER: Enabling gzip compression for response
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler enableCompressionIfSupported
+FINER: Enabling gzip compression for response
+Aug 1, 2011 4:41:52 PM sun.net.httpserver.ServerImpl logReply
+FINE: GET /doc/1001 HTTP/1.0 [200  OK] ()
+Aug 1, 2011 4:41:52 PM sun.net.httpserver.ServerImpl logReply
+FINE: GET /doc/1002 HTTP/1.0 [200  OK] ()
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler handle
+FINE: ending in=2,out=1
+Aug 1, 2011 4:41:52 PM adaptorlib.AbstractHandler handle
+FINE: ending in=2,out=2
+Aug 1, 2011 4:45:15 PM adaptorlib.AbstractHandler handle
+FINE: begining in=1,out=0
+Aug 1, 2011 4:45:15 PM adaptorlib.AbstractHandler logRequest
+FINER: Received GET request to /dashboard. Headers: {Cache-control: max-age=259200, Host: moses:5678, Accept-charset: ISO-8859-1,utf-8;q=0.7,*;q=0.7, Accept-encoding: gzip,deflate, Connection: keep-alive, X-forwarded-for: 172.22.91.118, Accept-language: en-us,en;q=0.5, Via: 1.1 cache1-5.mtv.corp.google.com (squid/3.1.11), User-agent: Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US; rv:1.9.2.18) Gecko/20110614 Firefox/3.6.18, Accept: text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8}
+Aug 1, 2011 4:45:15 PM adaptorlib.AbstractHandler handle
+FINE: Processing request with adaptorlib.DashboardHandler
+</pre></body></html>

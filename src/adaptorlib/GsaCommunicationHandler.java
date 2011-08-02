@@ -44,6 +44,7 @@ public class GsaCommunicationHandler {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/dashboard", new DashboardHandler(config, journal));
+    server.createContext("/stat", new StatHandler(config, journal));
     server.createContext("/sso", new SsoHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding()));
     // Disable SecurityHandler until it can query adapter for configuration

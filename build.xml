@@ -30,6 +30,9 @@
       <classpath location="${junit.jar}"/>
     </javac>
     <copy file="${src.dir}/logging.properties" todir="${build.dir}"/>
+    <copy todir="${build.dir}/adaptorlib">
+      <fileset dir="${src.dir}/adaptorlib/statichtml"/>
+    </copy>
   </target>
 
   <target name="javadoc" description="Build JavaDocs">
