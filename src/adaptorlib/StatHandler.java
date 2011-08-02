@@ -2,9 +2,12 @@ package adaptorlib;
 import com.sun.net.httpserver.HttpExchange;
 import java.io.IOException;
 import java.net.HttpURLConnection;
+import java.util.logging.LogManager;
 
-/** Provides performance data when responding
- *  to ajax calls from dashboard. */
+/**
+ * Provides performance data when responding to 
+ * ajax calls from dashboard.
+ */
 class StatHandler extends AbstractHandler {
   private Config config;
   private Journal journal;

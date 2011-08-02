@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.logging.LogManager;
 
-/** Serves class' resources like dashboard's html and jquery js.  */
+/** Serves class' resources like dashboard's html and jquery js. */
 class DashboardHandler extends AbstractHandler {
   private Config config;
   private Journal journal;
@@ -35,8 +35,10 @@ class DashboardHandler extends AbstractHandler {
     }
   }
 
-  /** Provides static files that are resources.  Rejects URIs whose
-   *  path does not begin with "/dashboard". */
+  /**
+   * Provides static files that are resources.  Rejects URIs whose
+   * path does not begin with "/dashboard".
+   */
   private byte[] loadPage(URI requested) throws IOException {
     String path = requested.getPath();
     if ("/dashboard".equals(path) || "/dashboard/".equals(path)) {
