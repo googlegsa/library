@@ -26,7 +26,7 @@ class FileSystemAdaptor extends AbstractAdaptor {
         String name = file.toString();
         if (!name.startsWith(parent)) {
           throw new IllegalStateException(
-              "Internal problem: the file's path begins with its parent.");
+              "Internal problem: the file's path does not begin with parent.");
         }
         // +1 for slash
         name = name.substring(parent.length() + 1);
