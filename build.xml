@@ -22,11 +22,11 @@
   <target name="build" description="Build source">
     <mkdir dir="${build.dir}"/>
     <mkdir dir="${build-test.dir}"/>
-    <javac srcdir="${src.dir}" destdir="${build.dir}" debug="true">
+    <javac srcdir="${src.dir}" destdir="${build.dir}" debug="true" includeantruntime="false">
       <classpath location="${opencsv.jar}"/>
       <classpath location="${j-calais.jar}"/>
     </javac>
-    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true">
+    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true" includeantruntime="false">
       <classpath location="${junit.jar}"/>
     </javac>
     <copy file="${src.dir}/logging.properties" todir="${build.dir}"/>
