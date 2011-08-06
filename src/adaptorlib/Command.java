@@ -143,17 +143,9 @@ public class Command {
       }
     }
 
-    private static void silentClose(InputStream is) {
+    private static void silentClose(Closeable closeable) {
       try {
-        is.close();
-      } catch (IOException ex) {
-        // ignore
-      }
-    }
-
-    private static void silentClose(OutputStream os) {
-      try {
-        os.close();
+        closeable.close();
       } catch (IOException ex) {
         // ignore
       }

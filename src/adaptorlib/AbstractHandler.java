@@ -143,8 +143,8 @@ abstract class AbstractHandler implements HttpHandler {
       OutputStream responseBody = ex.getResponseBody();
       log.finest("before writing response");
       responseBody.write(response);
-      // These shouldn't be needed, but without them one developer had trouble
       responseBody.flush();
+      // This shouldn't be needed, but without it one developer had trouble
       responseBody.close();
       log.finest("after writing response");
     }

@@ -103,11 +103,7 @@ class GsaFeedFileSender {
       outputStream.write(msgbytes);
       outputStream.flush();
     } finally {
-      try {
-        outputStream.close();
-      } catch (IOException e) {
-        log.warning("failed to close output stream");
-      }
+      outputStream.close();
     }
   }
 
