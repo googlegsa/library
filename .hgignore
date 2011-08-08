@@ -1,7 +1,0 @@
-^classes/
-^javadoc/
-^src/dbadaptortemplate/mysql.jar$
-^adaptor-config.properties
-^workspace/
-^src/commandlineadaptor/.classpath
-^src/commandlineadaptor/.project
