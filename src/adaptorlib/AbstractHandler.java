@@ -8,8 +8,11 @@ import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -19,6 +22,15 @@ import java.util.zip.GZIPOutputStream;
 abstract class AbstractHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
+  // DateFormats are relatively expensive to create, and cannot be used from
+  // multiple threads
+  protected static ThreadLocal<DateFormat> dateFormat
+      = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+          return new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+        }
+      };
 
   // Numbers for logging incoming and completed communications.
   private int numberConnectionStarted = 0;
@@ -159,11 +171,39 @@ abstract class AbstractHandler implements HttpHandler {
   protected void enableCompressionIfSupported(HttpExchange ex)
       throws IOException {
     String encodingList = ex.getRequestHeaders().getFirst("Accept-Encoding");
+    if (encodingList == null) {
+      return;
+    }
     Collection<String> encodings = Arrays.asList(encodingList.split(","));
     if (encodings.contains("gzip")) {
       log.finer("Enabling gzip compression for response");
       ex.getResponseHeaders().set("Content-Encoding", "gzip");
     }
+  }
+
+  /**
+   * Retrieves and parses the If-Modified-Since from the request, returning null
+   * if there was no such header or there was an error.
+   */
+  protected static Date getIfModifiedSince(HttpExchange ex) {
+    String ifModifiedSince
+        = ex.getRequestHeaders().getFirst("If-Modified-Since");
+    if (ifModifiedSince == null) {
+      return null;
+    }
+    try {
+      return dateFormat.get().parse(ifModifiedSince);
+    } catch (java.text.ParseException e) {
+      log.log(Level.WARNING, "Exception when parsing ifModifiedSince", e);
+      // Ignore and act like it wasn't present
+      return null;
+    }
+  }
+
+  protected void setLastModified(HttpExchange ex, Date lastModified) {
+    ex.getResponseHeaders().set("Last-Modified",
+                                dateFormat.get().format(lastModified));
+
   }
 
   protected abstract void meteredHandle(HttpExchange ex) throws IOException;
@@ -183,10 +223,6 @@ abstract class AbstractHandler implements HttpHandler {
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
       meteredHandle(ex);
-    } catch (Exception e) {
-      log.log(Level.WARNING,
-              "Unexpected exception propagated to top-level request handling",
-              e);
     } finally {
       synchronized (this) {
         numberConnectionFinished++;

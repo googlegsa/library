@@ -9,8 +9,6 @@ import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -21,13 +19,6 @@ class DocumentHandler extends AbstractHandler {
 
   private GsaCommunicationHandler commHandler;
   private Adaptor adaptor;
-  private ThreadLocal<DocumentRequest> localRequest
-      = new ThreadLocal<DocumentRequest>() {
-        @Override
-        protected DocumentRequest initialValue() {
-          return new DocumentRequest();
-        }
-      };
 
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
                          GsaCommunicationHandler commHandler, Adaptor adaptor) {
@@ -41,6 +32,7 @@ class DocumentHandler extends AbstractHandler {
      return (null != userAgent) && userAgent.startsWith("gsa-crawler");
   }
 
+  @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
@@ -56,15 +48,22 @@ class DocumentHandler extends AbstractHandler {
         journal.recordNonGsaContentRequest(docId);
       }
 
-      DocumentRequest request = localRequest.get();
-      request.setup(ex, docId);
+      DocumentRequest request = new DocumentRequest(ex, docId,
+                                                    dateFormat.get());
       DocumentResponse response = new DocumentResponse(ex);
       // TODO(ejona): if text, support providing encoding
+      journal.recordRequestProcessingStart();
       byte[] content;
       String contentType;
       int httpResponseCode;
       try {
-        adaptor.getDocContent(request, response);
+        try {
+          adaptor.getDocContent(request, response);
+        } finally {
+          // We want this to be recorded immediately, not after sending error
+          // codes
+          journal.recordRequestProcessingEnd();
+        }
 
         content = response.getWrittenContent();
         contentType = response.contentType;
@@ -83,8 +82,6 @@ class DocumentHandler extends AbstractHandler {
                       "Exception (" + e.getClass().getName() + "): "
                       + e.getMessage());
         return;
-      } finally {
-        request.reset();
       }
 
       if (httpResponseCode != HttpURLConnection.HTTP_OK
@@ -110,22 +107,29 @@ class DocumentHandler extends AbstractHandler {
     }
   }
 
+  @Override
+  protected void respond(HttpExchange ex, int code, String contentType,
+                         byte[] response) throws IOException {
+    commHandler.getJournal().recordRequestResponseStart();
+    try {
+      super.respond(ex, code, contentType, response);
+    } finally {
+      commHandler.getJournal().recordRequestResponseEnd();
+    }
+  }
+
   private static class DocumentRequest implements Adaptor.Request {
     // DateFormats are relatively expensive to create, and cannot be used from
     // multiple threads
-    private final DateFormat dateFormat
-       = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
-    private HttpExchange ex;
-    private DocId docId;
+    private final DateFormat dateFormat;
+    private final HttpExchange ex;
+    private final DocId docId;
 
-    private void setup(HttpExchange ex, DocId docId) {
+    private DocumentRequest(HttpExchange ex, DocId docId,
+                            DateFormat dateFormat) {
       this.ex = ex;
       this.docId = docId;
-    }
-
-    private void reset() {
-      ex = null;
-      docId = null;
+      this.dateFormat = dateFormat;
     }
 
     @Override
@@ -144,22 +148,7 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public Date getLastAccessTime() {
-      String ifModifiedSinceStr = ex.getRequestHeaders().getFirst(
-          "If-Modified-Since");
-      if (ifModifiedSinceStr == null) {
-        return null;
-      }
-
-      Date ifModifiedSince = null;
-      try {
-        ifModifiedSince = dateFormat.parse(ifModifiedSinceStr);
-      } catch (ParseException e) {
-        log.log(Level.WARNING, "Exception when parsing ifModifiedSince", e);
-        // Ignore and act like it wasn't present
-        return null;
-      }
-      log.fine("date: " + ifModifiedSince);
-      return ifModifiedSince;
+      return getIfModifiedSince(ex);
     }
 
     @Override
