@@ -2,10 +2,12 @@
   <description>GSA Adaptor library</description>
   <property name="src.dir" location="src"/>
   <property name="test.dir" location="test"/>
-  <property name="build.dir" location="classes"/>
-  <property name="build-test.dir" location="classes"/>
-  <property name="javadoc.dir" location="javadoc"/>
-  <property name="static.dir" location="static"/>
+  <property name="build.dir" location="build"/>
+  <property name="build-src.dir" location="${build.dir}/src"/>
+  <property name="build-test.dir" location="${build.dir}/test"/>
+  <property name="dist.dir" location="dist"/>
+  <property name="javadoc.dir" location="${build.dir}/javadoc"/>
+  <property name="resource.dir" location="resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
   <property name="opencsv.jar" location="${lib.dir}/opencsv-2.3.jar"/>
@@ -22,18 +24,50 @@
   <property name="json-simple.jar" location="${lib.dir}/json_simple-1.1.jar"/>
 
   <target name="build" description="Build source">
-    <mkdir dir="${build.dir}"/>
-    <mkdir dir="${build-test.dir}"/>
-    <javac srcdir="${src.dir}" destdir="${build.dir}" debug="true" includeantruntime="false">
+    <mkdir dir="${build-src.dir}"/>
+    <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
+      includeantruntime="false">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath location="${opencsv.jar}"/>
       <classpath location="${j-calais.jar}"/>
       <classpath location="${json-simple.jar}"/>
     </javac>
-    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true" includeantruntime="false">
+
+    <mkdir dir="${build-test.dir}"/>
+    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
+      includeantruntime="false">
+      <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
     </javac>
-    <copy file="${src.dir}/logging.properties" todir="${build.dir}"/>
+  </target>
+
+  <target name="dist" description="Generate distribution binaries"
+    depends="clean,test,package"/>
+
+  <target name="package" description="Generate binaries"
+    depends="build,javadoc">
+    <mkdir dir="${dist.dir}"/>
+    <jar destfile="${dist.dir}/adaptor.jar" basedir="${build-src.dir}"
+      excludes="adaptorlib/examples/**,adaptorlib/prebuilt/**">
+      <zipfileset includes="**/*.class" src="${json-simple.jar}"/>
+      <fileset dir="${resource.dir}"/>
+    </jar>
+    <jar destfile="${dist.dir}/adaptor-prebuilt.jar" basedir="${build-src.dir}"
+      includes="adaptorlib/prebuilt/**/*.class">
+    </jar>
+    <jar destfile="${dist.dir}/adaptor-examples.jar" basedir="${build-src.dir}"
+      includes="adaptorlib/examples/**/*.class">
+      <zipfileset includes="**/*.class" src="${opencsv.jar}"/>
+      <zipfileset includes="**/*.class" src="${guava.jar}"/>
+      <zipfileset includes="**/*.class" src="${j-calais.jar}"/>
+      <zipfileset includes="**/*.class" src="${jackson-core-asl.jar}"/>
+      <zipfileset includes="**/*.class" src="${jackson-jaxrs.jar}"/>
+      <zipfileset includes="**/*.class" src="${jackson-mapper-asl.jar}"/>
+      <zipfileset includes="**/*.class" src="${jersey-client.jar}"/>
+      <zipfileset includes="**/*.class" src="${jersey-core.jar}"/>
+      <zipfileset includes="**/*.class" src="${jsr311-api.jar}"/>
+    </jar>
+    <zip destfile="${dist.dir}/adaptor-docs.zip" basedir="${javadoc.dir}"/>
   </target>
 
   <target name="javadoc" description="Build JavaDocs">
@@ -50,37 +84,37 @@
 
   <target name="clean" description="Remove build output">
     <delete dir="${build.dir}"/>
-    <delete dir="${javadoc.dir}"/>
+    <delete dir="${dist.dir}"/>
   </target>
 
   <target name="run" depends="build" description="Run default adaptor">
-    <java classpath="${build.dir}" fork="true" classname="${adaptor.class}">
-      <classpath location="${static.dir}"/>
+    <java classpath="${build-src.dir}" fork="true" classname="${adaptor.class}">
+      <classpath location="${resource.dir}"/>
       <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${build.dir}/logging.properties"/>
+        value="${src.dir}/logging.properties"/>
       <arg line="${adaptor.args}"/>
     </java>
   </target>
 
   <target name="run-db" depends="build" description="Run database adaptor">
-    <java classpath="${build.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
+    <java classpath="${build-src.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
       fork="true" classname="adaptorlib.examples.DbAdaptorTemplate">
-      <classpath location="${static.dir}"/>
+      <classpath location="${resource.dir}"/>
       <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${build.dir}/logging.properties"/>
+        value="${src.dir}/logging.properties"/>
       <arg line="${adaptor.args}"/>
     </java>
   </target>
 
   <target name="run-fs" depends="build" description="Run filesystem adaptor">
-    <java classpath="${build.dir}" fork="true"
+    <java classpath="${build-src.dir}" fork="true"
       classname="adaptorlib.examples.FileSystemAdaptor">
-      <classpath location="${static.dir}"/>
+      <classpath location="${resource.dir}"/>
       <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${build.dir}/logging.properties"/>
+        value="${src.dir}/logging.properties"/>
       <arg line="${adaptor.args}"/>
     </java>
   </target>
@@ -98,7 +132,7 @@
       <classpath location="${jersey-core.jar}"/>
       <classpath location="${jsr311-api.jar}"/>
       <classpath location="${json-simple.jar}"/>
-      <classpath location="${build.dir}"/>
+      <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <formatter type="plain" usefile="false"/>
       <batchtest fork="yes">

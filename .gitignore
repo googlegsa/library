@@ -1,5 +1,5 @@
-classes/
-javadoc/
+build/
+dist/
 src/dbadaptortemplate/mysql.jar
 adaptor-config.properties
 workspace/

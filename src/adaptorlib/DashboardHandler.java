@@ -18,6 +18,8 @@ class DashboardHandler extends AbstractHandler {
   private static final String pathRedirect = "/dashboard";
   /** The base path of requests we expect to serve. */
   private static final String pathPrefix = pathRedirect + "/";
+  /** Subpackage to look for static resources within. */
+  private static final String staticPackage = "static";
 
   private final Config config;
   private final Journal journal;
@@ -56,8 +58,13 @@ class DashboardHandler extends AbstractHandler {
       if ("".equals(path)) {
         path = "index.html";
       }
-      java.net.URL url = DashboardHandler.class.getClassLoader().getResource(
-          path);
+      java.net.URL url = DashboardHandler.class.getResource(
+          staticPackage + "/" + path);
+      if (url == null) {
+        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
+                      "404: Not found");
+        return;
+      }
       Date lastModified = new Date(url.openConnection().getLastModified());
       if (lastModified.getTime() == 0) {
         log.info("Resource didn't have a lastModified time");
@@ -90,8 +97,8 @@ class DashboardHandler extends AbstractHandler {
    * Provides static files that are resources.
    */
   private byte[] loadPage(String path) throws IOException {
-    InputStream in = DashboardHandler.class.getClassLoader()
-        .getResourceAsStream(path);
+    InputStream in = DashboardHandler.class.getResourceAsStream(
+        staticPackage + "/" + path);
     if (null == in) {
       throw new FileNotFoundException(path);
     } else {
