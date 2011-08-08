@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Adaptor Dashboard</title>
+
+  <link rel="stylesheet" type="text/css" href="dashboard.css" />
+  <link rel="stylesheet" type="text/css" href="jquery.jqplot.min.css" />
+
+  <script type="text/javascript" src="jquery-1.6.2.min.js"></script>
+  <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
+  <script type="text/javascript" src="jquery.jqplot.min.js"></script>
+  <script type="text/javascript" src="jqplot.canvasTextRenderer.min.js"></script>
+  <script type="text/javascript" src="jqplot.canvasAxisLabelRenderer.min.js"></script>
+  <script type="text/javascript" src="jqplot.dateAxisRenderer.min.js"></script>
+  <script type="text/javascript" src="jqplot.highlighter.min.js"></script>
+  <script type="text/javascript" src="dashboard.js"></script>
+</head>
+<body>
+  <h2>Statistics</h2>
+  Program started at: <span id="gaf-whenStarted"></span><br>
+  Total document ids pushed: <span id="gaf-numTotalDocIdsPushed"></span><br>
+  Unique document ids pushed: <span id="gaf-numUniqueDocIdsPushed"></span><br>
+  GSA document requests: <span id="gaf-numTotalGsaRequests"></span><br>
+  GSA Unique document requests: <span id="gaf-numUniqueGsaRequests"></span><br>
+  Non-GSA document requests: <span id="gaf-numTotalNonGsaRequests"></span><br>
+  Non-GSA Unique document requests:
+  <span id="gaf-numUniqueNonGsaRequests"></span>
+
+  <h3>Time taken to compute responses</h3>
+  <div id="gaf-processings-chart-minute" class="gaf-chart"></div>
+  <div id="gaf-processings-chart-hour" class="gaf-chart"></div>
+  <div id="gaf-processings-chart-day" class="gaf-chart"></div>
+  <div class="gaf-post-charts-div"></div>
+
+  <h3>Time taken to send responses</h3>
+  <div id="gaf-responses-chart-minute" class="gaf-chart"></div>
+  <div id="gaf-responses-chart-hour" class="gaf-chart"></div>
+  <div id="gaf-responses-chart-day" class="gaf-chart"></div>
+  <div class="gaf-post-charts-div"></div>
+
+  <h2>Adaptor Configuration</h2>
+  <table id="gaf-config-table"></table>
+
+  <h2>Recent Log Messages</h2>
+  <pre id="gaf-log"></pre>
+</body>
+</html>

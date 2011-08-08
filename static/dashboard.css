@@ -1,0 +1,19 @@
+.gaf-chart {
+  float: left;
+  height: 250px;
+  width: 400px;
+}
+
+.gaf-post-charts-div {
+  clear: both;
+}
+
+#gaf-config-table {
+  border: none;
+  font-family: monospace;
+}
+
+#gaf-log {
+  height: 20em;
+  overflow: auto;
+}

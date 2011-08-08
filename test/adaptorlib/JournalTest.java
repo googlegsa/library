@@ -23,11 +23,11 @@ public class JournalTest {
     docs.add(id2);
     docs.add(id3);
     journal.recordDocIdPush(docs);
-    assertEquals(3, journal.numUniqueDocIdsPushed());
+    assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     journal.recordDocIdPush(docs);
-    assertEquals(3, journal.numUniqueDocIdsPushed());
+    assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     docs.add(id4);
     journal.recordDocIdPush(docs);
-    assertEquals(4, journal.numUniqueDocIdsPushed());
+    assertEquals(4, journal.getSnapshot().numUniqueDocIdsPushed);
   }
 }
