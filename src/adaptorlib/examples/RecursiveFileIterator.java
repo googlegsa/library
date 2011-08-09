@@ -1,4 +1,4 @@
-package filesystemadaptor;
+package adaptorlib.examples;
 
 import adaptorlib.*;
 import java.io.File;
@@ -12,7 +12,7 @@ import java.util.NoSuchElementException;
 /**
  * Iterate over all files within a folder, including files in subdirectories.
  */
-class RecursiveFileIterator implements Iterator<File>, Iterable<File> {
+public class RecursiveFileIterator implements Iterator<File>, Iterable<File> {
   /**
    * List of all directory contents we have encountered and not returned or
    * descended into. We only return the File at the front of the list. If a

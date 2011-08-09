@@ -1,4 +1,6 @@
-package adaptorlib;
+package adaptorlib.prebuilt;
+
+import adaptorlib.TestHelper;
 
 import static org.junit.Assert.*;
 

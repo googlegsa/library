@@ -1,4 +1,6 @@
-package adaptorlib;
+package adaptorlib.prebuilt;
+
+import adaptorlib.IOHelper;
 
 import java.io.*;
 

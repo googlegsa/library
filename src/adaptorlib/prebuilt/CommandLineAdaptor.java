@@ -1,8 +1,7 @@
-package commandlineadaptor;
+package adaptorlib.prebuilt;
 
 import adaptorlib.AbstractAdaptor;
 import adaptorlib.Adaptor;
-import adaptorlib.Command;
 import adaptorlib.Config;
 import adaptorlib.DocId;
 import adaptorlib.GsaCommunicationHandler;
@@ -17,7 +16,7 @@ import java.util.logging.Logger;
 /**
  * Command Line Adaptor
  */
-class CommandLineAdaptor extends AbstractAdaptor {
+public class CommandLineAdaptor extends AbstractAdaptor {
   private static final Logger log = Logger.getLogger(CommandLineAdaptor.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 

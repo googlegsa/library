@@ -1,4 +1,4 @@
-package filesystemadaptor;
+package adaptorlib.examples;
 
 import adaptorlib.*;
 import java.io.*;
@@ -8,7 +8,7 @@ import java.util.logging.Logger;
 /**
  * Adaptor serving files from current directory
  */
-class FileSystemAdaptor extends AbstractAdaptor {
+public class FileSystemAdaptor extends AbstractAdaptor {
   private static Logger log = Logger.getLogger(FileSystemAdaptor.class.getName());
   private final File serveDir;
 

@@ -1,4 +1,6 @@
-package adaptorlib;
+package adaptorlib.examples;
+
+import adaptorlib.TransformException;
 
 import static org.junit.Assert.*;
 import org.junit.Test;

@@ -8,7 +8,7 @@ import java.util.Date;
  * Interface for user-specific implementation details of an Adaptor.
  * Implementations must be thread-safe.
  *
- * @see adaptortemplate.AdaptorTemplate
+ * @see adaptorlib.examples.AdaptorTemplate
  */
 public interface Adaptor {
   /**

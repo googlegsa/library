@@ -1,5 +1,8 @@
 // Copyright 2011 Google Inc. All Rights Reserved.
-package adaptorlib;
+package adaptorlib.examples;
+
+import adaptorlib.DocumentTransform;
+import adaptorlib.TransformException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

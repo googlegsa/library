@@ -1,4 +1,7 @@
-package adaptorlib;
+package adaptorlib.examples;
+
+import adaptorlib.DocumentTransform;
+import adaptorlib.TransformException;
 
 import mx.bigdata.jcalais.CalaisClient;
 import mx.bigdata.jcalais.CalaisConfig;

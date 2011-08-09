@@ -8,7 +8,7 @@ import java.util.logging.*;
  * outputting to a stream or other Handler. It does not clear the buffer after
  * outputting the messages. This class is thread-safe.
  */
-public class CircularBufferHandler extends Handler {
+class CircularBufferHandler extends Handler {
   private static final int DEFAULT_SIZE = 1000;
   private LogRecord[] buffer;
   private int head, tail;

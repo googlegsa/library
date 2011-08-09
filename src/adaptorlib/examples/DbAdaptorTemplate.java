@@ -1,4 +1,4 @@
-package dbadaptortemplate;
+package adaptorlib.examples;
 
 import adaptorlib.*;
 import java.io.*;
@@ -11,7 +11,7 @@ import java.util.logging.*;
  * Demonstrates what code is necessary for putting DB
  * content onto a GSA.
  */
-class DbAdaptorTemplate extends AbstractAdaptor {
+public class DbAdaptorTemplate extends AbstractAdaptor {
   private static final Logger log
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");

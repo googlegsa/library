@@ -1,4 +1,4 @@
-package filesystemadaptor;
+package adaptorlib.examples;
 
 import static org.junit.Assert.*;
 

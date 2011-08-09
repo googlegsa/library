@@ -1,4 +1,4 @@
-package adaptortemplate;
+package adaptorlib.examples;
 
 import adaptorlib.*;
 import java.io.*;
@@ -12,7 +12,7 @@ import java.util.logging.Logger;
  * <ol><li> providing document ids
  *   <li> providing document bytes given a document id</ol>
  */
-class AdaptorTemplate extends AbstractAdaptor {
+public class AdaptorTemplate extends AbstractAdaptor {
   private static final Logger log
       = Logger.getLogger(AdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
