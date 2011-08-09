@@ -56,6 +56,7 @@ class StatHandler extends AbstractHandler {
       simple.put("numTotalNonGsaRequests", journalSnap.numTotalNonGsaRequests);
       simple.put("numUniqueNonGsaRequests",
                  journalSnap.numUniqueNonGsaRequests);
+      simple.put("timeResolution", journalSnap.timeResolution);
       simple.put("whenStarted", journalSnap.whenStarted);
       map.put("simpleStats", simple);
     }

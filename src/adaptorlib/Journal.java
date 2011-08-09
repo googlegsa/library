@@ -186,6 +186,7 @@ class Journal {
     final long numTotalNonGsaRequests;
     final long whenStarted;
     final long currentTime;
+    final long timeResolution;
     final Stats[] timeStats;
 
     private JournalSnapshot(Journal journal, long currentTime,
@@ -196,6 +197,7 @@ class Journal {
       this.numTotalGsaRequests = journal.totalGsaRequests;
       this.numUniqueNonGsaRequests = journal.timesNonGsaRequested.size();
       this.numTotalNonGsaRequests = journal.totalNonGsaRequests;
+      this.timeResolution = journal.timeResolution;
       this.whenStarted = journal.startedAt;
       this.currentTime = currentTime;
       this.timeStats = timeStatsClone;

@@ -36,7 +36,7 @@ function loadChartData(chartName, data, title, labels, xlabel, ylabel, y2label,
   return plot;
 }
 
-function formatChartData(stats) {
+function formatChartData(stats, timeResolution) {
   var data = {
     responsesAvg: [],
     responsesMax: [],
@@ -49,8 +49,10 @@ function formatChartData(stats) {
   };
   $.each(stats.statData, function(key, val) {
     var time = new Date(val.time);
+    // Add half of timeResolution to prevent snapshotDuration == 0 and to
+    // improve average accuracy.
     var snapshotDuration = Math.min(stats.snapshotDuration,
-        stats.currentTime - val.time);
+        (stats.currentTime + timeResolution / 2) - val.time);
     if (val.requestResponsesCount != 0) {
       data.responsesAvg.push([time,
           val.requestResponsesDurationSum / val.requestResponsesCount]);
@@ -110,9 +112,9 @@ function processData(data) {
   }
 
   var vals = [];
-  vals.push(formatChartData(data.stats[0]));
-  vals.push(formatChartData(data.stats[1]));
-  vals.push(formatChartData(data.stats[2]));
+  vals.push(formatChartData(data.stats[0], data.simpleStats.timeResolution));
+  vals.push(formatChartData(data.stats[1], data.simpleStats.timeResolution));
+  vals.push(formatChartData(data.stats[2], data.simpleStats.timeResolution));
   loadChartData('gaf-responses-chart-minute',
       [vals[0].responsesAvg, vals[0].responsesMax, vals[0].responsesCount],
       'Last Minute', ['Average', 'Max', 'Rate'], 'Time Period',
