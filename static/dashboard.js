@@ -41,9 +41,11 @@ function formatChartData(stats) {
     responsesAvg: [],
     responsesMax: [],
     responsesCount: [],
+    responsesThroughput: [],
     processingsAvg: [],
     processingsMax: [],
-    processingsCount: []
+    processingsCount: [],
+    processingsThroughput: []
   };
   $.each(stats.statData, function(key, val) {
     var time = new Date(val.time);
@@ -58,6 +60,8 @@ function formatChartData(stats) {
     data.responsesMax.push([time, val.requestResponsesMaxDuration]);
     data.responsesCount.push([time,
         val.requestResponsesCount / (snapshotDuration / 1000)]);
+    data.responsesThroughput.push([time,
+        val.requestResponsesThroughput / (snapshotDuration / 1000) / 1024]);
     if (val.requestProcessingsCount != 0) {
       data.processingsAvg.push([time,
           val.requestProcessingsDurationSum / val.requestProcessingsCount]);
@@ -67,6 +71,8 @@ function formatChartData(stats) {
     data.processingsMax.push([time, val.requestProcessingsMaxDuration]);
     data.processingsCount.push([time,
         val.requestProcessingsCount / (snapshotDuration / 1000)]);
+    data.processingsThroughput.push([time,
+        val.requestProcessingsThroughput / (snapshotDuration / 1000) / 1024]);
   });
   return data;
 }
@@ -134,6 +140,18 @@ function processData(data) {
           vals[2].processingsCount],
       'Last Day', ['Average', 'Max', 'Rate'], 'Time Period',
       'Duration (ms)', 'Requests/s', '%#I:%M %p');
+  loadChartData('gaf-throughput-chart-minute',
+      [vals[0].processingsThroughput, vals[0].responsesThroughput],
+      'Last Minute', ['Processing', 'Response'], 'Time Period',
+      'Throughput (KiB/s)', null, '%#I:%M %p');
+  loadChartData('gaf-throughput-chart-hour',
+      [vals[1].processingsThroughput, vals[1].responsesThroughput],
+      'Last Hour', ['Processing', 'Response'], 'Time Period',
+      'Throughput (KiB/s)', null, '%#I:%M %p');
+  loadChartData('gaf-throughput-chart-day',
+      [vals[2].processingsThroughput, vals[2].responsesThroughput],
+      'Last Day', ['Processing', 'Response'], 'Time Period',
+      'Throughput (KiB/s)', null, '%#I:%M %p');
 }
 
 $(document).ready(function() {

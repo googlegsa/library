@@ -107,11 +107,15 @@ class StatHandler extends AbstractHandler {
                 stat.requestResponsesDurationSum);
     statMap.put("requestResponsesMaxDuration",
                 stat.requestResponsesMaxDuration);
+    statMap.put("requestResponsesThroughput",
+                stat.requestResponsesThroughput);
     statMap.put("requestProcessingsCount", stat.requestProcessingsCount);
     statMap.put("requestProcessingsDurationSum",
                 stat.requestProcessingsDurationSum);
     statMap.put("requestProcessingsMaxDuration",
                 stat.requestProcessingsMaxDuration);
+    statMap.put("requestProcessingsThroughput",
+                stat.requestProcessingsThroughput);
     return statMap;
   }
 }

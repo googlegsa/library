@@ -62,7 +62,7 @@ class DocumentHandler extends AbstractHandler {
         } finally {
           // We want this to be recorded immediately, not after sending error
           // codes
-          journal.recordRequestProcessingEnd();
+          journal.recordRequestProcessingEnd(response.getWrittenContentSize());
         }
 
         content = response.getWrittenContent();
@@ -114,7 +114,8 @@ class DocumentHandler extends AbstractHandler {
     try {
       super.respond(ex, code, contentType, response);
     } finally {
-      commHandler.getJournal().recordRequestResponseEnd();
+      commHandler.getJournal().recordRequestResponseEnd(
+          response == null ? 0 : response.length);
     }
   }
 
@@ -208,6 +209,14 @@ class DocumentHandler extends AbstractHandler {
         throw new IllegalStateException();
       }
       // TODO(ejona): transfer to GSA
+    }
+
+    private long getWrittenContentSize() {
+      if (os instanceof ByteArrayOutputStream) {
+        return ((ByteArrayOutputStream) os).size();
+      } else {
+        return 0;
+      }
     }
 
     private byte[] getWrittenContent() {
