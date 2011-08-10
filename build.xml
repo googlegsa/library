@@ -9,7 +9,7 @@
   <property name="lib.dir" location="lib"/>
   <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
   <property name="opencsv.jar" location="${lib.dir}/opencsv-2.3.jar"/>
-  <property name="adaptor.class" value="adaptortemplate.AdaptorTemplate"/>
+  <property name="adaptor.class" value="adaptorlib.examples.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
   <property name="guava.jar" location="${lib.dir}/guava-r06.jar"/>
   <property name="j-calais.jar" location="${lib.dir}/j-calais-0.2.1.jar"/>
@@ -65,7 +65,7 @@
 
   <target name="run-db" depends="build" description="Run database adaptor">
     <java classpath="${build.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
-      fork="true" classname="dbadaptortemplate.DbAdaptorTemplate">
+      fork="true" classname="adaptorlib.examples.DbAdaptorTemplate">
       <classpath location="${static.dir}"/>
       <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
@@ -76,7 +76,7 @@
 
   <target name="run-fs" depends="build" description="Run filesystem adaptor">
     <java classpath="${build.dir}" fork="true"
-      classname="filesystemadaptor.FileSystemAdaptor">
+      classname="adaptorlib.examples.FileSystemAdaptor">
       <classpath location="${static.dir}"/>
       <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
