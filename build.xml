@@ -5,6 +5,7 @@
   <property name="build.dir" location="build"/>
   <property name="build-src.dir" location="${build.dir}/src"/>
   <property name="build-test.dir" location="${build.dir}/test"/>
+  <property name="build-instrument.dir" location="${build.dir}/instrument"/>
   <property name="dist.dir" location="dist"/>
   <property name="javadoc.dir" location="${build.dir}/javadoc"/>
   <property name="resource.dir" location="resources"/>
@@ -22,6 +23,14 @@
   <property name="jersey-core.jar" location="${lib.dir}/jersey-core-1.3.jar"/>
   <property name="jsr311-api.jar" location="${lib.dir}/jsr311-api-1.1.1.jar"/>
   <property name="json-simple.jar" location="${lib.dir}/json_simple-1.1.jar"/>
+  <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
+
+  <path id="cobertura.classpath">
+    <fileset dir="${cobertura.dir}" erroronmissingdir="false">
+        <include name="cobertura.jar"/>
+        <include name="lib/**/*.jar"/>
+    </fileset>
+  </path>
 
   <target name="build" description="Build source">
     <mkdir dir="${build-src.dir}"/>
@@ -121,6 +130,9 @@
 
   <target name="test" depends="build" description="Run JUnit tests">
     <junit printsummary="yes" haltonfailure="yes">
+      <sysproperty key="net.sourceforge.cobertura.datafile"
+        file="${build-instrument.dir}/cobertura.ser"/>
+      <classpath refid="cobertura.classpath"/>
       <classpath location="${junit.jar}"/>
       <classpath location="${opencsv.jar}"/>
       <classpath location="${j-calais.jar}"/>
@@ -132,6 +144,7 @@
       <classpath location="${jersey-core.jar}"/>
       <classpath location="${jsr311-api.jar}"/>
       <classpath location="${json-simple.jar}"/>
+      <classpath location="${build-instrument.dir}"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <formatter type="plain" usefile="false"/>
@@ -141,5 +154,24 @@
         </fileset>
       </batchtest>
     </junit>
+  </target>
+
+  <target name="instrument" depends="build,clean-instrument"
+    description="Instrument classes">
+    <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
+    <cobertura-instrument datafile="${build-instrument.dir}/cobertura.ser"
+      todir="${build-instrument.dir}">
+      <fileset dir="${build-src.dir}"/>
+    </cobertura-instrument>
+  </target>
+
+  <target name="clean-instrument" description="Delete instrumented classes">
+    <delete dir="${build-instrument.dir}"/>
+  </target>
+
+  <target name="coverage-report" description="Generates code coverage report">
+    <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
+    <cobertura-report datafile="${build-instrument.dir}/cobertura.ser"
+      srcdir="${src.dir}" destdir="${build.dir}/cobertura"/>
   </target>
 </project>
