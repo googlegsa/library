@@ -18,11 +18,12 @@ class Journal {
       = new HashMap<DocId, Integer>();
   private long totalNonGsaRequests;
 
-  private final long startedAt = System.currentTimeMillis();
+  private final TimeProvider timeProvider;
+  private final long startedAt;
   /**
    * Resolution of {@link System#currentTypeMillis()} to the millisecond.
    */
-  private final long timeResolution = determineTimeResolution();
+  private final long timeResolution;
 
   /**
    * Time-based bookkeeping for charts. Each element in the array is for a
@@ -36,9 +37,16 @@ class Journal {
   private ThreadLocal<Long> requestProcessingStart = new ThreadLocal<Long>();
 
   public Journal() {
+    this(new SystemTimeProvider());
+  }
+
+  protected Journal(TimeProvider timeProvider) {
+    this.timeProvider = timeProvider;
+    this.startedAt = timeProvider.currentTimeMillis();
+    this.timeResolution = determineTimeResolution();
     // We want data within the Stats to agree with each other, so we provide the
     // same time to each of them.
-    long time = System.currentTimeMillis();
+    long time = startedAt;
     this.timeStats = new Stats[] {
       new Stats(60, 1000,           time), /* one minute, second granularity */
       new Stats(60, 1000 * 60,      time), /* one hour, minute granularity */
@@ -68,14 +76,14 @@ class Journal {
    * relates to the actual I/O of sending the response.
    */
   void recordRequestResponseStart() {
-    requestResponseStart.set(System.currentTimeMillis());
+    requestResponseStart.set(timeProvider.currentTimeMillis());
   }
 
   /**
    * Record that the response this thread was sending has completed.
    */
   void recordRequestResponseEnd(long responseSize) {
-    long time = System.currentTimeMillis();
+    long time = timeProvider.currentTimeMillis();
     long duration = endDuration(requestResponseStart, time);
     synchronized (this) {
       for (Stats stats : timeStats) {
@@ -94,7 +102,7 @@ class Journal {
    * This relates to internal computation required to satisfy the request.
    */
   void recordRequestProcessingStart() {
-    requestProcessingStart.set(System.currentTimeMillis());
+    requestProcessingStart.set(timeProvider.currentTimeMillis());
   }
 
   /**
@@ -102,7 +110,7 @@ class Journal {
    * has completed.
    */
   void recordRequestProcessingEnd(long responseSize) {
-    long time = System.currentTimeMillis();
+    long time = timeProvider.currentTimeMillis();
     long duration = endDuration(requestProcessingStart, time);
     synchronized (this) {
       for (Stats stats : timeStats) {
@@ -143,10 +151,10 @@ class Journal {
    * System#currentTimeMillis} supports, in milliseconds.
    */
   private long determineTimeResolutionOnce() {
-    long time = System.currentTimeMillis();
+    long time = timeProvider.currentTimeMillis();
     long startTime = time;
     while (startTime == time) {
-      time = System.currentTimeMillis();
+      time = timeProvider.currentTimeMillis();
     }
     return time - startTime;
   }
@@ -162,7 +170,7 @@ class Journal {
    * Access to the timeStats for use in {@link DashboardHandler} only.
    */
   synchronized JournalSnapshot getSnapshot() {
-    long currentTime = System.currentTimeMillis();
+    long currentTime = timeProvider.currentTimeMillis();
     Stats[] timeStatsClone = new Stats[timeStats.length];
     for (int i = 0; i < timeStats.length; i++) {
       // Cause stats to update its internal structures
@@ -343,6 +351,16 @@ class Journal {
 
     public Object clone() throws CloneNotSupportedException {
       return super.clone();
+    }
+  }
+
+  protected static interface TimeProvider {
+    public long currentTimeMillis();
+  }
+
+  private static class SystemTimeProvider implements TimeProvider {
+    public long currentTimeMillis() {
+      return System.currentTimeMillis();
     }
   }
 }

@@ -2,7 +2,9 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
+
 
 import java.util.Calendar;
 import java.util.Date;
@@ -11,6 +13,9 @@ import java.util.Date;
  * Tests for {@link ScheduleOncePerDay}.
  */
 public class ScheduleOncePerDayTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   @Test
   public void testIteration() {
     // Simple case of no DST changeover
@@ -30,5 +35,23 @@ public class ScheduleOncePerDayTest {
     cur = it.next();
     assertEquals(startTime + millisecondsInADay * 3, cur.getTime());
     assertTrue(it.hasNext());
+  }
+
+  @Test
+  public void testAlreadyHappenedToday() {
+    // Just after midnight
+    Date now = new Date(1);
+    ScheduleOncePerDay it = new ScheduleOncePerDay(0, 0, 0, now);
+    Date nextWakeup = it.next();
+    assertTrue(now.before(nextWakeup));
+    Date tomorrow = new Date(now.getTime() + 1000 * 60 * 60 * 24);
+    assertTrue(tomorrow.after(nextWakeup));
+  }
+
+  @Test
+  public void testRemove() {
+    ScheduleOncePerDay it = new ScheduleOncePerDay(23, 59, 59);
+    thrown.expect(UnsupportedOperationException.class);
+    it.remove();
   }
 }
