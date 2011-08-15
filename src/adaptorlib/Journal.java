@@ -367,14 +367,4 @@ class Journal {
       return super.clone();
     }
   }
-
-  protected static interface TimeProvider {
-    public long currentTimeMillis();
-  }
-
-  private static class SystemTimeProvider implements TimeProvider {
-    public long currentTimeMillis() {
-      return System.currentTimeMillis();
-    }
-  }
 }

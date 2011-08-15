@@ -16,6 +16,7 @@ package adaptorlib;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpsServer;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -108,9 +109,11 @@ abstract class AbstractHandler implements HttpHandler {
       // Client must be using HTTP/1.0
       host = fallbackHostname;
     }
+    String protocol = (ex.getHttpContext().getServer() instanceof HttpsServer)
+        ? "https" : "http";
     URI base;
     try {
-      base = new URI("http", host, "/", null, null);
+      base = new URI(protocol, host, "/", null, null);
     } catch (URISyntaxException e) {
       throw new IllegalStateException(e);
     }
@@ -181,6 +184,15 @@ abstract class AbstractHandler implements HttpHandler {
     }
     ex.close();
     log.finest("after closing exchange");
+  }
+
+  /**
+   * Redirect client to {@code location}.
+   */
+  public void sendRedirect(HttpExchange ex, URI location)
+      throws IOException {
+    ex.getResponseHeaders().set("Location", location.toString());
+    respond(ex, 307 /* Temporary redirect */, null, null);
   }
 
   /**

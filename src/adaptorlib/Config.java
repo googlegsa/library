@@ -51,6 +51,8 @@ public class Config {
     addKey("server.docIdPath", "/doc/");
     addKey("server.gsaIps", "");
     addKey("server.addResolvedGsaHostnameToGsaIps", "true");
+    addKey("server.secure", "false");
+    addKey("server.keyAlias", "adaptor");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
@@ -139,7 +141,9 @@ public class Config {
    * hostname, and port are retrieved automatically and no path is set.
    */
   public URI getServerBaseUri() {
-    return URI.create("http://" + getServerHostname() + ":" + getServerPort());
+    String protocol = isServerSecure() ? "https" : "http";
+    return URI.create(protocol + "://" + getServerHostname() + ":"
+                      + getServerPort());
   }
 
   /**
@@ -179,6 +183,28 @@ public class Config {
    */
   public URI getServerBaseUri(DocId docId) {
     return getServerBaseUri();
+  }
+
+  /**
+   * Whether full security should be enabled. When {@code true}, the adaptor is
+   * locked down using HTTPS, checks certificates, and generally behaves in a
+   * fully-secure manner. When {@code false} (default), the adaptor serves
+   * content over HTTP and is unable to authenticate users (all users are
+   * treated as anonymous).
+   *
+   * <p>The need for this setting is because when enabled, security requires a
+   * reasonable amount of configuration and know-how. To provide easy
+   * out-of-the-box execution, this is disabled by default.
+   */
+  public boolean isServerSecure() {
+    return Boolean.parseBoolean(getValue("server.secure"));
+  }
+
+  /**
+   * The alias in the keystore that has the key to use for encryption.
+   */
+  public String getServerKeyAlias() {
+    return getValue("server.keyAlias");
   }
 
   /**

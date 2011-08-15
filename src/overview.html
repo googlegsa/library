@@ -5,7 +5,7 @@
   {@link adaptorlib.prebuilt.CommandLineAdaptor} fits your needs.
   </p>
 
-  <h3>Basic Setup</h3>
+  <h3>Basic GSA Setup</h3>
   <ol>
     <li>Add the IP address of the computer that hosts the adaptor to the <b>List
       of Trusted IP Addresses</b> on the GSA.
@@ -18,32 +18,34 @@
       scroll down to <b>Follow and Crawl Only URLs with the Following
       Patterns</b>. Add an entry like {@code hostname:port/} where {@code
       hostname} is the hostname of the machine that hosts the adaptor and {@code
-      port} defaults to 5678 (read on to change port #).</p>
+      port} defaults to 5678 (read on to change port number).</p>
   </ol>
 
   <h3>Running the Adaptor Template, as an initial test</h3>
   <ol>
     <li> Compile the source code. You need ant and JDK 6 or higher. 
-      <p><pre> ant build </pre>
+      <pre>ant build</pre>
+    <li>Create an <code>adaptor-config.properties</code> text file in the
+      current directory that looks like:
+      <pre>gsa.hostname=mygsahostname</pre>
+      <p>You should replace <code>mygsahostname</code> with the hostname or IP
+      of your GSA. This file allows you to do other configuration of the adaptor
+      library like changing the server port and feed name:
+      <pre>gsa.hostname=mygsahostname
+server.port=6677
+feed.name=mydocfeedtogsa</pre>
+      <p>Later, if you have trouble with the adaptor library incorrectly
+      auto-detecting your computer's hostname, then you may need to add a line
+      like:
+      <pre>server.hostname=yourcomputershostname</pre>
     <li>Start the Adaptor Template:
-      <p><pre> ant run -Dadaptor.args=-Dgsa.hostname=mygsahostname</pre>
-      <p>Alternatively create an adaptor-config.properties file that looks like:
-      <pre>
-        gsa.hostname=mygsahostname
-      </pre>
-      <p>And then run:
-      <pre> ant run</pre>
-      <p>You can add more configuraiton into the adaptor-config.properties file:
-      <pre>
-        gsa.hostname=mygsahostname
-        server.port=6677
-        feed.name=mydocfeedtogsa
-      </pre>
+      <pre>ant run</pre>
     <li> Confirm things ran successfully.
       <p>
-      In the GSA go to <b>Crawl and Index &gt; Feeds</b>.
+      In the GSA, go to <b>Crawl and Index &gt; Feeds</b>.
       In the <b>Current Feeds</b> section, you should see an entry for a
-      "testfeed".
+      "testfeed" (which can be changed by setting the <code>feed.name</code>
+      configuration variable).
       <p>
       In the adaptor log look to see document ids being pushed and
       requests for document contents being served.
@@ -58,4 +60,96 @@
     <li>Declare success for getting content from your custom repository to the
       GSA.
   </ol>
+
+  <h3>Advanced</h3>
+  <p>You can set configuration variables on the command line instead of in
+    <code>adaptor-config.properties</code>. You are allowed multiple arguments
+    of the form "-Dconfigkey=configvalue". When providing a value on the command
+    line, it overrides the default value and the value (if any) in the
+    configuration file. When using ant, you must do something like:
+    <pre>ant run -Dadaptor.args="-Dgsa.hostname=mygsahostname -Dserver.port=6677 -Dfeed.name=mydocfeedtogsa"</pre>
+
+  <h3>Enabling Security</h3>
+  <p>Security is not enabled by default because it requires a reasonable amount
+    of setup, on both the GSA and adaptor. The GSA needs a valid certificate for
+    the hostname you are accessing it with (<code>gsa.hostname</code>). Thus,
+    the default one it ships with cannot be valid and you need to generate a new
+    one. Setting up security is required before users can access non-public
+    documents directly from the adaptor.
+
+  <h4>Creating Self-Signed Certificates</h4>
+  <p>In the GSA's Admin Console, go to <b>Administration &gt; SSL Settings</b>.
+    Under the <b>Create a New SSL Certificate</b> heading change <b>Host
+    Name</b> to the hostname to access the GSA with and click <b>Create
+    Self-Signed Certificate</b> followed by <b>Install SSL Certificate</b>. You
+    now have a valid self-signed certificate, but it is not available to be
+    trusted by the adaptor.
+
+  <p>You need to get the GSA's freshly-created certificate to add it as a
+    trusted host for the adaptor:
+  <ul>
+    <li><b>Using Firefox:</b> Navigate to the GSA's secure search:
+      https://gsahostname/. You should see a warning page that says, "This
+      Connection is Untrusted." This message is because the certificate is
+      self-signed and not signed by a trusted Certificate Authority. Click, "I
+      Understand the Risks" and "Add Exception." Wait until the "View..."
+      button is clickable, then click it. Change to the "Details" tab and
+      click "Export...". Save the certificate in your adaptor's directory with
+      the name "gsa.crt". You can then hit "Close" and "Cancel" to close the
+      dialog windows.
+    <li><b>Using Chrome:</b> Navigate to the GSA's secure search:
+      https://gsahostname/. You should see a warning page that says, "The
+      site's security certificate is not trusted!" In the location bar, there
+      should be a pad lock with a red 'x' on it. Click the pad lock and then
+      click "Certificate Information." Change to the "Details" tab and click
+      "Export...". Save the certificate in your adaptor's directory with the
+      name "gsa.crt". You can then hit "Close" and "Cancel" to close the
+      dialog windows.
+    <li><b>Using OpenSSL:</b> Execute:
+      <pre>openssl s_client -connect gsahostname:443 &lt; /dev/null</pre>
+      Copy the section that begins with <code>-----BEGIN CERTIFICATE-----</code>
+      and ends with <code>-----END CERTIFICATE-----</code> (including the BEGIN
+      and END CERTIFICATE portions) into a new file. Save the file in your
+      adaptor's directory with the name "gsa.crt".
+  </ul>
+
+  <p>Now you should generate a self-signed certificate for the adaptor and
+    export the newly created certificate. Within the adaptor's directory, you
+    should run:
+  <pre>keytool -alias adaptor -keystore keys.jks -genkeypair -keyalg RSA -validity 365
+keytool -alias adaptor -keystore keys.jks -exportcert -rfc -file adaptor.crt</pre>
+  <p>Use "changeit" for the keystore password. For "What is your first and last
+    name?", you should enter the hostname of your computer. You are free to
+    answer the other questions however you wish (including not answering them).
+    When you are happy with your answers, answer "yes" to "Is
+    CN=yourcomputershostname, OU=... correct?" Then just press enter for the key
+    password (to use the same password as the keystore).
+
+  <h4>Exchanging Certificates</h4>
+  <p>To allow the adaptor to trust the GSA, execute:
+  <pre>keytool -keystore cacerts.jks -importcert -file gsa.crt</pre>
+  <p>Use "changeit" for the keystore password. Answer "yes" to "Trust this
+    certificate?"
+
+  <p>To allow the GSA to trust the adaptor, within the GSA's Admin Console, go
+    to <b>Administration &gt; Certificate Authorities</b>. Click the <b>Choose
+    File</b> button under the <b>Add more Cerificate Authorities</b> heading.
+    Choose "adaptor.crt" in the adaptor's directory and click <b>Save
+    Settings</b>.
+
+  <p>For more comprehensive security on the GSA, there are additional options
+    you can enable on the GSA. If you change these settings, you will be
+    required to set <code>server.secure=true</code> before the adaptor will
+    function. Within the GSA's Admin Console, go to <b>Administration &gt; SSL
+    Settings</b>. Uncheck <b>Enable HTTP (non-SSL) access for Feedergate</b>,
+    check <b>Enable Client Certificate Authentication for Feedergate</b>, check
+    <b>Enable Server Certificate Authentication</b>, and click <b>Save
+    Setup</b>.
+
+  <h4>Flipping the Switch</h4>
+  <p>Now that everything is prepared, you can flip the security switch with the
+    adaptor by adding a line to your <code>adaptor-config.properties</code>:
+  <pre>server.secure=true</pre>
+  <p>The adaptor can now use the GSA's authentication configuration and will use
+    HTTPS for all communication.</p>
 </body>

@@ -53,14 +53,18 @@ class GsaFeedFileSender {
   // All communications are expected to be tailored to GSA.
   private final Charset encoding;
 
+  /** Whether to use HTTP or HTTPS to talk to the feedergate. */
+  private final boolean useHttps;
+
   // Feed file XML will not contain "<<".
   private static final String BOUNDARY = "<<";
 
   // Another frequently used constant of sent message.
   private static final String CRLF = "\r\n";
 
-  public GsaFeedFileSender(Charset encoding) {
+  public GsaFeedFileSender(Charset encoding, boolean useHttps) {
     this.encoding = encoding;
+    this.useHttps = useHttps;
   }
 
   // Get bytes of string in communication's encoding.
@@ -93,7 +97,12 @@ class GsaFeedFileSender {
   private HttpURLConnection setupConnection(String gsaHost, int len,
                                             boolean useCompression)
       throws MalformedURLException, IOException {
-    URL feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
+    URL feedUrl;
+    if (useHttps) {
+      feedUrl = new URL("https://" + gsaHost + ":19902/xmlfeed");
+    } else {
+      feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
+    }
     HttpURLConnection uc = (HttpURLConnection) feedUrl.openConnection();
     uc.setDoInput(true);
     uc.setDoOutput(true);

@@ -196,7 +196,7 @@ public class JournalTest {
     new Journal();
   }
 
-  private static class MockTimeProvider implements Journal.TimeProvider {
+  private static class MockTimeProvider implements TimeProvider {
     private long time;
     // Is needed since the Journal determines the timer resolution
     private boolean autoIncrement = true;
