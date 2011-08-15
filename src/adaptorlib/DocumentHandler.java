@@ -7,9 +7,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -19,17 +25,41 @@ class DocumentHandler extends AbstractHandler {
 
   private GsaCommunicationHandler commHandler;
   private Adaptor adaptor;
+  private Set<InetAddress> gsaAddresses = new HashSet<InetAddress>();
 
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
-                         GsaCommunicationHandler commHandler, Adaptor adaptor) {
+                         GsaCommunicationHandler commHandler, Adaptor adaptor,
+                         boolean addResolvedGsaHostnameToGsaIps,
+                         String gsaHostname, String[] gsaIps) {
     super(defaultHostname, defaultCharset);
     this.commHandler = commHandler;
     this.adaptor = adaptor;
+
+    if (addResolvedGsaHostnameToGsaIps) {
+      try {
+        gsaAddresses.add(InetAddress.getByName(gsaHostname));
+      } catch (UnknownHostException ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+    for (String gsaIp : gsaIps) {
+      gsaIp = gsaIp.trim();
+      if ("".equals(gsaIp)) {
+        continue;
+      }
+      try {
+        gsaAddresses.add(InetAddress.getByName(gsaIp));
+      } catch (UnknownHostException ex) {
+        throw new RuntimeException(ex);
+      }
+    }
+    log.log(Level.INFO, "IPs to believe are the GSA: {0}",
+            new Object[] {gsaAddresses});
   }
-  
-  private static boolean requestIsFromGsa(HttpExchange ex) {
-     String userAgent = ex.getRequestHeaders().getFirst("User-Agent");
-     return (null != userAgent) && userAgent.startsWith("gsa-crawler");
+
+  private boolean requestIsFromGsa(HttpExchange ex) {
+    InetAddress addr = ex.getRemoteAddress().getAddress();
+    return gsaAddresses.contains(addr);
   }
 
   @Override
@@ -41,11 +71,31 @@ class DocumentHandler extends AbstractHandler {
       DocId docId = commHandler.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
 
+      boolean isAllowed;
       Journal journal = commHandler.getJournal();
       if (requestIsFromGsa(ex)) {
         journal.recordGsaContentRequest(docId);
+        isAllowed = true;
       } else {
         journal.recordNonGsaContentRequest(docId);
+        // TODO(ejona): add support for authenticating users
+        // We do authz with the anonymous user to see if the document is public
+        Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(null,
+            Collections.singletonList(docId));
+        AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
+        if (status == null) {
+          status = AuthzStatus.INDETERMINATE;
+          log.log(Level.WARNING, "Adaptor did not provide an authorization "
+                  + "result for the requested DocId ''{0}''. Instead provided: "
+                  + "{1}", new Object[] {docId, authzMap});
+        }
+        isAllowed = (status == AuthzStatus.PERMIT);
+      }
+
+      if (!isAllowed) {
+        cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
+                      "403: Forbidden");
+        return;
       }
 
       DocumentRequest request = new DocumentRequest(ex, docId,

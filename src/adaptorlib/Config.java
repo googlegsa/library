@@ -35,6 +35,8 @@ public class Config {
     addKey("server.hostname", hostname);
     addKey("server.port", "5678");
     addKey("server.docIdPath", "/doc/");
+    addKey("server.gsaIps", "");
+    addKey("server.addResolvedGsaHostnameToGsaIps", "true");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
@@ -90,6 +92,25 @@ public class Config {
   /** Without changes contains InetAddress.getLocalHost().getHostName(). */
   public String getServerHostname() {
     return getValue("server.hostname");
+  }
+
+  /**
+   * Whether to automatically consider "gsa.hostname" configuration value part
+   * of the "server.gsaIps" list. Defaults to {@code true"}.
+   *
+   * @see #getServerGsaIps
+   */
+  public boolean getServerAddResolvedGsaHostnameToGsaIps() {
+    return Boolean.parseBoolean(getValue(
+        "server.addResolvedGsaHostnameToGsaIps"));
+  }
+
+  /**
+   * Comma-separated list of IPs or hostnames to consider the GSA and bypass
+   * authentication checks.
+   */
+  public String[] getServerGsaIps() {
+    return getValue("server.gsaIps").split(",");
   }
 
   /**

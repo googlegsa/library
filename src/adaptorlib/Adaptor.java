@@ -2,7 +2,9 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Interface for user-specific implementation details of an Adaptor.
@@ -31,6 +33,19 @@ public interface Adaptor {
    */
   public void getDocIds(DocIdPusher pusher) throws IOException,
       InterruptedException;
+
+  /**
+   * Determines whether the user identified is allowed to access the {@code
+   * DocId}s.
+   *
+   * @param userIdentifier User to authorize, or {@code null} for anonymous
+   *        users
+   * @param ids Collection of {@code DocId}s that need to be checked
+   * @return an {@code AuthzStatus} for each {@code DocId} provided in {@code
+   *         ids}
+   */
+  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+      Collection<DocId> ids) throws IOException;
 
   /**
    * Provides a {@code DocIdPusher} object to be called whenever the Adaptor

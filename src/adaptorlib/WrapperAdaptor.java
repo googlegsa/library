@@ -2,7 +2,9 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Wraps all methods of the provided Adaptor to allow modification of behavior
@@ -29,6 +31,12 @@ abstract class WrapperAdaptor implements Adaptor {
   @Override
   public void setDocIdPusher(DocIdPusher pusher) {
     adaptor.setDocIdPusher(pusher);
+  }
+
+  @Override
+  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+      Collection<DocId> ids) throws IOException {
+    return adaptor.isUserAuthorized(userIdentifier, ids);
   }
 
   /**

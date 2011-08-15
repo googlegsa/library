@@ -51,7 +51,9 @@ public class GsaCommunicationHandler {
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
-                            config.getGsaCharacterEncoding(), this, adaptor));
+                            config.getGsaCharacterEncoding(), this, adaptor,
+                            config.getServerAddResolvedGsaHostnameToGsaIps(),
+                            config.getGsaHostname(), config.getServerGsaIps()));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());

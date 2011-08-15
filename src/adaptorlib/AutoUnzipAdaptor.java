@@ -261,6 +261,17 @@ public class AutoUnzipAdaptor extends WrapperAdaptor
     super.setDocIdPusher(this);
   }
 
+  @Override
+  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+      Collection<DocId> ids) throws IOException {
+    List<DocId> unescapedIds = new ArrayList<DocId>(ids.size());
+    for (DocId id : ids) {
+      unescapedIds.add(getDocIdParts(id)[0]);
+    }
+    return super.isUserAuthorized(userIdentifier,
+                                  Collections.unmodifiableList(unescapedIds));
+  }
+
   /**
    * Escape used characters within a DocId provided by wrapped adaptor or file
    * names within a zip file.
