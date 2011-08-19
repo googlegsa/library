@@ -143,7 +143,12 @@ class DocumentHandler extends AbstractHandler {
         return;
       }
 
-      log.finer("processed request; response is size=" + content.length);
+      if (content == null) {
+        log.finer("processed request; response is null. This is normal for HEAD"
+            + " requests.");
+      } else {
+        log.finer("processed request; response is size=" + content.length);
+      }
       // TODO(ejona): decide when to use compression based on mime-type
       enableCompressionIfSupported(ex);
       if ("GET".equals(requestMethod)) {
