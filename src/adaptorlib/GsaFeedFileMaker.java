@@ -14,10 +14,10 @@ import javax.xml.transform.stream.*;
   http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html
  */
 class GsaFeedFileMaker {
-  private GsaCommunicationHandler commHandler;
+  private DocIdEncoder idEncoder;
 
-  public GsaFeedFileMaker(GsaCommunicationHandler commHandler) {
-    this.commHandler = commHandler;
+  public GsaFeedFileMaker(DocIdEncoder encoder) {
+    this.idEncoder = encoder;
   }
 
   /** Adds header to document's root.
@@ -44,50 +44,36 @@ class GsaFeedFileMaker {
       Document doc, Element group, DocId docForGsa) {
     Element record = doc.createElement("record");
     group.appendChild(record);
-    record.setAttribute("url", "" + commHandler.encodeDocId(docForGsa));
+    record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
     record.setAttribute("action", docForGsa.getFeedFileAction());
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
-    boolean metadataPermitted = true; // !(docForGsa instanceof DeletedDocId);
-    if (metadataPermitted) {  // No metadata with deletes.
-      // Make "metadata" element.
-      Element metadata = doc.createElement("metadata");
-      record.appendChild(metadata);
-
-      // Make displayurl "meta" element.
+    Element metadataXml = doc.createElement("metadata");
+    record.appendChild(metadataXml);
+    if (docForGsa instanceof DocIdWithMetadata) {
+      Metadata metadataValues = ((DocIdWithMetadata) docForGsa).getMetadata();
+      addMetadataHelper(doc, metadataXml, metadataValues);
+    } else {
+      // Generic DocId handling.
       Element displayurl = doc.createElement("meta");
-      metadata.appendChild(displayurl);
+      metadataXml.appendChild(displayurl);
       displayurl.setAttribute("name", "displayurl");
-      displayurl.setAttribute("content",
-                              "" + commHandler.encodeDocId(docForGsa));
-
-      // Add present permissions as "meta" elements.
-      // TODO(ejona): migrate to during crawling
-      /*DocReadPermissions permits = docForGsa.getDocReadPermissions();
-      Element isPublic = doc.createElement("meta");
-      metadata.appendChild(isPublic);
-      isPublic.setAttribute("name", "google:ispublic");
-      isPublic.setAttribute("content", "" + permits.isPublic());
-      // Add users if present.
-      if (null != permits.getUsers()) {
-        Element aclUsers = doc.createElement("meta");
-        metadata.appendChild(aclUsers);
-        aclUsers.setAttribute("name", "google:aclusers");
-        String users = permits.getUsers();
-        aclUsers.setAttribute("content", users);
-      }
-      // Add groups if present.
-      if (null != permits.getGroups()) {
-        Element aclGroups = doc.createElement("meta");
-        metadata.appendChild(aclGroups);
-        aclGroups.setAttribute("name", "google:aclgroups");
-        String groups = permits.getGroups();
-        aclGroups.setAttribute("content", groups);
-      }*/
+      String value = "" + idEncoder.encodeDocId(docForGsa);
+      displayurl.setAttribute("content", value);
     }
     // TODO(pjo): Add "no-recrawl" signal.
     // TODO(pjo): Add "crawl-immediately" signal.
     // TODO(pjo): Add "no-follow" signal.
+  }
+
+  private void addMetadataHelper(Document doc, Element metadataXml,
+      Metadata metadataValues) {
+    for (MetaItem item : metadataValues) {
+      Element metaXml = doc.createElement("meta");
+      metadataXml.appendChild(metaXml);
+      metaXml.setAttribute("name", item.getName());
+      metaXml.setAttribute("content", item.getValue());
+    }
   }
 
   /** Adds all the DocIds into feed-file-document one record

@@ -15,7 +15,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** This class handles the communications with GSA. */
-public class GsaCommunicationHandler {
+public class GsaCommunicationHandler implements DocIdEncoder {
   private static final Logger log
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
@@ -192,7 +192,7 @@ public class GsaCommunicationHandler {
     return null;
   }
 
-  URI encodeDocId(DocId docId) {
+  public URI encodeDocId(DocId docId) {
     if (config.isDocIdUrl()) {
       return URI.create(docId.getUniqueId());
     } else {
