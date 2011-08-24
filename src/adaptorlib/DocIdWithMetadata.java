@@ -4,7 +4,6 @@ import java.util.Arrays;
 public class DocIdWithMetadata extends DocId {
   private Metadata metabox;
 
-  /** Constructs DocIdWithMetadata. */
   public DocIdWithMetadata(String id, Metadata metadata) {
     super(id);
     if (null == metadata) {

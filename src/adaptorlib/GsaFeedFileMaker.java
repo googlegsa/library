@@ -48,13 +48,17 @@ class GsaFeedFileMaker {
     record.setAttribute("action", docForGsa.getFeedFileAction());
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
-    Element metadataXml = doc.createElement("metadata");
-    record.appendChild(metadataXml);
-    if (docForGsa instanceof DocIdWithMetadata) {
+    if (docForGsa instanceof DeletedDocId) {
+      // No metadata allowed on deleted documents.
+    } else if (docForGsa instanceof DocIdWithMetadata) {
+      Element metadataXml = doc.createElement("metadata");
+      record.appendChild(metadataXml);
       Metadata metadataValues = ((DocIdWithMetadata) docForGsa).getMetadata();
       addMetadataHelper(doc, metadataXml, metadataValues);
     } else {
       // Generic DocId handling.
+      Element metadataXml = doc.createElement("metadata");
+      record.appendChild(metadataXml);
       Element displayurl = doc.createElement("meta");
       metadataXml.appendChild(displayurl);
       displayurl.setAttribute("name", "displayurl");
