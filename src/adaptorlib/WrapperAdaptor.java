@@ -96,8 +96,8 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setDocReadPermissions(DocReadPermissions acl) {
-      response.setDocReadPermissions(acl);
+    public void setMetadata(Metadata m) {
+      response.setMetadata(m);
     }
   }
 
@@ -141,7 +141,7 @@ abstract class WrapperAdaptor implements Adaptor {
   public static class GetContentsResponse implements Response {
     private OutputStream os;
     private String contentType;
-    private DocReadPermissions acl;
+    private Metadata metadata;
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -163,16 +163,16 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setDocReadPermissions(DocReadPermissions acl) {
-      this.acl = acl;
+    public void setMetadata(Metadata m) {
+      this.metadata = m;
     }
 
     public String getContentType() {
       return contentType;
     }
 
-    public DocReadPermissions getDocReadPermissions() {
-      return acl;
+    public Metadata getMetadata() {
+      return metadata;
     }
   }
 

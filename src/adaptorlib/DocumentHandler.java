@@ -259,7 +259,7 @@ class DocumentHandler extends AbstractHandler {
     }
 
     @Override
-    public void setDocReadPermissions(DocReadPermissions acl) {
+    public void setMetadata(Metadata m) {
       if (os != null) {
         throw new IllegalStateException();
       }

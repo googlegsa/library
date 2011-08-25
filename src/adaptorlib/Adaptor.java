@@ -156,9 +156,9 @@ public interface Adaptor {
     public void setContentType(String contentType);
 
     /**
-     * Describe ACLs that apply to the document.
+     * Provide metadata that apply to the document.
      */
-    public void setDocReadPermissions(DocReadPermissions acl);
+    public void setMetadata(Metadata m);
   }
 
   /**
