@@ -3,8 +3,8 @@ import java.util.Arrays;
 import java.util.List;
 
 /** A single meta item consists of a name and value. */
-public final class MetaItem implements Comparable {
-  private String n, v;
+public final class MetaItem implements Comparable<MetaItem> {
+  private final String n, v;
 
   public String getName() {
     return n;
@@ -75,7 +75,7 @@ public final class MetaItem implements Comparable {
    for (String name : names) {
      sb.append(",").append(name);
    }
-   return 0 == sb.length()? "" : sb.substring(1);
+   return 0 == sb.length() ? "" : sb.substring(1);
   }
 
   public boolean equals(Object o) {
@@ -93,7 +93,7 @@ public final class MetaItem implements Comparable {
   }
 
   /** Primary sort by name, secondary by value. */
-  public int compareTo(Object o) {
+  public int compareTo(MetaItem o) {
     if (null == o) { 
       throw new IllegalArgumentException("null object");
     }
