@@ -106,6 +106,7 @@ class DocumentHandler extends AbstractHandler {
       byte[] content;
       String contentType;
       int httpResponseCode;
+      Metadata metadata;
       try {
         try {
           adaptor.getDocContent(request, response);
@@ -118,6 +119,7 @@ class DocumentHandler extends AbstractHandler {
         content = response.getWrittenContent();
         contentType = response.contentType;
         httpResponseCode = response.httpResponseCode;
+        metadata = response.metadata;
       } catch (FileNotFoundException e) {
         cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
                       "Unknown document: " + e.getMessage());
@@ -151,6 +153,10 @@ class DocumentHandler extends AbstractHandler {
       }
       // TODO(ejona): decide when to use compression based on mime-type
       enableCompressionIfSupported(ex);
+      if (metadata != null && requestIsFromGsa(ex)) {
+        ex.getResponseHeaders().set("X-Gsa-External-Metadata",
+                                    formMetadataHeader(metadata));
+      }
       if ("GET".equals(requestMethod)) {
         respond(ex, httpResponseCode, contentType, content);
       } else {
@@ -172,6 +178,51 @@ class DocumentHandler extends AbstractHandler {
       commHandler.getJournal().recordRequestResponseEnd(
           response == null ? 0 : response.length);
     }
+  }
+
+  /**
+   * Format the GSA-specific metadata header value for crawl-time metadata.
+   */
+  static String formMetadataHeader(Metadata metadata) {
+    StringBuilder sb = new StringBuilder();
+    for (MetaItem item : metadata) {
+      String rawItem = item.getName() + "=" + item.getValue();
+      sb.append(percentEncode(rawItem));
+      sb.append(",");
+    }
+    return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
+  }
+
+  /**
+   * Percent-encode {@code value} as described in
+   * <a href="http://tools.ietf.org/html/rfc3986#section-2">RFC 3986</a> and
+   * using UTF-8. This is the most common form of percent encoding. The
+   * characters A-Z, a-z, '-', '_', '.', and '~' are left as-is; the rest are
+   * percent encoded.
+   */
+  static String percentEncode(String value) {
+    final Charset encoding = Charset.forName("UTF-8");
+    StringBuilder sb = new StringBuilder();
+    byte[] bytes = value.getBytes(encoding);
+    for (byte b : bytes) {
+      if ((b >= 'a' && b <= 'z')
+          || (b >= 'A' && b <= 'Z')
+          || b == '-' || b == '_' || b == '.' || b == '~') {
+        sb.append((char)b);
+      } else {
+        // Make sure it is positive
+        int i = b & 0xff;
+        String hex = Integer.toHexString(i).toUpperCase();
+        if (hex.length() > 2) {
+          throw new IllegalStateException();
+        }
+        while (hex.length() != 2) {
+          hex = "0" + hex;
+        }
+        sb.append('%').append(hex);
+      }
+    }
+    return sb.toString();
   }
 
   private static class DocumentRequest implements Adaptor.Request {
@@ -216,8 +267,9 @@ class DocumentHandler extends AbstractHandler {
   private static class DocumentResponse implements Adaptor.Response {
     private HttpExchange ex;
     private OutputStream os;
-    String contentType;
-    int httpResponseCode;
+    private String contentType;
+    private int httpResponseCode;
+    private Metadata metadata;
 
     public DocumentResponse(HttpExchange ex) {
       this.ex = ex;
@@ -259,11 +311,11 @@ class DocumentHandler extends AbstractHandler {
     }
 
     @Override
-    public void setMetadata(Metadata m) {
+    public void setMetadata(Metadata metadata) {
       if (os != null) {
         throw new IllegalStateException();
       }
-      // TODO(ejona): transfer to GSA
+      this.metadata = metadata;
     }
 
     private long getWrittenContentSize() {
