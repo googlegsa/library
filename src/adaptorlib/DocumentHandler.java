@@ -186,8 +186,9 @@ class DocumentHandler extends AbstractHandler {
   static String formMetadataHeader(Metadata metadata) {
     StringBuilder sb = new StringBuilder();
     for (MetaItem item : metadata) {
-      String rawItem = item.getName() + "=" + item.getValue();
-      sb.append(percentEncode(rawItem));
+      sb.append(percentEncode(item.getName()));
+      sb.append("=");
+      sb.append(percentEncode(item.getValue()));
       sb.append(",");
     }
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);

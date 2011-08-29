@@ -16,10 +16,10 @@ public class DocumentHandlerTest {
     items.add(MetaItem.isPublic());
     items.add(MetaItem.raw("test", "ing"));
     items.add(MetaItem.raw("another", "item"));
-    items.add(MetaItem.raw("equals", "=="));
+    items.add(MetaItem.raw("equals=", "=="));
     String result = DocumentHandler.formMetadataHeader(new Metadata(items));
-    assertEquals("another%3Ditem,equals%3D%3D%3D,google%3Aispublic%3Dtrue,"
-                 + "test%3Ding", result);
+    assertEquals("another=item,equals%3D=%3D%3D,google%3Aispublic=true,"
+                 + "test=ing", result);
   }
 
   @Test
