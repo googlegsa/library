@@ -28,7 +28,7 @@ public class Config {
   public Config() {
     String hostname = null;
     try {
-      hostname = InetAddress.getLocalHost().getHostName();
+      hostname = InetAddress.getLocalHost().getCanonicalHostName();
     } catch (UnknownHostException ex) {
       // Ignore
     }
