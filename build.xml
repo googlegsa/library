@@ -35,7 +35,7 @@
   <target name="build" description="Build source">
     <mkdir dir="${build-src.dir}"/>
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false">
+      includeantruntime="false" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath location="${opencsv.jar}"/>
       <classpath location="${j-calais.jar}"/>
@@ -44,7 +44,7 @@
 
     <mkdir dir="${build-test.dir}"/>
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="false">
+      includeantruntime="false" encoding="utf-8">
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
     </javac>
