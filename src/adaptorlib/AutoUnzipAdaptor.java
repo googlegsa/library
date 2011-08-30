@@ -52,11 +52,18 @@ public class AutoUnzipAdaptor extends WrapperAdaptor
       throws InterruptedException {
     List<DocId> expanded = new ArrayList<DocId>();
     for (DocId docId : docIds) {
-      expanded.add(new DocId(escape(docId.getUniqueId())));
+      DocId newDocId = createDerivativeDocId(docId,
+                                             escape(docId.getUniqueId()));
+      expanded.add(newDocId);
     }
 
     for (DocId docId : docIds) {
       if (!docId.getUniqueId().endsWith(".zip")) {
+        continue;
+      }
+      if (docId instanceof DeletedDocId) {
+        // Not a great case since we don't remember what files were in each zip.
+        // The GSA will have to figure out the files are gone via 404s later.
         continue;
       }
       File tmpFile;
@@ -83,7 +90,8 @@ public class AutoUnzipAdaptor extends WrapperAdaptor
           log.log(Level.FINE, "Exception trying to auto-expand a zip", ex);
           continue;
         }
-        DocId escaped = new DocId(escape(docId.getUniqueId()));
+        DocId escaped = createDerivativeDocId(docId,
+                                              escape(docId.getUniqueId()));
         listZip(escaped, tmpFile, expanded);
       } finally {
         tmpFile.delete();
@@ -96,6 +104,23 @@ public class AutoUnzipAdaptor extends WrapperAdaptor
       return null;
     }
     return getDocIdParts(failedId)[0];
+  }
+
+  /**
+   * Creates a new {@code DocId} that is a copy of {@code docId}, but with a
+   * different uniqueId.
+   */
+  private static DocId createDerivativeDocId(DocId docId, String uniqueId) {
+    DocId newDocId;
+    if (docId instanceof DocIdWithMetadata) {
+      newDocId = new DocIdWithMetadata(uniqueId,
+          ((DocIdWithMetadata) docId).getMetadata());
+    } else if (docId instanceof DeletedDocId) {
+      newDocId = new DeletedDocId(uniqueId);
+    } else {
+      newDocId = new DocId(uniqueId);
+    }
+    return newDocId;
   }
 
   /**
@@ -120,7 +145,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor
           continue;
         }
         String uniqId = docId.getUniqueId() + DELIMITER + escape(e.getName());
-        DocId nestedId = new DocId(uniqId);
+        DocId nestedId = createDerivativeDocId(docId, uniqId);
         expanded.add(nestedId);
         if (uniqId.endsWith(".zip")) {
           InputStream nestedIs;
@@ -187,16 +212,21 @@ public class AutoUnzipAdaptor extends WrapperAdaptor
     if (!req.needDocumentContent()) {
       // No need to perform any real content magic. Everything but contentType
       // applies to both the zip and the file it contains.
-      // TODO(ejona): revisit once we add other metadata support
       // TODO(ejona): set content type on response here
       super.getDocContent(auRequest, new NoContentsResponse(resp));
       return;
     }
     File tmpFile = File.createTempFile("adaptorlib", ".tmp");
     try {
-      AutoUnzipResponse auResponse = new AutoUnzipResponse(resp,
-          new FileOutputStream(tmpFile));
-      super.getDocContent(auRequest, auResponse);
+      OutputStream tmpFileOs = new FileOutputStream(tmpFile);
+      AutoUnzipResponse auResponse;
+      try {
+        auResponse = new AutoUnzipResponse(resp, tmpFileOs);
+        super.getDocContent(auRequest, auResponse);
+        tmpFileOs.flush();
+      } finally {
+        tmpFileOs.close();
+      }
       switch (auResponse.getState()) {
         case NORESPONSE:
           // This is an error, but we will let a higher level complain about it
