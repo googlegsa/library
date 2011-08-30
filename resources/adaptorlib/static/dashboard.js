@@ -156,6 +156,45 @@ function processData(data) {
       'Throughput (KiB/s)', null, '%#I:%M %p');
 }
 
+function rpc(method, params, id, callback) {
+  var request = {method: method, params: params, id: id};
+  $.ajax({
+    accepts: 'application/json',
+    contentType: 'application/json',
+    data: JSON.stringify(request),
+    processData: false,
+    type: 'POST',
+    url: '/rpc',
+    success: function(data) {
+      callback(data.result, data.error);
+    },
+  });
+}
+
+function startFeedPush() {
+  var sending = $('#gaf-start-feed-push-sending');
+  sending.show();
+  rpc('startFeedPush', null, null, function(result, error) {
+    sending.hide();
+    var notificationSpan;
+    if (result !== null) {
+      notificationSpan = $('#gaf-start-feed-push-success');
+      notificationSpan.text('Feed push started');
+    } else {
+      if (error === null) {
+        error = 'Invalid response from server';
+      }
+      notificationSpan = $('#gaf-start-feed-push-error');
+      notificationSpan.text(error);
+    }
+    notificationSpan.show();
+    window.setTimeout(function() {
+      notificationSpan.fadeOut();
+    }, 5000);
+  });
+}
+
 $(document).ready(function() {
   $.getJSON('/stat', processData);
+  $('#gaf-start-feed-push').click(startFeedPush);
 });

@@ -17,3 +17,11 @@
   height: 20em;
   overflow: auto;
 }
+
+#gaf-start-feed-push-success {
+  color: green;
+}
+
+#gaf-start-feed-push-error {
+  color: red;
+}

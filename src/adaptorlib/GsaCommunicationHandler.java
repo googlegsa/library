@@ -7,6 +7,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -27,6 +28,8 @@ public class GsaCommunicationHandler implements DocIdEncoder {
   private final Adaptor.DocIdPusher pusher = new InnerDocIdPusher();
   private final Adaptor.GetDocIdsErrorHandler defaultErrorHandler
       = new DefaultGetDocIdsErrorHandler();
+  private Scheduler pushScheduler;
+  private int pushingDocIds;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     // TODO(ejona): allow the adaptor to choose whether it wants this feature
@@ -44,6 +47,8 @@ public class GsaCommunicationHandler implements DocIdEncoder {
     InetSocketAddress addr = new InetSocketAddress(port);
     HttpServer server = HttpServer.create(addr, 0);
     server.createContext("/dashboard", new DashboardHandler(config, journal));
+    server.createContext("/rpc", new RpcHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), this));
     server.createContext("/stat", new StatHandler(config, journal));
     server.createContext("/sso", new SsoHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding()));
@@ -76,17 +81,32 @@ public class GsaCommunicationHandler implements DocIdEncoder {
    * will be used.
    */
   public void beginPushingDocIds(Iterator<Date> schedule,
-                                 final Adaptor.GetDocIdsErrorHandler handler) {
-    Scheduler pushScheduler = new Scheduler();
-    pushScheduler.schedule(new Scheduler.Task() {
-      public void run() {
-        try {
-          pushDocIds(handler);
-        } catch (InterruptedException ex) {
-          Thread.currentThread().interrupt();
-        }
-      }
-    }, schedule);
+                                 Adaptor.GetDocIdsErrorHandler handler) {
+    getPushScheduler().schedule(new PushTask(handler), schedule);
+  }
+
+  /**
+   * Ensure there is a push running right now. This schedules a new push if one
+   * is not already running. Returns {@code true} if it starts a new push, and
+   * false otherwise.
+   */
+  synchronized boolean checkAndBeginPushDocIdsImmediately(
+      Adaptor.GetDocIdsErrorHandler handler) {
+    if (pushingDocIds > 0) {
+      return false;
+    }
+    beginPushingDocIdsImmediately(handler);
+    return true;
+  }
+
+  /**
+   * Schedule a push for immediately. If there is a push already running this
+   * push will be started after it.
+   */
+  private void beginPushingDocIdsImmediately(
+      Adaptor.GetDocIdsErrorHandler handler) {
+    List<Date> schedule = Collections.singletonList(new Date());
+    getPushScheduler().schedule(new PushTask(handler), schedule.iterator());
   }
 
   private DocId pushSizedBatchOfDocIds(List<DocId> docIds,
@@ -140,6 +160,9 @@ public class GsaCommunicationHandler implements DocIdEncoder {
    */
   public void pushDocIds(Adaptor.GetDocIdsErrorHandler handler)
       throws InterruptedException {
+    synchronized (this) {
+      pushingDocIds++;
+    }
     if (handler == null) {
       handler = defaultErrorHandler;
     }
@@ -158,6 +181,9 @@ public class GsaCommunicationHandler implements DocIdEncoder {
       } else {
         return; // Bail
       }
+    }
+    synchronized (this) {
+      pushingDocIds--;
     }
   }
 
@@ -242,6 +268,13 @@ public class GsaCommunicationHandler implements DocIdEncoder {
     return journal;
   }
 
+  private Scheduler getPushScheduler() {
+    if (pushScheduler == null) {
+      pushScheduler = new Scheduler();
+    }
+    return pushScheduler;
+  }
+
   private class InnerDocIdPusher implements Adaptor.DocIdPusher {
     private Adaptor.PushErrorHandler defaultErrorHandler
         = new DefaultPushErrorHandler();
@@ -259,6 +292,22 @@ public class GsaCommunicationHandler implements DocIdEncoder {
       }
       return GsaCommunicationHandler.this.pushDocIds(docIds.iterator(),
                                                      handler);
+    }
+  }
+
+  private class PushTask extends Scheduler.Task {
+    private final Adaptor.GetDocIdsErrorHandler handler;
+
+    public PushTask(Adaptor.GetDocIdsErrorHandler handler) {
+      this.handler = handler;
+    }
+
+    public void run() {
+      try {
+        pushDocIds(handler);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
     }
   }
 }

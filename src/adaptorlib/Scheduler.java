@@ -37,7 +37,7 @@ class Scheduler {
   }
 
   private void reschedule(Task schedulerTask, Iterator<Date> iterator) {
-    Date time = iterator.next();
+    Date time = iterator.hasNext() ? iterator.next() : null;
     if (time == null) {
       schedulerTask.cancel();
     } else {

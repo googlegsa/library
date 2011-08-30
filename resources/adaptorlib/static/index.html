@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
   <title>Adaptor Dashboard</title>
 
-  <link rel="stylesheet" type="text/css" href="dashboard.css" />
-  <link rel="stylesheet" type="text/css" href="jquery.jqplot.min.css" />
+  <link rel="stylesheet" type="text/css" href="dashboard.css">
+  <link rel="stylesheet" type="text/css" href="jquery.jqplot.min.css">
 
   <script type="text/javascript" src="jquery-1.6.2.min.js"></script>
   <!--[if IE]><script type="text/javascript" src="excanvas.js"></script><![endif]-->
@@ -16,6 +17,13 @@
   <script type="text/javascript" src="dashboard.js"></script>
 </head>
 <body>
+  <div>
+    <button id="gaf-start-feed-push">Start Feed Push</button>
+    <span id="gaf-start-feed-push-sending" style="display: none">Sending request...</span>
+    <span id="gaf-start-feed-push-success"></span>
+    <span id="gaf-start-feed-push-error"></span>
+  </div>
+
   <h2>Statistics</h2>
   Program started at: <span id="gaf-whenStarted"></span><br>
   Total document ids pushed: <span id="gaf-numTotalDocIdsPushed"></span><br>
