@@ -7,14 +7,14 @@ import java.util.*;
 import java.util.logging.Logger;
 
 /**
- * Demonstrates what code is necessary for putting public
+ * Demonstrates what code is necessary for putting restricted
  * content onto a GSA.  The key operations are:
  * <ol><li> providing document ids
- *   <li> providing document bytes given a document id</ol>
+ *   <li> providing document bytes and ACLs given a document id</ol>
  */
-public class AdaptorTemplate extends AbstractAdaptor {
+public class AdaptorWithPushTimeMetadataTemplate extends AbstractAdaptor {
   private static final Logger log
-      = Logger.getLogger(AdaptorTemplate.class.getName());
+      = Logger.getLogger(AdaptorWithPushTimeMetadataTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   /** Gives list of document ids that you'd like on the GSA. */
@@ -34,8 +34,33 @@ public class AdaptorTemplate extends AbstractAdaptor {
     String str;
     if ("1001".equals(id.getUniqueId())) {
       str = "Document 1001 says hello and apple orange";
+      // Make set to accumulate meta items.
+      Set<MetaItem> metaItems = new TreeSet<MetaItem>();
+      // Add user ACL.
+      List<String> users1001 = Arrays.asList("peter,bart,simon");
+      metaItems.add(MetaItem.permittedUsers(users1001));
+      // Add group ACL.
+      List<String> groups1001 = Arrays.asList("support,sales");
+      metaItems.add(MetaItem.permittedGroups(groups1001));
+      // Add custom meta items.
+      metaItems.add(MetaItem.raw("my-special-key", "my-custom-value"));
+      metaItems.add(MetaItem.raw("date", "not soon enough"));
+      // Make metadata object, which checks items for consistency.
+      // Must set metadata before getting OutputStream
+      resp.setMetadata(new Metadata(metaItems));
     } else if ("1002".equals(id.getUniqueId())) {
       str = "Document 1002 says hello and banana strawberry";
+      // Another example.
+      Set<MetaItem> metaItems = new TreeSet<MetaItem>();
+      // A document that's not public and has no ACLs causes head requests.
+      metaItems.add(MetaItem.isNotPublic());
+      // Set display URL.
+      metaItems.add(MetaItem.displayUrl("http://www.google.com"));
+      // Add custom meta items.
+      metaItems.add(MetaItem.raw("date", "better never than late"));
+      // Make metadata object, which checks items for consistency.
+      // Must set metadata before getting OutputStream
+      resp.setMetadata(new Metadata(metaItems));
     } else {
       throw new FileNotFoundException(id.getUniqueId());
     }
@@ -53,7 +78,7 @@ public class AdaptorTemplate extends AbstractAdaptor {
   public static void main(String a[]) throws InterruptedException {
     Config config = new Config();
     config.autoConfig(a);
-    Adaptor adaptor = new AdaptorTemplate();
+    Adaptor adaptor = new AdaptorWithPushTimeMetadataTemplate();
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
     // Setup providing content.
