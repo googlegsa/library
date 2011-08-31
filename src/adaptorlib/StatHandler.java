@@ -31,15 +31,20 @@ class StatHandler extends AbstractHandler {
 
   protected void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
-    if ("GET".equals(requestMethod)) {
-      String contents = generateJson();
-      enableCompressionIfSupported(ex);
-      cannedRespond(ex, HttpURLConnection.HTTP_OK, "application/json",
-                    contents);
-    } else {
+    if (!"GET".equals(requestMethod)) {
       cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
           "Unsupported request method");
+      return;
     }
+    if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
+      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
+                    "Not found");
+      return;
+    }
+    String contents = generateJson();
+    enableCompressionIfSupported(ex);
+    cannedRespond(ex, HttpURLConnection.HTTP_OK, "application/json",
+                  contents);
   }
 
   private String generateJson() throws IOException {
