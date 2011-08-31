@@ -14,10 +14,6 @@ import java.util.logging.Logger;
 class DashboardHandler extends AbstractHandler {
   private static final Logger log
       = Logger.getLogger(DashboardHandler.class.getName());
-  /** Requests for this path get redirected to {@link #pathPrefix}. */
-  private static final String pathRedirect = "/dashboard";
-  /** The base path of requests we expect to serve. */
-  private static final String pathPrefix = pathRedirect + "/";
   /** Subpackage to look for static resources within. */
   private static final String staticPackage = "static";
 
@@ -35,7 +31,9 @@ class DashboardHandler extends AbstractHandler {
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod)) {
       URI req = getRequestUri(ex);
-      if (pathRedirect.equals(req.getPath())) {
+      final String basePath = ex.getHttpContext().getPath();
+      final String pathPrefix = basePath + "/";
+      if (basePath.equals(req.getPath())) {
         URI redirect;
         try {
           redirect = new URI(req.getScheme(), req.getAuthority(),
@@ -49,11 +47,6 @@ class DashboardHandler extends AbstractHandler {
         return;
       }
       String path = req.getPath();
-      if (!path.startsWith(pathPrefix)) {
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "404: Not found");
-        return;
-      }
       path = path.substring(pathPrefix.length());
       if ("".equals(path)) {
         path = "index.html";
