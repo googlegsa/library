@@ -5,6 +5,7 @@ import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
@@ -20,6 +21,9 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 abstract class AbstractHandler implements HttpHandler {
+  private static final String ATTR_HEADERS_SENT
+      = AbstractHandler.class.getName() + ".headers-sent";
+
   private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
   // DateFormats are relatively expensive to create, and cannot be used from
@@ -140,6 +144,7 @@ abstract class AbstractHandler implements HttpHandler {
     if (contentType != null) {
       ex.getResponseHeaders().set("Content-Type", contentType);
     }
+    ex.setAttribute(ATTR_HEADERS_SENT , true);
     if (response == null) {
       // No body. Required for HEAD requests
       ex.sendResponseHeaders(code, -1);
@@ -210,7 +215,7 @@ abstract class AbstractHandler implements HttpHandler {
 
   /**
    * Performs entry counting, calls {@link #meteredHandle}, and performs exit
-   * counting. Also logs.
+   * counting. Also logs and handles exceptions.
    */
   public void handle(HttpExchange ex) throws IOException {
     try {
@@ -223,6 +228,20 @@ abstract class AbstractHandler implements HttpHandler {
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
       meteredHandle(ex);
+    } catch (Exception e) {
+      Boolean headersSent = (Boolean)ex.getAttribute(ATTR_HEADERS_SENT);
+      if (headersSent == null) {
+        headersSent = false;
+      }
+      log.log(Level.WARNING, "Unexpected exception during request", e);
+      if (headersSent) {
+        // The headers have already been sent, so all we can do is throw the
+        // exception up and allow the server to kill the connection.
+        throw new RuntimeException(e);
+      } else {
+        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
+                      "An unexpected error occurred");
+      }
     } finally {
       synchronized (this) {
         numberConnectionFinished++;
