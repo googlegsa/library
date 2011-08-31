@@ -110,6 +110,7 @@ class GsaFeedFileMaker {
     trans.setOutputProperty(OutputKeys.DOCTYPE_PUBLIC, doctype);
     trans.setOutputProperty(OutputKeys.DOCTYPE_SYSTEM, "");
     trans.setOutputProperty(OutputKeys.INDENT, "yes");
+    trans.setOutputProperty(OutputKeys.STANDALONE, "no");
     StringWriter sw = new StringWriter();
     StreamResult result = new StreamResult(sw);
     DOMSource source = new DOMSource(doc);
