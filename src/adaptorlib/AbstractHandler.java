@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -243,7 +243,7 @@ abstract class AbstractHandler implements HttpHandler {
               this.getClass().getName());
       meteredHandle(ex);
     } catch (Exception e) {
-      Boolean headersSent = (Boolean)ex.getAttribute(ATTR_HEADERS_SENT);
+      Boolean headersSent = (Boolean) ex.getAttribute(ATTR_HEADERS_SENT);
       if (headersSent == null) {
         headersSent = false;
       }

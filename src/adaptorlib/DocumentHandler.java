@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -223,7 +223,7 @@ class DocumentHandler extends AbstractHandler {
       if ((b >= 'a' && b <= 'z')
           || (b >= 'A' && b <= 'Z')
           || b == '-' || b == '_' || b == '.' || b == '~') {
-        sb.append((char)b);
+        sb.append((char) b);
       } else {
         // Make sure it is positive
         int i = b & 0xff;

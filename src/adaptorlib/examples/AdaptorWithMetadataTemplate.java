@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -18,8 +18,8 @@ import adaptorlib.*;
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.logging.Logger;
 import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Demonstrates what code is necessary for putting restricted
@@ -57,7 +57,7 @@ public class AdaptorWithMetadataTemplate extends AbstractAdaptor {
     } catch (IllegalArgumentException e) {
       // Thrown by meta items and by metadata constructor.
       log.log(Level.SEVERE, "failed to make metadata" , e);
-      // TODO: Get failed doc ids into dashboard.
+      // TODO(pjo): Get failed doc ids into dashboard.
     }
   
     try {
@@ -76,7 +76,7 @@ public class AdaptorWithMetadataTemplate extends AbstractAdaptor {
     } catch (IllegalArgumentException e) {
       // Thrown by meta items and by metadata constructor.
       log.log(Level.SEVERE, "failed to make metadata" , e);
-      // TODO: Get failed doc ids into dashboard.
+      // TODO(pjo): Get failed doc ids into dashboard.
     }
 
     pusher.pushDocInfos(mockDocInfos);

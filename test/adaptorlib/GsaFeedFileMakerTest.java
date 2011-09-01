@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,14 +13,16 @@
 // limitations under the License.
 
 package adaptorlib;
+
+import static org.junit.Assert.*;
+
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
-
-import static org.junit.Assert.*;
-import org.junit.Test;
 
 /** Tests for {@link GsaFeedFileMaker}. */
 public class GsaFeedFileMakerTest {

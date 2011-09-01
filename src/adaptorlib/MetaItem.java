@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public final class MetaItem implements Comparable<MetaItem> {
   }
 
   private static void throwIfInvalidName(String name) { 
-    // TODO: Figure out complete rules.
+    // TODO(pjo): Figure out complete rules.
     if (name.contains(",")) {
       throw new IllegalArgumentException("name " + name + " contains comma");
     }
