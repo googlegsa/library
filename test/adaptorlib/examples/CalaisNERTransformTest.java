@@ -5,6 +5,11 @@ import adaptorlib.TransformException;
 import static org.junit.Assert.*;
 import org.junit.Test;
 
+import mx.bigdata.jcalais.CalaisClient;
+import mx.bigdata.jcalais.CalaisConfig;
+import mx.bigdata.jcalais.CalaisObject;
+import mx.bigdata.jcalais.CalaisResponse;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.URL;
@@ -12,11 +17,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
-
-import mx.bigdata.jcalais.CalaisClient;
-import mx.bigdata.jcalais.CalaisConfig;
-import mx.bigdata.jcalais.CalaisObject;
-import mx.bigdata.jcalais.CalaisResponse;
 
 /**
  * Tests for {@link CalaisNERTransform}.
@@ -36,7 +36,7 @@ public class CalaisNERTransformTest {
       } else if ("name".equals(field)) {
         return name;
       } else {
-        throw new IllegalStateException(); 
+        throw new IllegalArgumentException(); 
       }
     }
 
