@@ -12,9 +12,9 @@ import java.util.logging.Logger;
  * <ol><li> providing document ids
  *   <li> providing document bytes and ACLs given a document id</ol>
  */
-public class AdaptorWithPushTimeMetadataTemplate extends AbstractAdaptor {
+public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
   private static final Logger log
-      = Logger.getLogger(AdaptorWithPushTimeMetadataTemplate.class.getName());
+      = Logger.getLogger(AdaptorWithCrawlTimeMetadataTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
   /** Gives list of document ids that you'd like on the GSA. */
@@ -78,7 +78,7 @@ public class AdaptorWithPushTimeMetadataTemplate extends AbstractAdaptor {
   public static void main(String a[]) throws InterruptedException {
     Config config = new Config();
     config.autoConfig(a);
-    Adaptor adaptor = new AdaptorWithPushTimeMetadataTemplate();
+    Adaptor adaptor = new AdaptorWithCrawlTimeMetadataTemplate();
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
     // Setup providing content.

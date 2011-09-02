@@ -47,6 +47,7 @@
       includeantruntime="false" encoding="utf-8">
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
+      <classpath location="${j-calais.jar}"/>
     </javac>
   </target>
 

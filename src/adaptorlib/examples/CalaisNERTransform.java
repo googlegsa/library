@@ -23,8 +23,19 @@ import java.util.Map;
  */
 public class CalaisNERTransform extends DocumentTransform {
 
-  public CalaisNERTransform() {
+  interface CalaisClientFactory {
+    CalaisClient makeClient(String apiKey);
+  }
+
+  private final CalaisClientFactory clientFactory;
+
+  CalaisNERTransform(CalaisClientFactory factory) {
     super("CalaisNERTransform");
+    this.clientFactory = factory;
+  }
+
+  public CalaisNERTransform() {
+    this(null);
   }
 
   /**
@@ -65,11 +76,13 @@ public class CalaisNERTransform extends DocumentTransform {
     if (apiKey == null) {
       throw new IllegalArgumentException("No api key given. Please set param: OpenCalaisApiKey");
     }
-    boolean includeAllEntities = true;
-    if ("False".equals(params.get("UseCalaisEntity:All"))) {
-      includeAllEntities = false;
+    boolean includeAllEntities = "True".equals(params.get("UseCalaisEntity:All"));
+    CalaisClient calaisClient;
+    if (null == clientFactory) {
+      calaisClient = new CalaisRestClient(apiKey);
+    } else {
+      calaisClient = clientFactory.makeClient(apiKey);
     }
-    CalaisClient calaisClient = new CalaisRestClient(apiKey);
     CalaisConfig config = new CalaisConfig();
     config.set(CalaisConfig.ProcessingParam.CONTENT_TYPE, "TEXT/HTML");
     String content = contentIn.toString("UTF-8");
@@ -80,8 +93,7 @@ public class CalaisNERTransform extends DocumentTransform {
       String entityType = entity.getField("_type");
       String entityName = entity.getField("name");
       String entityParamKey = "UseCalaisEntity:"+ entityType;
-      boolean shouldInclude = params.containsKey(entityParamKey) ?
-          "True".equals(params.get(entityParamKey)) : includeAllEntities;
+      boolean shouldInclude = includeAllEntities || "True".equals(params.get(entityParamKey));
       if (shouldInclude) {
         sb.append(MessageFormat.format("<meta name=\"{0}\" content=\"{1}\" />\n",
                                        entityType, entityName));

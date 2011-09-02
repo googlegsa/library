@@ -7,20 +7,116 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
+
+import mx.bigdata.jcalais.CalaisClient;
+import mx.bigdata.jcalais.CalaisConfig;
+import mx.bigdata.jcalais.CalaisObject;
+import mx.bigdata.jcalais.CalaisResponse;
 
 /**
  * Tests for {@link CalaisNERTransform}.
  */
 public class CalaisNERTransformTest {
 
+  private static class MockCalaisObject implements CalaisObject {
+    private String type, name;
+    MockCalaisObject(String t, String n) {
+      this.type = t;
+      this.name = n;
+    }
+
+    public String getField(String field) {
+      if ("_type".equals(field)) {
+        return type;
+      } else if ("name".equals(field)) {
+        return name;
+      } else {
+        throw new IllegalStateException(); 
+      }
+    }
+
+    public Iterable getList(String field) {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class MockCalaisResponse implements CalaisResponse {
+      
+    public CalaisObject getMeta() {
+      throw new UnsupportedOperationException();
+    }
+
+    public CalaisObject getInfo() {
+      throw new UnsupportedOperationException();
+    }
+ 
+    public Iterable<CalaisObject> getTopics() {
+      throw new UnsupportedOperationException();
+    }
+
+    public Iterable<CalaisObject> getEntities() {
+      List<CalaisObject> ents = new ArrayList<CalaisObject>();
+      ents.add(new MockCalaisObject("Person", "Charles Taylor"));
+      ents.add(new MockCalaisObject("Position", "President"));
+      ents.add(new MockCalaisObject("Person", "Naomi Campbell"));
+      ents.add(new MockCalaisObject("Country", "Sierra Leone"));
+      ents.add(new MockCalaisObject("NaturalFeature", "Sierra Leone"));
+      ents.add(new MockCalaisObject("Country", "Liberia"));
+      return ents;
+    }
+
+    public Iterable<CalaisObject> getSocialTags() {
+      throw new UnsupportedOperationException();
+    }
+  
+    public Iterable<CalaisObject> getRelations() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class MockCalaisClient implements CalaisClient {
+    public CalaisResponse analyze(URL url) {
+      throw new UnsupportedOperationException();
+    }
+  
+    public CalaisResponse analyze(URL url, CalaisConfig config){
+      throw new UnsupportedOperationException();
+    }
+
+    public CalaisResponse analyze(Readable readable) {
+      throw new UnsupportedOperationException();
+    }
+
+    public CalaisResponse analyze(Readable readable, CalaisConfig config){
+      throw new UnsupportedOperationException();
+    }
+
+    public CalaisResponse analyze(String content) {
+      throw new UnsupportedOperationException();
+    }
+
+    public CalaisResponse analyze(String content, CalaisConfig config) {
+      return new MockCalaisResponse();
+    }
+  }
+
+  private static class Factory implements CalaisNERTransform.CalaisClientFactory {
+    public CalaisClient makeClient(String apiKey) {
+      return new MockCalaisClient();
+    }
+  }
+
   // Note: These tests expect specific entities to be detected by OpenCalais.
   // Long term, we should mock out the webservice so we're not flaky.
 
   @Test
   public void testRestrictedSet() throws IOException, TransformException {
-    CalaisNERTransform transform = new CalaisNERTransform();
+    CalaisNERTransform transform = new CalaisNERTransform(new Factory());
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
@@ -42,8 +138,6 @@ public class CalaisNERTransformTest {
         + "<meta name=\"Person\" content=\"Charles Taylor\" />\n"
         + "<meta name=\"Position\" content=\"President\" />\n"
         + "<meta name=\"Person\" content=\"Naomi Campbell\" />\n"
-        + "<meta name=\"Country\" content=\"Sierra Leone\" />\n"
-        + "<meta name=\"Country\" content=\"Liberia\" />\n"
         + "</HEAD><BODY>Prosecutors at the trial of former Liberian President Charles Taylor"
         + " hope the testimony of supermodel Naomi Campbell "
         + " will link Taylor to the trade in illegal conflict diamonds, "
@@ -56,7 +150,7 @@ public class CalaisNERTransformTest {
 
   @Test
   public void testAllEntities() throws IOException, TransformException {
-    CalaisNERTransform transform = new CalaisNERTransform();
+    CalaisNERTransform transform = new CalaisNERTransform(new Factory());
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
