@@ -130,7 +130,7 @@
   </target>
 
   <target name="test" depends="build" description="Run JUnit tests">
-    <junit printsummary="yes" haltonfailure="yes">
+    <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true">
       <sysproperty key="net.sourceforge.cobertura.datafile"
         file="${build-instrument.dir}/cobertura.ser"/>
       <classpath refid="cobertura.classpath"/>
@@ -149,7 +149,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <formatter type="plain" usefile="false"/>
-      <batchtest fork="yes">
+      <batchtest>
         <fileset dir="${test.dir}">
           <include name="**/*Test.java"/>
         </fileset>
