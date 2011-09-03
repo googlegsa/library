@@ -55,9 +55,4 @@ public class DocIdTest {
     thrown.expect(NullPointerException.class);
     new DocId(null);
   }
-
-  @Test
-  public void testFeedFileAction() {
-    assertEquals("add", new DocId("some docid").getFeedFileAction());
-  }
 }

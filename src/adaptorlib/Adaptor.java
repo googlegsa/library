@@ -181,11 +181,12 @@ public interface Adaptor {
   public static interface DocIdPusher {
     /**
      * Push {@code DocId}s immediately and block until they are successfully
-     * provided to the GSA or the error handler gives up. This process can take
+     * provided to the GSA or the error handler gives up. This method can take
      * a while in error conditions, but is not something that generally needs to
      * be avoided.
      *
-     * <p>Equivalent to {@code pushDocIds(docIds, null)}.
+     * <p>Equivalent to {@code pushDocIds(docIds, null)} and {@link
+     * #pushDocInfos(Iterable)} with empty metadata for each {@code DocInfo}.
      *
      * @return {@code null} on success, otherwise the first DocId to fail
      * @see #pushDocIds(Iterable, Adaptor.PushErrorHandler)
@@ -195,16 +196,46 @@ public interface Adaptor {
 
     /**
      * Push {@code DocId}s immediately and block until they are successfully
-     * provided to the GSA or the error handler gives up. This process can take
+     * provided to the GSA or the error handler gives up. This method can take
      * a while in error conditions, but is not something that generally needs to
      * be avoided.
      *
      * <p>If handler is {@code null}, then a default error handler is used.
      *
+     * <p>Equivalent to {@link #pushDocInfos(Iterable,
+     * Adaptor.PushErrorHandler)} with empty metadata for each {@code DocInfo}.
+     *
      * @return {@code null} on success, otherwise the first DocId to fail
      */
     public DocId pushDocIds(Iterable<DocId> docIds, PushErrorHandler handler)
         throws InterruptedException;
+
+    /**
+     * Push {@code DocInfo}s immediately and block until they are successfully
+     * provided to the GSA or the error handler gives up. This method can take
+     * a while in error conditions, but is not something that generally needs to
+     * be avoided.
+     *
+     * <p>Equivalent to {@code pushDocInfos(docInfos, null)}.
+     *
+     * @return {@code null} on success, otherwise the first DocInfo to fail
+     * @see #pushDocInfos(Iterable, Adaptor.PushErrorHandler)
+     */
+    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos)
+        throws InterruptedException;
+
+    /**
+     * Push {@code DocInfo}s immediately and block until they are successfully
+     * provided to the GSA or the error handler gives up. This method can take
+     * a while in error conditions, but is not something that generally needs to
+     * be avoided.
+     *
+     * <p>If handler is {@code null}, then a default error handler is used.
+     *
+     * @return {@code null} on success, otherwise the first DocInfo to fail
+     */
+    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+        PushErrorHandler handler) throws InterruptedException;
   }
 
   /**

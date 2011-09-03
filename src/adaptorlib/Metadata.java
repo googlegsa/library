@@ -25,6 +25,13 @@ import java.util.TreeSet;
 
 /** Keeps set of MetaItem instanes after validation. */
 public final class Metadata implements Iterable<MetaItem> {
+  /** Object instance to denote documents that have been deleted. */
+  public static final Metadata DELETED
+      = new Metadata(Collections.<MetaItem>emptySet());
+  /** Empty convenience instance. */
+  public static final Metadata EMPTY
+      = new Metadata(Collections.<MetaItem>emptySet());
+
   private final Set<MetaItem> items;
  
   /**
@@ -33,10 +40,14 @@ public final class Metadata implements Iterable<MetaItem> {
    */ 
   public Metadata(Set<MetaItem> allMeta) {
     items = Collections.unmodifiableSet(new TreeSet<MetaItem>(allMeta));
-    checkConsistency(toMap());
+    checkConsistency(items, toMap());
   }
 
+  @Override
   public boolean equals(Object o) {
+    if (this == DELETED || o == DELETED) {
+      return this == o;
+    }
     boolean same = false;
     if (null != o && this.getClass().equals(o.getClass())) {
       Metadata other = (Metadata) o;
@@ -45,14 +56,17 @@ public final class Metadata implements Iterable<MetaItem> {
     return same;
   }
 
+  @Override
   public int hashCode() {
     return items.hashCode();
   }
 
+  @Override
   public Iterator<MetaItem> iterator() {
     return items.iterator();
   }
 
+  @Override
   public String toString() {
     return items.toString();
   }
@@ -65,18 +79,20 @@ public final class Metadata implements Iterable<MetaItem> {
     return map;
   }
 
-  private static void checkConsistency(Map<String, String> allMeta) {
-    checkEachNameIsUnique(allMeta); 
-    checkXorPublicAndAcls(allMeta);
+  private static void checkConsistency(Set<MetaItem> items,
+                                       Map<String, String> allMeta) {
+    checkEachNameIsUnique(items); 
+    checkNandPublicAndAcls(allMeta);
     checkBothOrNoneAcls(allMeta); 
     checkPublicIsBoolean(allMeta); 
   }
 
   /** Each MetaItem name needs be unique. */
-  private static void checkEachNameIsUnique(Map<String, String> m) {
+  private static void checkEachNameIsUnique(Set<MetaItem> m) {
     HashSet<String> unique = new HashSet<String>();
     HashSet<String> dup = new HashSet<String>();
-    for (String name : m.keySet()) {
+    for (MetaItem item : m) {
+      String name = item.getName();
       if (unique.contains(name)) {
         dup.add(name);
       } else {
@@ -88,15 +104,13 @@ public final class Metadata implements Iterable<MetaItem> {
     }
   }
 
-  /** Either have public indicator or ACLs, but not both, nor neither. */
-  private static void checkXorPublicAndAcls(Map<String, String> m) {
+  /** Either have public indicator or ACLs, but not both. */
+  private static void checkNandPublicAndAcls(Map<String, String> m) {
     boolean hasPublicName = m.containsKey("google:ispublic");
     boolean hasAcls = m.containsKey("google:aclusers")
         || m.containsKey("google:aclgroups");
     if (hasPublicName && hasAcls) {
       throw new IllegalArgumentException("has both ispublic and ACLs");
-    } else if (!hasPublicName && !hasAcls) {
-      throw new IllegalArgumentException("has neither ispublic nor ACLs");
     }
   }
 

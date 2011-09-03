@@ -39,15 +39,12 @@ public class DocId {
   }
 
   /** "DocId(" + uniqId + ")" */
+  @Override
   public String toString() {
     return "DocId(" + uniqId + ")";
   }
 
-  /** This default action is "add". */
-  String getFeedFileAction() {
-    return "add";
-  } 
-
+  @Override
   public boolean equals(Object o) {
     if (null == o || !getClass().equals(o.getClass())) {
       return false;
@@ -56,6 +53,7 @@ public class DocId {
     return this.uniqId.equals(d.uniqId);
   }
 
+  @Override
   public int hashCode() {
     return this.uniqId.hashCode();
   }

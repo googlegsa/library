@@ -123,12 +123,12 @@ public class GsaCommunicationHandler implements DocIdEncoder {
     getPushScheduler().schedule(new PushTask(handler), schedule.iterator());
   }
 
-  private DocId pushSizedBatchOfDocIds(List<DocId> docIds,
-                                       Adaptor.PushErrorHandler handler)
+  private DocInfo pushSizedBatchOfDocInfos(List<DocInfo> docInfos,
+                                           Adaptor.PushErrorHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
     String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(
-        feedSourceName, docIds);
+        feedSourceName, docInfos);
     boolean keepGoing = true;
     boolean success = false;
     for (int ntries = 1; keepGoing; ntries++) {
@@ -155,7 +155,7 @@ public class GsaCommunicationHandler implements DocIdEncoder {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       }
     }
-    return success ? null : docIds.get(0);
+    return success ? null : docInfos.get(0);
   }
 
   /**
@@ -207,21 +207,21 @@ public class GsaCommunicationHandler implements DocIdEncoder {
    * push just a few DocIds to the GSA manually, this is the method to use.
    * This method blocks until all DocIds are sent or retrying failed.
    */
-  private DocId pushDocIds(Iterator<DocId> docIds,
-                           Adaptor.PushErrorHandler handler)
+  private DocInfo pushDocInfos(Iterator<DocInfo> docInfos,
+                               Adaptor.PushErrorHandler handler)
       throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
     final int max = config.getFeedMaxUrls();
-    while (docIds.hasNext()) {
-      List<DocId> batch = new ArrayList<DocId>();
+    while (docInfos.hasNext()) {
+      List<DocInfo> batch = new ArrayList<DocInfo>();
       for (int j = 0; j < max; j++) {
-        if (!docIds.hasNext()) {
+        if (!docInfos.hasNext()) {
           break;
         }
-        batch.add(docIds.next());
+        batch.add(docInfos.next());
       }
       log.log(Level.INFO, "Pushing group of {0} DocIds", batch.size());
-      DocId failedId = pushSizedBatchOfDocIds(batch, handler);
+      DocInfo failedId = pushSizedBatchOfDocInfos(batch, handler);
       if (failedId != null) {
         log.info("Failed to push all ids. Failed on docId: " + failedId);
         return failedId;
@@ -289,23 +289,19 @@ public class GsaCommunicationHandler implements DocIdEncoder {
     return pushScheduler;
   }
 
-  private class InnerDocIdPusher implements Adaptor.DocIdPusher {
+  private class InnerDocIdPusher extends AbstractDocIdPusher {
     private Adaptor.PushErrorHandler defaultErrorHandler
         = new DefaultPushErrorHandler();
 
-    public DocId pushDocIds(Iterable<DocId> docIds)
-        throws InterruptedException {
-      return pushDocIds(docIds, null);
-    }
-
-    public DocId pushDocIds(Iterable<DocId> docIds,
-                            Adaptor.PushErrorHandler handler)
+    @Override
+    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+                                Adaptor.PushErrorHandler handler)
         throws InterruptedException {
       if (handler == null) {
         handler = defaultErrorHandler;
       }
-      return GsaCommunicationHandler.this.pushDocIds(docIds.iterator(),
-                                                     handler);
+      return GsaCommunicationHandler.this.pushDocInfos(docInfos.iterator(),
+                                                       handler);
     }
   }
 

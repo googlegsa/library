@@ -193,7 +193,7 @@ abstract class WrapperAdaptor implements Adaptor {
   /**
    * Passes through all operations to wrapped {@code DocIdPusher}.
    */
-  public static class WrapperDocIdPusher implements DocIdPusher {
+  public static class WrapperDocIdPusher extends AbstractDocIdPusher {
     private DocIdPusher pusher;
 
     public WrapperDocIdPusher(DocIdPusher pusher) {
@@ -201,15 +201,10 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public DocId pushDocIds(Iterable<DocId> docIds)
+    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+                                PushErrorHandler handler)
         throws InterruptedException {
-      return pushDocIds(docIds, null);
-    }
-
-    @Override
-    public DocId pushDocIds(Iterable<DocId> docIds, PushErrorHandler handler)
-        throws InterruptedException {
-      return pusher.pushDocIds(docIds, handler);
+      return pusher.pushDocInfos(docInfos, handler);
     }
   }
 }

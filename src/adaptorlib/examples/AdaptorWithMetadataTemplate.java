@@ -36,7 +36,7 @@ public class AdaptorWithMetadataTemplate extends AbstractAdaptor {
   @Override
   public void getDocIds(DocIdPusher pusher) throws InterruptedException {
     // Going to put our doc ids with metadata into a list.
-    ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
+    ArrayList<DocInfo> mockDocInfos = new ArrayList<DocInfo>();
 
     try {
       // Make set to accumulate meta items.
@@ -53,7 +53,7 @@ public class AdaptorWithMetadataTemplate extends AbstractAdaptor {
       // Make metadata object, which checks items for consistency.
       Metadata metadataFor1001 = new Metadata(metaItemsFor1001);
       // Add our doc id with metadata to list.
-      mockDocIds.add(new DocIdWithMetadata("1001", metadataFor1001));
+      mockDocInfos.add(new DocInfo(new DocId("1001"), metadataFor1001));
     } catch (IllegalArgumentException e) {
       // Thrown by meta items and by metadata constructor.
       log.log(Level.SEVERE, "failed to make metadata" , e);
@@ -72,14 +72,14 @@ public class AdaptorWithMetadataTemplate extends AbstractAdaptor {
       // Make metadata object, which checks items for consistency.
       Metadata metadataFor1002 = new Metadata(metaItemsFor1002);
       // Add our doc id with metadata to list.
-      mockDocIds.add(new DocIdWithMetadata("1002", metadataFor1002));
+      mockDocInfos.add(new DocInfo(new DocId("1002"), metadataFor1002));
     } catch (IllegalArgumentException e) {
       // Thrown by meta items and by metadata constructor.
       log.log(Level.SEVERE, "failed to make metadata" , e);
       // TODO: Get failed doc ids into dashboard.
     }
 
-    pusher.pushDocIds(mockDocIds);
+    pusher.pushDocInfos(mockDocInfos);
   }
 
   /** Gives the bytes of a document referenced with id. */

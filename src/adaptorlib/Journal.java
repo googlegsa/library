@@ -68,9 +68,9 @@ class Journal {
     };
   }
 
-  synchronized void recordDocIdPush(List<DocId> pushed) {
-    for (DocId id : pushed) {
-      increment(timesPushed, id);
+  synchronized void recordDocIdPush(List<DocInfo> pushed) {
+    for (DocInfo record : pushed) {
+      increment(timesPushed, record.getDocId());
     }
     totalPushes += pushed.size();
   }
