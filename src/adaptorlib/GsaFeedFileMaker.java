@@ -64,7 +64,7 @@ class GsaFeedFileMaker {
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
     record.setAttribute("action",
-                        Metadata.DELETED(metadata) ? "delete" : "add");
+                        Metadata.DELETED.equals(metadata) ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
     // Deleted items must not have a metadata tag.
