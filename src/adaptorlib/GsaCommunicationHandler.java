@@ -30,7 +30,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /** This class handles the communications with GSA. */
-public class GsaCommunicationHandler implements DocIdEncoder {
+public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private static final Logger log
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
@@ -70,7 +70,8 @@ public class GsaCommunicationHandler implements DocIdEncoder {
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
-                            config.getGsaCharacterEncoding(), this, adaptor,
+                            config.getGsaCharacterEncoding(), this,
+                            getJournal(), adaptor,
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps()));
     server.setExecutor(Executors.newCachedThreadPool());
@@ -253,7 +254,7 @@ public class GsaCommunicationHandler implements DocIdEncoder {
   }
 
   /** Given a URI that was used in feed file, convert back to doc id. */
-  DocId decodeDocId(URI uri) {
+  public DocId decodeDocId(URI uri) {
     if (config.isDocIdUrl()) {
       return new DocId(uri.toString());
     } else {

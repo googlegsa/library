@@ -195,18 +195,4 @@ public class JournalTest {
   public void testDefaultTimeProvider() {
     new Journal();
   }
-
-  private static class MockTimeProvider implements Journal.TimeProvider {
-    private long time;
-    // Is needed since the Journal determines the timer resolution
-    private boolean autoIncrement = true;
-
-    public long currentTimeMillis() {
-      long currentTime = time;
-      if (autoIncrement) {
-        time++;
-      }
-      return currentTime;
-    }
-  }
 }

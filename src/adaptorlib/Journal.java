@@ -211,8 +211,7 @@ class Journal {
     final long timeResolution;
     final Stats[] timeStats;
 
-    private JournalSnapshot(Journal journal, long currentTime,
-                            Stats[] timeStatsClone) {
+    JournalSnapshot(Journal journal, long currentTime, Stats[] timeStatsClone) {
       this.numUniqueDocIdsPushed = journal.timesPushed.size();
       this.numTotalDocIdsPushed = journal.totalPushes;
       this.numUniqueGsaRequests = journal.timesGsaRequested.size();

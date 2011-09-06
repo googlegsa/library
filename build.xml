@@ -48,6 +48,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
       <classpath location="${j-calais.jar}"/>
+      <classpath location="${json-simple.jar}"/>
     </javac>
   </target>
 
@@ -173,6 +174,6 @@
   <target name="coverage-report" description="Generates code coverage report">
     <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
     <cobertura-report datafile="${build-instrument.dir}/cobertura.ser"
-      srcdir="${src.dir}" destdir="${build.dir}/cobertura"/>
+      srcdir="${src.dir}" destdir="${build.dir}/coverage"/>
   </target>
 </project>
