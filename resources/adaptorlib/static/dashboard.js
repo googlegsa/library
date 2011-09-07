@@ -103,7 +103,8 @@ function processData(data) {
   $('#gaf-numUniqueNonGsaRequests').html(
       data.simpleStats.numUniqueNonGsaRequests);
   $('#gaf-whenStarted').html(String(new Date(data.simpleStats.whenStarted)));
-  $('#gaf-log').html(data.log);
+  // Replace \n with <br> as a workaround for IE
+  $('#gaf-log').html(data.log.replace(/\n/g, '<br>'));
 
   var configTable = $('#gaf-config-table');
   var keys = [];
@@ -181,7 +182,7 @@ function rpc(method, params, id, callback) {
     url: '/rpc',
     success: function(data) {
       callback(data.result, data.error);
-    },
+    }
   });
 }
 
