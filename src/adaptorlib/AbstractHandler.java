@@ -50,10 +50,6 @@ abstract class AbstractHandler implements HttpHandler {
         }
       };
 
-  // Numbers for logging incoming and completed communications.
-  private int numberConnectionStarted = 0;
-  private int numberConnectionFinished = 0;
-
   /**
    * The hostname is sometimes needed to generate the correct DocId; in the case
    * that it is needed and the host is an old HTTP/1.0 client, this value will
@@ -228,16 +224,12 @@ abstract class AbstractHandler implements HttpHandler {
   protected abstract void meteredHandle(HttpExchange ex) throws IOException;
 
   /**
-   * Performs entry counting, calls {@link #meteredHandle}, and performs exit
-   * counting. Also logs and handles exceptions.
+   * Performs entry logging, calls {@link #meteredHandle}, and performs exit
+   * logging. Also logs and handles exceptions.
    */
   public void handle(HttpExchange ex) throws IOException {
     try {
-      synchronized (this) {
-        numberConnectionStarted++;
-        log.log(Level.FINE, "begining in={0},out={1}", new Object[] {
-          numberConnectionStarted, numberConnectionFinished});
-      }
+      log.fine("beginning");
       logRequest(ex);
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
@@ -257,11 +249,7 @@ abstract class AbstractHandler implements HttpHandler {
                       "An unexpected error occurred");
       }
     } finally {
-      synchronized (this) {
-        numberConnectionFinished++;
-        log.log(Level.FINE, "ending in={0},out={1}", new Object[] {
-          numberConnectionStarted, numberConnectionFinished});
-      }
+      log.fine("ending");
     }
   }
 }
