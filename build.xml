@@ -121,7 +121,7 @@
 
   <target name="run-fs" depends="build" description="Run filesystem adaptor">
     <java classpath="${build-src.dir}" fork="true"
-      classname="adaptorlib.examples.FileSystemAdaptor">
+      classname="adaptorlib.prebuilt.FileSystemAdaptor">
       <classpath location="${resource.dir}"/>
       <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
