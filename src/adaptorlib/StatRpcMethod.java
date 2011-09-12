@@ -14,54 +14,23 @@
 
 package adaptorlib;
 
-import com.sun.net.httpserver.HttpExchange;
-
-import org.json.simple.JSONValue;
-
-import java.io.IOException;
-import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.logging.LogManager;
 
 /**
  * Provides performance data when responding to 
  * ajax calls from dashboard.
  */
-class StatHandler extends AbstractHandler {
-  private Config config;
+class StatRpcMethod implements RpcHandler.RpcMethod {
   private Journal journal;
-  private CircularBufferHandler circularLog = new CircularBufferHandler();
 
-  public StatHandler(Config configuration, Journal journal) {
-    super(configuration.getServerHostname(),
-        configuration.getGsaCharacterEncoding());
-    this.config = configuration;
+  public StatRpcMethod(Journal journal) {
     this.journal = journal;
-    LogManager.getLogManager().getLogger("").addHandler(circularLog);
   }
 
-  protected void meteredHandle(HttpExchange ex) throws IOException {
-    String requestMethod = ex.getRequestMethod();
-    if (!"GET".equals(requestMethod)) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-          "Unsupported request method");
-      return;
-    }
-    if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                    "Not found");
-      return;
-    }
-    String contents = generateJson();
-    enableCompressionIfSupported(ex);
-    cannedRespond(ex, HttpURLConnection.HTTP_OK, "application/json",
-                  contents);
-  }
-
-  private String generateJson() throws IOException {
+  public Object run(List request) {
     Journal.JournalSnapshot journalSnap = journal.getSnapshot();
 
     Map<String, Object> map = new TreeMap<String, Object>();
@@ -106,17 +75,7 @@ class StatHandler extends AbstractHandler {
       map.put("stats", statsList);
     }
 
-    map.put("log", circularLog.writeOut());
-
-    {
-      Map<String, String> configMap = new TreeMap<String, String>();
-      for (String key : config.getAllKeys()) {
-        configMap.put(key, config.getValue(key));
-      }
-      map.put("config", configMap);
-    }
-
-    return JSONValue.toJSONString(map);
+    return map;
   }
 
   private Map<String, Object> getStat(Journal.Stat stat, long time) {

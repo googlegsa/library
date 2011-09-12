@@ -93,7 +93,11 @@ function formatChartData(stats, timeResolution) {
   return data;
 }
 
-function processData(data) {
+function getStatsCallback(result, error) {
+  if (result === null) {
+    throw error;
+  }
+  var data = result;
   $('#gaf-numTotalDocIdsPushed').html(data.simpleStats.numTotalDocIdsPushed);
   $('#gaf-numUniqueDocIdsPushed').html(data.simpleStats.numUniqueDocIdsPushed);
   $('#gaf-numTotalGsaRequests').html(data.simpleStats.numTotalGsaRequests);
@@ -103,28 +107,6 @@ function processData(data) {
   $('#gaf-numUniqueNonGsaRequests').html(
       data.simpleStats.numUniqueNonGsaRequests);
   $('#gaf-whenStarted').html(String(new Date(data.simpleStats.whenStarted)));
-  // Replace \n with <br> as a workaround for IE
-  $('#gaf-log').html(data.log.replace(/\n/g, '<br>'));
-
-  var configTable = $('#gaf-config-table');
-  var keys = [];
-  var key;
-  for (key in data.config) {
-    keys.push(key);
-  }
-  keys.sort();
-  var tr, td, i;
-  for (i = 0; i < keys.length; i++) {
-    key = keys[i];
-    tr = document.createElement('tr');
-    td = document.createElement('td');
-    td.appendChild(document.createTextNode(key));
-    tr.appendChild(td);
-    td = document.createElement('td');
-    td.appendChild(document.createTextNode('= ' + data.config[key]));
-    tr.appendChild(td);
-    configTable.append(tr);
-  }
 
   var vals = [];
   vals.push(formatChartData(data.stats[0], data.simpleStats.timeResolution));
@@ -171,8 +153,8 @@ function processData(data) {
       'Throughput (KiB/s)', null, '%#I:%M %p');
 }
 
-function rpc(method, params, id, callback) {
-  var request = {method: method, params: params, id: id};
+function rpc(method, params, callback) {
+  var request = {method: method, params: params, id: null};
   $.ajax({
     accepts: 'application/json',
     contentType: 'application/json',
@@ -189,7 +171,7 @@ function rpc(method, params, id, callback) {
 function startFeedPush() {
   var sending = $('#gaf-start-feed-push-sending');
   sending.show();
-  rpc('startFeedPush', null, null, function(result, error) {
+  rpc('startFeedPush', null, function(result, error) {
     sending.hide();
     var notificationSpan;
     if (result !== null) {
@@ -209,7 +191,44 @@ function startFeedPush() {
   });
 }
 
+function getLogCallback(result, error) {
+  if (result === null) {
+    throw error;
+  } else {
+    // Replace \n with <br> as a workaround for IE
+    $('#gaf-log').html(result.replace(/\n/g, '<br>'));
+  }
+}
+
+function getConfigCallback(result, error) {
+  if (result === null) {
+    throw error;
+  } else {
+    var configTable = $('#gaf-config-table');
+    var keys = [];
+    var key;
+    for (key in result) {
+      keys.push(key);
+    }
+    keys.sort();
+    var tr, td, i;
+    for (i = 0; i < keys.length; i++) {
+      key = keys[i];
+      tr = document.createElement('tr');
+      td = document.createElement('td');
+      td.appendChild(document.createTextNode(key));
+      tr.appendChild(td);
+      td = document.createElement('td');
+      td.appendChild(document.createTextNode('= ' + result[key]));
+      tr.appendChild(td);
+      configTable.append(tr);
+    }
+  }
+}
+
 $(document).ready(function() {
-  $.getJSON('/stat', processData);
+  rpc('getStats', null, getStatsCallback);
+  rpc('getConfig', null, getConfigCallback);
+  rpc('getLog', null, getLogCallback);
   $('#gaf-start-feed-push').click(startFeedPush);
 });
