@@ -15,6 +15,8 @@
 package adaptorlib;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpsExchange;
 
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
@@ -33,6 +35,8 @@ import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.net.ssl.SSLPeerUnverifiedException;
+
 class DocumentHandler extends AbstractHandler {
   private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
@@ -41,16 +45,22 @@ class DocumentHandler extends AbstractHandler {
   private Journal journal;
   private Adaptor adaptor;
   private Set<InetAddress> gsaAddresses = new HashSet<InetAddress>();
+  private final HttpHandler authnHandler;
+  private final SessionManager<HttpExchange> sessionManager;
 
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
                          DocIdDecoder docIdDecoder, Journal journal,
                          Adaptor adaptor,
                          boolean addResolvedGsaHostnameToGsaIps,
-                         String gsaHostname, String[] gsaIps) {
+                         String gsaHostname, String[] gsaIps,
+                         HttpHandler authnHandler,
+                         SessionManager<HttpExchange> sessionManager) {
     super(defaultHostname, defaultCharset);
     this.docIdDecoder = docIdDecoder;
     this.journal = journal;
     this.adaptor = adaptor;
+    this.authnHandler = authnHandler;
+    this.sessionManager = sessionManager;
 
     if (addResolvedGsaHostnameToGsaIps) {
       try {
@@ -75,8 +85,25 @@ class DocumentHandler extends AbstractHandler {
   }
 
   private boolean requestIsFromGsa(HttpExchange ex) {
-    InetAddress addr = ex.getRemoteAddress().getAddress();
-    return gsaAddresses.contains(addr);
+    boolean trust;
+    if (ex instanceof HttpsExchange) {
+      try {
+        ((HttpsExchange) ex).getSSLSession().getPeerPrincipal();
+        trust = true;
+      } catch (SSLPeerUnverifiedException e) {
+        trust = false;
+      }
+    } else {
+      InetAddress addr = ex.getRemoteAddress().getAddress();
+      trust = gsaAddresses.contains(addr);
+    }
+
+    if (trust) {
+      log.fine("Client is trusted");
+    } else {
+      log.fine("Client is not trusted");
+    }
+    return trust;
   }
 
   @Override
@@ -94,10 +121,21 @@ class DocumentHandler extends AbstractHandler {
         isAllowed = true;
       } else {
         journal.recordNonGsaContentRequest(docId);
-        // TODO(ejona): add support for authenticating users
-        // We do authz with the anonymous user to see if the document is public
-        Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(null,
-            Collections.singletonList(docId));
+        // Default to anonymous.
+        String principal = null;
+        Set<String> groups = Collections.emptySet();
+
+        if (sessionManager != null) {
+          AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
+              .getAttribute(AuthnState.SESSION_ATTR_NAME);
+          if (authnState != null && authnState.isAuthenticated()) {
+            principal = authnState.getPrincipal();
+            groups = authnState.getGroups();
+          }
+        }
+
+        Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(principal,
+            groups, Collections.singletonList(docId));
         AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
         if (status == null) {
           status = AuthzStatus.INDETERMINATE;
@@ -106,6 +144,12 @@ class DocumentHandler extends AbstractHandler {
                   + "{1}", new Object[] {docId, authzMap});
         }
         isAllowed = (status == AuthzStatus.PERMIT);
+        if (!isAllowed && principal == null && authnHandler != null) {
+          // User was anonymous and document is not public, so try to authn
+          // user.
+          authnHandler.handle(ex);
+          return;
+        }
       }
 
       if (!isAllowed) {

@@ -25,6 +25,7 @@ public class MockHttpContext extends HttpContext {
   private final HttpHandler handler;
   private final String path;
   private final Map<String, Object> attributes = new HashMap<String, Object>();
+  private final HttpServer httpServer = new MockHttpServer();
   private Authenticator authenticator;
 
   public MockHttpContext(HttpHandler handler, String path) {
@@ -53,7 +54,7 @@ public class MockHttpContext extends HttpContext {
   }
 
   public HttpServer getServer() {
-    throw new UnsupportedOperationException();
+    return httpServer;
   }
 
   public Authenticator setAuthenticator(Authenticator auth) {

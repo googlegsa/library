@@ -37,6 +37,7 @@ public abstract class AbstractAdaptor implements Adaptor {
    */
   @Override
   public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+                                                  Set<String> groups,
                                                   Collection<DocId> ids) {
     Map<DocId, AuthzStatus> result
         = new HashMap<DocId, AuthzStatus>(ids.size() * 2);

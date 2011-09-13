@@ -14,7 +14,11 @@
 
 package adaptorlib;
 
+import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+import com.sun.net.httpserver.HttpsConfigurator;
+import com.sun.net.httpserver.HttpsParameters;
+import com.sun.net.httpserver.HttpsServer;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -28,6 +32,9 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLParameters;
 
 /** This class handles the communications with GSA. */
 public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
@@ -51,29 +58,65 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     this.adaptor.setDocIdPusher(pusher);
 
     this.config = config;
-    this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding());
+    this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding(),
+                                            config.isServerSecure());
     this.fileMaker = new GsaFeedFileMaker(this);
   }
 
   /** Starts listening for communications from GSA. */
   public void beginListeningForContentRequests() throws IOException {
     int port = config.getServerPort();
+    boolean secure = config.isServerSecure();
     InetSocketAddress addr = new InetSocketAddress(port);
-    HttpServer server = HttpServer.create(addr, 0);
+    HttpServer server;
+    if (!secure) {
+      server = HttpServer.create(addr, 0);
+    } else {
+      server = HttpsServer.create(addr, 0);
+      try {
+        HttpsConfigurator httpsConf
+            = new HttpsConfigurator(SSLContext.getDefault()) {
+              public void configure(HttpsParameters params) {
+                SSLParameters sslParams
+                    = getSSLContext().getDefaultSSLParameters();
+                // Allow verifying the GSA and other trusted computers.
+                sslParams.setWantClientAuth(true);
+                params.setSSLParameters(sslParams);
+              }
+            };
+        ((HttpsServer) server).setHttpsConfigurator(httpsConf);
+      } catch (java.security.NoSuchAlgorithmException ex) {
+        throw new RuntimeException(ex);
+      }
+    }
     server.createContext("/dashboard", new DashboardHandler(config, journal));
     server.createContext("/rpc", new RpcHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding(), this));
     server.createContext("/stat", new StatHandler(config, journal));
-    server.createContext("/sso", new SsoHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding()));
-    // Disable SecurityHandler until it can query adapter for configuration
+
+    SessionManager<HttpExchange> sessionManager = null;
+    AuthnHandler authnHandler = null;
+    if (secure) {
+       sessionManager = new SessionManager<HttpExchange>(
+          new SessionManager.HttpExchangeCookieAccess(),
+          30 * 60 * 1000 /* session lifetime: 30 minutes */,
+          5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
+      server.createContext("/samlassertionconsumer",
+          new SamlAssertionConsumerHandler(config.getServerHostname(),
+            config.getGsaCharacterEncoding(), sessionManager));
+      authnHandler = new AuthnHandler(config.getServerHostname(),
+          config.getGsaCharacterEncoding(), sessionManager,
+          config.getGsaHostname(), config.getServerKeyAlias(),
+          config.getServerPort());
+    }
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
                             config.getGsaCharacterEncoding(), this,
                             getJournal(), adaptor,
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
-                            config.getGsaHostname(), config.getServerGsaIps()));
+                            config.getGsaHostname(), config.getServerGsaIps(),
+                            authnHandler, sessionManager));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());

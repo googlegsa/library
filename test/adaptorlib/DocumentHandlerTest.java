@@ -34,7 +34,7 @@ public class DocumentHandlerTest {
   private DocumentHandler handler = new DocumentHandler("localhost",
       Charset.forName("UTF-8"), new MockDocIdDecoder(),
       new Journal(new MockTimeProvider()), new MockAdaptor(), false,
-      "localhost", new String[0]);
+      "localhost", new String[0], null, null);
   private MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
       new MockHttpContext(handler, "/"));
 
@@ -42,7 +42,8 @@ public class DocumentHandlerTest {
   public void testSecurity() throws Exception {
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), false, "localhost", new String[0]);
+        new PrivateMockAdaptor(), false, "localhost", new String[0], null,
+        null);
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -53,7 +54,7 @@ public class DocumentHandlerTest {
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"127.0.0.3", " "});
+        new String[] {"127.0.0.3", " "}, null, null);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
@@ -65,7 +66,7 @@ public class DocumentHandlerTest {
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "127.0.0.3",
-        new String[0]);
+        new String[0], null, null);
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -76,7 +77,7 @@ public class DocumentHandlerTest {
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "127.0.0.3",
-        new String[0]);
+        new String[0], null, null);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
@@ -88,7 +89,7 @@ public class DocumentHandlerTest {
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"-no-such-host-"});
+        new String[] {"-no-such-host-"}, null, null);
   }
 
   @Test
@@ -97,7 +98,7 @@ public class DocumentHandlerTest {
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "-no-such-host-",
-        new String[0]);
+        new String[0], null, null);
   }
 
   @Test
@@ -129,7 +130,7 @@ public class DocumentHandlerTest {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
           public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-              Collection<DocId> ids) {
+              Set<String> groups, Collection<DocId> ids) {
             return null;
           }
         };
@@ -341,7 +342,7 @@ public class DocumentHandlerTest {
         };
     handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        adaptor, false, "localhost", new String[0]);
+        adaptor, false, "localhost", new String[0], null, null);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -350,7 +351,7 @@ public class DocumentHandlerTest {
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        adaptor, false, "localhost", new String[0]);
+        adaptor, false, "localhost", new String[0], null, null);
   }
 
   @Test
@@ -396,6 +397,7 @@ public class DocumentHandlerTest {
   private static class PrivateMockAdaptor extends MockAdaptor {
     @Override
     public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+                                                    Set<String> groups,
                                                     Collection<DocId> ids) {
       Map<DocId, AuthzStatus> result
           = new HashMap<DocId, AuthzStatus>(ids.size() * 2);

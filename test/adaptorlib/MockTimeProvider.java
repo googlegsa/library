@@ -17,7 +17,7 @@ package adaptorlib;
 /**
  * Mock {@link Journal.TimeProvider}.
  */
-public class MockTimeProvider implements Journal.TimeProvider {
+public class MockTimeProvider implements TimeProvider {
   public long time;
   // Is needed since the Journal determines the timer resolution
   public boolean autoIncrement = true;

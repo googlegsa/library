@@ -19,6 +19,7 @@ import java.io.OutputStream;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface for user-specific implementation details of an Adaptor.
@@ -54,12 +55,13 @@ public interface Adaptor {
    *
    * @param userIdentifier User to authorize, or {@code null} for anonymous
    *        users
+   * @param groups never-{@code null} set of groups the user belongs to
    * @param ids Collection of {@code DocId}s that need to be checked
    * @return an {@code AuthzStatus} for each {@code DocId} provided in {@code
    *         ids}
    */
   public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-      Collection<DocId> ids) throws IOException;
+      Set<String> groups, Collection<DocId> ids) throws IOException;
 
   /**
    * Provides a {@code DocIdPusher} object to be called whenever the Adaptor
