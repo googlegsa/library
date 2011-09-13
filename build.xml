@@ -252,7 +252,9 @@
     <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
     <cobertura-instrument datafile="${build-instrument.dir}/cobertura.ser"
       todir="${build-instrument.dir}">
-      <fileset dir="${build-src.dir}"/>
+      <fileset dir="${build-src.dir}">
+        <include name="adaptorlib/**"/>
+      </fileset>
     </cobertura-instrument>
   </target>
 
