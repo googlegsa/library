@@ -68,8 +68,7 @@ public class ByteCharInputStream {
       if (bytesRead != byteCount - 1) {
         throw new IOException("Invalid UTF-8 Character");
       }
-      CharBuffer charBuffer = charsetDecoder.decode(ByteBuffer.wrap(Arrays.copyOfRange(
-          byteArray, 0, byteCount)));
+      CharBuffer charBuffer = charsetDecoder.decode(ByteBuffer.wrap( byteArray, 0, byteCount));
       return new String(charBuffer.array(), 0, charBuffer.length());
     }
   }
