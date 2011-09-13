@@ -66,4 +66,44 @@ public class IOHelper {
     }
     return tmpFile;
   }
+
+  /**
+   * Reads a specified number of bytes from a stream.
+   * Fewer bytes will only be returned if the end of stream has been reached.
+   *
+   * @param      is     the stream from which the bytes will be read.
+   * @param      bytes     the buffer into which the data is read.
+   * @param      off   the start offset in array <code>b</code>
+   *                   at which the data is written.
+   * @param      len   the number of bytes to read unless end of
+   *                   stream is encountered
+   * @return     the total number of bytes read into the buffer, or
+   *             <code>-1</code> if there is no more data because the end of
+   *             the stream has been reached.
+   * @exception  IOException If the first byte cannot be read for any reason
+   *             other than reaching end-of-stream, or if the input stream
+   *             has been closed, or if some other I/O error occurs.
+   * @exception  NullPointerException If <code>b</code> is <code>null</code>.
+   * @exception  IndexOutOfBoundsException If <code>off</code> is negative,
+   *             <code>len</code> is negative, or <code>len</code> is
+   *             greater than <code>b.length - off</code>
+   */
+  public static int readFully(InputStream is, byte[] bytes, int off, int len) throws IOException {
+    int bytesRead = 0;
+    int result = 0;
+    if (len == 0) {
+      return 0;
+    }
+    while ((result != -1) && (bytesRead < len)) {
+      result = is.read(bytes, off + bytesRead, len - bytesRead);
+      if (result != -1) {
+        bytesRead += result;
+      }
+    }
+    if (bytesRead == 0) {
+      return -1;
+    } else {
+      return bytesRead;
+    }
+  }
 }
