@@ -222,13 +222,6 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
       super.getDocContent(auRequest, resp);
       return;
     }
-    if (!req.needDocumentContent()) {
-      // No need to perform any real content magic. Everything but contentType
-      // applies to both the zip and the file it contains.
-      // TODO(ejona): set content type on response here
-      super.getDocContent(auRequest, new NoContentsResponse(resp));
-      return;
-    }
     File tmpFile = File.createTempFile("adaptorlib", ".tmp");
     try {
       OutputStream tmpFileOs = new FileOutputStream(tmpFile);

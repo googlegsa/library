@@ -65,11 +65,6 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public boolean needDocumentContent() {
-      return request.needDocumentContent();
-    }
-
-    @Override
     public boolean hasChangedSinceLastAccess(Date lastModified) {
       return request.hasChangedSinceLastAccess(lastModified);
     }
@@ -126,11 +121,6 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public GetContentsRequest(DocId docId) {
       this.docId = docId;
-    }
-
-    @Override
-    public boolean needDocumentContent() {
-      return true;
     }
 
     @Override

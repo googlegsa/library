@@ -77,15 +77,6 @@ public interface Adaptor {
    */
   public static interface Request {
     /**
-     * Returns whether the Adaptor needs to provide the metadata and contents of
-     * a document. If this method returns false, then only verifying that the
-     * document exists is enough. Adaptor writers are not required to pay
-     * attention to this method, but doing so increases performance since the
-     * Adaptor does less work.
-     */
-    public boolean needDocumentContent();
-
-    /**
      * Returns {@code true} if the GSA or other client's current copy of the
      * document was retrieved after the {@code lastModified} date; {@code false}
      * otherwise. {@code lastModified} must be in GMT.
@@ -131,12 +122,6 @@ public interface Adaptor {
    * check {@link Request#hasChangedSinceLastAccess} and call {@link
    * #respondNotModified} when it is {@code true}. This prevents the Adaptor
    * from ever needing to retrieve the document contents and metadata.
-   *
-   * <p>For improved efficiency during late authorization binding requests, an
-   * Adaptor should check the {@link Request#needDocumentContent} method to see
-   * if the contents and metadata need to be retrieved. If the Adaptor checks
-   * {@link Request#hasChangedSinceLastAccess}, that processing should take
-   * precedence over this one.
    */
   public static interface Response {
     /**
@@ -154,9 +139,8 @@ public interface Adaptor {
     public void respondNotModified();
 
     /**
-     * Get stream to write document contents to. Always returns a writable
-     * stream, but during a HEAD request the stream may not do anything. There
-     * is no need to flush or close the {@code OutputStream} when done.
+     * Get stream to write document contents to. There is no need to flush or
+     * close the {@code OutputStream} when done.
      *
      * <p>If called, this must be the last call to this interface (although, for
      * convenience, you may call this method multiple times). If the document

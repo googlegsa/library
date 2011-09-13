@@ -300,11 +300,6 @@ class DocumentHandler extends AbstractHandler {
     }
 
     @Override
-    public boolean needDocumentContent() {
-      return !"HEAD".equals(ex.getRequestMethod());
-    }
-
-    @Override
     public boolean hasChangedSinceLastAccess(Date lastModified) {
       Date date = getLastAccessTime();
       if (date == null) {
