@@ -296,10 +296,6 @@ public class DocumentHandlerTest {
               response.respondNotModified();
               return;
             }
-            if (!request.needDocumentContent()) {
-              response.getOutputStream();
-              return;
-            }
             response.setContentType("text/plain");
             response.setMetadata(Metadata.EMPTY);
             response.getOutputStream();
