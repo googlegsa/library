@@ -19,6 +19,8 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.*;
+import java.util.logging.*;
 
 /**
  * Tests for {@link GsaCommunicationHandler}.
@@ -94,6 +96,40 @@ public class GsaCommunicationHandlerTest {
     decodeAndEncode("/drop/table/now");
     decodeAndEncode("//drop/table/now");
     decodeAndEncode("//d&op/t+b+e/n*w");
+  }
+
+  @Test
+  public void testLogRpcMethod() {
+    String golden = "Testing\n";
+
+    GsaCommunicationHandler.CircularLogRpcMethod method
+        = new GsaCommunicationHandler.CircularLogRpcMethod();
+    try {
+      Logger logger = Logger.getLogger("");
+      Level origLevel = logger.getLevel();
+      logger.setLevel(Level.FINEST);
+      Logger.getLogger("").finest("Testing");
+      logger.setLevel(origLevel);
+      String str = (String) method.run(null);
+      assertTrue(str.endsWith(golden));
+    } finally {
+      method.close();
+    }
+  }
+
+  @Test
+  public void testConfigRpcMethod() {
+    Map<String, String> golden = new HashMap<String, String>();
+    golden.put("gsa.characterEncoding", "UTF-8");
+    golden.put("server.hostname", "localhost");
+
+    MockConfig config = new MockConfig();
+    config.setKey("gsa.characterEncoding", "UTF-8");
+    config.setKey("server.hostname", "localhost");
+    GsaCommunicationHandler.ConfigRpcMethod method
+        = new GsaCommunicationHandler.ConfigRpcMethod(config);
+    Map map = (Map) method.run(null);
+    assertEquals(golden, map);
   }
 
   private static class NullAdaptor extends AbstractAdaptor {

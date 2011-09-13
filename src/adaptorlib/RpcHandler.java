@@ -23,17 +23,44 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
+
 /**
  * JSON-RPC handler for communication with the dashboard.
  */
 class RpcHandler extends AbstractHandler {
   private final Charset charset = Charset.forName("UTF-8");
   private final GsaCommunicationHandler commHandler;
+  private final Map<String, RpcMethod> methods
+      = new HashMap<String, RpcMethod>();
 
   public RpcHandler(String defaultHostname, Charset defaultCharset,
                     GsaCommunicationHandler commHandler) {
     super(defaultHostname, defaultCharset);
     this.commHandler = commHandler;
+  }
+
+  /**
+   * Register new RPC method.
+   *
+   * @throws IllegalStateException if method by that name already registered
+   */
+  public void registerRpcMethod(String name, RpcMethod method) {
+    if (methods.containsKey(name)) {
+      throw new IllegalStateException("Method by that name already registered");
+    }
+    methods.put(name, method);
+  }
+
+  /**
+   * Unregister a previously registered RPC method.
+   *
+   * @throws RuntimeException if method by that name not previously registered
+   */
+  public void unregisterRpcMethod(String name) {
+    if (!methods.containsKey(name)) {
+      throw new RuntimeException("No method by that name registered");
+    }
+    methods.remove(name);
   }
 
   @Override
@@ -81,8 +108,12 @@ class RpcHandler extends AbstractHandler {
     Object result = null;
     Object error = null;
     try {
-      if ("startFeedPush".equals(method)) {
-        result = startFeedPush(params);
+      RpcMethod methodObj = methods.get(method);
+      if (methodObj != null) {
+        result = methodObj.run(params);
+        if (result == null) {
+          error = "Null response from method";
+        }
       } else {
         error = "Unknown method";
       }
@@ -102,11 +133,14 @@ class RpcHandler extends AbstractHandler {
             response.toString().getBytes(charset));
   }
 
-  private Object startFeedPush(List request) {
-    boolean pushStarted = commHandler.checkAndBeginPushDocIdsImmediately(null);
-    if (!pushStarted) {
-      throw new RuntimeException("A push is already in progress");
-    }
-    return 1;
+  public interface RpcMethod {
+    /**
+     * Execute expected task for the class. Should not return {@code null}, as
+     * that can't be disambiguated from a misformed response. If an exception
+     * is thrown, the message will be sent in the response as the error.
+     *
+     * @throws Exception when something goes wrong
+     */
+    public Object run(List request) throws Exception;
   }
 }

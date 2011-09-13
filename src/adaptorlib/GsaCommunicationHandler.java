@@ -20,6 +20,7 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -29,8 +30,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import javax.net.ssl.SSLContext;
@@ -90,9 +93,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       }
     }
     server.createContext("/dashboard", new DashboardHandler(config, journal));
-    server.createContext("/rpc", new RpcHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), this));
-    server.createContext("/stat", new StatHandler(config, journal));
+    server.createContext("/rpc", createRpcHandler());
 
     SessionManager<HttpExchange> sessionManager = null;
     AuthnHandler authnHandler = null;
@@ -121,6 +122,16 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
+  }
+
+  private RpcHandler createRpcHandler() {
+    RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), this);
+    rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
+    rpcHandler.registerRpcMethod("getLog", new CircularLogRpcMethod());
+    rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
+    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
+    return rpcHandler;
   }
 
   /**
@@ -362,6 +373,55 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
+    }
+  }
+
+  class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
+    @Override
+    public Object run(List request) {
+      boolean pushStarted = checkAndBeginPushDocIdsImmediately(null);
+      if (!pushStarted) {
+        throw new RuntimeException("A push is already in progress");
+      }
+      return 1;
+    }
+  }
+
+  static class CircularLogRpcMethod implements RpcHandler.RpcMethod, Closeable {
+    private final CircularBufferHandler circularLog
+        = new CircularBufferHandler();
+
+    /**
+     * Installs a log handler; to uninstall handler, call {@link #close}.
+     */
+    public CircularLogRpcMethod() {
+      LogManager.getLogManager().getLogger("").addHandler(circularLog);
+    }
+
+    @Override
+    public Object run(List request) {
+      return circularLog.writeOut();
+    }
+
+    @Override
+    public void close() {
+      LogManager.getLogManager().getLogger("").removeHandler(circularLog);
+    }
+  }
+
+  static class ConfigRpcMethod implements RpcHandler.RpcMethod {
+    private final Config config;
+
+    public ConfigRpcMethod(Config config) {
+      this.config = config;
+    }
+
+    public Object run(List request) {
+      TreeMap<String, String> configMap = new TreeMap<String, String>();
+      for (String key : config.getAllKeys()) {
+        configMap.put(key, config.getValue(key));
+      }
+      return configMap;
     }
   }
 }
