@@ -63,7 +63,7 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
   @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
-    if (!"GET".equals(requestMethod) && !"HEAD".equals(requestMethod)) {
+    if (!"GET".equals(requestMethod)) {
       cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
           "Unsupported request method");
       return;
@@ -93,17 +93,13 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
       return;
     }
     boolean authnSuccess;
-    if ("GET".equals(requestMethod)) {
-      // GET implies the assertion is being sent with the artifact binding.
-      log.info("Received assertion via artifact binding");
-      Response samlResponse = client.decodeArtifactResponse(getRequestUri(ex),
-          new HttpExchangeInTransportAdapter(ex));
-      authnSuccess = consumeAssertion(client, samlResponse,
-          client.getArtifactAssertionConsumerService().getLocation(),
-          authnState);
-    } else {
-      throw new IllegalStateException();
-    }
+    // GET implies the assertion is being sent with the artifact binding.
+    log.info("Received assertion via artifact binding");
+    Response samlResponse = client.decodeArtifactResponse(getRequestUri(ex),
+        new HttpExchangeInTransportAdapter(ex));
+    authnSuccess = consumeAssertion(client, samlResponse,
+        client.getArtifactAssertionConsumerService().getLocation(),
+        authnState);
 
     if (authnSuccess) {
       sendRedirect(ex, origUri); 
