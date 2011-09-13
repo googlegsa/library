@@ -54,6 +54,9 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       = new DefaultGetDocIdsErrorHandler();
   private Scheduler pushScheduler;
   private int pushingDocIds;
+  private HttpServer server;
+  private CircularLogRpcMethod circularLogRpcMethod;
+  private Thread shutdownHook;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     // TODO(ejona): allow the adaptor to choose whether it wants this feature
@@ -67,11 +70,15 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   }
 
   /** Starts listening for communications from GSA. */
-  public void beginListeningForContentRequests() throws IOException {
+  public synchronized void beginListeningForContentRequests()
+      throws IOException {
+    if (server != null) {
+      throw new IllegalStateException("Already listening");
+    }
+
     int port = config.getServerPort();
     boolean secure = config.isServerSecure();
     InetSocketAddress addr = new InetSocketAddress(port);
-    HttpServer server;
     if (!secure) {
       server = HttpServer.create(addr, 0);
     } else {
@@ -92,6 +99,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         throw new RuntimeException(ex);
       }
     }
+    // If the port is zero, then the OS chose a port for us. This is mainly
+    // useful during testing.
+    port = server.getAddress().getPort();
+    config.setValue("server.port", "" + port);
     server.createContext("/dashboard", new DashboardHandler(config, journal));
     server.createContext("/rpc", createRpcHandler());
 
@@ -122,13 +133,43 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
+    shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
+    Runtime.getRuntime().addShutdownHook(shutdownHook);
   }
 
-  private RpcHandler createRpcHandler() {
+  /**
+   * Stop the current services, allowing up to {@code maxDelay} seconds for
+   * things to shutdown.
+   */
+  public synchronized void stop(int maxDelay) {
+    if (circularLogRpcMethod != null) {
+      circularLogRpcMethod.close();
+      circularLogRpcMethod = null;
+    }
+    if (shutdownHook != null) {
+      try {
+        Runtime.getRuntime().removeShutdownHook(shutdownHook);
+      } catch (IllegalStateException ex) {
+        // Already executing hook.
+      }
+      shutdownHook = null;
+    }
+    if (pushScheduler != null) {
+      pushScheduler.cancel();
+      pushScheduler = null;
+    }
+    if (server != null) {
+      server.stop(maxDelay);
+      server = null;
+    }
+  }
+
+  private synchronized RpcHandler createRpcHandler() {
     RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding(), this);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
-    rpcHandler.registerRpcMethod("getLog", new CircularLogRpcMethod());
+    circularLogRpcMethod = new CircularLogRpcMethod();
+    rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
     rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
     return rpcHandler;
@@ -373,6 +414,14 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
+    }
+  }
+
+  private class ShutdownHook implements Runnable {
+    @Override
+    public void run() {
+      // Allow three seconds for things to stop.
+      stop(3);
     }
   }
 
