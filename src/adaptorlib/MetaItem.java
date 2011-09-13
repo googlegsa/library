@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -79,7 +79,7 @@ public final class MetaItem implements Comparable<MetaItem> {
   }
 
   private static void throwIfInvalidName(String name) { 
-    // TODO: Figure out complete rules.
+    // TODO(pjo): Figure out complete rules.
     if (name.contains(",")) {
       throw new IllegalArgumentException("name " + name + " contains comma");
     }
@@ -93,6 +93,7 @@ public final class MetaItem implements Comparable<MetaItem> {
    return 0 == sb.length() ? "" : sb.substring(1);
   }
 
+  @Override
   public boolean equals(Object o) {
     boolean same = false;
     if (null != o && getClass().equals(o.getClass())) {
@@ -102,12 +103,14 @@ public final class MetaItem implements Comparable<MetaItem> {
     return same;
   }
 
+  @Override
   public int hashCode() {
     Object parts[] = new Object[] { n, v };
     return Arrays.hashCode(parts);
   }
 
   /** Primary sort by name, secondary by value. */
+  @Override
   public int compareTo(MetaItem o) {
     if (null == o) { 
       throw new IllegalArgumentException("null object");
@@ -124,6 +127,7 @@ public final class MetaItem implements Comparable<MetaItem> {
   }
 
   /** "MetaItem(" + n + "," + v + ")" */
+  @Override
   public String toString() {
     return "MetaItem(" + n + "," + v + ")";
   }

@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -194,7 +194,7 @@ abstract class WrapperAdaptor implements Adaptor {
   /**
    * Passes through all operations to wrapped {@code DocIdPusher}.
    */
-  public static class WrapperDocIdPusher implements DocIdPusher {
+  public static class WrapperDocIdPusher extends AbstractDocIdPusher {
     private DocIdPusher pusher;
 
     public WrapperDocIdPusher(DocIdPusher pusher) {
@@ -202,15 +202,10 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public DocId pushDocIds(Iterable<DocId> docIds)
+    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+                                PushErrorHandler handler)
         throws InterruptedException {
-      return pushDocIds(docIds, null);
-    }
-
-    @Override
-    public DocId pushDocIds(Iterable<DocId> docIds, PushErrorHandler handler)
-        throws InterruptedException {
-      return pusher.pushDocIds(docIds, handler);
+      return pusher.pushDocInfos(docInfos, handler);
     }
   }
 }

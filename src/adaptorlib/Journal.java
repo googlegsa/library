@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -68,9 +68,9 @@ class Journal {
     };
   }
 
-  synchronized void recordDocIdPush(List<DocId> pushed) {
-    for (DocId id : pushed) {
-      increment(timesPushed, id);
+  synchronized void recordDocIdPush(List<DocInfo> pushed) {
+    for (DocInfo record : pushed) {
+      increment(timesPushed, record.getDocId());
     }
     totalPushes += pushed.size();
   }
@@ -211,8 +211,7 @@ class Journal {
     final long timeResolution;
     final Stats[] timeStats;
 
-    private JournalSnapshot(Journal journal, long currentTime,
-                            Stats[] timeStatsClone) {
+    JournalSnapshot(Journal journal, long currentTime, Stats[] timeStatsClone) {
       this.numUniqueDocIdsPushed = journal.timesPushed.size();
       this.numTotalDocIdsPushed = journal.totalPushes;
       this.numUniqueGsaRequests = journal.timesGsaRequested.size();

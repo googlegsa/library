@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -108,14 +108,14 @@ class GsaFeedFileSender {
     uc.setDoOutput(true);
     if (useCompression) {
       uc.setChunkedStreamingMode(0);
+      // GSA can handle gziped content, although there isn't a way to find out
+      // other than just trying
+      uc.setRequestProperty("Content-Encoding", "gzip");
     } else {
       uc.setFixedLengthStreamingMode(len);
     }
     uc.setRequestProperty("Content-Type",
         "multipart/form-data; boundary=" + BOUNDARY);
-    // GSA can handle gziped content, although there isn't a way to find out
-    // other than just trying
-    uc.setRequestProperty("Content-Encoding", "gzip");
     return uc;
   }
 

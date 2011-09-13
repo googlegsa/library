@@ -14,12 +14,8 @@
 
 package adaptorlib;
 
-/** */
-public class TransformException extends Exception {
-  public TransformException(Exception e) {
-    super(e);
-  }
-  public TransformException(String s) {
-    super(s);
-  }
+import java.net.URI;
+
+interface DocIdDecoder {
+  public DocId decodeDocId(URI uri);
 }

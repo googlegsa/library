@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -158,19 +158,15 @@ public class AutoUnzipAdaptorTest {
     }
   }
 
-  private static class AccumulatingDocIdPusher implements Adaptor.DocIdPusher {
+  private static class AccumulatingDocIdPusher extends AbstractDocIdPusher {
     private List<DocId> ids = new ArrayList<DocId>();
 
-    public DocId pushDocIds(Iterable<DocId> docIds)
+    @Override
+    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+                                Adaptor.PushErrorHandler handler)
         throws InterruptedException {
-      return pushDocIds(docIds, null);
-    }
-
-    public DocId pushDocIds(Iterable<DocId> docIds,
-                            Adaptor.PushErrorHandler handler)
-        throws InterruptedException {
-      for (DocId id : docIds) {
-        ids.add(id);
+      for (DocInfo docInfo : docInfos) {
+        ids.add(docInfo.getDocId());
       }
       return null;
     }

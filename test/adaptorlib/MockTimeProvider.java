@@ -14,12 +14,19 @@
 
 package adaptorlib;
 
-/** */
-public class TransformException extends Exception {
-  public TransformException(Exception e) {
-    super(e);
-  }
-  public TransformException(String s) {
-    super(s);
+/**
+ * Mock {@link Journal.TimeProvider}.
+ */
+public class MockTimeProvider implements TimeProvider {
+  public long time;
+  // Is needed since the Journal determines the timer resolution
+  public boolean autoIncrement = true;
+
+  public long currentTimeMillis() {
+    long currentTime = time;
+    if (autoIncrement) {
+      time++;
+    }
+    return currentTime;
   }
 }

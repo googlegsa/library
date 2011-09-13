@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -50,10 +50,6 @@ abstract class AbstractHandler implements HttpHandler {
           return new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
         }
       };
-
-  // Numbers for logging incoming and completed communications.
-  private int numberConnectionStarted = 0;
-  private int numberConnectionFinished = 0;
 
   /**
    * The hostname is sometimes needed to generate the correct DocId; in the case
@@ -240,22 +236,18 @@ abstract class AbstractHandler implements HttpHandler {
   protected abstract void meteredHandle(HttpExchange ex) throws IOException;
 
   /**
-   * Performs entry counting, calls {@link #meteredHandle}, and performs exit
-   * counting. Also logs and handles exceptions.
+   * Performs entry logging, calls {@link #meteredHandle}, and performs exit
+   * logging. Also logs and handles exceptions.
    */
   public void handle(HttpExchange ex) throws IOException {
     try {
-      synchronized (this) {
-        numberConnectionStarted++;
-        log.log(Level.FINE, "begining in={0},out={1}", new Object[] {
-          numberConnectionStarted, numberConnectionFinished});
-      }
+      log.fine("beginning");
       logRequest(ex);
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
       meteredHandle(ex);
     } catch (Exception e) {
-      Boolean headersSent = (Boolean)ex.getAttribute(ATTR_HEADERS_SENT);
+      Boolean headersSent = (Boolean) ex.getAttribute(ATTR_HEADERS_SENT);
       if (headersSent == null) {
         headersSent = false;
       }
@@ -269,11 +261,7 @@ abstract class AbstractHandler implements HttpHandler {
                       "An unexpected error occurred");
       }
     } finally {
-      synchronized (this) {
-        numberConnectionFinished++;
-        log.log(Level.FINE, "ending in={0},out={1}", new Object[] {
-          numberConnectionStarted, numberConnectionFinished});
-      }
+      log.fine("ending");
     }
   }
 }

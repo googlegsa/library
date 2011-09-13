@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -23,16 +23,10 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
 /**
  * JSON-RPC handler for communication with the dashboard.
  */
 class RpcHandler extends AbstractHandler {
-  private static final Logger log = Logger.getLogger(
-      RpcHandler.class.getName());
-
   private final Charset charset = Charset.forName("UTF-8");
   private final GsaCommunicationHandler commHandler;
 
@@ -59,6 +53,11 @@ class RpcHandler extends AbstractHandler {
       byte[] request = IOHelper.readInputStreamToByteArray(ex.getRequestBody());
       requestObj = JSONValue.parse(new String(request, charset));
     }
+    if (requestObj == null) {
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
+                    "Could not parse JSON");
+      return;
+    }
     String method;
     List params;
     Object id;
@@ -68,12 +67,11 @@ class RpcHandler extends AbstractHandler {
       params = (List) request.get("params");
       id = request.get("id");
     } catch (ClassCastException e) {
-      log.log(Level.WARNING, "Invalid request format", e);
       @SuppressWarnings("unchecked")
       Map<String, Object> response = new JSONObject();
       response.put("id", null);
       response.put("result", null);
-      response.put("error", "Invalid request format");
+      response.put("error", "Invalid request format: " + e.getMessage());
       cannedRespond(ex, HttpURLConnection.HTTP_OK, "application/json",
                     JSONValue.toJSONString(response));
       return;

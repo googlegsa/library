@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -39,15 +39,12 @@ public class DocId {
   }
 
   /** "DocId(" + uniqId + ")" */
+  @Override
   public String toString() {
     return "DocId(" + uniqId + ")";
   }
 
-  /** This default action is "add". */
-  String getFeedFileAction() {
-    return "add";
-  } 
-
+  @Override
   public boolean equals(Object o) {
     if (null == o || !getClass().equals(o.getClass())) {
       return false;
@@ -56,6 +53,7 @@ public class DocId {
     return this.uniqId.equals(d.uniqId);
   }
 
+  @Override
   public int hashCode() {
     return this.uniqId.hashCode();
   }

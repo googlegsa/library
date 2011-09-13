@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -28,6 +28,8 @@ import javax.xml.transform.stream.*;
   http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html
  */
 class GsaFeedFileMaker {
+  private static final Metadata EMPTY_METADATA_DEFAULT
+      = new Metadata(Collections.singleton(MetaItem.isPublic()));
   private DocIdEncoder idEncoder;
 
   public GsaFeedFileMaker(DocIdEncoder encoder) {
@@ -55,29 +57,27 @@ class GsaFeedFileMaker {
   /** Adds a single record to feed-file-document's group,
       communicating the information represented by DocId. */
   private void constructSingleMetadataAndUrlFeedFileRecord(
-      Document doc, Element group, DocId docForGsa) {
+      Document doc, Element group, DocInfo docRecord) {
+    DocId docForGsa = docRecord.getDocId();
+    Metadata metadata = docRecord.getMetadata();
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
-    record.setAttribute("action", docForGsa.getFeedFileAction());
+    record.setAttribute("action",
+                        Metadata.DELETED.equals(metadata) ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
-    if (docForGsa instanceof DeletedDocId) {
-      // No metadata allowed on deleted documents.
-    } else if (docForGsa instanceof DocIdWithMetadata) {
+    // Deleted items must not have a metadata tag.
+    if (!Metadata.DELETED.equals(metadata)) {
       Element metadataXml = doc.createElement("metadata");
       record.appendChild(metadataXml);
-      Metadata metadataValues = ((DocIdWithMetadata) docForGsa).getMetadata();
-      addMetadataHelper(doc, metadataXml, metadataValues);
-    } else {
-      // Generic DocId handling.
-      Element metadataXml = doc.createElement("metadata");
-      record.appendChild(metadataXml);
-      Element displayurl = doc.createElement("meta");
-      metadataXml.appendChild(displayurl);
-      displayurl.setAttribute("name", "displayurl");
-      String value = "" + idEncoder.encodeDocId(docForGsa);
-      displayurl.setAttribute("content", value);
+      if (!Metadata.EMPTY.equals(metadata)) {
+        addMetadataHelper(doc, metadataXml, metadata);
+      } else {
+        // The GSA requires a metadata tag and at least one item within, so we
+        // add some useless piece of metadata.
+        addMetadataHelper(doc, metadataXml, EMPTY_METADATA_DEFAULT);
+      }
     }
     // TODO(pjo): Add "no-recrawl" signal.
     // TODO(pjo): Add "crawl-immediately" signal.
@@ -97,22 +97,21 @@ class GsaFeedFileMaker {
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<DocId> docIds) {
+      Element root, List<DocInfo> docInfos) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (int i = 0; i < docIds.size(); i++) {
-      DocId h = docIds.get(i);
-      constructSingleMetadataAndUrlFeedFileRecord(doc, group, h);
+    for (DocInfo docRecord : docInfos) {
+      constructSingleMetadataAndUrlFeedFileRecord(doc, group, docRecord);
     }
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<DocId> docIds) {
+      String srcName, List<DocInfo> docInfos) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
-    constructMetadataAndUrlFeedFileBody(doc, root, docIds);
+    constructMetadataAndUrlFeedFileBody(doc, root, docInfos);
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
@@ -136,12 +135,12 @@ class GsaFeedFileMaker {
   /** Makes a metadata-and-url feed file from upto 
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
-  public String makeMetadataAndUrlXml(String srcName, List<DocId> docIds) {
+  public String makeMetadataAndUrlXml(String srcName, List<DocInfo> docInfos) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
-      constructMetadataAndUrlFeedFile(doc, srcName, docIds);
+      constructMetadataAndUrlFeedFile(doc, srcName, docInfos);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {

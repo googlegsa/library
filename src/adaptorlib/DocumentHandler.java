@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -41,20 +41,23 @@ class DocumentHandler extends AbstractHandler {
   private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
 
-  private GsaCommunicationHandler commHandler;
+  private DocIdDecoder docIdDecoder;
+  private Journal journal;
   private Adaptor adaptor;
   private Set<InetAddress> gsaAddresses = new HashSet<InetAddress>();
   private final HttpHandler authnHandler;
   private final SessionManager<HttpExchange> sessionManager;
 
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
-                         GsaCommunicationHandler commHandler, Adaptor adaptor,
+                         DocIdDecoder docIdDecoder, Journal journal,
+                         Adaptor adaptor,
                          boolean addResolvedGsaHostnameToGsaIps,
                          String gsaHostname, String[] gsaIps,
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager) {
     super(defaultHostname, defaultCharset);
-    this.commHandler = commHandler;
+    this.docIdDecoder = docIdDecoder;
+    this.journal = journal;
     this.adaptor = adaptor;
     this.authnHandler = authnHandler;
     this.sessionManager = sessionManager;
@@ -109,11 +112,10 @@ class DocumentHandler extends AbstractHandler {
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
       // TODO(ejona): Need to namespace all docids to allow random support URLs
-      DocId docId = commHandler.decodeDocId(getRequestUri(ex));
+      DocId docId = docIdDecoder.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
 
       boolean isAllowed;
-      Journal journal = commHandler.getJournal();
       if (requestIsFromGsa(ex)) {
         journal.recordGsaContentRequest(docId);
         isAllowed = true;
@@ -229,12 +231,11 @@ class DocumentHandler extends AbstractHandler {
   @Override
   protected void respond(HttpExchange ex, int code, String contentType,
                          byte[] response) throws IOException {
-    commHandler.getJournal().recordRequestResponseStart();
+    journal.recordRequestResponseStart();
     try {
       super.respond(ex, code, contentType, response);
     } finally {
-      commHandler.getJournal().recordRequestResponseEnd(
-          response == null ? 0 : response.length);
+      journal.recordRequestResponseEnd(response == null ? 0 : response.length);
     }
   }
 
@@ -267,7 +268,7 @@ class DocumentHandler extends AbstractHandler {
       if ((b >= 'a' && b <= 'z')
           || (b >= 'A' && b <= 'Z')
           || b == '-' || b == '_' || b == '.' || b == '~') {
-        sb.append((char)b);
+        sb.append((char) b);
       } else {
         // Make sure it is positive
         int i = b & 0xff;
@@ -324,6 +325,8 @@ class DocumentHandler extends AbstractHandler {
   }
 
   private static class DocumentResponse implements Adaptor.Response {
+    /** Special instance of stream that denotes that not modified was sent */
+    private static final OutputStream notModifiedOs = new SinkOutputStream();
     private HttpExchange ex;
     private OutputStream os;
     private String contentType;
@@ -341,14 +344,17 @@ class DocumentHandler extends AbstractHandler {
     @Override
     public void respondNotModified() {
       if (os != null) {
-        throw new IllegalStateException();
+        throw new IllegalStateException("getOutputStream already called");
       }
       httpResponseCode = HttpURLConnection.HTTP_NOT_MODIFIED;
-      os = new SinkOutputStream();
+      os = notModifiedOs;
     }
 
     @Override
     public OutputStream getOutputStream() {
+      if (os == notModifiedOs) {
+        throw new IllegalStateException("respondNotModified already called");
+      }
       if (os != null) {
         return os;
       }
@@ -405,5 +411,4 @@ class DocumentHandler extends AbstractHandler {
     @Override
     public void write(int b) throws IOException {}
   }
-
 }

@@ -119,6 +119,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
       <classpath location="${j-calais.jar}"/>
+      <classpath location="${json-simple.jar}"/>
     </javac>
   </target>
 
@@ -202,8 +203,10 @@
 
   <target name="run-fs" depends="build" description="Run filesystem adaptor">
     <java classpath="${build-src.dir}" fork="true"
-      classname="adaptorlib.examples.FileSystemAdaptor">
+      classname="adaptorlib.prebuilt.FileSystemAdaptor">
       <classpath refid="adaptorlib.run.classpath"/>
+      <classpath location="${resource.dir}"/>
+      <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
         value="${src.dir}/logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
@@ -217,7 +220,7 @@
   </target>
 
   <target name="test" depends="build" description="Run JUnit tests">
-    <junit printsummary="yes" haltonfailure="yes">
+    <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true">
       <sysproperty key="net.sourceforge.cobertura.datafile"
         file="${build-instrument.dir}/cobertura.ser"/>
       <classpath refid="cobertura.classpath"/>
@@ -236,7 +239,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <formatter type="plain" usefile="false"/>
-      <batchtest fork="yes">
+      <batchtest>
         <fileset dir="${test.dir}">
           <include name="**/*Test.java"/>
         </fileset>
@@ -260,6 +263,6 @@
   <target name="coverage-report" description="Generates code coverage report">
     <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
     <cobertura-report datafile="${build-instrument.dir}/cobertura.ser"
-      srcdir="${src.dir}" destdir="${build.dir}/cobertura"/>
+      srcdir="${src.dir}" destdir="${build.dir}/coverage"/>
   </target>
 </project>

@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -35,15 +35,15 @@ public class JournalTest {
     DocId id2 = new DocId("id2");
     DocId id3 = new DocId("id3");
     DocId id4 = new DocId("id4");
-    ArrayList<DocId> docs = new ArrayList<DocId>();
-    docs.add(id);
-    docs.add(id2);
-    docs.add(id3);
+    ArrayList<DocInfo> docs = new ArrayList<DocInfo>();
+    docs.add(new DocInfo(id, Metadata.EMPTY));
+    docs.add(new DocInfo(id2, Metadata.EMPTY));
+    docs.add(new DocInfo(id3, Metadata.EMPTY));
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
-    docs.add(id4);
+    docs.add(new DocInfo(id4, Metadata.EMPTY));
     journal.recordDocIdPush(docs);
     assertEquals(4, journal.getSnapshot().numUniqueDocIdsPushed);
   }
@@ -194,19 +194,5 @@ public class JournalTest {
   @Test
   public void testDefaultTimeProvider() {
     new Journal();
-  }
-
-  private static class MockTimeProvider implements TimeProvider {
-    private long time;
-    // Is needed since the Journal determines the timer resolution
-    private boolean autoIncrement = true;
-
-    public long currentTimeMillis() {
-      long currentTime = time;
-      if (autoIncrement) {
-        time++;
-      }
-      return currentTime;
-    }
   }
 }

@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -54,10 +54,5 @@ public class DocIdTest {
   public void testConstructorNull() {
     thrown.expect(NullPointerException.class);
     new DocId(null);
-  }
-
-  @Test
-  public void testFeedFileAction() {
-    assertEquals("add", new DocId("some docid").getFeedFileAction());
   }
 }

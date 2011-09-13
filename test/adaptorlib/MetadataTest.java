@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,15 +13,14 @@
 // limitations under the License.
 
 package adaptorlib;
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.TreeSet;
 
 import static org.junit.Assert.*;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+
+import java.util.Set;
+import java.util.TreeSet;
 
 /** Tests for {@link MetaItem}. */
 public class MetadataTest {
@@ -37,8 +36,14 @@ public class MetadataTest {
   public void testEquals() {
     assertEquals(couple, coupleB);
     assertEquals(triple, tripleB);
+    assertEquals(Metadata.EMPTY, new Metadata(new TreeSet<MetaItem>()));
+    assertEquals(Metadata.DELETED, Metadata.DELETED);
     assertFalse(couple.equals(triple));
     assertFalse(triple.equals(couple));
+    assertFalse(Metadata.DELETED.equals(Metadata.EMPTY));
+    assertFalse(Metadata.EMPTY.equals(Metadata.DELETED));
+    assertFalse(Metadata.EMPTY.equals(new Object()));
+    assertFalse(Metadata.EMPTY.equals(null));
   }
 
   @Test
@@ -85,7 +90,6 @@ public class MetadataTest {
     items.add(MetaItem.raw("X", "peter,mathew"));
     items.add(MetaItem.raw("Y", "apostles"));
     items.add(MetaItem.raw("Z", "true"));
-    thrown.expect(IllegalArgumentException.class);
     Metadata box = new Metadata(items); 
   }
 
@@ -147,6 +151,12 @@ public class MetadataTest {
     items.add(MetaItem.raw("google:ispublic", "dog"));
     thrown.expect(IllegalArgumentException.class);
     Metadata box = new Metadata(items); 
+  }
+
+  @Test
+  public void testToString() {
+    assertEquals("[MetaItem(author,iceman), MetaItem(google:ispublic,true)]",
+                 couple.toString());
   }
 
   private static Set<MetaItem> makeCouple() {

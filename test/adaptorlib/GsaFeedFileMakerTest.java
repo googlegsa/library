@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -13,14 +13,16 @@
 // limitations under the License.
 
 package adaptorlib;
+
+import static org.junit.Assert.*;
+
+import org.junit.Test;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
-
-import static org.junit.Assert.*;
-import org.junit.Test;
 
 /** Tests for {@link GsaFeedFileMaker}. */
 public class GsaFeedFileMakerTest {
@@ -49,7 +51,7 @@ public class GsaFeedFileMakerTest {
         + "</header>\n"
         + "<group/>\n"
         + "</gsafeed>\n";
-    String xml = meker.makeMetadataAndUrlXml("t3sT", new ArrayList<DocId>());
+    String xml = meker.makeMetadataAndUrlXml("t3sT", new ArrayList<DocInfo>());
     assertEquals(golden, xml);
   }
 
@@ -67,19 +69,19 @@ public class GsaFeedFileMakerTest {
         + "<group>\n"
         + "<record action=\"add\" mimetype=\"text/plain\" url=\"el3ven\">\n"
         + "<metadata>\n"
-        + "<meta content=\"el3ven\" name=\"displayurl\"/>\n"
+        + "<meta content=\"true\" name=\"google:ispublic\"/>\n"
         + "</metadata>\n"
         + "</record>\n"
         + "<record action=\"add\" mimetype=\"text/plain\" url=\"elefenta\">\n"
         + "<metadata>\n"
-        + "<meta content=\"elefenta\" name=\"displayurl\"/>\n"
+        + "<meta content=\"true\" name=\"google:ispublic\"/>\n"
         + "</metadata>\n"
         + "</record>\n"
         + "</group>\n"
         + "</gsafeed>\n";
-    ArrayList<DocId> ids = new ArrayList<DocId>();
-    ids.add(new DocId("el3ven"));
-    ids.add(new DocId("elefenta"));
+    ArrayList<DocInfo> ids = new ArrayList<DocInfo>();
+    ids.add(new DocInfo(new DocId("el3ven"), Metadata.EMPTY));
+    ids.add(new DocInfo(new DocId("elefenta"), Metadata.EMPTY));
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     assertEquals(golden, xml);
   }
@@ -109,19 +111,21 @@ public class GsaFeedFileMakerTest {
         + "<meta content=\"Ty\" name=\"google:aclusers\"/>\n"
         + "</metadata>\n"
         + "</record>\n"
+        + "<record action=\"delete\" mimetype=\"text/plain\" url=\"gone\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
-    ArrayList<DocId> ids = new ArrayList<DocId>();
+    ArrayList<DocInfo> ids = new ArrayList<DocInfo>();
     Set<MetaItem> item1 = Collections.singleton(MetaItem.isPublic());
     Metadata metadata1 = new Metadata(item1);
-    ids.add(new DocIdWithMetadata("el3ven", metadata1));
+    ids.add(new DocInfo(new DocId("el3ven"), metadata1));
     Set<MetaItem> items2 = new TreeSet<MetaItem>();
     items2.add(MetaItem.displayUrl("f000nkey"));
     items2.add(MetaItem.raw("distance", "in rods"));
     items2.add(MetaItem.permittedGroups(Collections.singletonList("Po")));
     items2.add(MetaItem.permittedUsers(Collections.singletonList("Ty")));
     Metadata metadata2 = new Metadata(items2);
-    ids.add(new DocIdWithMetadata("elefenta", metadata2));
+    ids.add(new DocInfo(new DocId("elefenta"), metadata2));
+    ids.add(new DocInfo(new DocId("gone"), Metadata.DELETED));
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     assertEquals(golden, xml);
   }

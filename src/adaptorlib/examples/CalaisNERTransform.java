@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc.
+// Copyright 2011 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,7 +27,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.text.MessageFormat;
-import java.util.ArrayList;
 import java.util.Map;
 
 /**
@@ -106,7 +105,7 @@ public class CalaisNERTransform extends DocumentTransform {
     for (CalaisObject entity : response.getEntities()) {
       String entityType = entity.getField("_type");
       String entityName = entity.getField("name");
-      String entityParamKey = "UseCalaisEntity:"+ entityType;
+      String entityParamKey = "UseCalaisEntity:" + entityType;
       boolean shouldInclude = includeAllEntities || "True".equals(params.get(entityParamKey));
       if (shouldInclude) {
         sb.append(MessageFormat.format("<meta name=\"{0}\" content=\"{1}\" />\n",
