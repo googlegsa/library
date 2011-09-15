@@ -15,6 +15,7 @@
 package adaptorlib;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
@@ -103,16 +104,14 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     // useful during testing.
     port = server.getAddress().getPort();
     config.setValue("server.port", "" + port);
-    server.createContext("/dashboard", new DashboardHandler(config, journal));
-    server.createContext("/rpc", createRpcHandler());
 
-    SessionManager<HttpExchange> sessionManager = null;
-    AuthnHandler authnHandler = null;
-    if (secure) {
-       sessionManager = new SessionManager<HttpExchange>(
+    SessionManager<HttpExchange> sessionManager
+        = new SessionManager<HttpExchange>(
           new SessionManager.HttpExchangeCookieAccess(),
           30 * 60 * 1000 /* session lifetime: 30 minutes */,
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
+    AuthnHandler authnHandler = null;
+    if (secure) {
       server.createContext("/samlassertionconsumer",
           new SamlAssertionConsumerHandler(config.getServerHostname(),
             config.getGsaCharacterEncoding(), sessionManager));
@@ -129,6 +128,13 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager));
+
+    server.createContext("/dashboard",
+        createAdminSecurityHandler(new DashboardHandler(config, journal),
+                                       config, sessionManager, secure));
+    server.createContext("/rpc",
+        createAdminSecurityHandler(createRpcHandler(), config,
+                                       sessionManager, secure));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
@@ -162,6 +168,14 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       server.stop(maxDelay);
       server = null;
     }
+  }
+
+  private AdministratorSecurityHandler createAdminSecurityHandler(
+      HttpHandler handler, Config config,
+      SessionManager<HttpExchange> sessionManager, boolean secure) {
+    return new AdministratorSecurityHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), handler, sessionManager,
+        config.getGsaHostname(), secure ? 8443 : 8000);
   }
 
   private synchronized RpcHandler createRpcHandler() {

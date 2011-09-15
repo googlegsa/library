@@ -183,12 +183,13 @@ abstract class AbstractHandler implements HttpHandler {
   }
 
   /**
-   * Redirect client to {@code location}.
+   * Redirect client to {@code location}. The client should retrieve the
+   * referred location via GET, independent of the method of this request.
    */
   public void sendRedirect(HttpExchange ex, URI location)
       throws IOException {
     ex.getResponseHeaders().set("Location", location.toString());
-    respond(ex, 307 /* Temporary redirect */, null, null);
+    respond(ex, HttpURLConnection.HTTP_SEE_OTHER, null, null);
   }
 
   /**
