@@ -246,6 +246,7 @@ abstract class AbstractHandler implements HttpHandler {
       logRequest(ex);
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
+      ex.getResponseHeaders().set("Date", dateFormat.get().format(new Date()));
       meteredHandle(ex);
     } catch (Exception e) {
       Boolean headersSent = (Boolean) ex.getAttribute(ATTR_HEADERS_SENT);
