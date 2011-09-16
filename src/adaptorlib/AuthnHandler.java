@@ -109,7 +109,7 @@ class AuthnHandler extends AbstractHandler {
     if (keystoreFile == null) {
       throw new RuntimeException("You must provide a default keystore");
     }
-    String keystoreType = System.getProperty("javax.net.ssl.trustStoreType",
+    String keystoreType = System.getProperty("javax.net.ssl.keyStoreType",
                                              KeyStore.getDefaultType());
 
     PrivateKey privateKey;
