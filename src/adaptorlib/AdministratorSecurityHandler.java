@@ -31,25 +31,33 @@ import java.nio.charset.Charset;
 public class AdministratorSecurityHandler extends AbstractHandler {
   /** Key used to store the fact the user has been authenticated. */
   private static final String SESSION_ATTR_NAME = "dashboard-authned";
+  /** Page to display when prompting for user credentials. */
   private static final String LOGIN_PAGE = "static/login.html";
+  /** Page to display when the user credentials are invalid. */
   private static final String LOGIN_INVALID_PAGE = "static/login-invalid.html";
 
   /** Wrapped handler, for when the user is authenticated. */
   private final HttpHandler handler;
   /** Manager that handles keeping track of authenticated users. */
   private final SessionManager<HttpExchange> sessionManager;
-  private final String gsaHostname;
-  private final int gsaPort;
+  /** Trusted entity for performing authentication of user credentials. */
+  private final AuthnClient authnClient;
+
+  AdministratorSecurityHandler(String fallbackHostname, Charset defaultEncoding,
+      HttpHandler handler, SessionManager<HttpExchange> sessionManager,
+      AuthnClient authnClient) {
+    super(fallbackHostname, defaultEncoding);
+    this.handler = handler;
+    this.sessionManager = sessionManager;
+    this.authnClient = authnClient;
+  }
 
   public AdministratorSecurityHandler(String fallbackHostname,
       Charset defaultEncoding, HttpHandler handler,
       SessionManager<HttpExchange> sessionManager, String gsaHostname,
       int gsaPort) {
-    super(fallbackHostname, defaultEncoding);
-    this.handler = handler;
-    this.sessionManager = sessionManager;
-    this.gsaHostname = gsaHostname;
-    this.gsaPort = gsaPort;
+    this(fallbackHostname, defaultEncoding, handler, sessionManager,
+        new GsaAuthnClient(gsaHostname, gsaPort));
   }
 
   @Override
@@ -132,10 +140,9 @@ public class AdministratorSecurityHandler extends AbstractHandler {
     }
 
     // Check to see if provided username and password are valid.
-    try {
-      new GsaClient(gsaHostname, gsaPort, username, password);
-    } catch (AuthenticationException e) {
-      return AuthzStatus.DENY;
+    AuthzStatus result = authnClient.authn(username, password);
+    if (result != AuthzStatus.PERMIT) {
+      return result;
     }
 
     // We have a winner. Store in the session that they are a valid user.
@@ -146,12 +153,36 @@ public class AdministratorSecurityHandler extends AbstractHandler {
 
   @Override
   public void handle(HttpExchange ex) throws IOException {
-    // Perform fast-path checking here to prevent double-logging most requsets.
+    // Perform fast-path checking here to prevent double-logging most requests.
     Session session = sessionManager.getSession(ex, false);
     if (session != null && session.getAttribute(SESSION_ATTR_NAME) != null) {
       handler.handle(ex);
       return;
     }
     super.handle(ex);
+  }
+
+  interface AuthnClient {
+    public AuthzStatus authn(String username, String password);
+  }
+
+  static class GsaAuthnClient implements AuthnClient {
+    private String gsaHostname;
+    private int gsaPort;
+
+    public GsaAuthnClient(String gsaHostname, int gsaPort) {
+      this.gsaHostname = gsaHostname;
+      this.gsaPort = gsaPort;
+    }
+
+    @Override
+    public AuthzStatus authn(String username, String password) {
+      try {
+        new GsaClient(gsaHostname, gsaPort, username, password);
+      } catch (AuthenticationException e) {
+        return AuthzStatus.DENY;
+      }
+      return AuthzStatus.PERMIT;
+    }
   }
 }
