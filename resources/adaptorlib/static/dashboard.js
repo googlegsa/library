@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-"use strict";
+'use strict';
 
 function loadChartData(chartName, data, title, labels, xlabel, ylabel, y2label,
                        dateFormat) {
