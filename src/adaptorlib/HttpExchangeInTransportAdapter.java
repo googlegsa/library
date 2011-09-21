@@ -145,7 +145,7 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
    */
   @Override
   public String getHTTPMethod() {
-    return null;
+    return ex.getRequestMethod();
   }
 
   /**

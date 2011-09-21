@@ -48,6 +48,7 @@ class SamlMetadata {
 
   private EntityDescriptor createLocalEntity(String hostname, int port) {
     EntityDescriptor ed = makeSamlObject(EntityDescriptor.DEFAULT_ELEMENT_NAME);
+    // TODO(ejona): It may be useful to make this instance-specific.
     ed.setEntityID("http://google.com/enterprise/gsa/adaptor");
 
     SPSSODescriptor spsso = makeSamlObject(
