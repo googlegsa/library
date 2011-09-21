@@ -98,15 +98,17 @@ function getStatsCallback(result, error) {
     throw error;
   }
   var data = result;
-  $('#gaf-numTotalDocIdsPushed').html(data.simpleStats.numTotalDocIdsPushed);
-  $('#gaf-numUniqueDocIdsPushed').html(data.simpleStats.numUniqueDocIdsPushed);
-  $('#gaf-numTotalGsaRequests').html(data.simpleStats.numTotalGsaRequests);
-  $('#gaf-numUniqueGsaRequests').html(data.simpleStats.numUniqueGsaRequests);
-  $('#gaf-numTotalNonGsaRequests').html(
+  $('#gaf-num-total-doc-ids-pushed').text(
+      data.simpleStats.numTotalDocIdsPushed);
+  $('#gaf-num-unique-doc-ids-pushed').text(
+      data.simpleStats.numUniqueDocIdsPushed);
+  $('#gaf-num-total-gsa-requests').text(data.simpleStats.numTotalGsaRequests);
+  $('#gaf-num-unique-gsa-requests').text(data.simpleStats.numUniqueGsaRequests);
+  $('#gaf-num-total-non-gsa-requests').text(
       data.simpleStats.numTotalNonGsaRequests);
-  $('#gaf-numUniqueNonGsaRequests').html(
+  $('#gaf-num-unique-non-gsa-requests').text(
       data.simpleStats.numUniqueNonGsaRequests);
-  $('#gaf-whenStarted').html(String(new Date(data.simpleStats.whenStarted)));
+  $('#gaf-when-started').text(String(new Date(data.simpleStats.whenStarted)));
   $('#gaf-time-resolution').text(data.simpleStats.timeResolution);
 
   var vals = [];
