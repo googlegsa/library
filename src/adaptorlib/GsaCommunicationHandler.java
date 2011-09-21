@@ -175,7 +175,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       SessionManager<HttpExchange> sessionManager, boolean secure) {
     return new AdministratorSecurityHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding(), handler, sessionManager,
-        config.getGsaHostname(), secure ? 8443 : 8000);
+        config.getGsaHostname(), secure);
   }
 
   private synchronized RpcHandler createRpcHandler() {

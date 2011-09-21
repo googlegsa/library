@@ -23,12 +23,15 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
+import java.util.logging.Logger;
 
 /**
  * Require GSA-Administrator authentication before allowing access to wrapped
  * handler.
  */
 public class AdministratorSecurityHandler extends AbstractHandler {
+  private static final Logger log
+      = Logger.getLogger(AdministratorSecurityHandler.class.getName());
   /** Key used to store the fact the user has been authenticated. */
   private static final String SESSION_ATTR_NAME = "dashboard-authned";
   /** Page to display when prompting for user credentials. */
@@ -55,9 +58,9 @@ public class AdministratorSecurityHandler extends AbstractHandler {
   public AdministratorSecurityHandler(String fallbackHostname,
       Charset defaultEncoding, HttpHandler handler,
       SessionManager<HttpExchange> sessionManager, String gsaHostname,
-      int gsaPort) {
+      boolean useHttps) {
     this(fallbackHostname, defaultEncoding, handler, sessionManager,
-        new GsaAuthnClient(gsaHostname, gsaPort));
+        new GsaAuthnClient(gsaHostname, useHttps));
   }
 
   @Override
@@ -102,6 +105,7 @@ public class AdministratorSecurityHandler extends AbstractHandler {
    */
   private AuthzStatus validUsernameAndPassword(HttpExchange ex)
       throws IOException {
+    log.fine("Not already authenticated");
     // Check to see if they provided a username and password.
     String username = null;
     String password = null;
@@ -129,12 +133,14 @@ public class AdministratorSecurityHandler extends AbstractHandler {
         }
       }
     } catch (Exception e) {
+      log.fine("Processing POST caused exception");
       // Assume that they were POSTing to a different page, since they didn't
       // provide the expected input.
       username = null;
       password = null;
     }
     if (username == null || password == null) {
+      log.fine("Username or password is null. Not authenticated");
       // Must not have been from our login page.
       return AuthzStatus.INDETERMINATE;
     }
@@ -142,10 +148,12 @@ public class AdministratorSecurityHandler extends AbstractHandler {
     // Check to see if provided username and password are valid.
     AuthzStatus result = authnClient.authn(username, password);
     if (result != AuthzStatus.PERMIT) {
+      log.fine("GSA login was not successful");
       return result;
     }
 
     // We have a winner. Store in the session that they are a valid user.
+    log.fine("GSA login successful");
     Session session = sessionManager.getSession(ex);
     session.setAttribute(SESSION_ATTR_NAME, true);
     return AuthzStatus.PERMIT;
@@ -168,17 +176,19 @@ public class AdministratorSecurityHandler extends AbstractHandler {
 
   static class GsaAuthnClient implements AuthnClient {
     private String gsaHostname;
-    private int gsaPort;
+    private boolean useHttps;
 
-    public GsaAuthnClient(String gsaHostname, int gsaPort) {
+    public GsaAuthnClient(String gsaHostname, boolean useHttps) {
       this.gsaHostname = gsaHostname;
-      this.gsaPort = gsaPort;
+      this.useHttps = useHttps;
     }
 
     @Override
     public AuthzStatus authn(String username, String password) {
+      String protocol = useHttps ? "https" : "http";
+      int port = useHttps ? 8443 : 8000;
       try {
-        new GsaClient(gsaHostname, gsaPort, username, password);
+        new GsaClient(protocol, gsaHostname, port, username, password);
       } catch (AuthenticationException e) {
         return AuthzStatus.DENY;
       }
