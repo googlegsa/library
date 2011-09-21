@@ -107,6 +107,7 @@ function getStatsCallback(result, error) {
   $('#gaf-numUniqueNonGsaRequests').html(
       data.simpleStats.numUniqueNonGsaRequests);
   $('#gaf-whenStarted').html(String(new Date(data.simpleStats.whenStarted)));
+  $('#gaf-time-resolution').text(data.simpleStats.timeResolution);
 
   var vals = [];
   vals.push(formatChartData(data.stats[0], data.simpleStats.timeResolution));
