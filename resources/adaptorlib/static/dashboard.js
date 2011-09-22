@@ -198,6 +198,7 @@ function getLogCallback(result, error) {
   if (result === null) {
     throw error;
   } else {
+    result = result.replace(/&/g, '&amp;').replace(/</g, '&lt;');
     // Replace \n with <br> as a workaround for IE
     $('#gaf-log').html(result.replace(/\n/g, '<br>'));
   }
