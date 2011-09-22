@@ -27,6 +27,7 @@
 #gaf-config-table {
   border: none;
   font-family: monospace;
+  white-space: pre;
 }
 
 #gaf-log {
