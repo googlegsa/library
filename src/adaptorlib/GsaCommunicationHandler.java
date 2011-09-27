@@ -21,6 +21,9 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import org.opensaml.DefaultBootstrap;
+import org.opensaml.xml.ConfigurationException;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -112,13 +115,23 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
     AuthnHandler authnHandler = null;
     if (secure) {
+      try {
+        DefaultBootstrap.bootstrap();
+      } catch (ConfigurationException ex) {
+        throw new RuntimeException(ex);
+      }
+      SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
+          config.getServerPort(), config.getGsaHostname());
+
       server.createContext("/samlassertionconsumer",
           new SamlAssertionConsumerHandler(config.getServerHostname(),
             config.getGsaCharacterEncoding(), sessionManager));
       authnHandler = new AuthnHandler(config.getServerHostname(),
           config.getGsaCharacterEncoding(), sessionManager,
-          config.getGsaHostname(), config.getServerKeyAlias(),
-          config.getServerPort());
+          config.getServerKeyAlias(), metadata);
+      server.createContext("/saml-authz", new SamlBatchAuthzHandler(
+          config.getServerHostname(), config.getGsaCharacterEncoding(),
+          adaptor, this, metadata));
     }
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),

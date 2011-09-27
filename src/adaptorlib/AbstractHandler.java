@@ -36,7 +36,11 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 abstract class AbstractHandler implements HttpHandler {
-  private static final String ATTR_HEADERS_SENT
+  /**
+   * Attribute of {@link HttpExchange} that is {@code true} if the HTTP headers
+   * have already been sent for the exchange, and unset otherwise.
+   */
+  public static final String ATTR_HEADERS_SENT
       = AbstractHandler.class.getName() + ".headers-sent";
 
   private static final Logger log

@@ -19,8 +19,6 @@ import com.google.enterprise.secmgr.modules.SamlClient;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import org.opensaml.DefaultBootstrap;
-import org.opensaml.xml.ConfigurationException;
 import org.opensaml.xml.security.SecurityHelper;
 import org.opensaml.xml.security.credential.Credential;
 
@@ -53,23 +51,26 @@ class AuthnHandler extends AbstractHandler {
   private final HttpClientInterface httpClient = new HttpClientAdapter();
   /** Credentials to use to sign messages. */
   private final Credential cred;
+  /** SAML configuration of endpoints. */
   private final SamlMetadata metadata;
 
+  /**
+   * @param fallbackHostname fallback hostname in case we talk to an old HTTP
+   *   client
+   * @param defaultEncoding encoding to use when sending simple text responses
+   * @param sessionManager manager for storing session state, like authn results
+   * @param keyAlias alias in keystore that contains the key for signing
+   *   messages
+   * @param metadata SAML configuration of endpoints
+   */
   AuthnHandler(String fallbackHostname, Charset defaultEncoding,
-               SessionManager<HttpExchange> sessionManager,
-               String gsaHostname, String keyAlias, int localPort)
-      throws IOException {
+               SessionManager<HttpExchange> sessionManager, String keyAlias,
+               SamlMetadata metadata) throws IOException {
     super(fallbackHostname, defaultEncoding);
     this.sessionManager = sessionManager;
+    this.metadata = metadata;
 
     cred = getCredential(keyAlias);
-
-    try {
-      DefaultBootstrap.bootstrap();
-    } catch (ConfigurationException ex) {
-      throw new RuntimeException(ex);
-    }
-    this.metadata = new SamlMetadata(fallbackHostname, localPort, gsaHostname);
   }
 
   @Override

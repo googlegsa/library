@@ -20,6 +20,7 @@ import org.opensaml.ws.transport.http.HTTPOutTransport;
 import org.opensaml.xml.security.credential.Credential;
 
 import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.util.List;
 
 /**
@@ -115,6 +116,16 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /** {@inheritDoc} */
   @Override
   public OutputStream getOutgoingStream() {
+    // Unfortunate coupling with AbstractHandler, but there doesn't seem to be a
+    // better alternative.
+    if (ex.getAttribute(AbstractHandler.ATTR_HEADERS_SENT) == null) {
+      ex.setAttribute(AbstractHandler.ATTR_HEADERS_SENT, true);
+      try {
+        ex.sendResponseHeaders(HttpURLConnection.HTTP_OK, 0);
+      } catch (java.io.IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
     return ex.getResponseBody();
   }
 
