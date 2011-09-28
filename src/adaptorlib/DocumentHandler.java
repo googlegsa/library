@@ -125,9 +125,10 @@ class DocumentHandler extends AbstractHandler {
         String principal = null;
         Set<String> groups = Collections.emptySet();
 
-        if (sessionManager != null) {
-          AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
-              .getAttribute(AuthnState.SESSION_ATTR_NAME);
+        Session session = sessionManager.getSession(ex, false);
+        if (session != null) {
+          AuthnState authnState
+              = (AuthnState) session.getAttribute(AuthnState.SESSION_ATTR_NAME);
           if (authnState != null && authnState.isAuthenticated()) {
             principal = authnState.getPrincipal();
             groups = authnState.getGroups();
@@ -297,11 +298,6 @@ class DocumentHandler extends AbstractHandler {
       this.ex = ex;
       this.docId = docId;
       this.dateFormat = dateFormat;
-    }
-
-    @Override
-    public boolean needDocumentContent() {
-      return !"HEAD".equals(ex.getRequestMethod());
     }
 
     @Override

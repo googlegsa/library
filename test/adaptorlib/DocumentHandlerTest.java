@@ -16,6 +16,8 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -31,19 +33,18 @@ public class DocumentHandlerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private DocumentHandler handler = new DocumentHandler("localhost",
-      Charset.forName("UTF-8"), new MockDocIdDecoder(),
-      new Journal(new MockTimeProvider()), new MockAdaptor(), false,
-      "localhost", new String[0], null, null);
+  private DocumentHandler handler = createDefaultHandlerForAdaptor(
+      new MockAdaptor());
   private MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
       new MockHttpContext(handler, "/"));
 
   @Test
   public void testSecurity() throws Exception {
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost", new String[0], null,
-        null);
+        createSessionManager());
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -51,10 +52,11 @@ public class DocumentHandlerTest {
   @Test
   public void testSecurityFromGsa() throws Exception {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"127.0.0.3", " "}, null, null);
+        new String[] {"127.0.0.3", " "}, null, createSessionManager());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
@@ -63,10 +65,11 @@ public class DocumentHandlerTest {
   @Test
   public void testSecurityFromGsaNoWhitelist() throws Exception {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "127.0.0.3",
-        new String[0], null, null);
+        new String[0], null, createSessionManager());
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -74,10 +77,11 @@ public class DocumentHandlerTest {
   @Test
   public void testSecurityFromGsaAutoAddWhitelist() throws Exception {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "127.0.0.3",
-        new String[0], null, null);
+        new String[0], null, createSessionManager());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
@@ -86,19 +90,21 @@ public class DocumentHandlerTest {
   @Test
   public void testNoSuchHost() throws Exception {
     thrown.expect(RuntimeException.class);
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"-no-such-host-"}, null, null);
+        new String[] {"-no-such-host-"}, null, createSessionManager());
   }
 
   @Test
   public void testNoSuchGsaHost() throws Exception {
     thrown.expect(RuntimeException.class);
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "-no-such-host-",
-        new String[0], null, null);
+        new String[0], null, createSessionManager());
   }
 
   @Test
@@ -134,7 +140,7 @@ public class DocumentHandlerTest {
             return null;
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -148,7 +154,7 @@ public class DocumentHandlerTest {
             throw new FileNotFoundException();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(404, ex.getResponseCode());
   }
@@ -162,7 +168,7 @@ public class DocumentHandlerTest {
             throw new IOException();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -176,7 +182,7 @@ public class DocumentHandlerTest {
             throw new RuntimeException();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -189,7 +195,7 @@ public class DocumentHandlerTest {
               throws IOException {
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -203,7 +209,7 @@ public class DocumentHandlerTest {
             response.respondNotModified();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
@@ -218,7 +224,7 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -233,7 +239,7 @@ public class DocumentHandlerTest {
             response.respondNotModified();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -248,7 +254,7 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
   }
@@ -263,7 +269,7 @@ public class DocumentHandlerTest {
             response.setContentType("text/plain");
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -278,7 +284,7 @@ public class DocumentHandlerTest {
             response.setMetadata(Metadata.EMPTY);
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
@@ -296,10 +302,6 @@ public class DocumentHandlerTest {
               response.respondNotModified();
               return;
             }
-            if (!request.needDocumentContent()) {
-              response.getOutputStream();
-              return;
-            }
             response.setContentType("text/plain");
             response.setMetadata(Metadata.EMPTY);
             response.getOutputStream();
@@ -307,14 +309,14 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    handler = createDefaultHandlerForAdaptor(adaptor);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     ex.getRequestHeaders().set("If-Modified-Since",
                                "Thu, 1 Jan 1970 00:00:01 GMT");
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
 
-    ex = new MockHttpExchange("http", "GET", "/",
-                              new MockHttpContext(handler, "/"));
+    MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
+        new MockHttpContext(handler, "/"));
     ex.getRequestHeaders().set("If-Modified-Since",
                                "Thu, 1 Jan 1970 00:00:00 GMT");
     handler.handle(ex);
@@ -340,9 +342,11 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        adaptor, false, "localhost", new String[0], null, null);
+        adaptor, false, "localhost", new String[0], null,
+        createSessionManager());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -351,7 +355,13 @@ public class DocumentHandlerTest {
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        adaptor, false, "localhost", new String[0], null, null);
+        adaptor, false, "localhost", new String[0], null,
+        createSessionManager());
+  }
+
+  private SessionManager<HttpExchange> createSessionManager() {
+    return new SessionManager<HttpExchange>(
+        new SessionManager.HttpExchangeCookieAccess(), 1000, 1000);
   }
 
   @Test

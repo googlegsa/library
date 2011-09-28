@@ -15,11 +15,16 @@
 package adaptorlib;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import org.opensaml.DefaultBootstrap;
+import org.opensaml.xml.ConfigurationException;
+
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -29,8 +34,10 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 import javax.net.ssl.SSLContext;
@@ -51,6 +58,9 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       = new DefaultGetDocIdsErrorHandler();
   private Scheduler pushScheduler;
   private int pushingDocIds;
+  private HttpServer server;
+  private CircularLogRpcMethod circularLogRpcMethod;
+  private Thread shutdownHook;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     // TODO(ejona): allow the adaptor to choose whether it wants this feature
@@ -64,11 +74,15 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   }
 
   /** Starts listening for communications from GSA. */
-  public void beginListeningForContentRequests() throws IOException {
+  public synchronized void beginListeningForContentRequests()
+      throws IOException {
+    if (server != null) {
+      throw new IllegalStateException("Already listening");
+    }
+
     int port = config.getServerPort();
     boolean secure = config.isServerSecure();
     InetSocketAddress addr = new InetSocketAddress(port);
-    HttpServer server;
     if (!secure) {
       server = HttpServer.create(addr, 0);
     } else {
@@ -89,25 +103,35 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         throw new RuntimeException(ex);
       }
     }
-    server.createContext("/dashboard", new DashboardHandler(config, journal));
-    server.createContext("/rpc", new RpcHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), this));
-    server.createContext("/stat", new StatHandler(config, journal));
+    // If the port is zero, then the OS chose a port for us. This is mainly
+    // useful during testing.
+    port = server.getAddress().getPort();
+    config.setValue("server.port", "" + port);
 
-    SessionManager<HttpExchange> sessionManager = null;
-    AuthnHandler authnHandler = null;
-    if (secure) {
-       sessionManager = new SessionManager<HttpExchange>(
+    SessionManager<HttpExchange> sessionManager
+        = new SessionManager<HttpExchange>(
           new SessionManager.HttpExchangeCookieAccess(),
           30 * 60 * 1000 /* session lifetime: 30 minutes */,
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
+    AuthnHandler authnHandler = null;
+    if (secure) {
+      try {
+        DefaultBootstrap.bootstrap();
+      } catch (ConfigurationException ex) {
+        throw new RuntimeException(ex);
+      }
+      SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
+          config.getServerPort(), config.getGsaHostname());
+
       server.createContext("/samlassertionconsumer",
           new SamlAssertionConsumerHandler(config.getServerHostname(),
             config.getGsaCharacterEncoding(), sessionManager));
       authnHandler = new AuthnHandler(config.getServerHostname(),
           config.getGsaCharacterEncoding(), sessionManager,
-          config.getGsaHostname(), config.getServerKeyAlias(),
-          config.getServerPort());
+          config.getServerKeyAlias(), metadata);
+      server.createContext("/saml-authz", new SamlBatchAuthzHandler(
+          config.getServerHostname(), config.getGsaCharacterEncoding(),
+          adaptor, this, metadata));
     }
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
@@ -117,10 +141,65 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager));
+
+    server.createContext("/dashboard",
+        createAdminSecurityHandler(new DashboardHandler(config, journal),
+                                       config, sessionManager, secure));
+    server.createContext("/rpc",
+        createAdminSecurityHandler(createRpcHandler(), config,
+                                       sessionManager, secure));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
+    shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
+    Runtime.getRuntime().addShutdownHook(shutdownHook);
+  }
+
+  /**
+   * Stop the current services, allowing up to {@code maxDelay} seconds for
+   * things to shutdown.
+   */
+  public synchronized void stop(int maxDelay) {
+    if (circularLogRpcMethod != null) {
+      circularLogRpcMethod.close();
+      circularLogRpcMethod = null;
+    }
+    if (shutdownHook != null) {
+      try {
+        Runtime.getRuntime().removeShutdownHook(shutdownHook);
+      } catch (IllegalStateException ex) {
+        // Already executing hook.
+      }
+      shutdownHook = null;
+    }
+    if (pushScheduler != null) {
+      pushScheduler.cancel();
+      pushScheduler = null;
+    }
+    if (server != null) {
+      server.stop(maxDelay);
+      server = null;
+    }
+  }
+
+  private AdministratorSecurityHandler createAdminSecurityHandler(
+      HttpHandler handler, Config config,
+      SessionManager<HttpExchange> sessionManager, boolean secure) {
+    return new AdministratorSecurityHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), handler, sessionManager,
+        config.getGsaHostname(), secure);
+  }
+
+  private synchronized RpcHandler createRpcHandler() {
+    RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), this);
+    rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
+    circularLogRpcMethod = new CircularLogRpcMethod();
+    rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
+    rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
+    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
+    return rpcHandler;
   }
 
   /**
@@ -362,6 +441,63 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
+    }
+  }
+
+  private class ShutdownHook implements Runnable {
+    @Override
+    public void run() {
+      // Allow three seconds for things to stop.
+      stop(3);
+    }
+  }
+
+  class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
+    @Override
+    public Object run(List request) {
+      boolean pushStarted = checkAndBeginPushDocIdsImmediately(null);
+      if (!pushStarted) {
+        throw new RuntimeException("A push is already in progress");
+      }
+      return 1;
+    }
+  }
+
+  static class CircularLogRpcMethod implements RpcHandler.RpcMethod, Closeable {
+    private final CircularBufferHandler circularLog
+        = new CircularBufferHandler();
+
+    /**
+     * Installs a log handler; to uninstall handler, call {@link #close}.
+     */
+    public CircularLogRpcMethod() {
+      LogManager.getLogManager().getLogger("").addHandler(circularLog);
+    }
+
+    @Override
+    public Object run(List request) {
+      return circularLog.writeOut();
+    }
+
+    @Override
+    public void close() {
+      LogManager.getLogManager().getLogger("").removeHandler(circularLog);
+    }
+  }
+
+  static class ConfigRpcMethod implements RpcHandler.RpcMethod {
+    private final Config config;
+
+    public ConfigRpcMethod(Config config) {
+      this.config = config;
+    }
+
+    public Object run(List request) {
+      TreeMap<String, String> configMap = new TreeMap<String, String>();
+      for (String key : config.getAllKeys()) {
+        configMap.put(key, config.getValue(key));
+      }
+      return configMap;
     }
   }
 }

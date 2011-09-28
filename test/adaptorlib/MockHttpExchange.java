@@ -166,6 +166,10 @@ public class MockHttpExchange extends HttpExchange {
 
   /* ** Additional Methods for Mocking ** */
 
+  public void setRequestBody(byte[] bytes) {
+    setRequestBody(new ByteArrayInputStream(bytes));
+  }
+
   public void setRequestBody(InputStream i) {
     requestBodyOrig = i;
     requestBody = requestBodyOrig;

@@ -36,7 +36,11 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 abstract class AbstractHandler implements HttpHandler {
-  private static final String ATTR_HEADERS_SENT
+  /**
+   * Attribute of {@link HttpExchange} that is {@code true} if the HTTP headers
+   * have already been sent for the exchange, and unset otherwise.
+   */
+  public static final String ATTR_HEADERS_SENT
       = AbstractHandler.class.getName() + ".headers-sent";
 
   private static final Logger log
@@ -183,12 +187,13 @@ abstract class AbstractHandler implements HttpHandler {
   }
 
   /**
-   * Redirect client to {@code location}.
+   * Redirect client to {@code location}. The client should retrieve the
+   * referred location via GET, independent of the method of this request.
    */
   public void sendRedirect(HttpExchange ex, URI location)
       throws IOException {
     ex.getResponseHeaders().set("Location", location.toString());
-    respond(ex, 307 /* Temporary redirect */, null, null);
+    respond(ex, HttpURLConnection.HTTP_SEE_OTHER, null, null);
   }
 
   /**
@@ -245,6 +250,7 @@ abstract class AbstractHandler implements HttpHandler {
       logRequest(ex);
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
+      ex.getResponseHeaders().set("Date", dateFormat.get().format(new Date()));
       meteredHandle(ex);
     } catch (Exception e) {
       Boolean headersSent = (Boolean) ex.getAttribute(ATTR_HEADERS_SENT);

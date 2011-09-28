@@ -23,11 +23,24 @@
   <property name="jersey-core.jar" location="${lib.dir}/jersey-core-1.3.jar"/>
   <property name="jsr311-api.jar" location="${lib.dir}/jsr311-api-1.1.1.jar"/>
   <property name="json-simple.jar" location="${lib.dir}/json_simple-1.1.jar"/>
+  <property name="gdata-core.jar" location="${lib.dir}/gdata-core-1.0.jar"/>
+  <property name="gdata-gsa.jar" location="${lib.dir}/gdata-gsa-1.0.jar"/>
   <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
+
+  <path id="adaptorlib.build.classpath">
+    <pathelement location="${opencsv.jar}"/>
+    <pathelement location="${j-calais.jar}"/>
+    <pathelement location="${json-simple.jar}"/>
+    <pathelement location="${gdata-core.jar}"/>
+    <pathelement location="${gdata-gsa.jar}"/>
+    <path refid="secmgr.build.classpath"/>
+  </path>
 
   <path id="adaptorlib.run.classpath">
     <pathelement location="${resource.dir}"/>
     <pathelement location="${json-simple.jar}"/>
+    <pathelement location="${gdata-core.jar}"/>
+    <pathelement location="${gdata-gsa.jar}"/>
     <path refid="secmgr.run.classpath"/>
     <path refid="opensaml.run.classpath"/>
   </path>
@@ -106,10 +119,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
-      <classpath location="${opencsv.jar}"/>
-      <classpath location="${j-calais.jar}"/>
-      <classpath location="${json-simple.jar}"/>
-      <classpath refid="secmgr.build.classpath"/>
+      <classpath refid="adaptorlib.build.classpath"/>
       <include name="adaptorlib/**"/>
     </javac>
 
@@ -132,6 +142,8 @@
     <jar destfile="${dist.dir}/adaptor.jar" basedir="${build-src.dir}"
       excludes="adaptorlib/examples/**,adaptorlib/prebuilt/**">
       <zipfileset includes="**/*.class" src="${json-simple.jar}"/>
+      <zipfileset includes="**/*.class" src="${gdata-core.jar}"/>
+      <zipfileset includes="**/*.class" src="${gdata-gsa.jar}"/>
       <fileset dir="${resource.dir}"/>
     </jar>
     <jar destfile="${dist.dir}/adaptor-prebuilt.jar" basedir="${build-src.dir}"
@@ -155,10 +167,7 @@
   <target name="javadoc" description="Build JavaDocs">
     <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}"
         overview="${src.dir}/overview.html" packagenames="adaptorlib,adaptorlib.**">
-      <classpath location="${opencsv.jar}"/>
-      <classpath location="${j-calais.jar}"/>
-      <classpath location="${json-simple.jar}"/>
-      <classpath refid="secmgr.build.classpath"/>
+      <classpath refid="adaptorlib.build.classpath"/>
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="http://download.oracle.com/javase/6/docs/api/"/>
       <arg value="-quiet"/>
@@ -223,18 +232,11 @@
     <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true">
       <sysproperty key="net.sourceforge.cobertura.datafile"
         file="${build-instrument.dir}/cobertura.ser"/>
+      <classpath refid="adaptorlib.run.classpath"/>
       <classpath refid="cobertura.classpath"/>
       <classpath location="${junit.jar}"/>
       <classpath location="${opencsv.jar}"/>
       <classpath location="${j-calais.jar}"/>
-      <classpath location="${guava.jar}"/>
-      <classpath location="${jackson-core-asl.jar}"/>
-      <classpath location="${jackson-jaxrs.jar}"/>
-      <classpath location="${jackson-mapper-asl.jar}"/>
-      <classpath location="${jersey-client.jar}"/>
-      <classpath location="${jersey-core.jar}"/>
-      <classpath location="${jsr311-api.jar}"/>
-      <classpath location="${json-simple.jar}"/>
       <classpath location="${build-instrument.dir}"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>

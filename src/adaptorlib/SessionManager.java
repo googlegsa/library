@@ -61,10 +61,14 @@ class SessionManager<E> {
   }
 
   public Session getSession(E cookieState) {
+    return getSession(cookieState, true);
+  }
+
+  public Session getSession(E cookieState, boolean create) {
     String value = cookieAccess.getCookie(cookieState, COOKIE_NAME);
     if (value == null) {
-      // No pre-existing session found. Create a new one.
-      return createSession(cookieState);
+      // No pre-existing session found.
+      return create ? createSession(cookieState) : null;
     }
 
     synchronized (this) {

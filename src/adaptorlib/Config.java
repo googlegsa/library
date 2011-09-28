@@ -306,7 +306,7 @@ public class Config {
       if (parts.length < 2) {
         break;
       }
-      config.setProperty(parts[0], parts[1]);
+      setValue(parts[0], parts[1]);
     }
     Set<String> unset = new HashSet<String>();
     for (String key : noDefaultConfig) {
@@ -351,5 +351,13 @@ public class Config {
     } else {
       defaultConfig.setProperty(key, defaultValue);
     }
+  }
+
+  /**
+   * Manually set a configuration value. Depending on when called, it can
+   * override a user's configuration, which should be avoided.
+   */
+  void setValue(String key, String value) {
+    config.setProperty(key, value);
   }
 }
