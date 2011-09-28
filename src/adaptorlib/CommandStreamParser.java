@@ -14,8 +14,6 @@
 
 package adaptorlib;
 
-import com.google.common.collect.ImmutableMap;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,33 +24,31 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.print.DocFlavor;
-
 /**
- * This class parses the adaptor data format into individual commands with
- * associated data. The data format is as follows:
+ * Parses the adaptor data format into individual commands with
+ * associated data.<p>
  *
  * This format is used for communication between the adaptor library and
  * various command line adaptor components (lister, retriever, transformer,
  * authorizor, etc.). It supports responses coming back from the command
- * line adaptor implementation. The format support a mixture of
- * character and binary data. All character data is encoded in UTF-8.
- * Header Format
+ * line adaptor implementation. The format supports a mixture of
+ * character and binary data. All character data must be encoded in UTF-8.<p>
+ * <h3>Header Format</h3>
  *
- * Communications (via either file or stream) begin with the header:
- *
- * "GSA Adaptor Data Version 1 [<delimiter>]".
+ * Communications (via either file or stream) begin with the header:<p>
+ *   
+ * {@code GSA Adaptor Data Version 1 [<delimiter>]}<p>
  *
  * The version number must be proceeded by a single space and followed
  * by a single space. The version number may increase in the future
- * should the format be enhanced.
+ * should the format be enhanced.<p>
  *
  * The string between the two square brackets will be used as the delimiter
  * for the remainder of the file being read or for the duration of the
- * communication session.
+ * communication session.<p>
  *
- * Though the delimiter can be any string of characters, care must be taken
- * that this same character string can never occur in a document ID, metadata
+ * Care must be taken that the delimiter character string
+ * can never occur in a document ID, metadata
  * name, metadata value, user name, or any other data that will be represented
  * using the format with the exception of document contents, which can contain
  * the delimiter string. The safest delimiter is likely to be the null
@@ -63,62 +59,70 @@ import javax.print.DocFlavor;
  * document paths, etc. If in doubt, the null character is recommended.
  * A delimiter can be made up of more than one character so it is possible
  * to have a delimiter that is <CR><LF> or a highly unique string (such as a
- * GUID) that has an exceptionally low probability of occurring in the data.
+ * GUID) that has an exceptionally low probability of occurring in the data.<p>
  *
- * The following characters may not be used in the delimiter:
- * 'A'-'Z', 'a'-'z' and '0'-'9' the alphanumeric characters
- * ':'  colon
- * '/'  slash
- * '-'  hyphen
- * '_'  underscore
- * ' '  space
- * '=' equals
- * '+' plus
- * ‘[‘ left square bracket
- * ‘]’ right square bracket
- * Body Format
+ * The following characters may not be used in the delimiter:<p>
+ * 'A'-'Z', 'a'-'z' and '0'-'9' the alphanumeric characters<br>
+ * ':'  colon<br>
+ * '/'  slash<br>
+ * '-'  hyphen<br>
+ * '_'  underscore<br>
+ * ' '  space<br>
+ * '=' equals<br>
+ * '+' plus<br>
+ * '[' left square bracket<br>
+ * ']' right square bracket<p>
  *
+ *<h3>Body Format</h3>
  * Elements in the file start with one of the following commands. Commands
  * where data precedes the next delimiter include an equal sign. Commands
- * that are immediately followed by a delimiter do not include an equal sign.
+ * that are immediately followed by a delimiter do not include an equal sign.<p>
  *
- * "id=" - specifies a document id
- * "last-crawled=" - specifies the last time the GSA crawled the associated
- *                 document in milliseconds from epoch.
- * "up-to-date=" - specifies (true or false) for whether a document is
- *               up-to-date based upon its last-crawled time.
+ * "id=" -- specifies a document id<p>
+ * "last-crawled=" -- specifies the last time the GSA crawled the associated
+ *                    document in milliseconds from epoch.<p>
+ * "up-to-date=" -- specifies (true or false) for whether a document is
+ *                  up-to-date based upon its last-crawled time.<p>
  * "id-list" -- specified a list of document ids, separated by the
- *            delimiter character, the list is terminated by two
- *            consecutive delimiters or EOS (End-Of-Stream)
- * "meta-name=" -- specifies a metadata name associated with the most recent id
+ *              delimiter character, the list is terminated by two
+ *              consecutive delimiters or EOS (End-Of-Stream)<p>
+ * "meta-name=" -- specifies a metadata name associated with the most recent id<p>
  * "meta-value=" -- specifies a metadata value associated with the
- *                previous metadata-name
+ *                  previous metadata-name<p>
  * "content-to-end" -- signals the beginning of binary content to the end
- *                   of the file or stream
+ *                     of the file or stream<p>
  * "content-to-marker" -- signals the beginning of binary content that
- *                      continues until the following marker is encountered
- * 4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B
+ *                        continues until the following marker is encountered<br>
+ * 4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B<p>
  *
  * "content-bytes=" -- marks the beginning of binary content that runs for the
- *                   specified number of bytes.
+ *                     specified number of bytes.<p>
  *
  *
- * Empty entries (Two consecutive delimiters are treated as one. Reaching
+ * Two or more consecutive delimiters are treated as one. Reaching
  *     end of file or end of stream terminates the data transmission.
- * Examples
+ *     
+ * <h3>Examples</h3>
  *
- * Example 1:
+ * Example 1:<p>
  *
- * GSA Adaptor Data Version 1
+ * <pre>
+ * {@code
+ * GSA Adaptor Data Version 1 [<delimiter>]
  * id-list
  * /home/repository/docs/file1
  * /home/repository/docs/file2
  * /home/repository/docs/file3
  * /home/repository/docs/file4
  * /home/repository/docs/file5
- * Example 2:
+ * }
+ * </pre>
+ * 
+ * Example 2:<p>
  *
- * GSA Adaptor Data Version 1
+ * <pre>
+ * {@code
+ * GSA Adaptor Data Version 1 [<delimiter>]
  * id=/home/repository/docs/file1
  * id=/home/repository/docs/file2
  * meta-name=GoogleAdaptor:CrawlImmediately
@@ -136,9 +140,14 @@ import javax.print.DocFlavor;
  * id=/home/repository/docs/file3
  * id=/home/repository/docs/file4
  * id=/home/repository/docs/file5
- * Example 3:
+ * }
+ * </pre>
+ * 
+ * Example 3:<p>
  *
- * GSA Adaptor Data Version 1
+ * <pre>
+ * {@code
+ * GSA Adaptor Data Version 1 [<delimiter>]
  * id=/home/repository/docs/file2
  * meta-name=GoogleAdaptor:CrawlImmediately
  * meta-content=true
@@ -146,28 +155,37 @@ import javax.print.DocFlavor;
  * meta-content=20110803 16:07:23
  * meta-name=Department
  * meta-content=Engineering
- * Example 5:
+ * }
+ * </pre>
+ *
+ * Example 4:<p>
  *
  *
+ * <pre>
+ * {@code
  * meta-name=Creator
  * meta-content=howardhawks
- * content
+ * content-to-end
  * <binary content to the end of the file>
- * Example 4:
+ * }
+ * </pre>
  *
- * GSA Adaptor Data Version 1
+ * Example 5:<p>
+ *
+ * <pre>
+ * {@code
+ * GSA Adaptor Data Version 1 [<delimiter>]
  * id=/home/repository/docs/file1
  * content-bytes=32432
  * <binary content for 32432 bytes>
  * id=/home/repository/docs/file2
- * content-base64
- * <base64 content until next delimiter>
  * id=/home/repository/docs/file3
- * content-filepath=/home/source files/file3.docGSA Adaptor Data Version 1
  * id=/home/repository/docs/file3
- * content
+ * content-to-marker
  * <arbitrary block of binary content>
  * 4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B
+ * }
+ * </pre>
  *
  */
 public class CommandStreamParser {
@@ -194,6 +212,10 @@ public class CommandStreamParser {
 
   public static enum CommandType {ID, META_NAME, META_VALUE, CONTENT, LAST_CRAWLED, UP_TO_DATE}
 
+  private ByteCharInputStream hybridStream;
+  private String delimiter;
+  private boolean inIdList;
+  
   CommandStreamParser(InputStream inputStream) {
     hybridStream = new ByteCharInputStream(inputStream);
     inIdList = false;
@@ -222,10 +244,6 @@ public class CommandStreamParser {
       this.contents = contents;
     }
   }
-
-  private ByteCharInputStream hybridStream;
-  private String delimiter;
-  private boolean inIdList;
 
   private static class CommandWithArgCount {
     CommandType commandType;
@@ -299,6 +317,7 @@ public class CommandStreamParser {
     } else if (tokens[0].equals("content-bytes")) {
         int byteCount = Integer.parseInt(tokens[1]);
         content = readBytes(byteCount);
+        argument = null;
     }
 
     return new Command(commandWithArgCount.getCommandType(), argument, content);
@@ -312,7 +331,7 @@ public class CommandStreamParser {
    */
   public int readHeader() throws IOException {
     String line = hybridStream.readToDelimiter("[");
-    if ((line.length() < HEADER_PREFIX.length()) ||
+    if ((line == null) || (line.length() < HEADER_PREFIX.length()) ||
         !line.substring(0, HEADER_PREFIX.length()).equals(HEADER_PREFIX)) {
       throw new IOException("Adaptor data must begin with '" + HEADER_PREFIX + "'");
     }
@@ -320,11 +339,11 @@ public class CommandStreamParser {
     String versionNumber = line.substring(HEADER_PREFIX.length());
     if (!versionNumber.equals(" 1 ")) {
       throw new IOException("Adaptor format version '" + versionNumber + "' is not supported. " +
-          "(Is there a single space preceeding and following the version number?");
+          "(Is there a single space preceeding and following the version number?)");
     }
 
     delimiter = hybridStream.readToDelimiter("]");
-    if (delimiter.length() < 1) {
+    if ((delimiter == null) || (delimiter.length() < 1)) {
       throw new IOException("Delimiter must be at least one character long.");
     }
 
@@ -335,26 +354,22 @@ public class CommandStreamParser {
        throw new IOException("Invalid character in delimiter.");
     }
 
-  return Integer.parseInt(versionNumber.substring(1,2));
+    return Integer.parseInt(versionNumber.substring(1, 2));
   }
 
   /**
-   * Starting with the second byte in the buffer,
-   * search for the first occurrence of the first byte
-   * in the data end marker.
+   * Assuming the provided buffer does not match {@code END_BINARY_MARKER},
+   * determine the next possible matching position. Naively this could simply
+   * return {@code 1}, since that is a possible matching position, but
+   * instead it tries to be a bit smarter by finding the next occurrence of
+   * the first byte of {@code END_BINARY_MARKER}.
    *
-   * @param buffer bytes to searched.
-   * @return The number of places to shift the data in
-   *         order to move the first end marker byte
-   *         to the beginning of the buffer. If this
-   *         byte is found then shift
-   *         the entire buffer.
+   * @param buffer to search.
+   * @return The number of places to shift the data in order to move the
+   *         first end marker byte to the beginning of the buffer. If this
+   *         byte is not found then the the entire buffer length is returned.
    */
   private int shiftDistance(byte[] buffer) {
-    // Starting with the second byte in the buffer,
-    // Look for the first occurrence of the first byte
-    // in the data end marker.
-    // return the
     for (int i = 1; i < buffer.length; i++) {
       if (buffer[i] == END_BINARY_MARKER[0]) {
         return i;

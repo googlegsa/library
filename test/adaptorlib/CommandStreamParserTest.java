@@ -194,7 +194,7 @@ public class CommandStreamParserTest {
     checkCommand(CommandType.META_NAME, "project", null, parser.readCommand());
     checkCommand(CommandType.META_VALUE, "plexi", null, parser.readCommand());
     checkCommand(CommandType.CONTENT, null, "abcdefg".getBytes(), parser.readCommand());
-    checkCommand(CommandType.CONTENT, "5", "12345".getBytes(), parser.readCommand());
+    checkCommand(CommandType.CONTENT, null, "12345".getBytes(), parser.readCommand());
     checkCommand(CommandType.CONTENT, null, "2468".getBytes(), parser.readCommand());
   }
 
