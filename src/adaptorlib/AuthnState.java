@@ -39,6 +39,7 @@ class AuthnState {
   private long expirationTimeMillis;
 
   public void startAttempt(SamlClient client, URI originalUri) {
+    expirationTimeMillis = 0;
     this.client = client;
     this.originalUri = originalUri;
   }

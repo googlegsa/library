@@ -78,7 +78,7 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
                     + "browser.");
       return;
     }
-    if (authnState != null && authnState.isAuthenticated()) {
+    if (authnState.isAuthenticated()) {
       // TODO(ejona): keep track of each request, so that we can redirect here
       cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT, "text/plain",
                     "You are already authenticated. Retry accessing the "

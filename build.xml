@@ -126,10 +126,10 @@
     <mkdir dir="${build-test.dir}"/>
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
       includeantruntime="false" encoding="utf-8">
+      <compilerarg value="-Xlint:unchecked"/>
+      <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
-      <classpath location="${j-calais.jar}"/>
-      <classpath location="${json-simple.jar}"/>
     </javac>
   </target>
 
