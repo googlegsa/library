@@ -23,7 +23,6 @@ import org.junit.rules.ExpectedException;
 
 import java.io.*;
 import java.util.*;
-import java.net.URI;
 import java.nio.charset.Charset;
 
 /**
@@ -33,8 +32,8 @@ public class DocumentHandlerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private DocumentHandler handler = createDefaultHandlerForAdaptor(
-      new MockAdaptor());
+  private MockAdaptor mockAdaptor = new MockAdaptor();
+  private DocumentHandler handler = createDefaultHandlerForAdaptor(mockAdaptor);
   private MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
       new MockHttpContext(handler, "/"));
 
@@ -59,7 +58,7 @@ public class DocumentHandlerTest {
         new String[] {"127.0.0.3", " "}, null, createSessionManager());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
+    assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
   }
 
   @Test
@@ -84,7 +83,7 @@ public class DocumentHandlerTest {
         new String[0], null, createSessionManager());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
+    assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
   }
 
   @Test
@@ -111,7 +110,7 @@ public class DocumentHandlerTest {
   public void testNormal() throws Exception {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
+    assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
   }
 
   @Test
@@ -391,36 +390,4 @@ public class DocumentHandlerTest {
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
   }
 
-  private static class MockAdaptor extends AbstractAdaptor {
-    @Override
-    public void getDocIds(DocIdPusher pusher) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void getDocContent(Request request, Response response)
-        throws IOException {
-      response.getOutputStream().write(new byte[] {1, 2, 3});
-    }
-  }
-
-  private static class PrivateMockAdaptor extends MockAdaptor {
-    @Override
-    public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                    Set<String> groups,
-                                                    Collection<DocId> ids) {
-      Map<DocId, AuthzStatus> result
-          = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
-      for (DocId id : ids) {
-        result.put(id, AuthzStatus.DENY);
-      }
-      return Collections.unmodifiableMap(result);
-    }
-  }
-
-  private static class MockDocIdDecoder implements DocIdDecoder {
-    public DocId decodeDocId(URI uri) {
-      return new DocId(uri.toString());
-    }
-  }
 }

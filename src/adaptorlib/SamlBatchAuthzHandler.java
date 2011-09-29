@@ -41,12 +41,16 @@ import java.io.IOException;
 import java.net.*;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.logging.*;
 
 /**
  * Handler for responding to late-binding, SAML batch authorization requests
  * from the GSA.
  */
 class SamlBatchAuthzHandler extends AbstractHandler {
+  private static final Logger log
+      = Logger.getLogger(SamlBatchAuthzHandler.class.getName());
+
   private final String defaultHostname;
   private final Adaptor adaptor;
   private final SamlMetadata metadata;
@@ -69,6 +73,11 @@ class SamlBatchAuthzHandler extends AbstractHandler {
           "Unsupported request method");
       return;
     }
+    if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
+      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
+                    "Not found");
+      return;
+    }
     // Setup SAML context.
     SAMLMessageContext<AuthzDecisionQuery, Response, NameID> context
         = OpenSamlUtil.makeSamlMessageContext();
@@ -83,9 +92,15 @@ class SamlBatchAuthzHandler extends AbstractHandler {
       try {
         decoder.decode(context);
       } catch (MessageDecodingException e) {
-        throw new IOException(e);
+        log.log(Level.INFO, "Error decoding message", e);
+        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
+                      "Error decoding message");
+        return;
       } catch (SecurityException e) {
-        throw new IOException(e);
+        log.log(Level.WARNING, "Security error while decoding message", e);
+        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
+                      "Security error while decoding message");
+        return;
       } catch (IndexOutOfBoundsException e) {
         // Normal indication that there are no more messages to decode.
         break;
@@ -94,7 +109,15 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     }
 
     // Figure out if the user is authorized.
-    List<Response> responses = processQueries(queries, getRequestUri(ex));
+    List<Response> responses;
+    try {
+      responses = processQueries(queries, getRequestUri(ex));
+    } catch (IllegalArgumentException e) {
+      log.log(Level.INFO, "Error processing queries", e);
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
+                    e.getMessage());
+      return;
+    }
 
     // Encode response.
     HTTPSOAP11MultiContextEncoder encoder = new HTTPSOAP11MultiContextEncoder();
@@ -126,7 +149,17 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     String userIdentifier = null;
     for (AuthzDecisionQuery query : queries) {
       String resource = query.getResource();
+      if (resource == null) {
+        throw new IllegalArgumentException("Queries need a resource");
+      }
+      if (query.getSubject() == null
+          || query.getSubject().getNameID() == null) {
+        throw new IllegalArgumentException("Queries need a subject");
+      }
       String subject = query.getSubject().getNameID().getValue();
+      if (subject == null) {
+        throw new IllegalArgumentException("Queries need a subject");
+      }
       if (userIdentifier != null) {
         if (!userIdentifier.equals(subject)) {
           throw new IllegalArgumentException(
@@ -149,9 +182,6 @@ class SamlBatchAuthzHandler extends AbstractHandler {
 
     // Ask the Adaptor if the user is allowed.
     docIds = Collections.unmodifiableMap(docIds);
-    if (userIdentifier == null) {
-      throw new IllegalArgumentException("Queries need a subject");
-    }
     // TODO(ejona): figure out how to get groups
     Map<DocId, AuthzStatus> statuses = adaptor.isUserAuthorized(userIdentifier,
         Collections.<String>emptySet(), docIds.values());

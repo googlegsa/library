@@ -115,11 +115,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
     AuthnHandler authnHandler = null;
     if (secure) {
-      try {
-        DefaultBootstrap.bootstrap();
-      } catch (ConfigurationException ex) {
-        throw new RuntimeException(ex);
-      }
+      bootstrapOpenSaml();
       SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
           config.getServerPort(), config.getGsaHostname());
 
@@ -154,6 +150,15 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     log.info("server is listening on port #" + port);
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
+  }
+
+  // Useful as a separate method during testing.
+  static void bootstrapOpenSaml() {
+    try {
+      DefaultBootstrap.bootstrap();
+    } catch (ConfigurationException ex) {
+      throw new RuntimeException(ex);
+    }
   }
 
   /**
