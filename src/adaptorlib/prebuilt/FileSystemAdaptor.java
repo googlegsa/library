@@ -18,8 +18,8 @@ import adaptorlib.*;
 
 import java.io.*;
 import java.util.ArrayList;
-import java.util.regex.*;
 import java.util.logging.Logger;
+import java.util.regex.*;
 
 /**
  * Adaptor serving files from current directory

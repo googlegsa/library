@@ -22,8 +22,8 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.*;
-import java.util.*;
 import java.nio.charset.Charset;
+import java.util.*;
 
 /**
  * Tests for {@link DocumentHandlerTest}.

@@ -18,7 +18,6 @@ package adaptorlib;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -78,7 +77,7 @@ public class ByteCharInputStreamTest {
 
   @Test
   public void testByteRead() throws IOException {
-    byte[] source = {-128, -127, -126, -125,-3, -2, -1, 0, 1, 2, 3, 125, 126, 127};
+    byte[] source = {-128, -127, -126, -125, -3, -2, -1, 0, 1, 2, 3, 125, 126, 127};
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteCharInputStream byteCharStream = new ByteCharInputStream(inputStream);
@@ -96,7 +95,7 @@ public class ByteCharInputStreamTest {
 
   @Test
   public void testByteReadPastEndOfStream() throws IOException {
-    byte[] source = {-128, -127, -126, -125,-3, -2, -1, 0, 1, 2, 3, 125, 126, 127};
+    byte[] source = {-128, -127, -126, -125, -3, -2, -1, 0, 1, 2, 3, 125, 126, 127};
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteCharInputStream byteCharStream = new ByteCharInputStream(inputStream);
@@ -114,7 +113,7 @@ public class ByteCharInputStreamTest {
 
     String text1 = "ABC123 %^&\nĀÁÂḀ Ⓐ";
     String surrogatePair = "\uD803\uDC22"; // 'OLD TURKIC LETTER ORKHON EM' (U+10C22)
-    byte[] utf8ForSurrogatePair = {(byte)0xF0, (byte)0x90, (byte)0xB0, (byte)0xA2};
+    byte[] utf8ForSurrogatePair = {(byte) 0xF0, (byte) 0x90, (byte) 0xB0, (byte) 0xA2};
     String text1Delimiter = "\n";
     String text2 = "Μονάχη Laȝamon пустынных ტყაოსანი ಸಂಭವಿ\n";
 

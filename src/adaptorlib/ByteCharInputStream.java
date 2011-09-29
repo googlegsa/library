@@ -20,7 +20,6 @@ import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
-import java.util.Arrays;
 
 /**
  * An input stream than can be read as both a byte stream and a character stream.
@@ -30,12 +29,12 @@ public class ByteCharInputStream {
   private InputStream inputStream;
   private CharsetDecoder charsetDecoder;
 
-  private final int MAX_BYTES_IN_UTF8_CHAR = 6;
+  private static final int MAX_BYTES_IN_UTF8_CHAR = 6;
   private byte[] byteArray = new byte[MAX_BYTES_IN_UTF8_CHAR];
 
   public ByteCharInputStream(InputStream inputStream) {
     this.inputStream = inputStream;
-    this.charsetDecoder = Charset.availableCharsets().get("UTF-8").newDecoder( );
+    this.charsetDecoder = Charset.availableCharsets().get("UTF-8").newDecoder();
 
   }
 
@@ -68,7 +67,7 @@ public class ByteCharInputStream {
       if (bytesRead != byteCount - 1) {
         throw new IOException("Invalid UTF-8 Character");
       }
-      CharBuffer charBuffer = charsetDecoder.decode(ByteBuffer.wrap( byteArray, 0, byteCount));
+      CharBuffer charBuffer = charsetDecoder.decode(ByteBuffer.wrap(byteArray, 0, byteCount));
       return new String(charBuffer.array(), 0, charBuffer.length());
     }
   }

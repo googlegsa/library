@@ -15,7 +15,6 @@
 package adaptorlib;
 
 import adaptorlib.CommandStreamParser.CommandType;
-import adaptorlib.prebuilt.Command;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -86,8 +85,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testInvalidVersion() throws IOException {
-    String source = "GSA Adaptor Data Version 1a [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
-        "\nend-message";
+    String source = "GSA Adaptor Data Version 1a [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n" +
+        "id=789\nend-message";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -99,8 +98,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testUnsupportedVersion() throws IOException {
-    String source = "GSA Adaptor Data Version 2 [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
-        "\nend-message";
+    String source = "GSA Adaptor Data Version 2 [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n" +
+        "id=789\nend-message";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -205,7 +204,7 @@ public class CommandStreamParserTest {
     byte[] byteSource = new byte[256];
 
     byte value = -128;
-    for (int i = 0; i <=255; i++) {
+    for (int i = 0; i <= 255; i++) {
       byteSource[i] = value++;
     }
 

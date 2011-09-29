@@ -296,14 +296,14 @@ public class CommandStreamParser {
 
     CommandWithArgCount commandWithArgCount = STRING_TO_COMMAND.get(tokens[0]);
     if (commandWithArgCount == null) {
-      throw new IOException("Invalid Command '" + line +"'");
+      throw new IOException("Invalid Command '" + line + "'");
     }
 
     byte[] content = null;
     String argument = null;
 
     if (tokens.length != commandWithArgCount.getArgumentCount() + 1) {
-        throw new IOException("Invalid Command '" + line +"'");
+        throw new IOException("Invalid Command '" + line + "'");
     }
 
     if (commandWithArgCount.getArgumentCount() == 1) {
@@ -350,7 +350,7 @@ public class CommandStreamParser {
     Pattern pattern = Pattern.compile(DISALLOWED_DELIMITER_CHARS_REGEX);
     Matcher matcher = pattern.matcher(delimiter);
 
-    if(matcher.find()){
+    if (matcher.find()){
        throw new IOException("Invalid character in delimiter.");
     }
 

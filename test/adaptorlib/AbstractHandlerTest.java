@@ -22,8 +22,8 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
-import java.util.Date;
 import java.nio.charset.Charset;
+import java.util.Date;
 
 /**
  * Test cases for {@link AbstractHandler}.

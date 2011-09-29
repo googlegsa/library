@@ -16,8 +16,6 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import com.sun.net.httpserver.HttpExchange;
-
 import org.junit.*;
 
 import java.io.*;
