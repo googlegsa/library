@@ -39,9 +39,9 @@ public class ByteCharInputStream {
 
   }
 
-  public int read(byte[] bytes, int off, int len) throws IOException {
-      return inputStream.read(bytes, off, len);
-    }
+  public InputStream getInputStream() {
+    return inputStream;
+  }
 
   public int readFully(byte[] bytes, int off, int len) throws IOException {
     return IOHelper.readFully(inputStream, bytes, off, len);
