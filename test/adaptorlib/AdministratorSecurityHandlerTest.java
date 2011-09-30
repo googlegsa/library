@@ -29,7 +29,7 @@ import java.nio.charset.Charset;
 public class AdministratorSecurityHandlerTest {
   private SessionManager<HttpExchange> sessionManager
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
-          new SessionManager.HttpExchangeCookieAccess(), 10000, 1000);
+          new SessionManager.HttpExchangeClientStore(), 10000, 1000);
   private MockHttpHandler mockHandler = new MockHttpHandler();
   private AdministratorSecurityHandler handler
       = new AdministratorSecurityHandler("localhost", Charset.forName("UTF-8"),

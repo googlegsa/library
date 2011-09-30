@@ -115,10 +115,8 @@ class DocumentHandler extends AbstractHandler {
       DocId docId = docIdDecoder.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
 
-      boolean isAllowed;
       if (requestIsFromGsa(ex)) {
         journal.recordGsaContentRequest(docId);
-        isAllowed = true;
       } else {
         journal.recordNonGsaContentRequest(docId);
         // Default to anonymous.
@@ -137,26 +135,31 @@ class DocumentHandler extends AbstractHandler {
 
         Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(principal,
             groups, Collections.singletonList(docId));
+
         AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
         if (status == null) {
-          status = AuthzStatus.INDETERMINATE;
+          status = AuthzStatus.DENY;
           log.log(Level.WARNING, "Adaptor did not provide an authorization "
                   + "result for the requested DocId ''{0}''. Instead provided: "
                   + "{1}", new Object[] {docId, authzMap});
         }
-        isAllowed = (status == AuthzStatus.PERMIT);
-        if (!isAllowed && principal == null && authnHandler != null) {
-          // User was anonymous and document is not public, so try to authn
-          // user.
-          authnHandler.handle(ex);
-          return;
-        }
-      }
 
-      if (!isAllowed) {
-        cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
-                      "403: Forbidden");
-        return;
+        if (status == AuthzStatus.INDETERMINATE) {
+          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
+                        "Unknown document");
+          return;
+        } else if (status == AuthzStatus.DENY) {
+          if (principal == null && authnHandler != null) {
+            // User was anonymous and document is not public, so try to authn
+            // user.
+            authnHandler.handle(ex);
+            return;
+          } else {
+            cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
+                          "403: Forbidden");
+            return;
+          }
+        }
       }
 
       DocumentRequest request = new DocumentRequest(ex, docId,
@@ -182,18 +185,9 @@ class DocumentHandler extends AbstractHandler {
         httpResponseCode = response.httpResponseCode;
         metadata = response.metadata;
       } catch (FileNotFoundException e) {
+        log.log(Level.INFO, "FileNotFound during getDocContent", e);
         cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "Unknown document: " + e.getMessage());
-        return;
-      } catch (IOException e) {
-        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                      "IO Exception: " + e.getMessage());
-        return;
-      } catch (Exception e) {
-        log.log(Level.WARNING, "Unexpected exception from getDocContent", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                      "Exception (" + e.getClass().getName() + "): "
-                      + e.getMessage());
+                      "Unknown document");
         return;
       }
 

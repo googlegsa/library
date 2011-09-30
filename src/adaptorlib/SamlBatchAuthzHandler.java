@@ -140,7 +140,7 @@ class SamlBatchAuthzHandler extends AbstractHandler {
   }
 
   private List<Response> processQueries(List<AuthzDecisionQuery> queries,
-                                        URI requestUri) throws IOException {
+                                        URI requestUri) {
     DateTime now = new DateTime();
     // Convert URIs into DocIds, but maintain a mapping of the relationship to
     // later determine the relationship of query to response.
@@ -182,9 +182,15 @@ class SamlBatchAuthzHandler extends AbstractHandler {
 
     // Ask the Adaptor if the user is allowed.
     docIds = Collections.unmodifiableMap(docIds);
-    // TODO(ejona): figure out how to get groups
-    Map<DocId, AuthzStatus> statuses = adaptor.isUserAuthorized(userIdentifier,
-        Collections.<String>emptySet(), docIds.values());
+    Map<DocId, AuthzStatus> statuses;
+    try {
+      // TODO(ejona): figure out how to get groups
+      statuses = adaptor.isUserAuthorized(userIdentifier,
+          Collections.<String>emptySet(), docIds.values());
+    } catch (Exception e) {
+      log.log(Level.WARNING, "Exception while satisfying Authn query", e);
+      statuses = null;
+    }
     if (statuses == null) {
       statuses = Collections.emptyMap();
     }
@@ -192,13 +198,21 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     // For each query, build a SAML response based on Adaptor's response.
     List<Response> result = new ArrayList<Response>(queries.size());
     for (AuthzDecisionQuery query : queries) {
-      AuthzStatus status = null;
+      AuthzStatus status;
       DocId docId = docIds.get(query);
-      if (docId != null) {
-        status = statuses.get(docId);
-      }
-      if (status == null) {
+      if (docId == null) {
+        // URL doesn't belong to adaptor
         status = AuthzStatus.INDETERMINATE;
+      } else {
+        status = statuses.get(docId);
+        // INDETERMINATE means that the document doesn't exist, so the GSA must
+        // have an old copy of some file. It isn't safe to do anything but DENY.
+
+        // null means that the adaptor threw an exception or is buggy. The only
+        // safe thing to do is DENY.
+        if (status == null || status == AuthzStatus.INDETERMINATE) {
+          status = AuthzStatus.DENY;
+        }
       }
       result.add(createResponse(query, status, now));
     }

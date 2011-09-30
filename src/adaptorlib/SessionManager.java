@@ -27,10 +27,8 @@ import java.util.*;
  * created.
  */
 class SessionManager<E> {
-  private static final String COOKIE_NAME = "sessid";
-
   private final TimeProvider timeProvider;
-  private final CookieAccess<E> cookieAccess;
+  private final ClientStore<E> clientStore;
   private final Map<String, Session> sessions = new HashMap<String, Session>();
   private final Map<String, Long> lastAccess = new HashMap<String, Long>();
   /** Lifetime of sessions, in milliseconds. */
@@ -41,34 +39,35 @@ class SessionManager<E> {
   private final Random random = new SecureRandom();
 
   /**
+   * @param clientStore storage for communicating session id with client
    * @param sessionLifetime lifetime of sessions, in milliseconds
    * @param cleanupFrequency maximum frequency to check for expired sessions, in
    *    milliseconds
    */
-  public SessionManager(CookieAccess<E> cookieAccess, long sessionLifetime,
+  public SessionManager(ClientStore<E> clientStore, long sessionLifetime,
                         long cleanupFrequency) {
-    this(new SystemTimeProvider(), cookieAccess, sessionLifetime,
+    this(new SystemTimeProvider(), clientStore, sessionLifetime,
          cleanupFrequency);
   }
 
   protected SessionManager(TimeProvider timeProvider,
-                           CookieAccess<E> cookieAccess, long sessionLifetime,
+                           ClientStore<E> clientStore, long sessionLifetime,
                            long cleanupFrequency) {
     this.timeProvider = timeProvider;
-    this.cookieAccess = cookieAccess;
+    this.clientStore = clientStore;
     this.sessionLifetime = sessionLifetime;
     this.cleanupFrequency = cleanupFrequency;
   }
 
-  public Session getSession(E cookieState) {
-    return getSession(cookieState, true);
+  public Session getSession(E clientState) {
+    return getSession(clientState, true);
   }
 
-  public Session getSession(E cookieState, boolean create) {
-    String value = cookieAccess.getCookie(cookieState, COOKIE_NAME);
+  public Session getSession(E clientState, boolean create) {
+    String value = clientStore.retrieve(clientState);
     if (value == null) {
       // No pre-existing session found.
-      return create ? createSession(cookieState) : null;
+      return create ? createSession(clientState) : null;
     }
 
     synchronized (this) {
@@ -79,18 +78,18 @@ class SessionManager<E> {
       }
 
       // Could not find session specified. Assume it expired.
-      return createSession(cookieState);
+      return createSession(clientState);
     }
   }
 
-  protected synchronized Session createSession(E cookieState) {
+  protected synchronized Session createSession(E clientState) {
     cleanupExpiredSessions();
     Session session = new Session();
     byte[] rawId = new byte[16];
     random.nextBytes(rawId);
     String id = bytesToString(rawId);
     sessions.put(id, session);
-    cookieAccess.setCookie(cookieState, COOKIE_NAME, id);
+    clientStore.store(clientState, id);
     updateLastAccess(id);
     return session;
   }
@@ -155,15 +154,40 @@ class SessionManager<E> {
     return s;
   }
 
-  public static interface CookieAccess<E> {
-    public String getCookie(E cookieState, String cookieName);
+  /** A single-value storage per client. */
+  public static interface ClientStore<E> {
+    /** Returns the previously-stored value or {@code null}. */
+    public String retrieve(E clientState);
 
-    public void setCookie(E cookieState, String cookieName, String cookieValue);
+    /** Stores the value for this client. */
+    public void store(E clientState, String value);
   }
 
-  public static class HttpExchangeCookieAccess
-      implements CookieAccess<HttpExchange> {
-    public String getCookie(HttpExchange ex, String cookieName) {
+  public static class HttpExchangeClientStore
+      implements ClientStore<HttpExchange> {
+
+    private final String cookieName;
+    private final String exchangeAttributeName;
+
+    public HttpExchangeClientStore() {
+      this("sessid");
+    }
+
+    public HttpExchangeClientStore(String cookieName) {
+      if (cookieName == null) {
+        throw new NullPointerException();
+      }
+      this.cookieName = cookieName;
+      this.exchangeAttributeName = this.getClass().getName() + "." + cookieName;
+    }
+
+    @Override
+    public String retrieve(HttpExchange ex) {
+      String value = (String) ex.getAttribute(exchangeAttributeName);
+      if (value != null) {
+        return value;
+      }
+
       String cookies = ex.getRequestHeaders().getFirst("Cookie");
       if (cookies == null) {
         return null;
@@ -184,9 +208,10 @@ class SessionManager<E> {
       return null;
     }
 
-    public void setCookie(HttpExchange ex, String cookieName,
-                          String cookieValue) {
-      ex.getResponseHeaders().set("Set-Cookie", cookieName + "=" + cookieValue
+    @Override
+    public void store(HttpExchange ex, String value) {
+      ex.setAttribute(exchangeAttributeName, value);
+      ex.getResponseHeaders().set("Set-Cookie", cookieName + "=" + value
                                   + "; Path=/");
     }
   }

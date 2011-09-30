@@ -32,18 +32,108 @@ public class DocumentHandlerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
+  private SessionManager<HttpExchange> sessionManager
+      = new SessionManager<HttpExchange>(
+          new SessionManager.HttpExchangeClientStore(), 1000, 1000);
   private MockAdaptor mockAdaptor = new MockAdaptor();
   private DocumentHandler handler = createDefaultHandlerForAdaptor(mockAdaptor);
   private MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
-      new MockHttpContext(handler, "/"));
+      new MockHttpContext(null, "/"));
 
   @Test
-  public void testSecurity() throws Exception {
-    DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), false, "localhost", new String[0], null,
-        createSessionManager());
+  public void testSecurityDeny() throws Exception {
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecurityDenyWithAuthnHandler() throws Exception {
+    AbstractHandler authnHandler
+        = new AbstractHandler("localhost", Charset.forName("UTF-8")) {
+      @Override
+      protected void meteredHandle(HttpExchange ex) throws IOException {
+        cannedRespond(ex, 1234, "text/plain", "Testing");
+      }
+    };
+    DocumentHandler handler = new DocumentHandler("localhost",
+        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(), false,
+        "localhost", new String[0], authnHandler, sessionManager);
+    handler.handle(ex);
+    assertEquals(1234, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecurityDenySession() throws Exception {
+    // Create a new session for this HttpExchange.
+    Session session = sessionManager.getSession(ex, true);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new UserPrivateMockAdaptor());
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecurityDenyUnauthSession() throws Exception {
+    // Create a new unauthenticated session for this HttpExchange.
+    Session session = sessionManager.getSession(ex, true);
+    AuthnState authn = new AuthnState();
+    session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new UserPrivateMockAdaptor());
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecurityPermit() throws Exception {
+    // Create a new authenticated session for this HttpExchange.
+    Session session = sessionManager.getSession(ex, true);
+    AuthnState authn = new AuthnState();
+    session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
+    authn.authenticated("test", Collections.<String>emptySet(), Long.MAX_VALUE);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new UserPrivateMockAdaptor());
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecurityNotFound() throws Exception {
+    Adaptor mockAdaptor = new MockAdaptor() {
+      @Override
+      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+                                                      Set<String> groups,
+                                                      Collection<DocId> ids) {
+        Map<DocId, AuthzStatus> result
+            = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
+        for (DocId id : ids) {
+          result.put(id, AuthzStatus.INDETERMINATE);
+        }
+        return Collections.unmodifiableMap(result);
+      }
+
+      @Override
+      public void getDocContent(Request request, Response response) {
+        throw new UnsupportedOperationException();
+      }
+    };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(mockAdaptor);
+    handler.handle(ex);
+    assertEquals(404, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecurityDisallowedUser() throws Exception {
+    // Create a new authenticated session for this HttpExchange.
+    Session session = sessionManager.getSession(ex, true);
+    AuthnState authn = new AuthnState();
+    session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
+    authn.authenticated("test", Collections.<String>emptySet(), Long.MAX_VALUE);
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -55,7 +145,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"127.0.0.3", " "}, null, createSessionManager());
+        new String[] {"127.0.0.3", " "}, null, sessionManager);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -68,7 +158,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "127.0.0.3",
-        new String[0], null, createSessionManager());
+        new String[0], null, sessionManager);
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -80,7 +170,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "127.0.0.3",
-        new String[0], null, createSessionManager());
+        new String[0], null, sessionManager);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -93,7 +183,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"-no-such-host-"}, null, createSessionManager());
+        new String[] {"-no-such-host-"}, null, sessionManager);
   }
 
   @Test
@@ -103,7 +193,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "-no-such-host-",
-        new String[0], null, createSessionManager());
+        new String[0], null, sessionManager);
   }
 
   @Test
@@ -345,7 +435,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         adaptor, false, "localhost", new String[0], null,
-        createSessionManager());
+        sessionManager);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -355,12 +445,7 @@ public class DocumentHandlerTest {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         adaptor, false, "localhost", new String[0], null,
-        createSessionManager());
-  }
-
-  private SessionManager<HttpExchange> createSessionManager() {
-    return new SessionManager<HttpExchange>(
-        new SessionManager.HttpExchangeCookieAccess(), 1000, 1000);
+        sessionManager);
   }
 
   @Test
@@ -389,5 +474,20 @@ public class DocumentHandlerTest {
     assertEquals("AaZz-_.~%60%3D%2F%3F%2B%27%3B%5C%2F%22%21%40%23%24%25%5E%26"
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
   }
+
+  private static class UserPrivateMockAdaptor extends MockAdaptor {
+      @Override
+      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+                                                      Set<String> groups,
+                                                      Collection<DocId> ids) {
+        Map<DocId, AuthzStatus> result
+            = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
+        for (DocId id : ids) {
+          result.put(id,
+              userIdentifier == null ? AuthzStatus.DENY : AuthzStatus.PERMIT);
+        }
+        return Collections.unmodifiableMap(result);
+      }
+    };
 
 }

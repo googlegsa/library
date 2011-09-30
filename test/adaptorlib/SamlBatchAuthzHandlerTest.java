@@ -136,7 +136,77 @@ public class SamlBatchAuthzHandlerTest {
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
                                  "aoeuaoeu",
-                                 "Indeterminate")
+                                 "Deny")
+        + SOAP_FOOTER;
+    ex.setRequestBody(stringToStream(request));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    response = massageResponse(response);
+    assertEquals(goldenResponse, response);
+  }
+
+  @Test
+  public void testIndeterminateAdaptor() throws Exception {
+    Adaptor adaptor = new MockAdaptor() {
+      @Override
+      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+                                                      Set<String> groups,
+                                                      Collection<DocId> ids) {
+        assertEquals(1, ids.size());
+        DocId docId = (DocId) ids.toArray()[0];
+        return Collections.singletonMap(docId, AuthzStatus.INDETERMINATE);
+      }
+    };
+    SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
+        "localhost", Charset.forName("UTF-8"), adaptor, new MockDocIdDecoder(),
+        new SamlMetadata("localhost", 80, "localhost"));
+    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+        new MockHttpContext(handler, "/"));
+    String request
+        = SOAP_HEADER
+        + generateAuthzDecisionQuery("http://localhost/doc/1234",
+                                     "aoeuaoeu")
+        + SOAP_FOOTER;
+    String goldenResponse
+        = SOAP_HEADER
+        + generateGoldenResponse("http://localhost/doc/1234",
+                                 "aoeuaoeu",
+                                 "Deny")
+        + SOAP_FOOTER;
+    ex.setRequestBody(stringToStream(request));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    response = massageResponse(response);
+    assertEquals(goldenResponse, response);
+  }
+
+  @Test
+  public void testErroringAdaptor() throws Exception {
+    Adaptor adaptor = new MockAdaptor() {
+      @Override
+      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
+                                                      Set<String> groups,
+                                                      Collection<DocId> ids) {
+        throw new RuntimeException("something happened");
+      }
+    };
+    SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
+        "localhost", Charset.forName("UTF-8"), adaptor, new MockDocIdDecoder(),
+        new SamlMetadata("localhost", 80, "localhost"));
+    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+        new MockHttpContext(handler, "/"));
+    String request
+        = SOAP_HEADER
+        + generateAuthzDecisionQuery("http://localhost/doc/1234",
+                                     "aoeuaoeu")
+        + SOAP_FOOTER;
+    String goldenResponse
+        = SOAP_HEADER
+        + generateGoldenResponse("http://localhost/doc/1234",
+                                 "aoeuaoeu",
+                                 "Deny")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);

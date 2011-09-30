@@ -23,13 +23,21 @@ import java.util.Set;
 
 /**
  * Interface for user-specific implementation details of an Adaptor.
- * Implementations must be thread-safe.
+ * Implementations must be thread-safe. Implementations are encouraged to not
+ * keep any state or only soft-state like a connection cache.
  *
  * @see adaptorlib.examples.AdaptorTemplate
+ * @see adaptorlib.AbstractAdaptor
  */
 public interface Adaptor {
   /**
-   * Provides contents and metadata of particular document.
+   * Provides contents and metadata of particular document. This method should
+   * be highly parallelizable and support twenty or more concurrent calls. Two
+   * to three concurrent calls may be average during initial GSA crawling, but
+   * twenty or more concurrent calls is typical when the GSA is recrawling
+   * unmodified content.
+   *
+   * @throws java.io.FileNotFoundException when requested document doesn't exist
    */
   public void getDocContent(Request request, Response response)
       throws IOException;
@@ -37,7 +45,8 @@ public interface Adaptor {
   /**
    * Pushes all the {@code DocId}s that are suppose to be indexed by the GSA.
    * This will frequently involve re-sending {@code DocId}s to the GSA, but this
-   * allows healing previous errors and cache inconsistencies. This method
+   * allows healing previous errors and cache inconsistencies. Re-sending {@code
+   * DocIds} is very fast and should be considered free on the GSA. This method
    * should determine a list of {@code DocId}s to push and call {@link
    * DocIdPusher#pushDocIds} one or more times.
    *
@@ -51,7 +60,26 @@ public interface Adaptor {
 
   /**
    * Determines whether the user identified is allowed to access the {@code
-   * DocId}s.
+   * DocId}s. The user is either anonymous or assumed to be previously
+   * authenticated. If an anonymous user is denied access to a document, then
+   * the caller may prompt the user to go through an authentication process and
+   * then try again.
+   *
+   * <p>Returns {@link AuthzStatus#PERMIT} for {@link DocId}s the user is
+   * allowed to access. Retutrns {@link AuthzStatus#DENY} for {@code DocId}s the
+   * user is not allowed to access. If the document exists, {@link
+   * AuthzStatus#INDETERMINATE} will not be returned for that {@code DocId}.
+   *
+   * <p>If the document doesn't exist, then there are several possibilities. If
+   * the repository is fully-public then it will return {@code PERMIT}. This
+   * will allow the caller to provide a cached version of the file to the user
+   * or call {@link #getDocContent} which should throw a {@link java.io.
+   * FileNotFoundException}. If the adaptor is not sensitive to users knowing
+   * that certain documents do not exist, then it will return {@code
+   * INDETERMINATE}. This will be interpreted as the document does not exist; no
+   * cached copy will be provided to the user but the user may be informed the
+   * document doesn't exist. Highly sensitive repositories may return {@code
+   * DENY}.
    *
    * @param userIdentifier User to authorize, or {@code null} for anonymous
    *        users
@@ -101,9 +129,11 @@ public interface Adaptor {
     public Date getLastAccessTime();
 
     /**
-     * Provides the document ID for the document that is being requested. DocId
-     * was not necessarily provided previously by the Adaptor; it is
-     * client-provided and must not be trusted.
+     * Provides the document ID for the document that is being requested. {@code
+     * DocId} was not necessarily provided previously by the Adaptor; <b>it is
+     * client-provided and must not be trusted</b>. If the document does not
+     * exist, then {@link #getDocContent} must throw {@link java.io.
+     * FileNotFoundException}.
      */
     public DocId getDocId();
   }
