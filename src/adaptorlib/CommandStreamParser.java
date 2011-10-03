@@ -17,6 +17,9 @@ package adaptorlib;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
+import java.nio.charset.CharsetDecoder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -192,8 +195,9 @@ public class CommandStreamParser {
 
   private static final String HEADER_PREFIX = "GSA Adaptor Data Version";
   private static final String DISALLOWED_DELIMITER_CHARS_REGEX = "[a-zA-Z0-9:/\\-_ =\\+\\[\\]]";
+  private static final Charset charset = Charset.forName("UTF-8");
   private static final byte[] END_BINARY_MARKER =
-      "4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B".getBytes();
+      "4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B".getBytes(charset);
 
   private static final Map<String, CommandWithArgCount> STRING_TO_COMMAND;
 
@@ -210,17 +214,20 @@ public class CommandStreamParser {
     STRING_TO_COMMAND = Collections.unmodifiableMap(stringToCommand);
   }
 
+  /** */
   public static enum CommandType {ID, META_NAME, META_VALUE, CONTENT, LAST_CRAWLED, UP_TO_DATE}
 
-  private ByteCharInputStream hybridStream;
+  private InputStream inputStream;
   private String delimiter;
   private boolean inIdList;
+  private CharsetDecoder charsetDecoder = charset.newDecoder();
   
   CommandStreamParser(InputStream inputStream) {
-    hybridStream = new ByteCharInputStream(inputStream);
+    this.inputStream = inputStream;
     inIdList = false;
   }
 
+  /** */
   public static class Command {
     CommandType commandType;
     String argument;
@@ -267,7 +274,7 @@ public class CommandStreamParser {
     if (delimiter == null) {
       readHeader();
     }
-    String line = hybridStream.readToDelimiter(delimiter);
+    String line = readCharsUntilMarker(delimiter);
 
     // On End-Of-Stream return the end-message command
     if (line == null) {
@@ -313,7 +320,7 @@ public class CommandStreamParser {
     if (tokens[0].equals("content-to-end")) {
         content = readBytesUntilEnd();
     } else if (tokens[0].equals("content-to-marker")) {
-        content = readBytesUntilMarker();
+        content = readBytesUntilMarker(END_BINARY_MARKER);
     } else if (tokens[0].equals("content-bytes")) {
         int byteCount = Integer.parseInt(tokens[1]);
         content = readBytes(byteCount);
@@ -330,7 +337,7 @@ public class CommandStreamParser {
    * @throws IOException
    */
   public int readHeader() throws IOException {
-    String line = hybridStream.readToDelimiter("[");
+    String line = readCharsUntilMarker("[");
     if ((line == null) || (line.length() < HEADER_PREFIX.length()) ||
         !line.substring(0, HEADER_PREFIX.length()).equals(HEADER_PREFIX)) {
       throw new IOException("Adaptor data must begin with '" + HEADER_PREFIX + "'");
@@ -342,7 +349,7 @@ public class CommandStreamParser {
           "(Is there a single space preceeding and following the version number?)");
     }
 
-    delimiter = hybridStream.readToDelimiter("]");
+    delimiter = readCharsUntilMarker("]");
     if ((delimiter == null) || (delimiter.length() < 1)) {
       throw new IOException("Delimiter must be at least one character long.");
     }
@@ -358,38 +365,38 @@ public class CommandStreamParser {
   }
 
   /**
-   * Assuming the provided buffer does not match {@code END_BINARY_MARKER},
-   * determine the next possible matching position. Naively this could simply
-   * return {@code 1}, since that is a possible matching position, but
-   * instead it tries to be a bit smarter by finding the next occurrence of
-   * the first byte of {@code END_BINARY_MARKER}.
+   * Assuming the provided buffer does not match {@code marker}, determine the
+   * next possible matching position. Naively this could simply return {@code
+   * 1}, since that is a possible matching position, but instead it tries to be
+   * a bit smarter by finding the next occurrence of the first byte of {@code
+   * marker}.
    *
    * @param buffer to search.
    * @return The number of places to shift the data in order to move the
    *         first end marker byte to the beginning of the buffer. If this
    *         byte is not found then the the entire buffer length is returned.
    */
-  private int shiftDistance(byte[] buffer) {
+  private int shiftDistance(byte[] buffer, byte[] marker) {
     for (int i = 1; i < buffer.length; i++) {
-      if (buffer[i] == END_BINARY_MARKER[0]) {
+      if (buffer[i] == marker[0]) {
         return i;
       }
     }
     return buffer.length;
   }
 
-  private byte[] readBytesUntilMarker() throws IOException {
+  private byte[] readBytesUntilMarker(byte[] marker) throws IOException {
     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-    byte[] buffer = new byte[END_BINARY_MARKER.length];
+    byte[] buffer = new byte[marker.length];
 
-    int bytesRead = hybridStream.readFully(buffer, 0, buffer.length);
+    int bytesRead = IOHelper.readFully(inputStream, buffer, 0, buffer.length);
 
-    while ((bytesRead != -1) && !Arrays.equals(buffer, END_BINARY_MARKER)) {
-      int shiftDistance = shiftDistance(buffer);
+    while ((bytesRead != -1) && !Arrays.equals(buffer, marker)) {
+      int shiftDistance = shiftDistance(buffer, marker);
       int bytesToShift = buffer.length - shiftDistance;
       byteArrayOutputStream.write(buffer, 0, shiftDistance);
       System.arraycopy(buffer, shiftDistance, buffer, 0, bytesToShift);
-      bytesRead = hybridStream.readFully(buffer, bytesToShift, shiftDistance);
+      bytesRead = IOHelper.readFully(inputStream, buffer, bytesToShift, shiftDistance);
     }
     if (bytesRead == -1) {
       return null;
@@ -398,14 +405,23 @@ public class CommandStreamParser {
     }
   }
 
+  private String readCharsUntilMarker(String marker) throws IOException {
+    byte[] byteMarker = marker.getBytes(charset);
+    byte[] bytes = readBytesUntilMarker(byteMarker);
+    if (bytes == null) {
+      return null;
+    }
+    return charsetDecoder.decode(ByteBuffer.wrap(bytes)).toString();
+  }
+
   private byte[] readBytesUntilEnd() throws IOException {
-    return IOHelper.readInputStreamToByteArray(hybridStream.getInputStream());
+    return IOHelper.readInputStreamToByteArray(inputStream);
   }
 
 
   private byte[] readBytes(int byteCount) throws IOException {
     byte[] result = new byte[byteCount];
-    int bytesRead =  hybridStream.readFully(result, 0, byteCount);
+    int bytesRead =  IOHelper.readFully(inputStream, result, 0, byteCount);
     if (bytesRead != byteCount) {
       return null;
     } else {
