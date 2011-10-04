@@ -136,7 +136,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
                             getJournal(), adaptor,
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
-                            authnHandler, sessionManager));
+                            authnHandler, sessionManager, null));
 
     server.createContext("/dashboard",
         createAdminSecurityHandler(new DashboardHandler(config, journal),
