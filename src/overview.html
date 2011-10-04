@@ -40,6 +40,11 @@ feed.name=mydocfeedtogsa</pre>
       <pre>server.hostname=yourcomputershostname</pre>
     <li>Start the Adaptor Template:
       <pre>ant run</pre>
+    <li> Ensure crawling is enabled on GSA.
+      <p>
+      Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
+      crawling system is currently paused.
+      
     <li> Confirm things ran successfully.
       <p>
       In the GSA, go to <b>Crawl and Index &gt; Feeds</b>.
@@ -54,10 +59,11 @@ feed.name=mydocfeedtogsa</pre>
   <h3>Creating your own Adaptor</h3>
   <ol>
     <li>Review JavaDoc for {@link adaptorlib.Adaptor}.
-    <li>Either modify adaptortemplate/AdaptorTemplate.java or make a copy of it
+    <li>Either modify adaptortemplate/AdaptorTemplate.java, or make a copy of it
       and begin modifying the copy.
-    <li>Compile, run, and verify the results like you did before, except use
-      your new class.
+    <li>Compile, run, and verify the results like you did before.
+      If you made a copy of adaptortemplate/AdaptorTemplate.java you'll need
+      to modify build.xml .
     <li>Declare success for getting content from your custom repository to the
       GSA.
   </ol>
@@ -81,9 +87,11 @@ feed.name=mydocfeedtogsa</pre>
   <h4>Creating Self-Signed Certificates</h4>
   <p>In the GSA's Admin Console, go to <b>Administration &gt; SSL Settings</b>.
     Under the <b>Create a New SSL Certificate</b> heading change <b>Host
-    Name</b> to the hostname to access the GSA with and click <b>Create
-    Self-Signed Certificate</b> followed by <b>Install SSL Certificate</b>. You
-    now have a valid self-signed certificate, but it is not available to be
+    Name</b> to the hostname to access the GSA with.  Then click <b>Create
+    Self-Signed Certificate</b> and wait for the operation to complete.
+    Then click <b>Install SSL Certificate</b> and wait for that operation
+    to complete (about 1 minute).
+    You now have a valid self-signed certificate, but it is not available to be
     trusted by the adaptor.
 
   <p>You need to get the GSA's freshly-created certificate to add it as a
@@ -117,14 +125,15 @@ feed.name=mydocfeedtogsa</pre>
   <p>Now you should generate a self-signed certificate for the adaptor and
     export the newly created certificate. Within the adaptor's directory, you
     should run:
-  <pre>keytool -alias adaptor -keystore keys.jks -genkeypair -keyalg RSA -validity 365
-keytool -alias adaptor -keystore keys.jks -exportcert -rfc -file adaptor.crt</pre>
+  <pre>keytool -alias adaptor -keystore keys.jks -genkeypair -keyalg RSA -validity 365</pre>
   <p>Use "changeit" for the keystore password. For "What is your first and last
     name?", you should enter the hostname of your computer. You are free to
     answer the other questions however you wish (including not answering them).
     When you are happy with your answers, answer "yes" to "Is
-    CN=yourcomputershostname, OU=... correct?" Then just press enter for the key
-    password (to use the same password as the keystore).
+    CN=yourcomputershostname, OU=... correct?" <br> 
+  <p> Then, still in adaptor's directory, you should run:
+  <pre>keytool -alias adaptor -keystore keys.jks -exportcert -rfc -file adaptor.crt</pre>
+  <p> Press enter for the key password (to use the same password as the keystore).
 
   <h4>Exchanging Certificates</h4>
   <p>To allow the adaptor to trust the GSA, execute:
@@ -134,18 +143,26 @@ keytool -alias adaptor -keystore keys.jks -exportcert -rfc -file adaptor.crt</pr
 
   <p>To allow the GSA to trust the adaptor, within the GSA's Admin Console, go
     to <b>Administration &gt; Certificate Authorities</b>. Click the <b>Choose
-    File</b> button under the <b>Add more Cerificate Authorities</b> heading.
+    File</b> button (this button could be called "Browse...") under the 
+    <b>Add more Cerificate Authorities</b> heading.
     Choose "adaptor.crt" in the adaptor's directory and click <b>Save
     Settings</b>.
 
-  <p>For more comprehensive security on the GSA, there are additional options
-    you can enable on the GSA. If you change these settings, you will be
-    required to set <code>server.secure=true</code> before the adaptor will
-    function. Within the GSA's Admin Console, go to <b>Administration &gt; SSL
-    Settings</b>. Uncheck <b>Enable HTTP (non-SSL) access for Feedergate</b>,
-    check <b>Enable Client Certificate Authentication for Feedergate</b>, check
-    <b>Enable Server Certificate Authentication</b>, and click <b>Save
-    Setup</b>.
+  <h4>Enable Stricter Security</h4>
+  <p>There are additional security options you can control on the GSA:
+    Within the GSA's Admin Console, go to <b>Administration &gt; SSL
+    Settings</b>.  There you can:<ul>
+    <li> uncheck <b>Enable HTTP (non-SSL) access for Feedergate</b>.  With this
+      field unchceked only HTTPS communications will be accepted by feedergate.
+      Adaptors send document ids to feedergate.
+    <li> check <b>Enable Client Certificate Authentication for Feedergate</b>
+    <li> check <b>Enable Server Certificate Authentication</b> Note: Does not
+      work at this time (Oct 4 2011).
+    </ul>
+    Click <b>Save Setup</b> to save your changes.
+    <p>
+    Note: If you use these settings, adaptors will not work unless
+    <code>server.secure=true</code> is set in configuration. 
 
   <h4>Flipping the Switch</h4>
   <p>Now that everything is prepared, you can flip the security switch with the
