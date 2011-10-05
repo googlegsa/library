@@ -148,26 +148,31 @@ feed.name=mydocfeedtogsa</pre>
     Choose "adaptor.crt" in the adaptor's directory and click <b>Save
     Settings</b>.
 
-  <h4>Enable Stricter Security</h4>
-  <p>There are additional security options you can control on the GSA:
-    Within the GSA's Admin Console, go to <b>Administration &gt; SSL
-    Settings</b>.  There you can:<ul>
-    <li> uncheck <b>Enable HTTP (non-SSL) access for Feedergate</b>.  With this
-      field unchceked only HTTPS communications will be accepted by feedergate.
-      Adaptors send document ids to feedergate.
-    <li> check <b>Enable Client Certificate Authentication for Feedergate</b>
-    <li> check <b>Enable Server Certificate Authentication</b> Note: Does not
-      work at this time (Oct 4 2011).
-    </ul>
-    Click <b>Save Setup</b> to save your changes.
-    <p>
-    Note: If you use these settings, adaptors will not work unless
-    <code>server.secure=true</code> is set in configuration. 
-
   <h4>Flipping the Switch</h4>
   <p>Now that everything is prepared, you can flip the security switch with the
     adaptor by adding a line to your <code>adaptor-config.properties</code>:
   <pre>server.secure=true</pre>
   <p>The adaptor can now use the GSA's authentication configuration and will use
     HTTPS for all communication.</p>
+
+  <h4>Enable Stricter Security (optional)</h4>
+  <p>There are additional security options you can control on the GSA.
+    You may want to try running an adaptor with server.secure set before
+    enabling these stricter features.
+    Within the GSA's Admin Console, go to <b>Administration &gt; SSL
+    Settings</b>.  There you can:<ul>
+    <li> uncheck <b>Enable HTTP (non-SSL) access for Feedergate</b>.  With this
+      field unchecked only HTTPS communications will be accepted by feedergate.
+      Adaptors send document ids to feedergate.
+    <li> check <b>Enable Client Certificate Authentication for Feedergate</b>.
+    <li> check <b>Enable Server Certificate Authentication</b>. Note: Does not
+      work at this time (Oct 4 2011).
+    </ul>
+    <p>
+    Click <b>Save Setup</b> to save your changes.
+    <p>
+    Note: By using these settings you improve security, but also require
+    all adaptors to be configured for security and have 
+   <code>server.secure=true</code> in their configuration.
+
 </body>
