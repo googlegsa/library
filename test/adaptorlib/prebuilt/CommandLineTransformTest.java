@@ -35,22 +35,19 @@ public class CommandLineTransformTest {
     TestHelper.assumeOsIsNotWindows();
 
     TransformPipeline pipeline = new TransformPipeline();
-    ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     Map<String, String> params = new HashMap<String, String>();
     // The newline causes the test to work with both BSD and GNU sed.
     String testStr = "testing\n";
-    contentIn.write(testStr.getBytes());
     params.put("key1", "value1");
 
     CommandLineTransform cmd = new CommandLineTransform("regex replace");
     cmd.transformCommand("sed s/i/1/");
     cmd.commandAcceptsParameters(false);
     pipeline.add(cmd);
-    pipeline.transform(contentIn, new ByteArrayOutputStream(),
+    pipeline.transform(testStr.getBytes(), new byte[0],
                        contentOut, new ByteArrayOutputStream(), params);
 
-    assertEquals(testStr, contentIn.toString());
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
