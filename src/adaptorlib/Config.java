@@ -24,20 +24,24 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Properties;
 import java.util.Set;
+import java.util.logging.*;
 
 /**
  * Configuration values for this program like the GSA's hostname. Also several
  * knobs, or controls, for changing the behavior of the program.
  */
 public class Config {
+  protected static final String DEFAULT_CONFIG_FILE
+      = "adaptor-config.properties";
+
+  private static final Logger log = Logger.getLogger(Config.class.getName());
+
   /** Configuration keys whose default value is {@code null}. */
   protected final Set<String> noDefaultConfig = new HashSet<String>();
   /** Default configuration values */
   protected final Properties defaultConfig = new Properties();
   /** Overriding configuration values loaded from file and command line */
   protected Properties config = new Properties(defaultConfig);
-  protected static final String DEFAULT_CONFIG_FILE
-      = "adaptor-config.properties";
 
   public Config() {
     String hostname = null;
@@ -61,6 +65,8 @@ public class Config {
     addKey("feed.crawlImmediatelyBitEnabled", "false");
     //addKey("feed.noFollowBitEnabled", "false");
     addKey("feed.maxUrls", "5000");
+    addKey("adaptor.pushDocIdsOnStartup", "true");
+    addKey("adaptor.autoUnzip", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -224,6 +230,22 @@ public class Config {
     return Boolean.parseBoolean(getValue("feed.crawlImmediatelyBitEnabled"));
   }
 
+  /**
+   * Whether the default {@code main()} should automatically start pushing all
+   * document ids on startup. Defaults to {@code true}.
+   */
+  public boolean isAdaptorPushDocIdsOnStartup() {
+    return Boolean.parseBoolean(getValue("adaptor.pushDocIdsOnStartup"));
+  }
+
+  /**
+   * Automatically unzips and {@code DocId}s ending in {@code .zip} and provides
+   * them to the GSA.
+   */
+  public boolean useAdaptorAutoUnzip() {
+    return Boolean.parseBoolean(getValue("adaptor.autoUnzip"));
+  } 
+
 // TODO(pjo): Implement on GSA
 //  /**
 //   * Optional (default false): Adds no-follow bit with sent records in feed
@@ -339,13 +361,31 @@ public class Config {
   }
 
   /**
-   * Add configuration key. If defaultValue is {@code null}, then no default
-   * value is used.
+   * Add configuration key. If {@code defaultValue} is {@code null}, then no
+   * default value is used and the user must provide one.
    */
   public void addKey(String key, String defaultValue) {
     if (defaultConfig.contains(key) || noDefaultConfig.contains(key)) {
       throw new IllegalStateException("Key already added: " + key);
     }
+    if (defaultValue == null) {
+      noDefaultConfig.add(key);
+    } else {
+      defaultConfig.setProperty(key, defaultValue);
+    }
+  }
+
+  /**
+   * Change the default value of a preexisting configuration key. If {@code
+   * defaultValue} is {@code null}, then no default is used and the user must
+   * provide one.
+   */
+  public void overrideKey(String key, String defaultValue) {
+    if (!defaultConfig.contains(key) && !noDefaultConfig.contains(key)) {
+      log.log(Level.WARNING, "Overriding unknown configuration key: {0}", key);
+    }
+    defaultConfig.remove(key);
+    noDefaultConfig.remove(key);
     if (defaultValue == null) {
       noDefaultConfig.add(key);
     } else {

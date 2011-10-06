@@ -30,6 +30,12 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
+  @Override
+  public void init(Config config, DocIdPusher pusher) throws Exception {
+    Class.forName("org.gjt.mm.mysql.Driver");
+    log.info("loaded driver");
+  }
+
   private static Connection makeNewConnection() throws SQLException {
     // TODO(pjo): DB connection pooling.
     String url = "jdbc:mysql://127.0.0.1/adaptor1";
@@ -123,30 +129,9 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     }
   }
 
-  /** An example main for an adaptor. */
-  public static void main(String a[]) throws Exception {
-    Class.forName("org.gjt.mm.mysql.Driver");
-    log.info("loaded driver");
-    Config config = new Config();
-    config.autoConfig(a);
-    Adaptor adaptor = new DbAdaptorTemplate();
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
-
-    // Setup providing content.
-    try {
-      gsa.beginListeningForContentRequests();
-      log.info("doc content serving started");
-    } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
-    }
-
-    // Push once at program start.
-    gsa.pushDocIds();
-
-    // Setup scheduled pushing of doc ids for once a day.
-    gsa.beginPushingDocIds(
-        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    log.info("doc id pushing has been put on schedule");
+  /** Call default main for adaptors. */
+  public static void main(String[] args) {
+    AbstractAdaptor.main(new DbAdaptorTemplate(), args);
   }
 
   private static void tryClosingConnection(Connection conn) {

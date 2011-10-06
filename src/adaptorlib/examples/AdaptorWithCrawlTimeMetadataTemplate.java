@@ -84,31 +84,8 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
     os.write(str.getBytes(encoding));
   }
 
-  /** An example main for an adaptor that:<br>
-   * <ol><li> enables serving doc contents,
-   *   <li> sends docs ids at program start
-   *   <li> and sends doc ids on schedule.</ol>
-   */
-  public static void main(String a[]) throws InterruptedException {
-    Config config = new Config();
-    config.autoConfig(a);
-    Adaptor adaptor = new AdaptorWithCrawlTimeMetadataTemplate();
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
-
-    // Setup providing content.
-    try {
-      gsa.beginListeningForContentRequests();
-      log.info("doc content serving started");
-    } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
-    }
-
-    // Push once at program start.
-    gsa.pushDocIds();
-
-    // Schedule pushing of doc ids once per day.
-    gsa.beginPushingDocIds(
-        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    log.info("doc id pushing has been put on schedule");
+  /** Call default main for adaptors. */
+  public static void main(String[] args) {
+    AbstractAdaptor.main(new AdaptorWithCrawlTimeMetadataTemplate(), args);
   }
 }

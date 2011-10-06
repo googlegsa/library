@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
-/** Keeps set of MetaItem instanes after validation. */
+/** Represents a fixed set of validated {@link MetaItem}s. */
 public final class Metadata implements Iterable<MetaItem> {
   /** Object instance to denote documents that have been deleted. */
   public static final Metadata DELETED

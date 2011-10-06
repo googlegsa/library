@@ -27,10 +27,9 @@ import java.util.zip.*;
  * Tests for {@link AutoUnzipAdaptor}.
  */
 public class AutoUnzipAdaptorTest {
-  private List<DocId> getDocIds(Adaptor adaptor) throws IOException,
-      InterruptedException {
+  private List<DocId> getDocIds(Adaptor adaptor) throws Exception {
     AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
-    adaptor.setDocIdPusher(pusher);
+    adaptor.init(null, pusher);
     adaptor.getDocIds(pusher);
     return pusher.getDocIds();
   }
@@ -163,7 +162,7 @@ public class AutoUnzipAdaptorTest {
 
     @Override
     public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                Adaptor.PushErrorHandler handler)
+                                PushErrorHandler handler)
         throws InterruptedException {
       for (DocInfo docInfo : docInfos) {
         ids.add(docInfo.getDocId());

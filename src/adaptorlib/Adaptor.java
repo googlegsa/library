@@ -15,9 +15,7 @@
 package adaptorlib;
 
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Collection;
-import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 
@@ -51,9 +49,9 @@ public interface Adaptor {
    * DocIdPusher#pushDocIds} one or more times.
    *
    * <p>{@code pusher} is provided as convenience and is the same object
-   * provided to {@link #setDocIdPusher} previously. This method may take a
-   * while and implementations are free to call {@link Thread#sleep}
-   * occasionally to reduce load.
+   * provided to {@link #init} previously. This method may take a while and
+   * implementations are free to call {@link Thread#sleep} occasionally to
+   * reduce load.
    */
   public void getDocIds(DocIdPusher pusher) throws IOException,
       InterruptedException;
@@ -92,213 +90,23 @@ public interface Adaptor {
       Set<String> groups, Collection<DocId> ids) throws IOException;
 
   /**
-   * Provides a {@code DocIdPusher} object to be called whenever the Adaptor
-   * wishes. This allows doing event-based incremental pushes at any time. The
-   * method is called as soon as the Adaptor is provided to the {@code
-   * GsaCommunicationHandler}.
+   * Provides the opportunity for the Adaptor to create new configuration values
+   * or override default values. Only {@link Config#addKey} should likely be
+   * called. The user's configuration will override any values set in this way.
    */
-  public void setDocIdPusher(DocIdPusher pusher);
+  public void initConfig(Config config);
 
   /**
-   * Interface provided to {@link Adaptor#getDocContent} for describing the
-   * action that should be taken.
+   * Initialize adaptor with the current configuration and pusher object. This
+   * is the ideal time to start any threads to do extra behind-the-scenes work.
+   * The {@code pusher} is allowed to be called whenever the Adaptor wishes.
+   * This allows doing event-based incremental pushes at any time. The method is
+   * called at the end of {@link GsaCommunicationHandler#start}.
    */
-  public static interface Request {
-    /**
-     * Returns {@code true} if the GSA or other client's current copy of the
-     * document was retrieved after the {@code lastModified} date; {@code false}
-     * otherwise. {@code lastModified} must be in GMT.
-     *
-     * <p>If {@code false}, the client does not need to be re-sent the data,
-     * since what they have cached is the most recent version. In this case, you
-     * should then call {@link Response#respondNotModified}.
-     */
-    public boolean hasChangedSinceLastAccess(Date lastModified);
-
-    /**
-     * Returns the last time a GSA or other client retrieved the data, or {@code
-     * null} if none was provided by the client. The returned {@code Date} is in
-     * GMT.
-     *
-     * <p>This is useful for determining if the client needs to be re-sent the
-     * data since what they have cached may be the most recent version. If the
-     * client is up-to-date, then call {@link Response#respondNotModified}.
-     *
-     * @return date in GMT client last accessed the DocId or {@code null}
-     */
-    public Date getLastAccessTime();
-
-    /**
-     * Provides the document ID for the document that is being requested. {@code
-     * DocId} was not necessarily provided previously by the Adaptor; <b>it is
-     * client-provided and must not be trusted</b>. If the document does not
-     * exist, then {@link #getDocContent} must throw {@link java.io.
-     * FileNotFoundException}.
-     */
-    public DocId getDocId();
-  }
+  public void init(Config config, DocIdPusher pusher) throws Exception;
 
   /**
-   * Interface provided to {@link Adaptor#getDocContent} for performing the
-   * actions needed to satisfy a request. If the {@code DocId} provided by
-   * {@link Request#getDocId} does not exist, a {@link
-   * java.io.FileNotFoundException} should be thrown.
-   *
-   * <p>There are several ways that a request can be processed. In the simplest
-   * case an Adaptor always sets different pieces of metadata, calls {@link
-   * #getOutputStream}, and writes the document contents.
-   *
-   * <p>For improved efficiency during recrawl by the GSA, an Adaptor should
-   * check {@link Request#hasChangedSinceLastAccess} and call {@link
-   * #respondNotModified} when it is {@code true}. This prevents the Adaptor
-   * from ever needing to retrieve the document contents and metadata.
+   * Shutdown and release resources of adaptor.
    */
-  public static interface Response {
-    /**
-     * Respond to the GSA or other client that it already has the latest version
-     * of a file and its metadata. If you have called other methods on this
-     * object to provide various metadata, the effects of those methods will be
-     * ignored.
-     *
-     * <p>If called, this must be the last call to this interface. If the
-     * document does not exist, you must throw {@link
-     * java.io.FileNotFoundException} and not call this method. Once you call
-     * this method, for the rest of the processing, exceptions may no longer be
-     * communicated to clients cleanly.
-     */
-    public void respondNotModified();
-
-    /**
-     * Get stream to write document contents to. There is no need to flush or
-     * close the {@code OutputStream} when done.
-     *
-     * <p>If called, this must be the last call to this interface (although, for
-     * convenience, you may call this method multiple times). If the document
-     * does not exist, you must throw {@link java.io.FileNotFoundException} and
-     * not call this method. Once you call this method, for the rest of the
-     * processing, exceptions may no longer be communicated to clients cleanly.
-     */
-    public OutputStream getOutputStream();
-
-    /**
-     * Describe the content type of the document.
-     */
-    public void setContentType(String contentType);
-
-    /**
-     * Provide metadata that apply to the document.
-     */
-    public void setMetadata(Metadata m);
-  }
-
-  /**
-   * Interface that allows at-will pushing of {@code DocId}s to the GSA.
-   */
-  public static interface DocIdPusher {
-    /**
-     * Push {@code DocId}s immediately and block until they are successfully
-     * provided to the GSA or the error handler gives up. This method can take
-     * a while in error conditions, but is not something that generally needs to
-     * be avoided.
-     *
-     * <p>Equivalent to {@code pushDocIds(docIds, null)} and {@link
-     * #pushDocInfos(Iterable)} with empty metadata for each {@code DocInfo}.
-     *
-     * @return {@code null} on success, otherwise the first DocId to fail
-     * @see #pushDocIds(Iterable, Adaptor.PushErrorHandler)
-     */
-    public DocId pushDocIds(Iterable<DocId> docIds)
-        throws InterruptedException;
-
-    /**
-     * Push {@code DocId}s immediately and block until they are successfully
-     * provided to the GSA or the error handler gives up. This method can take
-     * a while in error conditions, but is not something that generally needs to
-     * be avoided.
-     *
-     * <p>If handler is {@code null}, then a default error handler is used.
-     *
-     * <p>Equivalent to {@link #pushDocInfos(Iterable,
-     * Adaptor.PushErrorHandler)} with empty metadata for each {@code DocInfo}.
-     *
-     * @return {@code null} on success, otherwise the first DocId to fail
-     */
-    public DocId pushDocIds(Iterable<DocId> docIds, PushErrorHandler handler)
-        throws InterruptedException;
-
-    /**
-     * Push {@code DocInfo}s immediately and block until they are successfully
-     * provided to the GSA or the error handler gives up. This method can take
-     * a while in error conditions, but is not something that generally needs to
-     * be avoided.
-     *
-     * <p>Equivalent to {@code pushDocInfos(docInfos, null)}.
-     *
-     * @return {@code null} on success, otherwise the first DocInfo to fail
-     * @see #pushDocInfos(Iterable, Adaptor.PushErrorHandler)
-     */
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos)
-        throws InterruptedException;
-
-    /**
-     * Push {@code DocInfo}s immediately and block until they are successfully
-     * provided to the GSA or the error handler gives up. This method can take
-     * a while in error conditions, but is not something that generally needs to
-     * be avoided.
-     *
-     * <p>If handler is {@code null}, then a default error handler is used.
-     *
-     * @return {@code null} on success, otherwise the first DocInfo to fail
-     */
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-        PushErrorHandler handler) throws InterruptedException;
-  }
-
-  /**
-   * Interface for handling errors encountered during pushing of {@code DocId}s.
-   */
-  public static interface PushErrorHandler {
-    /**
-     * {@link GsaCommunicationHandler#pushDocIds} had a failure connecting with
-     * GSA to send a batch. The thrown exception is provided as well as the
-     * number of times that this batch was attempted to be sent. Return true to
-     * retry, perhaps after a Thread.sleep() of some time.
-     */
-    public boolean handleFailedToConnect(Exception ex, int ntries)
-        throws InterruptedException;
-
-    /**
-     * {@link GsaCommunicationHandler#pushDocIds} had a failure writing to the
-     * GSA while sending a batch.  The thrown exception is provided as well as
-     * the number of times that this batch was attempted to be sent. Return true
-     * to retry, perhaps after a Thread.sleep() of some time.
-     */
-    public boolean handleFailedWriting(Exception ex, int ntries)
-        throws InterruptedException;
-
-    /**
-     * {@link GsaCommunicationHandler#pushDocIds} had a failure reading response
-     * from GSA. The thrown exception is provided as well as the number of times
-     * that this batch was attempted to be sent. Return true to retry, perhaps
-     * after a Thread.sleep() of some time.
-     */
-    public boolean handleFailedReadingReply(Exception ex, int ntries)
-        throws InterruptedException;
-  }
-
-  /**
-   * Interface for handling error encountered during scheduled pushing of
-   * {@code DocId}s.
-   */
-  public static interface GetDocIdsErrorHandler {
-    /**
-     * {@link GsaCommunicationHandler#pushDocIds} had a failure reading from
-     * this Adaptor's {@link Adaptor#getDocIds}. The thrown exception is
-     * provided as well as the number of times that this batch was attempted to
-     * be sent. Return true to retry, perhaps after a Thread.sleep() of some
-     * time.
-     */
-    public boolean handleFailedToGetDocIds(Exception ex, int ntries)
-        throws InterruptedException;
-  }
+  public void destroy();
 }

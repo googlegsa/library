@@ -25,7 +25,6 @@ import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -53,8 +52,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private final GsaFeedFileSender fileSender;
   private final GsaFeedFileMaker fileMaker;
   private final Journal journal = new Journal();
-  private final Adaptor.DocIdPusher pusher = new InnerDocIdPusher();
-  private final Adaptor.GetDocIdsErrorHandler defaultErrorHandler
+  private final DocIdPusher pusher = new InnerDocIdPusher();
+  private final GetDocIdsErrorHandler defaultErrorHandler
       = new DefaultGetDocIdsErrorHandler();
   private Scheduler pushScheduler;
   private int pushingDocIds;
@@ -63,10 +62,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private Thread shutdownHook;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
-    // TODO(ejona): allow the adaptor to choose whether it wants this feature
-    this.adaptor = new AutoUnzipAdaptor(adaptor);
-    this.adaptor.setDocIdPusher(pusher);
-
+    this.adaptor = adaptor;
     this.config = config;
     this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding(),
                                             config.isServerSecure());
@@ -74,8 +70,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   }
 
   /** Starts listening for communications from GSA. */
-  public synchronized void beginListeningForContentRequests()
-      throws IOException {
+  public synchronized void start() throws Exception {
     if (server != null) {
       throw new IllegalStateException("Already listening");
     }
@@ -150,6 +145,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     log.info("server is listening on port #" + port);
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
+
+    adaptor.init(config, pusher);
   }
 
   // Useful as a separate method during testing.
@@ -209,12 +206,12 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
 
   /**
    * Schedule {@link Adaptor#getDocIds} to be called when defined by the {@code
-   * schedule}. Equivalent to {@code beginPushingDocIds(schedule, null)}.
+   * schedule}. Equivalent to {@code schedulePushOfDocIds(schedule, null)}.
    *
-   * @see #beginPushingDocIds(Iterator, Adaptor.GetDocIdsErrorHandler)
+   * @see #schedulePushOfDocIds(Iterator, GetDocIdsErrorHandler)
    */
-  public void beginPushingDocIds(Iterator<Date> schedule) {
-    beginPushingDocIds(schedule, null);
+  public SchedulerTask schedulePushOfDocIds(Iterator<Date> schedule) {
+    return schedulePushOfDocIds(schedule, null);
   }
 
   /**
@@ -222,9 +219,11 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * schedule}. If {@code handler} is {@code null}, then a default error handler
    * will be used.
    */
-  public void beginPushingDocIds(Iterator<Date> schedule,
-                                 Adaptor.GetDocIdsErrorHandler handler) {
-    getPushScheduler().schedule(new PushTask(handler), schedule);
+  public SchedulerTask schedulePushOfDocIds(Iterator<Date> schedule,
+      GetDocIdsErrorHandler handler) {
+    SchedulerTask task = new PushTask(handler);
+    getPushScheduler().schedule(task, schedule);
+    return task;
   }
 
   /**
@@ -232,12 +231,12 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * is not already running. Returns {@code true} if it starts a new push, and
    * false otherwise.
    */
-  synchronized boolean checkAndBeginPushDocIdsImmediately(
-      Adaptor.GetDocIdsErrorHandler handler) {
+  public synchronized boolean checkAndScheduleImmediatePushOfDocIds(
+      GetDocIdsErrorHandler handler) {
     if (pushingDocIds > 0) {
       return false;
     }
-    beginPushingDocIdsImmediately(handler);
+    schedulePushOfDocIdsImmediately(handler);
     return true;
   }
 
@@ -245,14 +244,13 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * Schedule a push for immediately. If there is a push already running this
    * push will be started after it.
    */
-  private void beginPushingDocIdsImmediately(
-      Adaptor.GetDocIdsErrorHandler handler) {
+  private void schedulePushOfDocIdsImmediately(GetDocIdsErrorHandler handler) {
     List<Date> schedule = Collections.singletonList(new Date());
     getPushScheduler().schedule(new PushTask(handler), schedule.iterator());
   }
 
   private DocInfo pushSizedBatchOfDocInfos(List<DocInfo> docInfos,
-                                           Adaptor.PushErrorHandler handler)
+                                           PushErrorHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
     String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(
@@ -300,7 +298,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * until all DocIds are sent or retrying failed. If {@code handler} is {@code
    * null}, then a default error handler is used.
    */
-  public void pushDocIds(Adaptor.GetDocIdsErrorHandler handler)
+  public void pushDocIds(GetDocIdsErrorHandler handler)
       throws InterruptedException {
     synchronized (this) {
       pushingDocIds++;
@@ -336,7 +334,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * This method blocks until all DocIds are sent or retrying failed.
    */
   private DocInfo pushDocInfos(Iterator<DocInfo> docInfos,
-                               Adaptor.PushErrorHandler handler)
+                               PushErrorHandler handler)
       throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
     final int max = config.getFeedMaxUrls();
@@ -418,12 +416,12 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   }
 
   private class InnerDocIdPusher extends AbstractDocIdPusher {
-    private Adaptor.PushErrorHandler defaultErrorHandler
+    private PushErrorHandler defaultErrorHandler
         = new DefaultPushErrorHandler();
 
     @Override
     public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                Adaptor.PushErrorHandler handler)
+                                PushErrorHandler handler)
         throws InterruptedException {
       if (handler == null) {
         handler = defaultErrorHandler;
@@ -433,10 +431,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     }
   }
 
-  private class PushTask extends Scheduler.Task {
-    private final Adaptor.GetDocIdsErrorHandler handler;
+  private class PushTask extends SchedulerTask {
+    private final GetDocIdsErrorHandler handler;
 
-    public PushTask(Adaptor.GetDocIdsErrorHandler handler) {
+    public PushTask(GetDocIdsErrorHandler handler) {
       this.handler = handler;
     }
 
@@ -460,7 +458,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
     @Override
     public Object run(List request) {
-      boolean pushStarted = checkAndBeginPushDocIdsImmediately(null);
+      boolean pushStarted = checkAndScheduleImmediatePushOfDocIds(null);
       if (!pushStarted) {
         throw new RuntimeException("A push is already in progress");
       }

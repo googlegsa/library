@@ -305,7 +305,7 @@ class DocumentHandler extends AbstractHandler {
     return sb.toString();
   }
 
-  private static class DocumentRequest implements Adaptor.Request {
+  private static class DocumentRequest implements Request {
     // DateFormats are relatively expensive to create, and cannot be used from
     // multiple threads
     private final DateFormat dateFormat;
@@ -339,7 +339,7 @@ class DocumentHandler extends AbstractHandler {
     }
   }
 
-  private static class DocumentResponse implements Adaptor.Response {
+  private static class DocumentResponse implements Response {
     /** Special instance of stream that denotes that not modified was sent */
     private static final OutputStream notModifiedOs = new SinkOutputStream();
     private HttpExchange ex;

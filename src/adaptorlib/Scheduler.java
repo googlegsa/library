@@ -20,29 +20,36 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 /**
+ * A generic scheduler similar in use to {@link Timer}, but more general. You
+ * should use it as if it were {@code Timer}, but with a slightly different API.
  * Gratitude to
  * http://www.ibm.com/developerworks/java/library/j-schedule/index.html
  */
-class Scheduler {
-  private final Timer timer = new Timer();
+public class Scheduler {
+  private final Timer timer;
 
   public Scheduler() {
+    timer = new Timer();
+  }
+
+  public Scheduler(boolean isDaemon) {
+    timer = new Timer(isDaemon);
   }
 
   public void cancel() {
       timer.cancel();
   }
 
-  public void schedule(Task schedulerTask, Iterator<Date> iterator) {
-    Date time = iterator.next();
+  public void schedule(SchedulerTask schedulerTask, Iterator<Date> iterator) {
+    Date time = iterator.hasNext() ? iterator.next() : null;
     if (time == null) {
       schedulerTask.cancel();
     } else {
       synchronized (schedulerTask.lock) {
-        if (schedulerTask.state != Task.VIRGIN) {
+        if (schedulerTask.state != SchedulerTask.VIRGIN) {
           throw new IllegalStateException("already scheduled or cancelled");
         }
-        schedulerTask.state = Task.SCHEDULED;
+        schedulerTask.state = SchedulerTask.SCHEDULED;
         schedulerTask.timerTask
             = new SchedulerTimerTask(schedulerTask, iterator);
         timer.schedule(schedulerTask.timerTask, time);
@@ -50,13 +57,14 @@ class Scheduler {
     }
   }
 
-  private void reschedule(Task schedulerTask, Iterator<Date> iterator) {
+  private void reschedule(SchedulerTask schedulerTask,
+                          Iterator<Date> iterator) {
     Date time = iterator.hasNext() ? iterator.next() : null;
     if (time == null) {
       schedulerTask.cancel();
     } else {
       synchronized (schedulerTask.lock) {
-        if (schedulerTask.state != Task.CANCELLED) {
+        if (schedulerTask.state != SchedulerTask.CANCELLED) {
           schedulerTask.timerTask
               = new SchedulerTimerTask(schedulerTask, iterator);
           timer.schedule(schedulerTask.timerTask, time);
@@ -66,10 +74,11 @@ class Scheduler {
   }
 
   private class SchedulerTimerTask extends TimerTask {
-    private Task schedulerTask;
+    private SchedulerTask schedulerTask;
     private Iterator<Date> iterator;
 
-    public SchedulerTimerTask(Task schedulerTask, Iterator<Date> iterator) {
+    public SchedulerTimerTask(SchedulerTask schedulerTask,
+                              Iterator<Date> iterator) {
       this.schedulerTask = schedulerTask;
       this.iterator = iterator;
     }
@@ -77,43 +86,6 @@ class Scheduler {
     public void run() {
       schedulerTask.run();
       reschedule(schedulerTask, iterator);
-    }
-  }
-
-  /**
-   * Gratitude to
-   * http://www.ibm.com/developerworks/java/library/j-schedule/index.html
-   */
-  public abstract static class Task implements Runnable {
-    private int state = VIRGIN;
-    private final Object lock = new Object();
-
-    private static final int VIRGIN = 0;
-    private static final int SCHEDULED = 1;
-    private static final int CANCELLED = 2;
-
-    private TimerTask timerTask;
-
-    protected Task() {
-    }
-
-    public abstract void run();
-
-    public boolean cancel() {
-      synchronized (lock) {
-        if (timerTask != null) {
-          timerTask.cancel();
-        }
-        boolean result = (state == SCHEDULED);
-        state = CANCELLED;
-        return result;
-      }
-    }
-
-    public long scheduledExecutionTime() {
-      synchronized (lock) {
-        return timerTask == null ? 0 : timerTask.scheduledExecutionTime();
-      }
     }
   }
 }

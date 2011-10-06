@@ -44,8 +44,18 @@ abstract class WrapperAdaptor implements Adaptor {
   }
 
   @Override
-  public void setDocIdPusher(DocIdPusher pusher) {
-    adaptor.setDocIdPusher(pusher);
+  public void initConfig(Config config) {
+    adaptor.initConfig(config);
+  }
+
+  @Override
+  public void init(Config config, DocIdPusher pusher) throws Exception {
+    adaptor.init(config, pusher);
+  }
+
+  @Override
+  public void destroy() {
+    adaptor.destroy();
   }
 
   @Override

@@ -11,38 +11,52 @@
   <property name="resource.dir" location="resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
-  <property name="opencsv.jar" location="${lib.dir}/opencsv-2.3.jar"/>
   <property name="adaptor.class" value="adaptorlib.examples.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
-  <property name="guava.jar" location="${lib.dir}/guava-r06.jar"/>
-  <property name="j-calais.jar" location="${lib.dir}/j-calais-0.2.1.jar"/>
-  <property name="jackson-core-asl.jar" location="${lib.dir}/jackson-core-asl-1.5.5.jar"/>
-  <property name="jackson-jaxrs.jar" location="${lib.dir}/jackson-jaxrs-1.5.5.jar"/>
-  <property name="jackson-mapper-asl.jar" location="${lib.dir}/jackson-mapper-asl-1.5.5.jar"/>
-  <property name="jersey-client.jar" location="${lib.dir}/jersey-client-1.3.jar"/>
-  <property name="jersey-core.jar" location="${lib.dir}/jersey-core-1.3.jar"/>
-  <property name="jsr311-api.jar" location="${lib.dir}/jsr311-api-1.1.1.jar"/>
-  <property name="json-simple.jar" location="${lib.dir}/json_simple-1.1.jar"/>
-  <property name="gdata-core.jar" location="${lib.dir}/gdata-core-1.0.jar"/>
-  <property name="gdata-gsa.jar" location="${lib.dir}/gdata-gsa-1.0.jar"/>
   <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
+  <!-- Adaptor suffix for distribution files. Useful for placing version numbers
+       on our jars. -->
+  <property name="adaptorlib.suffix" value=""/>
 
   <path id="adaptorlib.build.classpath">
-    <pathelement location="${opencsv.jar}"/>
-    <pathelement location="${j-calais.jar}"/>
-    <pathelement location="${json-simple.jar}"/>
-    <pathelement location="${gdata-core.jar}"/>
-    <pathelement location="${gdata-gsa.jar}"/>
-    <path refid="secmgr.build.classpath"/>
+    <fileset dir="${lib.dir}">
+      <include name="json_simple-1.1.jar"/>
+      <include name="gdata-core-1.0.jar"/>
+      <include name="gdata-gsa-1.0.jar"/>
+      <include name="joda-time-1.6.jar"/>
+      <include name="opensaml-2.3.2.jar"/>
+      <include name="openws-1.3.1.jar"/>
+      <include name="xmltooling-1.2.2.jar"/>
+      <include name="guava-pre-pre10.jar"/>
+      <include name="jsr305.jar"/>
+    </fileset>
   </path>
 
   <path id="adaptorlib.run.classpath">
+    <path refid="adaptorlib.build.classpath"/>
     <pathelement location="${resource.dir}"/>
-    <pathelement location="${json-simple.jar}"/>
-    <pathelement location="${gdata-core.jar}"/>
-    <pathelement location="${gdata-gsa.jar}"/>
     <path refid="secmgr.run.classpath"/>
     <path refid="opensaml.run.classpath"/>
+  </path>
+
+  <path id="examples.build.classpath">
+    <fileset dir="${lib.dir}">
+      <include name="opencsv-2.3.jar"/>
+      <include name="j-calais-0.2.1.jar"/>
+    </fileset>
+  </path>
+
+  <path id="examples.run.classpath">
+    <path refid="examples.build.classpath"/>
+    <fileset dir="${lib.dir}">
+      <include name="guava-r06.jar"/>
+      <include name="jackson-core-asl-1.5.5.jar"/>
+      <include name="jackson-jaxrs-1.5.5.jar"/>
+      <include name="jackson-mapper-asl-1.5.5.jar"/>
+      <include name="jersey-client-1.3.jar"/>
+      <include name="jersey-core-1.3.jar"/>
+      <include name="jsr311-api-1.1.1.jar"/>
+    </fileset>
   </path>
 
   <path id="secmgr.build.classpath">
@@ -116,20 +130,50 @@
 
   <target name="build" description="Build source">
     <mkdir dir="${build-src.dir}"/>
+
+    <!-- Compile secmgr. -->
+    <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
+      includeantruntime="false" encoding="utf-8">
+      <classpath refid="secmgr.build.classpath"/>
+      <exclude name="adaptorlib/**"/>
+    </javac>
+
+    <!-- Compile adaptorlib. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="adaptorlib.build.classpath"/>
+      <exclude name="adaptorlib/examples/**"/>
       <include name="adaptorlib/**"/>
     </javac>
 
+    <!-- Compile examples. -->
+    <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
+      includeantruntime="false" encoding="utf-8">
+      <compilerarg value="-Xlint:unchecked"/>
+      <classpath refid="examples.build.classpath"/>
+      <include name="adaptorlib/examples/**"/>
+    </javac>
+
     <mkdir dir="${build-test.dir}"/>
+    <!-- Compile tests, excluding example tests. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
       includeantruntime="false" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
+      <exclude name="adaptorlib/examples/**"/>
+    </javac>
+
+    <!-- Compile tests for examples. -->
+    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
+      includeantruntime="false" encoding="utf-8">
+      <compilerarg value="-Xlint:unchecked"/>
+      <classpath refid="examples.build.classpath"/>
+      <classpath location="${build-src.dir}"/>
+      <classpath location="${junit.jar}"/>
+      <include name="adaptorlib/examples/**"/>
     </javac>
   </target>
 
@@ -139,35 +183,71 @@
   <target name="package" description="Generate binaries"
     depends="build,javadoc">
     <mkdir dir="${dist.dir}"/>
-    <jar destfile="${dist.dir}/adaptor.jar" basedir="${build-src.dir}"
+
+    <!-- adaptor.jar -->
+    <!-- Concatenate dependent JARs together into a comma-delimited list. -->
+    <pathconvert pathsep="," refid="adaptorlib.run.classpath"
+      property="tmp.adaptorlib.zipgroup">
+      <!-- We remove the lib.dir from the paths to prevent trouble with comma
+           and space in lib.dir. It also makes it nicer <echo>ing
+           tmp.adaptorlib.zipgroup. -->
+      <map from="${lib.dir}/" to=""/>
+    </pathconvert>
+    <jar destfile="${build.dir}/adaptor.tmp.jar" basedir="${build-src.dir}"
       excludes="adaptorlib/examples/**,adaptorlib/prebuilt/**">
-      <zipfileset includes="**/*.class" src="${json-simple.jar}"/>
-      <zipfileset includes="**/*.class" src="${gdata-core.jar}"/>
-      <zipfileset includes="**/*.class" src="${gdata-gsa.jar}"/>
+      <zipgroupfileset dir="${lib.dir}" includes="${tmp.adaptorlib.zipgroup}"/>
+      <!-- resource.dir is included in tmp.adaptorlib.zipgroup, but size it
+           isn't a zip file, the zipgroupfileset doesn't include the folder's
+           contents. Thus, we explicitly add it again here. -->
       <fileset dir="${resource.dir}"/>
     </jar>
-    <jar destfile="${dist.dir}/adaptor-prebuilt.jar" basedir="${build-src.dir}"
-      includes="adaptorlib/prebuilt/**/*.class">
+    <!-- Re-save JAR without signing keys, since keeping them in the JAR causes
+         security exceptions. -->
+    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}.jar">
+      <zipfileset excludes="META-INF/**/*.DSA,META-INF/**/*.SF"
+        src="${build.dir}/adaptor.tmp.jar"/>
+    </zip>
+
+    <!-- adaptor-prebuild.jar -->
+    <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-prebuilt.jar"
+      basedir="${build-src.dir}" includes="adaptorlib/prebuilt/**">
     </jar>
-    <jar destfile="${dist.dir}/adaptor-examples.jar" basedir="${build-src.dir}"
-      includes="adaptorlib/examples/**/*.class">
-      <zipfileset includes="**/*.class" src="${opencsv.jar}"/>
-      <zipfileset includes="**/*.class" src="${guava.jar}"/>
-      <zipfileset includes="**/*.class" src="${j-calais.jar}"/>
-      <zipfileset includes="**/*.class" src="${jackson-core-asl.jar}"/>
-      <zipfileset includes="**/*.class" src="${jackson-jaxrs.jar}"/>
-      <zipfileset includes="**/*.class" src="${jackson-mapper-asl.jar}"/>
-      <zipfileset includes="**/*.class" src="${jersey-client.jar}"/>
-      <zipfileset includes="**/*.class" src="${jersey-core.jar}"/>
-      <zipfileset includes="**/*.class" src="${jsr311-api.jar}"/>
+
+    <!-- adaptor-examples.jar -->
+    <pathconvert pathsep="," refid="examples.run.classpath"
+      property="tmp.examples.zipgroup">
+      <map from="${lib.dir}/" to=""/>
+    </pathconvert>
+    <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-examples.jar"
+      basedir="${build-src.dir}" includes="adaptorlib/examples/**">
+      <zipgroupfileset dir="${lib.dir}" includes="${tmp.examples.zipgroup}"/>
+      <fileset dir="${src.dir}" includes="adaptorlib/examples/**/*.java"/>
     </jar>
-    <zip destfile="${dist.dir}/adaptor-docs.zip" basedir="${javadoc.dir}"/>
+
+    <!-- adaptor-docs.zip -->
+    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-docs.zip"
+      basedir="${javadoc.dir}"/>
+
+    <!-- adaptor-src.zip -->
+    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-src.zip"
+      basedir="${basedir}"
+      excludes="adaptor-config.properties,*.crt,*.jks,build/**,dist/**,**/.*/**"/>
   </target>
 
-  <target name="javadoc" description="Build JavaDocs">
+  <target name="-javadoc-test-uptodate">
+    <uptodate property="javadoc.uptodate"
+      targetfile="${javadoc.dir}/index.html">
+      <srcfiles dir="${src.dir}"/>
+    </uptodate>
+  </target>
+
+  <target name="javadoc" description="Build JavaDocs"
+    depends="-javadoc-test-uptodate" unless="javadoc.uptodate">
     <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}"
         overview="${src.dir}/overview.html" packagenames="adaptorlib,adaptorlib.**">
       <classpath refid="adaptorlib.build.classpath"/>
+      <classpath refid="secmgr.build.classpath"/>
+      <classpath refid="examples.build.classpath"/>
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="http://download.oracle.com/javase/6/docs/api/"/>
       <arg value="-quiet"/>
@@ -214,8 +294,6 @@
     <java classpath="${build-src.dir}" fork="true"
       classname="adaptorlib.prebuilt.FileSystemAdaptor">
       <classpath refid="adaptorlib.run.classpath"/>
-      <classpath location="${resource.dir}"/>
-      <classpath location="${json-simple.jar}"/>
       <sysproperty key="java.util.logging.config.file"
         value="${src.dir}/logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
@@ -233,10 +311,9 @@
       <sysproperty key="net.sourceforge.cobertura.datafile"
         file="${build-instrument.dir}/cobertura.ser"/>
       <classpath refid="adaptorlib.run.classpath"/>
+      <classpath refid="examples.run.classpath"/>
       <classpath refid="cobertura.classpath"/>
       <classpath location="${junit.jar}"/>
-      <classpath location="${opencsv.jar}"/>
-      <classpath location="${j-calais.jar}"/>
       <classpath location="${build-instrument.dir}"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
