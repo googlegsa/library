@@ -29,6 +29,7 @@ import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -47,20 +48,30 @@ class DocumentHandler extends AbstractHandler {
   private Set<InetAddress> gsaAddresses = new HashSet<InetAddress>();
   private final HttpHandler authnHandler;
   private final SessionManager<HttpExchange> sessionManager;
+  private final TransformPipeline transform;
 
+  /**
+   * {@code authnHandler} and {@code transform} may be {@code null}.
+   */
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
                          DocIdDecoder docIdDecoder, Journal journal,
                          Adaptor adaptor,
                          boolean addResolvedGsaHostnameToGsaIps,
                          String gsaHostname, String[] gsaIps,
                          HttpHandler authnHandler,
-                         SessionManager<HttpExchange> sessionManager) {
+                         SessionManager<HttpExchange> sessionManager,
+                         TransformPipeline transform) {
     super(defaultHostname, defaultCharset);
+    if (docIdDecoder == null || journal == null || adaptor == null
+        || sessionManager == null) {
+      throw new NullPointerException();
+    }
     this.docIdDecoder = docIdDecoder;
     this.journal = journal;
     this.adaptor = adaptor;
     this.authnHandler = authnHandler;
     this.sessionManager = sessionManager;
+    this.transform = transform;
 
     if (addResolvedGsaHostnameToGsaIps) {
       try {
@@ -108,6 +119,7 @@ class DocumentHandler extends AbstractHandler {
 
   @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
+    // TODO(ejona): split this method into reasonably-sized submethods.
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
@@ -205,13 +217,26 @@ class DocumentHandler extends AbstractHandler {
             + " requests.");
       } else {
         log.finer("processed request; response is size=" + content.length);
+        if (transform != null) {
+          ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
+          ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+          try {
+            // TODO(ejona): hookup metadata once the transform handles it
+            // reasonably.
+            transform.transform(content, new byte[0], contentOut, metadataOut,
+                                new HashMap<String, String>());
+          } catch (TransformException e) {
+            throw new IOException(e);
+          }
+          content = contentOut.toByteArray();
+        }
+        if (metadata != null && requestIsFromGsa(ex)) {
+          ex.getResponseHeaders().set("X-Gsa-External-Metadata",
+                                      formMetadataHeader(metadata));
+        }
       }
       // TODO(ejona): decide when to use compression based on mime-type
       enableCompressionIfSupported(ex);
-      if (metadata != null && requestIsFromGsa(ex)) {
-        ex.getResponseHeaders().set("X-Gsa-External-Metadata",
-                                    formMetadataHeader(metadata));
-      }
       if ("GET".equals(requestMethod)) {
         respond(ex, httpResponseCode, contentType, content);
       } else {
