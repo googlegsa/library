@@ -31,6 +31,7 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   private final HttpExchange ex;
   private boolean isAuthenticated;
   private boolean isHttps;
+  private String characterEncoding = "ISO-8859-1";
 
   public HttpExchangeOutTransportAdapter(HttpExchange ex) {
     this(ex, false);
@@ -44,31 +45,41 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /**
    * {@inheritDoc}
    *
-   * This method is not supported for this transport implementatino and always
-   * returns null.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public Object getAttribute(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public String getCharacterEncoding() {
-    // TODO(ejona): implement
-    return null;
+    return characterEncoding;
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public Credential getLocalCredential() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public Credential getPeerCredential() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /** {@inheritDoc} */
@@ -98,19 +109,21 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public void setConfidential(boolean isConfidential) {
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public void setIntegrityProtected(boolean isIntegrityProtected) {
+    throw new UnsupportedOperationException();
   }
 
   /** {@inheritDoc} */
@@ -132,29 +145,39 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
-  public void setAttribute(String name, Object value) {}
+  public void setAttribute(String name, Object value) {
+    throw new UnsupportedOperationException();
+  }
 
   /** {@inheritDoc} */
   @Override
   public void setCharacterEncoding(String encoding) {
-    // TODO(ejona): implement
+    if (ex.getResponseHeaders().get("Content-Type") != null) {
+      throw new UnsupportedOperationException(
+          "This implementation requires setCharacterEncoding before setting "
+          + "Content-Type");
+    }
+    characterEncoding = encoding;
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
-  public void addParameter(String name, String value) {}
+  public void addParameter(String name, String value) {
+    throw new UnsupportedOperationException();
+  }
 
   /** {@inheritDoc} */
   @Override
   public void sendRedirect(String location) {
     ex.getResponseHeaders().set("Location", location);
+    ex.setAttribute(AbstractHandler.ATTR_HEADERS_SENT, true);
     try {
       ex.sendResponseHeaders(307, -1);
     } catch (java.io.IOException ex) {
@@ -165,10 +188,17 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /** {@inheritDoc} */
   @Override
   public void setHeader(String name, String value) {
+    if ("Content-Type".equalsIgnoreCase(name)) {
+      value = value + "; charset=" + characterEncoding;
+    }
     ex.getResponseHeaders().set(name, value);
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public void setStatusCode(int code) {
     throw new UnsupportedOperationException();
@@ -177,69 +207,70 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public void setVersion(HTTP_VERSION version) {
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public String getHeaderValue(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public String getHTTPMethod() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public String getParameterValue(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public List<String> getParameterValues(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public int getStatusCode() {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public HTTP_VERSION getVersion() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 }

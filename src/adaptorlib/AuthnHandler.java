@@ -48,7 +48,7 @@ class AuthnHandler extends AbstractHandler {
    * Http client implementation that {@code SamlClient} will use to send
    * requests directly to the GSA, for resolving SAML artifacts.
    */
-  private final HttpClientInterface httpClient = new HttpClientAdapter();
+  private final HttpClientInterface httpClient;
   /** Credentials to use to sign messages. */
   private final Credential cred;
   /** SAML configuration of endpoints. */
@@ -66,11 +66,22 @@ class AuthnHandler extends AbstractHandler {
   AuthnHandler(String fallbackHostname, Charset defaultEncoding,
                SessionManager<HttpExchange> sessionManager, String keyAlias,
                SamlMetadata metadata) throws IOException {
+    this(fallbackHostname, defaultEncoding, sessionManager, metadata,
+         new HttpClientAdapter(), getCredential(keyAlias));
+  }
+
+  AuthnHandler(String fallbackHostname, Charset defaultEncoding,
+               SessionManager<HttpExchange> sessionManager,
+               SamlMetadata metadata, HttpClientInterface httpClient,
+               Credential cred) {
     super(fallbackHostname, defaultEncoding);
+    if (sessionManager == null || metadata == null || httpClient == null) {
+      throw new NullPointerException();
+    }
     this.sessionManager = sessionManager;
     this.metadata = metadata;
-
-    cred = getCredential(keyAlias);
+    this.httpClient = httpClient;
+    this.cred = cred;
   }
 
   @Override
@@ -106,20 +117,30 @@ class AuthnHandler extends AbstractHandler {
    * keystore. The key should have the same password as the keystore.
    */
   private static Credential getCredential(String alias) throws IOException {
-    String keystoreFile = System.getProperty("javax.net.ssl.keyStore");
-    if (keystoreFile == null) {
-      throw new RuntimeException("You must provide a default keystore");
-    }
+    final String keystoreKey = "javax.net.ssl.keyStore";
+    final String keystorePasswordKey = "javax.net.ssl.keyStorePassword";
+    String keystore = System.getProperty(keystoreKey);
     String keystoreType = System.getProperty("javax.net.ssl.keyStoreType",
                                              KeyStore.getDefaultType());
+    String keystorePassword = System.getProperty(keystorePasswordKey);
 
+    if (keystore == null) {
+      throw new NullPointerException("You must set " + keystoreKey);
+    }
+    if (keystorePassword == null) {
+      throw new NullPointerException("You must set " + keystorePasswordKey);
+    }
+
+    return getCredential(alias, keystore, keystoreType, keystorePassword);
+  }
+
+  static Credential getCredential(String alias, String keystoreFile,
+      String keystoreType, String keystorePasswordStr) throws IOException {
     PrivateKey privateKey;
     PublicKey publicKey;
     try {
       KeyStore ks = KeyStore.getInstance(keystoreType);
       InputStream ksis = new FileInputStream(keystoreFile);
-      String keystorePasswordStr = System.getProperty(
-          "javax.net.ssl.keyStorePassword");
       char[] keystorePassword = keystorePasswordStr == null ? null
           : keystorePasswordStr.toCharArray();
       try {
@@ -140,10 +161,11 @@ class AuthnHandler extends AbstractHandler {
         throw new RuntimeException(ex);
       }
       if (key == null) {
-        throw new NullPointerException();
+        throw new IllegalStateException("Could not find key for alias '"
+                                        + alias + "'");
       }
       privateKey = (PrivateKey) key;
-      publicKey = ks.getCertificate("adaptor").getPublicKey();
+      publicKey = ks.getCertificate(alias).getPublicKey();
     } catch (KeyStoreException ex) {
       throw new RuntimeException(ex);
     }

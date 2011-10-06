@@ -27,7 +27,7 @@ import java.util.List;
  * HttpExchange}.
  */
 class HttpExchangeInTransportAdapter implements HTTPInTransport {
-  private final HttpExchange ex;
+  protected final HttpExchange ex;
   private boolean isAuthenticated;
   private boolean isHttps;
 
@@ -43,31 +43,41 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
   /**
    * {@inheritDoc}
    *
-   * This method is not supported for this transport implementation and always
-   * returns {@code null}.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public Object getAttribute(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public String getCharacterEncoding() {
-    // TODO(ejona): implement
-    return null;
+    throw new UnsupportedOperationException();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public Credential getLocalCredential() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public Credential getPeerCredential() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /** {@inheritDoc} */
@@ -97,19 +107,21 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public void setConfidential(boolean isConfidential) {
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public void setIntegrityProtected(boolean isIntegrityProtected) {
+    throw new UnsupportedOperationException();
   }
 
   /** {@inheritDoc} */
@@ -118,31 +130,33 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
     return ex.getRequestBody();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public String getPeerAddress() {
     throw new UnsupportedOperationException();
   }
 
-  /** {@inheritDoc} */
+  /**
+   * {@inheritDoc}
+   *
+   * @throws UnsupportedOperationException always
+   */
   @Override
   public String getPeerDomainName() {
     throw new UnsupportedOperationException();
   }
 
-  /**
-   * {@inheritDoc}
-   */
+  /** {@inheritDoc} */
   @Override
   public String getHeaderValue(String name) {
     return ex.getRequestHeaders().getFirst(name);
   }
 
-  /**
-   * {@inheritDoc}
-   *
-   * <p>This method is not supported for this transport implementation.
-   */
+  /** {@inheritDoc} */
   @Override
   public String getHTTPMethod() {
     return ex.getRequestMethod();
@@ -151,40 +165,40 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public String getParameterValue(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public List<String> getParameterValues(String name) {
-    return null;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public int getStatusCode() {
-    return -1;
+    throw new UnsupportedOperationException();
   }
 
   /**
    * {@inheritDoc}
    *
-   * <p>This method is not supported for this transport implementation.
+   * @throws UnsupportedOperationException always
    */
   @Override
   public HTTP_VERSION getVersion() {
-    return null;
+    throw new UnsupportedOperationException();
   }
 }
