@@ -51,10 +51,10 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       // Make set to accumulate meta items.
       Set<MetaItem> metaItems = new TreeSet<MetaItem>();
       // Add user ACL.
-      List<String> users1001 = Arrays.asList("peter,bart,simon");
+      List<String> users1001 = Arrays.asList("peter", "bart", "simon");
       metaItems.add(MetaItem.permittedUsers(users1001));
       // Add group ACL.
-      List<String> groups1001 = Arrays.asList("support,sales");
+      List<String> groups1001 = Arrays.asList("support", "sales");
       metaItems.add(MetaItem.permittedGroups(groups1001));
       // Add custom meta items.
       metaItems.add(MetaItem.raw("my-special-key", "my-custom-value"));

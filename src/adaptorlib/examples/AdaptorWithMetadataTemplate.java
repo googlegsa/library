@@ -42,10 +42,10 @@ public class AdaptorWithMetadataTemplate extends AbstractAdaptor {
       // Make set to accumulate meta items.
       Set<MetaItem> metaItemsFor1001 = new TreeSet<MetaItem>();
       // Add user ACL.
-      List<String> users1001 = Arrays.asList("peter,bart,simon");
+      List<String> users1001 = Arrays.asList("peter", "bart", "simon");
       metaItemsFor1001.add(MetaItem.permittedUsers(users1001));
       // Add group ACL.
-      List<String> groups1001 = Arrays.asList("support,sales");
+      List<String> groups1001 = Arrays.asList("support", "sales");
       metaItemsFor1001.add(MetaItem.permittedGroups(groups1001));
       // Add custom meta items.
       metaItemsFor1001.add(MetaItem.raw("my-special-key", "my-custom-value"));
