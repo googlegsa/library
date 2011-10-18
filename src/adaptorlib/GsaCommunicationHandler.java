@@ -21,18 +21,23 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import it.sauronsoftware.cron4j.InvalidPatternException;
 import it.sauronsoftware.cron4j.Scheduler;
 
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -65,9 +70,14 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    */
   private OneAtATimeRunnable sendDocIds = new OneAtATimeRunnable(
       new PushRunnable(), new AlreadyRunningRunnable());
+  /**
+   * Schedule identifier for {@link #sendDocIds}.
+   */
+  private String sendDocIdsSchedId;
   private HttpServer server;
   private CircularLogRpcMethod circularLogRpcMethod;
   private Thread shutdownHook;
+  private Timer configWatcherTimer = new Timer("configWatcher", true);
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     this.adaptor = adaptor;
@@ -75,7 +85,6 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding(),
                                             config.isServerSecure());
     this.fileMaker = new GsaFeedFileMaker(this);
-    scheduler.start();
   }
 
   /**
@@ -164,7 +173,20 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
 
     adaptor.init(config, pusher);
 
-    scheduler.schedule(config.getAdaptorFullListingSchedule(), sendDocIds);
+    config.addConfigModificationListener(new GsaConfigModListener());
+    // Since we are white-listing particular keys for auto-update, things aren't
+    // ready enough to expose to adaptors.
+    /*if (adaptor instanceof ConfigModificationListener) {
+      config.addConfigModificationListener(
+          (ConfigModificationListener) adaptor);
+    }*/
+
+    scheduler.start();
+    sendDocIdsSchedId = scheduler.schedule(
+        config.getAdaptorFullListingSchedule(), sendDocIds);
+
+    long period = config.getConfigPollPeriod();
+    configWatcherTimer.schedule(new ConfigWatcher(config), period, period);
   }
 
   // Useful as a separate method during testing.
@@ -193,11 +215,15 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       }
       shutdownHook = null;
     }
+    scheduler.deschedule(sendDocIdsSchedId);
+    sendDocIdsSchedId = null;
     // Stop sendDocIds before scheduler, because scheduler blocks until all
     // tasks are completed. We want to interrupt sendDocIds so that the
     // scheduler stops within a reasonable amount of time.
     sendDocIds.stop();
-    scheduler.stop();
+    if (scheduler.isStarted()) {
+      scheduler.stop();
+    }
     if (server != null) {
       server.stop(maxDelay);
       server = null;
@@ -447,7 +473,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     }
   }
 
-  static class CircularLogRpcMethod implements RpcHandler.RpcMethod, Closeable {
+  static class CircularLogRpcMethod implements RpcHandler.RpcMethod,
+      Closeable {
     private final CircularBufferHandler circularLog
         = new CircularBufferHandler();
 
@@ -482,6 +509,42 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         configMap.put(key, config.getValue(key));
       }
       return configMap;
+    }
+  }
+
+  private class GsaConfigModListener implements ConfigModificationListener {
+    @Override
+    public void configModified(ConfigModificationEvent ev) {
+      Set<String> modifiedKeys = ev.getModifiedKeys();
+      synchronized (GsaCommunicationHandler.this) {
+        if (modifiedKeys.contains("adaptor.fullListingSchedule")
+            && sendDocIdsSchedId != null) {
+          String schedule = ev.getNewConfig().getAdaptorFullListingSchedule();
+          try {
+            scheduler.reschedule(sendDocIdsSchedId, schedule);
+          } catch (InvalidPatternException ex) {
+            log.log(Level.WARNING, "Invalid schedule pattern", ex);
+          }
+        }
+      }
+    }
+  }
+
+  private static class ConfigWatcher extends TimerTask {
+    private Config config;
+
+    public ConfigWatcher(Config config) {
+      this.config = config;
+    }
+
+    @Override
+    public void run() {
+      try {
+        config.checkForModifiedConfigFile();
+      } catch (IOException ex) {
+        log.log(Level.WARNING, "Error while trying to reload configuration",
+                ex);
+      }
     }
   }
 }
