@@ -210,23 +210,41 @@
     </java>
   </target>
 
-  <target name="run-fs" depends="build" description="Run filesystem adaptor">
-    <java classpath="${build-src.dir}" fork="true"
-      classname="adaptorlib.prebuilt.FileSystemAdaptor">
-      <classpath refid="adaptorlib.run.classpath"/>
-      <classpath location="${resource.dir}"/>
-      <classpath location="${json-simple.jar}"/>
-      <sysproperty key="java.util.logging.config.file"
-        value="${src.dir}/logging.properties"/>
-      <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
-      <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
-      <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
-      <sysproperty key="javax.net.ssl.trustStore" file="cacerts.jks"/>
-      <sysproperty key="javax.net.ssl.trustStoreType" value="jks"/>
-      <sysproperty key="javax.net.ssl.trustStorePassword" value="changeit"/>
-      <arg line="${adaptor.args}"/>
-    </java>
-  </target>
+    <target name="run-fs" depends="build" description="Run filesystem adaptor">
+      <java classpath="${build-src.dir}" fork="true"
+        classname="adaptorlib.prebuilt.FileSystemAdaptor">
+        <classpath refid="adaptorlib.run.classpath"/>
+        <classpath location="${resource.dir}"/>
+        <classpath location="${json-simple.jar}"/>
+        <sysproperty key="java.util.logging.config.file"
+          value="${src.dir}/logging.properties"/>
+        <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
+        <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
+        <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
+        <sysproperty key="javax.net.ssl.trustStore" file="cacerts.jks"/>
+        <sysproperty key="javax.net.ssl.trustStoreType" value="jks"/>
+        <sysproperty key="javax.net.ssl.trustStorePassword" value="changeit"/>
+        <arg line="${adaptor.args}"/>
+      </java>
+    </target>
+
+    <target name="run-cmd" depends="build" description="Run command line adaptor">
+      <java classpath="${build-src.dir}" fork="true"
+        classname="adaptorlib.prebuilt.CommandLineAdaptor">
+        <classpath refid="adaptorlib.run.classpath"/>
+        <classpath location="${resource.dir}"/>
+        <classpath location="${json-simple.jar}"/>
+        <sysproperty key="java.util.logging.config.file"
+          value="${src.dir}/logging.properties"/>
+        <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
+        <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
+        <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
+        <sysproperty key="javax.net.ssl.trustStore" file="cacerts.jks"/>
+        <sysproperty key="javax.net.ssl.trustStoreType" value="jks"/>
+        <sysproperty key="javax.net.ssl.trustStorePassword" value="changeit"/>
+        <arg line="${adaptor.args}"/>
+      </java>
+    </target>
 
   <target name="test" depends="build" description="Run JUnit tests">
     <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true">

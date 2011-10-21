@@ -16,6 +16,10 @@ package adaptorlib;
 
 import static org.junit.Assume.*;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.List;
+
 /**
  * Utility methods for tests.
  */
@@ -36,5 +40,22 @@ public class TestHelper {
   public static void assumeOsIsWindows() {
     assumeTrue(isRunningOnWindows());
   }
+
+  public static List<DocId> getDocIds(Adaptor adaptor) throws IOException,
+      InterruptedException {
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    adaptor.setDocIdPusher(pusher);
+    adaptor.getDocIds(pusher);
+    return pusher.getDocIds();
+  }
+
+  public static byte[] getDocContent(Adaptor adaptor, DocId docId) throws IOException,
+      InterruptedException {
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId),
+                          new WrapperAdaptor.GetContentsResponse(baos));
+    return baos.toByteArray();
+  }
+
 
 }

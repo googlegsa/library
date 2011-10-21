@@ -27,21 +27,6 @@ import java.util.zip.*;
  * Tests for {@link AutoUnzipAdaptor}.
  */
 public class AutoUnzipAdaptorTest {
-  private List<DocId> getDocIds(Adaptor adaptor) throws IOException,
-      InterruptedException {
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
-    adaptor.setDocIdPusher(pusher);
-    adaptor.getDocIds(pusher);
-    return pusher.getDocIds();
-  }
-
-  private byte[] getDocContent(Adaptor adaptor, DocId docId) throws IOException,
-      InterruptedException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId),
-                          new WrapperAdaptor.GetContentsResponse(baos));
-    return baos.toByteArray();
-  }
 
   @Test
   public void testEscape() throws Exception {
@@ -76,14 +61,14 @@ public class AutoUnzipAdaptorTest {
         new DocId("test\\!test5\\!test"),
         new DocId("test6\\!\\!test"),
       });
-    List<DocId> retrieved = getDocIds(adaptor);
+    List<DocId> retrieved = TestHelper.getDocIds(adaptor);
     assertEquals("encoding", expected, retrieved);
 
     // Check decoding
     for (int i = 0; i < original.size(); i++) {
       assertArrayEquals("decoding",
                         original.get(i).getUniqueId().getBytes(charset),
-                        getDocContent(adaptor, retrieved.get(i)));
+                        TestHelper.getDocContent(adaptor, retrieved.get(i)));
     }
   }
 
@@ -103,7 +88,7 @@ public class AutoUnzipAdaptorTest {
     List<DocId> expected = Arrays.asList(new DocId[] {
         new DocId("test.zip"),
       });
-    assertEquals(expected, getDocIds(adaptor));
+    assertEquals(expected, TestHelper.getDocIds(adaptor));
   }
 
   @Test
@@ -148,35 +133,13 @@ public class AutoUnzipAdaptorTest {
         new DocId("\\!test.zip!test\\!test5\\!test"),
         new DocId("\\!test.zip!test6\\!\\!test"),
       });
-    List<DocId> retrieved = getDocIds(adaptor);
+    List<DocId> retrieved = TestHelper.getDocIds(adaptor);
     assertEquals(expected, retrieved);
 
     // Check decoding
     for (int i = 0; i < original.size(); i++) {
       assertArrayEquals(original.get(i).getBytes(charset),
-                        getDocContent(adaptor, retrieved.get(i + 1)));
-    }
-  }
-
-  private static class AccumulatingDocIdPusher extends AbstractDocIdPusher {
-    private List<DocId> ids = new ArrayList<DocId>();
-
-    @Override
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                Adaptor.PushErrorHandler handler)
-        throws InterruptedException {
-      for (DocInfo docInfo : docInfos) {
-        ids.add(docInfo.getDocId());
-      }
-      return null;
-    }
-
-    public List<DocId> getDocIds() {
-      return Collections.unmodifiableList(ids);
-    }
-
-    public void reset() {
-      ids.clear();
+                        TestHelper.getDocContent(adaptor, retrieved.get(i + 1)));
     }
   }
 }

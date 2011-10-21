@@ -38,11 +38,11 @@ public class CommandLineAdaptor extends AbstractAdaptor {
   public void getDocIds(DocIdPusher pusher) throws IOException,
          InterruptedException {
     int commandResult;
-    Command command = new Command();
+    Command command = newListerCommand();
 
     try {
       log.finest("Command: ./list-doc-ids-filesystem.sh");
-      commandResult = command.exec(new String[] {"./list-doc-ids-filesystem.sh"});
+      commandResult = command.exec(new String[] {"./list-doc-ids.sh"});
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
     } catch (IOException e) {
@@ -66,12 +66,12 @@ public class CommandLineAdaptor extends AbstractAdaptor {
   public void getDocContent(Request req, Response resp) throws IOException {
     DocId id = req.getDocId();
     int commandResult;
-    Command command = new Command();
+    Command command = newRetrieverCommand();
 
     try {
       log.finest("Command: ./get-doc-contents-filesystem.sh " + id.getUniqueId());
       commandResult = command.exec(
-          new String[] {"./get-doc-contents-filesystem.sh", id.getUniqueId()});
+          new String[] {"./get-doc-contents.sh", id.getUniqueId()});
     } catch (InterruptedException e) {
       throw new IOException("Thread intrupted while waiting for external command.", e);
     } catch (IOException e) {
@@ -85,6 +85,14 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       log.finest("Returning document contents for ID '" + id.getUniqueId() + ".");
     }
     resp.getOutputStream().write(command.getStdout());
+  }
+
+  protected Command newListerCommand() {
+    return new Command();
+  }
+
+  protected Command newRetrieverCommand() {
+    return new Command();
   }
 
   /** An example main for an adaptor that enables serving. */
