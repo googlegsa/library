@@ -185,7 +185,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(), sendDocIds);
 
-    long period = config.getConfigPollPeriod();
+    long period = config.getConfigPollPeriodMillis();
     configWatcherTimer.schedule(new ConfigWatcher(config), period, period);
   }
 

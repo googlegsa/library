@@ -73,7 +73,7 @@ public class Config {
     // 3:00 AM every day.
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
     // In seconds.
-    addKey("config.pollPeriod", "30");
+    addKey("config.pollPeriodSecs", "30");
   }
 
   public Set<String> getAllKeys() {
@@ -265,8 +265,8 @@ public class Config {
   /**
    * Period in milliseconds between checks for updated configuration.
    */
-  public long getConfigPollPeriod() {
-    return Long.parseLong(getValue("config.pollPeriod")) * 1000;
+  public long getConfigPollPeriodMillis() {
+    return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
   }
 
 // TODO(pjo): Implement on GSA
