@@ -17,11 +17,10 @@ package adaptorlib;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Runnable that can be {@link #run} in many different threads, but will only
- * do heavy lifting in one at a time. The first thread that issues {@code run()}
- * will cause the execution of {@code runnable}, but further simultaneous calls
- * to {@code run()} will execute {@code alreadyRunningRunnable} and return
- * immediately.
+ * Ensures that at most one thread is executing a particular runnable. The first
+ * thread that issues {@code run()} will cause the execution of {@code
+ * runnable}, but further simultaneous calls to {@code run()} will execute
+ * {@code alreadyRunningRunnable} and return immediately.
  *
  * <p>This class is thread-safe.
  */
