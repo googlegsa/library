@@ -55,7 +55,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private final DocIdPusher pusher = new InnerDocIdPusher();
   /**
    * Generic scheduler. Available for other uses, but necessary for running
-   * {@link sendDocIds}
+   * {@link docIdSender}
    */
   private Scheduler scheduler = new Scheduler();
   /**
@@ -63,7 +63,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * permits one invocation at a time. If multiple simultaneous invocations
    * occur, all but the first will log a warning and return immediately.
    */
-  private OneAtATimeRunnable sendDocIds = new OneAtATimeRunnable(
+  private OneAtATimeRunnable docIdSender = new OneAtATimeRunnable(
       new PushRunnable(), new AlreadyRunningRunnable());
   private HttpServer server;
   private CircularLogRpcMethod circularLogRpcMethod;
@@ -82,7 +82,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * Overrides the default {@link GetDocIdsErrorHandler}.
    */
   public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler) {
-    ((PushRunnable) sendDocIds.getRunnable()).setGetDocIdsErrorHandler(handler);
+    ((PushRunnable) docIdSender.getRunnable()).setGetDocIdsErrorHandler(handler);
   }
 
   /** Starts listening for communications from GSA. */
@@ -164,7 +164,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
 
     adaptor.init(config, pusher);
 
-    scheduler.schedule(config.getAdaptorFullListingSchedule(), sendDocIds);
+    scheduler.schedule(config.getAdaptorFullListingSchedule(), docIdSender);
   }
 
   // Useful as a separate method during testing.
@@ -193,10 +193,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       }
       shutdownHook = null;
     }
-    // Stop sendDocIds before scheduler, because scheduler blocks until all
-    // tasks are completed. We want to interrupt sendDocIds so that the
+    // Stop docIdSender before scheduler, because scheduler blocks until all
+    // tasks are completed. We want to interrupt docIdSender so that the
     // scheduler stops within a reasonable amount of time.
-    sendDocIds.stop();
+    docIdSender.stop();
     scheduler.stop();
     if (server != null) {
       server.stop(maxDelay);
@@ -229,7 +229,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    * false otherwise.
    */
   public boolean checkAndScheduleImmediatePushOfDocIds() {
-    return sendDocIds.runInNewThread() != null;
+    return docIdSender.runInNewThread() != null;
   }
 
   private DocInfo pushSizedBatchOfDocInfos(List<DocInfo> docInfos,
