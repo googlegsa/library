@@ -17,7 +17,7 @@ package adaptorlib.prebuilt;
 import adaptorlib.*;
 
 import java.io.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.logging.Logger;
 import java.util.regex.*;
 
@@ -96,8 +96,13 @@ public class FileSystemAdaptor extends AbstractAdaptor {
   public void getDocContent(Request req, Response resp) throws IOException {
     DocId id = req.getDocId();
     File file = new File(serveDir, id.getUniqueId()).getCanonicalFile();
-    if (!isFileDescendantOfServeDir(file) || !isFileAllowed(file)) {
+    if (!file.exists() || !isFileDescendantOfServeDir(file)
+        || !isFileAllowed(file)) {
       throw new FileNotFoundException();
+    }
+    if (!req.hasChangedSinceLastAccess(new Date(file.lastModified()))) {
+      resp.respondNotModified();
+      return;
     }
     InputStream input = new FileInputStream(file);
     try {
