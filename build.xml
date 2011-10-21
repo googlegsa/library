@@ -29,6 +29,7 @@
       <include name="xmltooling-1.2.2.jar"/>
       <include name="guava-pre-pre10.jar"/>
       <include name="jsr305.jar"/>
+      <include name="cron4j-2.2.4.jar"/>
     </fileset>
   </path>
 

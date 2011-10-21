@@ -67,6 +67,8 @@ public class Config {
     addKey("feed.maxUrls", "5000");
     addKey("adaptor.pushDocIdsOnStartup", "true");
     addKey("adaptor.autoUnzip", "false");
+    // 3:00 AM every day.
+    addKey("adaptor.fullListingSchedule", "0 3 * * *");
   }
 
   public Set<String> getAllKeys() {
@@ -245,6 +247,15 @@ public class Config {
   public boolean useAdaptorAutoUnzip() {
     return Boolean.parseBoolean(getValue("adaptor.autoUnzip"));
   } 
+
+  /**
+   * Cron-style format for describing when the adaptor should perform full
+   * listings of {@code DocId}s. Multiple times can be specified by separating
+   * them with a '|' (vertical bar).
+   */
+  public String getAdaptorFullListingSchedule() {
+    return getValue("adaptor.fullListingSchedule");
+  }
 
 // TODO(pjo): Implement on GSA
 //  /**

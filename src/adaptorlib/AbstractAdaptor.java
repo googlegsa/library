@@ -99,6 +99,11 @@ public abstract class AbstractAdaptor implements Adaptor {
     }
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
 
+    if (handler != null) {
+      // Override default handler.
+      gsa.setGetDocIdsErrorHandler(handler);
+    }
+
     // Setup providing content.
     try {
       gsa.start();
@@ -107,15 +112,9 @@ public abstract class AbstractAdaptor implements Adaptor {
       throw new RuntimeException("could not start serving", e);
     }
 
-    // Schedule pushing of doc ids once per day.
-    // TODO(ejona): allow to be configured
-    gsa.schedulePushOfDocIds(
-        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0), handler);
-    log.info("doc id pushing has been put on schedule");
-
     if (config.isAdaptorPushDocIdsOnStartup()) {
       log.info("Pushing once at program start");
-      gsa.checkAndScheduleImmediatePushOfDocIds(handler);
+      gsa.checkAndScheduleImmediatePushOfDocIds();
     }
 
     return gsa;
