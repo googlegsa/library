@@ -114,7 +114,7 @@ public abstract class AbstractAdaptor implements Adaptor {
     log.info("doc id pushing has been put on schedule");
 
     if (config.isAdaptorPushDocIdsOnStartup()) {
-      // Push once at program start.
+      log.info("Pushing once at program start");
       gsa.checkAndScheduleImmediatePushOfDocIds(handler);
     }
 

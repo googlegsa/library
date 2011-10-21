@@ -196,7 +196,7 @@
     <jar destfile="${build.dir}/adaptor.tmp.jar" basedir="${build-src.dir}"
       excludes="adaptorlib/examples/**,adaptorlib/prebuilt/**">
       <zipgroupfileset dir="${lib.dir}" includes="${tmp.adaptorlib.zipgroup}"/>
-      <!-- resource.dir is included in tmp.adaptorlib.zipgroup, but size it
+      <!-- resource.dir is included in tmp.adaptorlib.zipgroup, but since it
            isn't a zip file, the zipgroupfileset doesn't include the folder's
            contents. Thus, we explicitly add it again here. -->
       <fileset dir="${resource.dir}"/>

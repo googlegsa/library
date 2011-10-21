@@ -24,6 +24,15 @@ import java.util.Set;
  * Implementations must be thread-safe. Implementations are encouraged to not
  * keep any state or only soft-state like a connection cache.
  *
+ * <p>Once configuration is prepared, {@link #init} will be called. This is
+ * guaranteed to occur before any calls to {@link #getDocContent}, {@link
+ * #getDocIds}, or {@link #isUserAuthorized}. When the adaptor needs to
+ * shutdown, {@link #destoy} will be called.
+ *
+ * <p>If the adaptor is using {@link AbstractAdaptor#main}, then {@link
+ * #initConfig} will be called before {@link #init} to allow the adaptor an
+ * opportunity to set and override default configuration values.
+ *
  * @see adaptorlib.examples.AdaptorTemplate
  * @see adaptorlib.AbstractAdaptor
  */
@@ -93,6 +102,8 @@ public interface Adaptor {
    * Provides the opportunity for the Adaptor to create new configuration values
    * or override default values. Only {@link Config#addKey} should likely be
    * called. The user's configuration will override any values set in this way.
+   * This method is called by {@link AbstractAdaptor#main} before {@link #init}
+   * is called.
    */
   public void initConfig(Config config);
 
