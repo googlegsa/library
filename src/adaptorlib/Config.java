@@ -20,10 +20,7 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.*;
 
 /**
@@ -38,10 +35,16 @@ public class Config {
 
   /** Configuration keys whose default value is {@code null}. */
   protected final Set<String> noDefaultConfig = new HashSet<String>();
-  /** Default configuration values */
+  /** Default configuration values. */
   protected final Properties defaultConfig = new Properties();
-  /** Overriding configuration values loaded from file and command line */
-  protected Properties config = new Properties(defaultConfig);
+  /** Overriding configuration values loaded from file. */
+  protected Properties configFileProperties = new Properties(defaultConfig);
+  /** Overriding configuration values loaded from command line. */
+  protected Properties config = new Properties(configFileProperties);
+  protected File configFile = new File(DEFAULT_CONFIG_FILE);
+  protected long configFileLastModified;
+  protected List<ConfigModificationListener> modificationListeners
+      = new LinkedList<ConfigModificationListener>();
 
   public Config() {
     String hostname = null;
@@ -69,6 +72,8 @@ public class Config {
     addKey("adaptor.autoUnzip", "false");
     // 3:00 AM every day.
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
+    // In seconds.
+    addKey("config.pollPeriodSecs", "30");
   }
 
   public Set<String> getAllKeys() {
@@ -257,6 +262,13 @@ public class Config {
     return getValue("adaptor.fullListingSchedule");
   }
 
+  /**
+   * Period in milliseconds between checks for updated configuration.
+   */
+  public long getConfigPollPeriodMillis() {
+    return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
+  }
+
 // TODO(pjo): Implement on GSA
 //  /**
 //   * Optional (default false): Adds no-follow bit with sent records in feed
@@ -285,23 +297,112 @@ public class Config {
   /**
    * Load user-provided configuration file.
    */
-  public void load(String configFile) throws IOException {
+  public synchronized void load(String configFile) throws IOException {
     load(new File(configFile));
   }
 
   /**
    * Load user-provided configuration file.
    */
-  public void load(File configFile) throws IOException {
-    load(new InputStreamReader(new FileInputStream(configFile),
-                               Charset.forName("UTF-8")));
+  public synchronized void load(File configFile) throws IOException {
+    this.configFile = configFile;
+    configFileLastModified = configFile.lastModified();
+    Reader reader = createReader(configFile);
+    try {
+      load(reader);
+    } finally {
+      reader.close();
+    }
   }
 
   /**
    * Load user-provided configuration file.
    */
-  public void load(Reader configFile) throws IOException {
-    config.load(configFile);
+  private void load(Reader configFile) throws IOException {
+    configFileProperties.load(configFile);
+  }
+
+  Reader createReader(File file) throws IOException {
+    return new InputStreamReader(new BufferedInputStream(
+        new FileInputStream(configFile)), Charset.forName("UTF-8"));
+  }
+
+  public synchronized void ensureLatestConfigLoaded() throws IOException {
+    if (!configFile.exists() || !configFile.isFile()) {
+      return;
+    }
+    // Check for modifications.
+    long newLastModified = configFile.lastModified();
+    if (configFileLastModified == newLastModified || newLastModified == 0) {
+      return;
+    }
+    log.info("Noticed modified configuration file");
+    // Go ahead and update the modification time now, to prevent constantly
+    // trying to load the configuration file, in case of errors.
+    configFileLastModified = newLastModified;
+
+    // Load freshly-modified file.
+    Properties newConfigFileProperties = new Properties(defaultConfig);
+    Properties newConfig = new Properties(newConfigFileProperties);
+    Reader reader = createReader(configFile);
+    try {
+      newConfigFileProperties.load(reader);
+    } finally {
+      reader.close();
+    }
+
+    for (Object o : config.keySet()) {
+      newConfig.put(o, config.get(o));
+    }
+
+    // Find differences.
+    Set<String> differentKeys = findDifferences(config, newConfig);
+
+    // Only allow adaptor.fullListingSchedule to be updated at the moment. No
+    // other code can handle updates. Since the Dashboard will show the current
+    // values, we don't want the Dashboard showing new values and the code using
+    // old values. TODO(ejona): Once more things support modification of
+    // configuration, this should be removed.
+    for (String name : new ArrayList<String>(differentKeys)) {
+      if (!"adaptor.fullListingSchedule".equals(name)) {
+        differentKeys.remove(name);
+        log.log(Level.INFO,
+            "Ignoring modified key {0}, since it is not white-listed", name);
+        newConfigFileProperties.setProperty(name, config.getProperty(name));
+      }
+    }
+
+    if (differentKeys.isEmpty()) {
+      log.info("No configuration changes found");
+      return;
+    }
+
+    validate(newConfig);
+
+    Config fakeOldConfig = new Config();
+    fakeOldConfig.configFileProperties = configFileProperties;
+    fakeOldConfig.config = config;
+    this.configFileProperties = newConfigFileProperties;
+    this.config = newConfig;
+    log.info("New configuration file loaded");
+    fireConfigModificationEvent(fakeOldConfig, differentKeys);
+  }
+
+  private Set<String> findDifferences(Properties config, Properties newConfig) {
+    Set<String> differentKeys = new HashSet<String>();
+    Set<String> names = new HashSet<String>();
+    names.addAll(config.stringPropertyNames());
+    names.addAll(newConfig.stringPropertyNames());
+    for (String name : names) {
+      String value = config.getProperty(name);
+      String newValue = newConfig.getProperty(name);
+      boolean equal = (value == null && newValue == null)
+          || (value != null && value.equals(newValue));
+      if (!equal) {
+        differentKeys.add(name);
+      }
+    }
+    return differentKeys;
   }
 
   /**
@@ -310,14 +411,29 @@ public class Config {
    * error handling, since this is typically non-fatal.
    */
   public void loadDefaultConfigFile() {
-    File confFile = new File(DEFAULT_CONFIG_FILE);
-    if (confFile.exists() && confFile.isFile()) {
+    if (configFile.exists() && configFile.isFile()) {
       try {
-        load(confFile);
+        load(configFile);
       } catch (IOException ex) {
-        System.err.println("Exception when reading " + DEFAULT_CONFIG_FILE);
+        System.err.println("Exception when reading " + configFile);
         ex.printStackTrace(System.err);
       }
+    }
+  }
+
+  public void validate() {
+    validate(config);
+  }
+
+  private void validate(Properties config) {
+    Set<String> unset = new HashSet<String>();
+    for (String key : noDefaultConfig) {
+      if (config.getProperty(key) == null) {
+        unset.add(key);
+      }
+    }
+    if (unset.size() != 0) {
+      throw new IllegalStateException("Missing configuration values: " + unset);
     }
   }
 
@@ -341,15 +457,7 @@ public class Config {
       }
       setValue(parts[0], parts[1]);
     }
-    Set<String> unset = new HashSet<String>();
-    for (String key : noDefaultConfig) {
-      if (config.getProperty(key) == null) {
-        unset.add(key);
-      }
-    }
-    if (unset.size() != 0) {
-      throw new IllegalStateException("Missing configuration values: " + unset);
-    }
+    validate();
     if (i == 0) {
       return args;
     } else {
@@ -362,7 +470,7 @@ public class Config {
    *
    * @throws IllegalStateException if {@code key} has no value
    */
-  public String getValue(String key) {
+  public synchronized String getValue(String key) {
     String value = config.getProperty(key);
     if (value == null) {
       throw new IllegalStateException(MessageFormat.format(
@@ -375,7 +483,7 @@ public class Config {
    * Add configuration key. If {@code defaultValue} is {@code null}, then no
    * default value is used and the user must provide one.
    */
-  public void addKey(String key, String defaultValue) {
+  public synchronized void addKey(String key, String defaultValue) {
     if (defaultConfig.contains(key) || noDefaultConfig.contains(key)) {
       throw new IllegalStateException("Key already added: " + key);
     }
@@ -391,7 +499,7 @@ public class Config {
    * defaultValue} is {@code null}, then no default is used and the user must
    * provide one.
    */
-  public void overrideKey(String key, String defaultValue) {
+  public synchronized void overrideKey(String key, String defaultValue) {
     if (!defaultConfig.contains(key) && !noDefaultConfig.contains(key)) {
       log.log(Level.WARNING, "Overriding unknown configuration key: {0}", key);
     }
@@ -408,7 +516,37 @@ public class Config {
    * Manually set a configuration value. Depending on when called, it can
    * override a user's configuration, which should be avoided.
    */
-  void setValue(String key, String value) {
+  synchronized void setValue(String key, String value) {
     config.setProperty(key, value);
+  }
+
+  public void addConfigModificationListener(
+      ConfigModificationListener listener) {
+    synchronized (modificationListeners) {
+      modificationListeners.add(listener);
+    }
+  }
+
+  public void removeConfigModificationListener(
+      ConfigModificationListener listener) {
+    synchronized (modificationListeners) {
+      modificationListeners.remove(listener);
+    }
+  }
+
+  private void fireConfigModificationEvent(Config oldConfig,
+                                           Set<String> modifiedKeys) {
+    ConfigModificationEvent ev
+        = new ConfigModificationEvent(this, oldConfig, modifiedKeys);
+    synchronized (modificationListeners) {
+      for (ConfigModificationListener listener : modificationListeners) {
+        try {
+          listener.configModified(ev);
+        } catch (Exception ex) {
+          log.log(Level.WARNING,
+                  "Unexpected exception. Consider filing a bug.", ex);
+        }
+      }
+    }
   }
 }
