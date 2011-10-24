@@ -197,7 +197,9 @@ class DocumentHandler extends AbstractHandler {
         httpResponseCode = response.httpResponseCode;
         metadata = response.metadata;
       } catch (FileNotFoundException e) {
-        log.log(Level.INFO, "FileNotFound during getDocContent", e);
+        log.log(Level.FINE, "FileNotFound during getDocContent. Message: {0}",
+                e.getMessage());
+        log.log(Level.FINER, "Full FileNotFound information", e);
         cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
                       "Unknown document");
         return;
@@ -214,7 +216,7 @@ class DocumentHandler extends AbstractHandler {
 
       if (content == null) {
         log.finer("processed request; response is null. This is normal for HEAD"
-            + " requests.");
+            + " requests or when the response is 304 Not Modified.");
       } else {
         log.finer("processed request; response is size=" + content.length);
         if (transform != null) {
