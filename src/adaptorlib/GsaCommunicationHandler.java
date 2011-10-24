@@ -28,7 +28,6 @@ import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -540,8 +539,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     @Override
     public void run() {
       try {
-        config.checkForModifiedConfigFile();
-      } catch (IOException ex) {
+        config.ensureLatestConfigLoaded();
+      } catch (Exception ex) {
         log.log(Level.WARNING, "Error while trying to reload configuration",
                 ex);
       }

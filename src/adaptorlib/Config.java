@@ -327,7 +327,7 @@ public class Config {
         new FileInputStream(configFile)), Charset.forName("UTF-8"));
   }
 
-  public synchronized void checkForModifiedConfigFile() throws IOException {
+  public synchronized void ensureLatestConfigLoaded() throws IOException {
     if (!configFile.exists() || !configFile.isFile()) {
       return;
     }
@@ -356,6 +356,39 @@ public class Config {
     }
 
     // Find differences.
+    Set<String> differentKeys = findDifferences(config, newConfig);
+
+    // Only allow adaptor.fullListingSchedule to be updated at the moment. No
+    // other code can handle updates. Since the Dashboard will show the current
+    // values, we don't want the Dashboard showing new values and the code using
+    // old values. TODO(ejona): Once more things support modification of
+    // configuration, this should be removed.
+    for (String name : new ArrayList<String>(differentKeys)) {
+      if (!"adaptor.fullListingSchedule".equals(name)) {
+        differentKeys.remove(name);
+        log.log(Level.INFO,
+            "Ignoring modified key {0}, since it is not white-listed", name);
+        newConfigFileProperties.setProperty(name, config.getProperty(name));
+      }
+    }
+
+    if (differentKeys.isEmpty()) {
+      log.info("No configuration changes found");
+      return;
+    }
+
+    validate(newConfig);
+
+    Config fakeOldConfig = new Config();
+    fakeOldConfig.configFileProperties = configFileProperties;
+    fakeOldConfig.config = config;
+    this.configFileProperties = newConfigFileProperties;
+    this.config = newConfig;
+    log.info("New configuration file loaded");
+    fireConfigModificationEvent(fakeOldConfig, differentKeys);
+  }
+
+  private Set<String> findDifferences(Properties config, Properties newConfig) {
     Set<String> differentKeys = new HashSet<String>();
     Set<String> names = new HashSet<String>();
     names.addAll(config.stringPropertyNames());
@@ -366,36 +399,10 @@ public class Config {
       boolean equal = (value == null && newValue == null)
           || (value != null && value.equals(newValue));
       if (!equal) {
-        // Only allow adaptor.fullListingSchedule to be updated at the moment.
-        // No other code can handle updates. Since the Dashboard will show the
-        // current values, we don't want the Dashboard showing new values and
-        // the code using old values. TODO(ejona): Once more things support
-        // modification of configuration, this should be removed.
-        if ("adaptor.fullListingSchedule".equals(name)) {
-          differentKeys.add(name);
-        } else {
-          log.log(Level.INFO,
-                  "Ignoring modified key {0}, since it is not white-listed",
-                  name);
-          newConfigFileProperties.setProperty(name, value);
-        }
+        differentKeys.add(name);
       }
     }
-
-    validate(newConfig);
-
-    if (differentKeys.isEmpty()) {
-      log.info("No configuration changes found");
-      return;
-    }
-
-    Config fakeOldConfig = new Config();
-    fakeOldConfig.configFileProperties = configFileProperties;
-    fakeOldConfig.config = config;
-    this.configFileProperties = newConfigFileProperties;
-    this.config = newConfig;
-    log.info("New configuration file loaded");
-    fireConfigModificationEvent(fakeOldConfig, differentKeys);
+    return differentKeys;
   }
 
   /**

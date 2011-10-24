@@ -71,12 +71,12 @@ public class ConfigTest {
     };
     configFile.setFileContents("adaptor.fullListingSchedule=2\n");
     config.addConfigModificationListener(listener);
-    config.checkForModifiedConfigFile();
+    config.ensureLatestConfigLoaded();
     assertEquals("1", config.getAdaptorFullListingSchedule());
     assertEquals(0, events.size());
 
     configFile.setLastModified(configFile.lastModified() + 1);
-    config.checkForModifiedConfigFile();
+    config.ensureLatestConfigLoaded();
     assertEquals("2", config.getAdaptorFullListingSchedule());
     assertEquals("notreal", config.getGsaHostname());
     assertEquals(1, events.size());
@@ -87,7 +87,7 @@ public class ConfigTest {
 
     // Change nothing.
     configFile.setLastModified(configFile.lastModified() + 1);
-    config.checkForModifiedConfigFile();
+    config.ensureLatestConfigLoaded();
     assertEquals(0, events.size());
     assertEquals("2", config.getAdaptorFullListingSchedule());
     assertEquals("notreal", config.getGsaHostname());
@@ -95,7 +95,7 @@ public class ConfigTest {
     config.removeConfigModificationListener(listener);
     configFile.setFileContents("adaptor.fullListingSchedule=3\n");
     configFile.setLastModified(configFile.lastModified() + 1);
-    config.checkForModifiedConfigFile();
+    config.ensureLatestConfigLoaded();
     assertEquals(0, events.size());
     assertEquals("3", config.getAdaptorFullListingSchedule());
     assertEquals("notreal", config.getGsaHostname());
@@ -113,7 +113,7 @@ public class ConfigTest {
     configFile.setLastModified(configFile.lastModified() + 1);
     boolean threwException = false;
     try {
-      config.checkForModifiedConfigFile();
+      config.ensureLatestConfigLoaded();
     } catch (IllegalStateException e) {
       threwException = true;
     }
