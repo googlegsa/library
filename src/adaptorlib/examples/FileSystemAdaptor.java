@@ -21,14 +21,31 @@ import java.util.ArrayList;
 import java.util.logging.Logger;
 
 /**
- * Adaptor serving files from current directory
+ * Simple example adaptor that serves files from the local filesystem.
  */
 public class FileSystemAdaptor extends AbstractAdaptor {
-  private static Logger log = Logger.getLogger(FileSystemAdaptor.class.getName());
-  private final File serveDir;
+  private static final Logger log
+      = Logger.getLogger(FileSystemAdaptor.class.getName());
 
-  public FileSystemAdaptor(File file) throws IOException {
-    this.serveDir = file.getCanonicalFile();
+  private File serveDir;
+
+  @Override
+  public void initConfig(Config config) {
+    // Setup default configuration values. The user is allowed to override them.
+
+    // Create a new configuration key for letting the user configure this
+    // adaptor.
+    config.addKey("filesystemadaptor.src", ".");
+    // Change the default to automatically provide unzipped zip contents to the
+    // GSA.
+    config.overrideKey("adaptor.autoUnzip", "true");
+  }
+
+  @Override
+  public void init(Config config, DocIdPusher pusher) throws Exception {
+    // Process configuration.
+    String source = config.getValue("filesystemadaptor.src");
+    serveDir = new File(source).getCanonicalFile();
   }
 
   @Override
@@ -57,6 +74,8 @@ public class FileSystemAdaptor extends AbstractAdaptor {
   public void getDocContent(Request req, Response resp) throws IOException {
     DocId id = req.getDocId();
     File file = new File(serveDir, id.getUniqueId()).getCanonicalFile();
+    // The DocId provided by Request.getDocId() MUST NOT be trusted. Here we
+    // try to verify that this file is allowed to be served.
     if (!isFileDescendantOfServeDir(file)) {
       throw new FileNotFoundException();
     }
@@ -78,29 +97,8 @@ public class FileSystemAdaptor extends AbstractAdaptor {
     return false;
   }
 
-  /** An example main for an adaptor. */
-  public static void main(String a[]) throws IOException, InterruptedException {
-    Config config = new Config();
-    config.addKey("filesystemadaptor.src", ".");
-    config.autoConfig(a);
-    String source = config.getValue("filesystemadaptor.src");
-    Adaptor adaptor = new FileSystemAdaptor(new File(source));
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
-
-    // Setup providing content:
-    try {
-      gsa.beginListeningForContentRequests();
-      log.info("doc content serving started");
-    } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
-    }
-
-    // Push once at program start.
-    gsa.pushDocIds();
-
-    // Setup regular pushing of doc ids for once per day.
-    gsa.beginPushingDocIds(
-        new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    log.info("doc id pushing has been put on schedule");
+  /** Call default main for adaptors. */
+  public static void main(String[] args) {
+    AbstractAdaptor.main(new FileSystemAdaptor(), args);
   }
 }

@@ -17,8 +17,7 @@ package adaptorlib;
 /**
  * Default handler of errors during {@link Adaptor#getDocIds}.
  */
-public class DefaultGetDocIdsErrorHandler
-    implements Adaptor.GetDocIdsErrorHandler {
+public class DefaultGetDocIdsErrorHandler implements GetDocIdsErrorHandler {
   private int maximumTries;
   private long sleepTimeMillis;
 

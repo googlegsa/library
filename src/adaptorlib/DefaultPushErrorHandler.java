@@ -17,7 +17,7 @@ package adaptorlib;
 /**
  * Default handler of errors during a push of {@code DocId}s to the GSA.
  */
-public class DefaultPushErrorHandler implements Adaptor.PushErrorHandler {
+public class DefaultPushErrorHandler implements PushErrorHandler {
   private int maximumTries;
   private long sleepTimeMillis;
 

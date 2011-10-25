@@ -1,8 +1,9 @@
 <body>
   <p>Easily provide repository data to a Google Search Appliance (GSA).
 
-  <p> If you'd like to use a language other than Java see if
-  {@link adaptorlib.prebuilt.CommandLineAdaptor} fits your needs.
+  <p> If you'd like to use a language other than Java or if you have command
+  line programs that can provide repository access, see if {@link
+  adaptorlib.prebuilt.CommandLineAdaptor} fits your needs.
   </p>
 
   <h3>Basic GSA Setup</h3>
@@ -23,8 +24,9 @@
 
   <h3>Running the Adaptor Template, as an initial test</h3>
   <ol>
-    <li> Compile the source code. You need ant and JDK 6 or higher. 
-      <pre>ant build</pre>
+    <li>You should have already installed JDK 6 or higher and gotten a plexi
+      release. Specifically, you will need {@code adaptor.jar} and {@code
+      adaptor-examples.jar}.
     <li>Create an <code>adaptor-config.properties</code> text file in the
       current directory that looks like:
       <pre>gsa.hostname=mygsahostname</pre>
@@ -38,9 +40,11 @@ feed.name=mydocfeedtogsa</pre>
       auto-detecting your computer's hostname, then you may need to add a line
       like:
       <pre>server.hostname=yourcomputershostname</pre>
-    <li>Start the Adaptor Template:
-      <pre>ant run</pre>
-    <li> Ensure crawling is enabled on GSA.
+    <li>Start the Adaptor Template. For Windows:
+      <pre>java -cp adaptor.jar;adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
+      For all other OSes:
+      <pre>java -cp adaptor.jar:adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
+    <li> Ensure crawling is enabled on your GSA.
       <p>
       Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
       crawling system is currently paused.
@@ -58,12 +62,15 @@ feed.name=mydocfeedtogsa</pre>
 
   <h3>Creating your own Adaptor</h3>
   <ol>
-    <li>Review JavaDoc for {@link adaptorlib.Adaptor}.
-    <li>Either modify adaptortemplate/AdaptorTemplate.java, or make a copy of it
-      and begin modifying the copy.
-    <li>Compile, run, and verify the results like you did before.
-      If you made a copy of adaptortemplate/AdaptorTemplate.java you'll need
-      to modify {@code build.xml}.
+    <li>Review JavaDoc for {@link adaptorlib.Adaptor} and {@link
+      adaptorlib.AbstractAdaptor}.
+    <li>From {@code adaptor-src.zip}, make a copy of {@code
+      src/adaptorlib/examples/AdaptorTemplate.java} to your own package and
+      name. You will need to modify the contents appropriately for the new
+      package and name.
+    <li>Compile, run, and verify the copied adaptor using your favorite IDE. You
+      will only need {@code adaptor.jar} in your classpath.
+    <li>Modify it further for your own repository.
     <li>Declare success for getting content from your custom repository to the
       GSA.
   </ol>
@@ -73,8 +80,8 @@ feed.name=mydocfeedtogsa</pre>
     <code>adaptor-config.properties</code>. You are allowed multiple arguments
     of the form "-Dconfigkey=configvalue". When providing a value on the command
     line, it overrides the default value and the value (if any) in the
-    configuration file. When using ant, you must do something like:
-    <pre>ant run -Dadaptor.args="-Dgsa.hostname=mygsahostname -Dserver.port=6677 -Dfeed.name=mydocfeedtogsa"</pre>
+    configuration file. For example:
+    <pre>java -cp adaptor.jar:adaptor-examples.jar adaptorlib.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
 
   <h3>Enabling Security</h3>
   <p>Security is not enabled by default because it requires a reasonable amount

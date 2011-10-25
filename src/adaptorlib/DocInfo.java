@@ -15,7 +15,7 @@
 package adaptorlib;
 
 /**
- * DocId and Metadata pair for communicating with {@link Adaptor.DocIdPusher}.
+ * DocId and Metadata pair for communicating with {@link DocIdPusher}.
  */
 public class DocInfo {
   private final DocId docId;

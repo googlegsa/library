@@ -15,11 +15,10 @@
 package adaptorlib.prebuilt;
 
 import adaptorlib.AbstractAdaptor;
-import adaptorlib.Adaptor;
-import adaptorlib.Config;
 import adaptorlib.DocId;
-import adaptorlib.GsaCommunicationHandler;
-import adaptorlib.ScheduleOncePerDay;
+import adaptorlib.DocIdPusher;
+import adaptorlib.Request;
+import adaptorlib.Response;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -95,27 +94,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     return new Command();
   }
 
-  /** An example main for an adaptor that enables serving. */
-  public static void main(String a[]) throws InterruptedException {
-    Config config = new Config();
-    config.autoConfig(a);
-    Adaptor adaptor = new CommandLineAdaptor();
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
-
-    // Setup providing content.
-    try {
-      gsa.beginListeningForContentRequests();
-      log.info("doc content serving started");
-    } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
-    }
-
-    // Push once at program start.
-    gsa.pushDocIds();
-
-    // Setup regular pushing of doc ids for once per day.
-    gsa.beginPushingDocIds(
-      new ScheduleOncePerDay(/*hour*/3, /*minute*/0, /*second*/0));
-    log.info("doc id pushing has been put on schedule");
+  /** Call default main for adaptors. */
+  public static void main(String[] args) {
+    AbstractAdaptor.main(new CommandLineAdaptor(), args);
   }
 }

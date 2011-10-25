@@ -152,7 +152,7 @@ public class GsaCommunicationHandlerTest {
 
   @Test
   public void testBasicListen() throws Exception {
-    gsa.beginListeningForContentRequests();
+    gsa.start();
     URL url = new URL("http", "localhost", config.getServerPort(), "/");
     URLConnection conn = url.openConnection();
     thrown.expect(java.io.FileNotFoundException.class);

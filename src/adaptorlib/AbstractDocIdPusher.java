@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Abstract class providing most methods required for a {@code DocIdPusher}.
  */
-abstract class AbstractDocIdPusher implements Adaptor.DocIdPusher {
+abstract class AbstractDocIdPusher implements DocIdPusher {
   /**
    * Calls {@code pushDocIds(docIds, null)}.
    */
@@ -35,7 +35,7 @@ abstract class AbstractDocIdPusher implements Adaptor.DocIdPusher {
    */
   @Override
   public DocId pushDocIds(Iterable<DocId> docIds,
-                          Adaptor.PushErrorHandler handler)
+                          PushErrorHandler handler)
       throws InterruptedException {
     List<DocInfo> docInfos = new ArrayList<DocInfo>();
     for (DocId docId : docIds) {

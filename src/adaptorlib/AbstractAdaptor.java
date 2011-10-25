@@ -15,19 +15,16 @@
 package adaptorlib;
 
 import java.util.*;
+import java.util.logging.Logger;
 
 /**
- * Abstract Adaptor that provides reasonable default implementations of many
- * {@link Adaptor} methods.
+ * Provides a reasonable default implementation for most {@link Adaptor}
+ * methods. Extending classes only need to implement {@link Adaptor#getDocIds}
+ * and {@link Adaptor#getDocContent}.
  */
 public abstract class AbstractAdaptor implements Adaptor {
-  /**
-   * {@inheritDoc}
-   *
-   * <p>This implementation does nothing.
-   */
-  @Override
-  public void setDocIdPusher(DocIdPusher pusher) {}
+  private static final Logger log
+      = Logger.getLogger(AbstractAdaptor.class.getName());
 
   /**
    * {@inheritDoc}
@@ -45,5 +42,81 @@ public abstract class AbstractAdaptor implements Adaptor {
       result.put(id, AuthzStatus.PERMIT);
     }
     return Collections.unmodifiableMap(result);
+  }
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation does nothing.
+   */
+  @Override
+  public void initConfig(Config config) {}
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation does nothing.
+   */
+  @Override
+  public void init(Config config, DocIdPusher pusher) throws Exception {}
+
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation does nothing.
+   */
+  @Override
+  public void destroy() {}
+
+  /**
+   * Standard main for all adaptors (including those not extending
+   * AbstractAdaptor).
+   *
+   * <p>This method starts the HTTP server for serving doc contents, schedules
+   * sending {@code DocId}s on a schedule, and optionally sends {@code DocId}s
+   * on startup.
+   */
+  public static GsaCommunicationHandler main(Adaptor adaptor, String[] args) {
+    return main(adaptor, args, null);
+  }
+
+  /**
+   * Standard main for all adaptors (including those not extending
+   * AbstractAdaptor).
+   *
+   * <p>This method starts the HTTP server for serving doc contents, schedules
+   * sending {@code DocId}s on a schedule, and optionally sends {@code DocId}s
+   * on startup.
+   */
+  public static GsaCommunicationHandler main(Adaptor adaptor, String[] args,
+                                             GetDocIdsErrorHandler handler) {
+    Config config = new Config();
+    adaptor.initConfig(config);
+    config.autoConfig(args);
+
+    if (config.useAdaptorAutoUnzip()) {
+      adaptor = new AutoUnzipAdaptor(adaptor);
+    }
+    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
+
+    if (handler != null) {
+      // Override default handler.
+      gsa.setGetDocIdsErrorHandler(handler);
+    }
+
+    // Setup providing content.
+    try {
+      gsa.start();
+      log.info("doc content serving started");
+    } catch (Exception e) {
+      throw new RuntimeException("could not start serving", e);
+    }
+
+    if (config.isAdaptorPushDocIdsOnStartup()) {
+      log.info("Pushing once at program start");
+      gsa.checkAndScheduleImmediatePushOfDocIds();
+    }
+
+    return gsa;
   }
 }

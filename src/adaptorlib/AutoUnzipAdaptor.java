@@ -56,7 +56,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
   }
 
   private DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                               Adaptor.PushErrorHandler handler)
+                               PushErrorHandler handler)
       throws InterruptedException {
     List<DocInfo> expanded = new ArrayList<DocInfo>();
     // Used for returning the original DocInfo instead of an equivalent
@@ -292,9 +292,9 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
   }
 
   @Override
-  public void setDocIdPusher(DocIdPusher pusher) {
+  public void init(Config config, DocIdPusher pusher) throws Exception {
     this.pusher = pusher;
-    super.setDocIdPusher(innerPusher);
+    super.init(config, innerPusher);
   }
 
   @Override
@@ -423,7 +423,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
   private class InnerDocIdPusher extends AbstractDocIdPusher {
     @Override
     public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                Adaptor.PushErrorHandler handler)
+                                PushErrorHandler handler)
         throws InterruptedException {
       return AutoUnzipAdaptor.this.pushDocInfos(docInfos, handler);
     }
