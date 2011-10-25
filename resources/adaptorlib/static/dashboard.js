@@ -110,6 +110,20 @@ function getStatsCallback(result, error) {
       data.simpleStats.numUniqueNonGsaRequests);
   $('#gaf-when-started').text(String(new Date(data.simpleStats.whenStarted)));
   $('#gaf-time-resolution').text(data.simpleStats.timeResolution);
+  var hadSuccessfulPush = Boolean(data.simpleStats.lastSuccessfulPushStart);
+  $('#gaf-last-successful-push-start').text(
+      hadSuccessfulPush
+      ? String(new Date(data.simpleStats.lastSuccessfulPushStart))
+      : "None yet");
+  $('#gaf-last-successful-push-end').text(
+      hadSuccessfulPush
+      ? String(new Date(data.simpleStats.lastSuccessfulPushEnd))
+      : "None yet");
+  var curPushStart = data.simpleStats.currentPushStart;
+  $('#gaf-current-full-push').text(
+      curPushStart
+      ? "Started " + String(new Date(curPushStart))
+      : "None in progress");
 
   var vals = [];
   vals.push(formatChartData(data.stats[0], data.simpleStats.timeResolution));

@@ -302,6 +302,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       throw new NullPointerException();
     }
     log.info("Getting list of DocIds");
+    journal.recordFullPushStarted();
     for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
       try {
@@ -309,6 +310,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         break; // Success
       } catch (InterruptedException ex) {
         // Stop early.
+        journal.recordFullPushInterrupted();
         throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
@@ -317,9 +319,11 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       } else {
+        journal.recordFullPushFailed();
         return; // Bail
       }
     }
+    journal.recordFullPushSuccessful();
   }
 
   /**

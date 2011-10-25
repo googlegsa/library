@@ -50,6 +50,16 @@ class Journal {
   /** Request processing start time storage until processing completion. */
   private ThreadLocal<Long> requestProcessingStart = new ThreadLocal<Long>();
 
+  /**
+   * Date in milliseconds of current full push start. If zero, then there is not
+   * a running full push.
+   */
+  private long currentPushStart;
+  /** Date in milliseconds. */
+  private long lastSuccessfulPushStart;
+  /** Date in milliseconds. */
+  private long lastSuccessfulPushEnd;
+
   public Journal() {
     this(new SystemTimeProvider());
   }
@@ -181,6 +191,49 @@ class Journal {
   }
 
   /**
+   * Record that a full push has started. Only one is tracked at a time.
+   */
+  void recordFullPushStarted() {
+    if (currentPushStart != 0) {
+      throw new IllegalStateException("Full push already started");
+    }
+    currentPushStart = timeProvider.currentTimeMillis();
+  }
+
+  /**
+   * Record that the full push completed successfully.
+   */
+  void recordFullPushSuccessful() {
+    long endTime = timeProvider.currentTimeMillis();
+    long startTime = currentPushStart;
+    currentPushStart = 0;
+    synchronized (this) {
+      this.lastSuccessfulPushStart = startTime;
+      this.lastSuccessfulPushEnd = endTime;
+    }
+  }
+
+  /**
+   * Record that the full push was interrupted prematurely.
+   */
+  void recordFullPushInterrupted() {
+    if (currentPushStart == 0) {
+      throw new IllegalStateException("Full push not already started");
+    }
+    currentPushStart = 0;
+  }
+
+  /**
+   * Record that the full push was interrupted prematurely.
+   */
+  void recordFullPushFailed() {
+    if (currentPushStart == 0) {
+      throw new IllegalStateException("Full push not already started");
+    }
+    currentPushStart = 0;
+  }
+
+  /**
    * Access to the timeStats for use in {@link DashboardHandler} only.
    */
   synchronized JournalSnapshot getSnapshot() {
@@ -209,6 +262,9 @@ class Journal {
     final long whenStarted;
     final long currentTime;
     final long timeResolution;
+    final long lastSuccessfulPushStart;
+    final long lastSuccessfulPushEnd;
+    final long currentPushStart;
     final Stats[] timeStats;
 
     JournalSnapshot(Journal journal, long currentTime, Stats[] timeStatsClone) {
@@ -219,6 +275,9 @@ class Journal {
       this.numUniqueNonGsaRequests = journal.timesNonGsaRequested.size();
       this.numTotalNonGsaRequests = journal.totalNonGsaRequests;
       this.timeResolution = journal.timeResolution;
+      this.lastSuccessfulPushStart = journal.lastSuccessfulPushStart;
+      this.lastSuccessfulPushEnd = journal.lastSuccessfulPushEnd;
+      this.currentPushStart = journal.currentPushStart;
       this.whenStarted = journal.startedAt;
       this.currentTime = currentTime;
       this.timeStats = timeStatsClone;
