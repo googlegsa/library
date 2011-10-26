@@ -41,10 +41,9 @@ public class TestHelper {
     assumeTrue(isRunningOnWindows());
   }
 
-  public static List<DocId> getDocIds(Adaptor adaptor) throws IOException,
-      InterruptedException {
+  public static List<DocId> getDocIds(Adaptor adaptor) throws Exception {
     AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
-    adaptor.setDocIdPusher(pusher);
+    adaptor.init(null, pusher);
     adaptor.getDocIds(pusher);
     return pusher.getDocIds();
   }
