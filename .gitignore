@@ -9,3 +9,6 @@ cacerts.jks
 keys.jks
 adaptor.crt
 gsa.crt
+classes/
+.idea
+Plexi.iml

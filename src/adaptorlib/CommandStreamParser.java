@@ -79,7 +79,10 @@ import java.util.regex.Pattern;
  *<h3>Body Format</h3>
  * Elements in the file start with one of the following commands. Commands
  * where data precedes the next delimiter include an equal sign. Commands
- * that are immediately followed by a delimiter do not include an equal sign.<p>
+ * that are immediately followed by a delimiter do not include an equal sign.
+ * The first command must specify a document ID ("id=" or "id-list").
+ * Command that don't specify a document ID are associated with the most
+ * recent previously specified document ID.<p>
  *
  * "id=" -- specifies a document id<p>
  * "last-crawled=" -- specifies the last time the GSA crawled the associated

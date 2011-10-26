@@ -23,7 +23,7 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
 
   @Override
   public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                              Adaptor.PushErrorHandler handler)
+                          PushErrorHandler handler)
       throws InterruptedException {
     for (DocInfo docInfo : docInfos) {
       ids.add(docInfo.getDocId());

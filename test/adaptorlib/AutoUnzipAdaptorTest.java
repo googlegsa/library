@@ -14,6 +14,8 @@
 
 package adaptorlib;
 
+import static adaptorlib.TestHelper.getDocContent;
+import static adaptorlib.TestHelper.getDocIds;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -61,14 +63,14 @@ public class AutoUnzipAdaptorTest {
         new DocId("test\\!test5\\!test"),
         new DocId("test6\\!\\!test"),
       });
-    List<DocId> retrieved = TestHelper.getDocIds(adaptor);
+    List<DocId> retrieved = getDocIds(adaptor);
     assertEquals("encoding", expected, retrieved);
 
     // Check decoding
     for (int i = 0; i < original.size(); i++) {
       assertArrayEquals("decoding",
                         original.get(i).getUniqueId().getBytes(charset),
-                        TestHelper.getDocContent(adaptor, retrieved.get(i)));
+                        getDocContent(adaptor, retrieved.get(i)));
     }
   }
 
@@ -88,7 +90,7 @@ public class AutoUnzipAdaptorTest {
     List<DocId> expected = Arrays.asList(new DocId[] {
         new DocId("test.zip"),
       });
-    assertEquals(expected, TestHelper.getDocIds(adaptor));
+    assertEquals(expected, getDocIds(adaptor));
   }
 
   @Test
@@ -133,13 +135,13 @@ public class AutoUnzipAdaptorTest {
         new DocId("\\!test.zip!test\\!test5\\!test"),
         new DocId("\\!test.zip!test6\\!\\!test"),
       });
-    List<DocId> retrieved = TestHelper.getDocIds(adaptor);
+    List<DocId> retrieved = getDocIds(adaptor);
     assertEquals(expected, retrieved);
 
     // Check decoding
     for (int i = 0; i < original.size(); i++) {
       assertArrayEquals(original.get(i).getBytes(charset),
-                        TestHelper.getDocContent(adaptor, retrieved.get(i + 1)));
+                        getDocContent(adaptor, retrieved.get(i + 1)));
     }
   }
 }

@@ -19,7 +19,8 @@ import static org.junit.Assert.assertEquals;
 
 import adaptorlib.Adaptor;
 import adaptorlib.DocId;
-import adaptorlib.TestHelper;
+import static adaptorlib.TestHelper.getDocIds;
+import static adaptorlib.TestHelper.getDocContent;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,77 +35,74 @@ import java.util.List;
  * Tests for {@link CommandLineAdaptor}.
  */
 public class CommandLineAdaptorTest {
-    final Charset charset = Charset.forName("US-ASCII");
-    final List<DocId> original = Arrays.asList(new DocId[] {
-          new DocId("1001"),
-          new DocId("1002"),
-          new DocId("1003"),
-        });
+  private final Charset charset = Charset.forName("US-ASCII");
 
-  static byte[] idToContent(String id) {
-    String result = "Content of document " + id;
-    return result.getBytes();
-  }
+  private static class MockListerCommand extends Command {
 
-class MockListerCommand extends Command {
+    static final List<DocId> original = Arrays.asList(new DocId[] {
+        new DocId("1001"),
+        new DocId("1002"),
+        new DocId("1003"),
+    });
 
-  @Override
-  public int exec(String[] command, File workingDir, byte[] stdin) {
-    return 0;
-  }
-
-  @Override
-  public byte[] getStdout() {
-    String result = new String();
-    for (DocId docId : original) {
-      result += docId.getUniqueId() + "\n";
+    @Override
+    public int exec(String[] command, File workingDir, byte[] stdin) {
+      return 0;
     }
-    return result.getBytes();
-  }
-}
 
-class MockRetrieverCommand extends Command {
-
-  private byte[] result;
-  @Override
-  public int exec(String[] command, File workingDir, byte[] stdin) {
-    result = idToContent(command[1]);
-    return 0;
+    @Override
+    public byte[] getStdout() {
+      StringBuilder result = new StringBuilder();
+      for (DocId docId : original) {
+        result.append(docId.getUniqueId()).append("\n");
+      }
+      return result.toString().getBytes();
+    }
   }
 
-  @Override
-  public byte[] getStdout() {
-    return result;
-  }
-}
+  private static class MockRetrieverCommand extends Command {
 
-class CommandLineAdaptorTestClass extends CommandLineAdaptor {
-  @Override
-  protected Command newListerCommand() {
-    return new MockListerCommand();
+    private byte[] result;
+    @Override
+    public int exec(String[] command, File workingDir, byte[] stdin) {
+      result = idToContent(command[1]);
+      return 0;
+    }
+
+    @Override
+    public byte[] getStdout() {
+      return result;
+    }
+
+    private static byte[] idToContent(String id) {
+      String result = "Content of document " + id;
+      return result.getBytes();
+    }
   }
 
-  @Override
-  protected Command newRetrieverCommand() {
-    return new MockRetrieverCommand();
-  }
-}
+  private static class CommandLineAdaptorTestMock extends CommandLineAdaptor {
+    @Override
+    protected Command newListerCommand() {
+      return new MockListerCommand();
+    }
 
-  @Rule
-  public ExpectedException thrown = ExpectedException.none();
+    @Override
+    protected Command newRetrieverCommand() {
+      return new MockRetrieverCommand();
+    }
+  }
 
   @Test
-  public void testListerAndRetriever() throws java.io.IOException,
-         InterruptedException {
+  public void testListerAndRetriever() throws Exception {
 
-    Adaptor adaptor = new CommandLineAdaptorTestClass();
+    Adaptor adaptor = new CommandLineAdaptorTestMock();
 
-    List<DocId> retrieved = TestHelper.getDocIds(adaptor);
-    assertEquals(original, retrieved);
+    List<DocId> retrieved = getDocIds(adaptor);
+    assertEquals(MockListerCommand.original, retrieved);
 
-    for (int i = 0; i < original.size(); i++) {
-      assertArrayEquals(idToContent(original.get(i).getUniqueId()),
-                        TestHelper.getDocContent(adaptor, retrieved.get(i)));
+    for (DocId docId : retrieved) {
+      assertArrayEquals(MockRetrieverCommand.idToContent(docId.getUniqueId()),
+                        getDocContent(adaptor, docId));
     }
   }
 }
