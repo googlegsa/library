@@ -42,6 +42,9 @@ public class StatRpcMethodTest {
       simpleStats.put("numUniqueGsaRequests", 0L);
       simpleStats.put("numUniqueNonGsaRequests", 0L);
       simpleStats.put("timeResolution", 1L);
+      simpleStats.put("lastSuccessfulPushStart", 0L);
+      simpleStats.put("lastSuccessfulPushEnd", 0L);
+      simpleStats.put("currentPushStart", 0L);
       simpleStats.put("whenStarted", 0L);
       golden.put("simpleStats", simpleStats);
 

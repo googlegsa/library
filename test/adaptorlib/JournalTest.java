@@ -185,6 +185,79 @@ public class JournalTest {
   }
 
   @Test
+  public void testFullPushStats() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    timeProvider.autoIncrement = false;
+
+    timeProvider.time = 1;
+    journal.recordFullPushStarted();
+    timeProvider.time = 2;
+    journal.recordFullPushSuccessful();
+    Journal.JournalSnapshot snapshot = journal.getSnapshot();
+    assertEquals(1, snapshot.lastSuccessfulPushStart);
+    assertEquals(2, snapshot.lastSuccessfulPushEnd);
+
+    timeProvider.time = 5;
+    journal.recordFullPushStarted();
+    timeProvider.time = 7;
+    journal.recordFullPushInterrupted();
+    snapshot = journal.getSnapshot();
+    assertEquals(1, snapshot.lastSuccessfulPushStart);
+    assertEquals(2, snapshot.lastSuccessfulPushEnd);
+
+    timeProvider.time = 8;
+    journal.recordFullPushStarted();
+    timeProvider.time = 9;
+    journal.recordFullPushFailed();
+    snapshot = journal.getSnapshot();
+    assertEquals(1, snapshot.lastSuccessfulPushStart);
+    assertEquals(2, snapshot.lastSuccessfulPushEnd);
+
+    timeProvider.time = 11;
+    journal.recordFullPushStarted();
+    timeProvider.time = 15;
+    journal.recordFullPushSuccessful();
+    snapshot = journal.getSnapshot();
+    assertEquals(11, snapshot.lastSuccessfulPushStart);
+    assertEquals(15, snapshot.lastSuccessfulPushEnd);
+  }
+
+  @Test
+  public void testFullPushStartDouble() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    // Make sure we are past epoch, because that is a special value in the
+    // journaling code.
+    timeProvider.time = 1;
+    journal.recordFullPushStarted();
+    thrown.expect(IllegalStateException.class);
+    journal.recordFullPushStarted();
+  }
+
+  @Test
+  public void testFullPushInterruptedPremature() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    // Make sure we are past epoch, because that is a special value in the
+    // journaling code.
+    timeProvider.time = 1;
+    thrown.expect(IllegalStateException.class);
+    journal.recordFullPushInterrupted();
+  }
+
+  @Test
+  public void testFullPushFailedPremature() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    // Make sure we are past epoch, because that is a special value in the
+    // journaling code.
+    timeProvider.time = 1;
+    thrown.expect(IllegalStateException.class);
+    journal.recordFullPushFailed();
+  }
+
+  @Test
   public void testStatsNoStart() {
     Journal journal = new Journal(new MockTimeProvider());
     thrown.expect(IllegalStateException.class);

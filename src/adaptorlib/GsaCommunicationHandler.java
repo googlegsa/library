@@ -265,6 +265,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         feedSourceName, docInfos);
     boolean keepGoing = true;
     boolean success = false;
+    log.log(Level.INFO, "Pushing batch of {0} DocIds to GSA", docInfos.size());
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("Sending feed to GSA host name: " + config.getGsaHostname());
@@ -287,8 +288,12 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+      } else {
+        log.log(Level.WARNING, "Gave up. First item in list: {0}",
+                docInfos.get(0));
       }
     }
+    log.info("Finished pushing batch");
     return success ? null : docInfos.get(0);
   }
 
@@ -301,7 +306,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     if (handler == null) {
       throw new NullPointerException();
     }
-    log.info("Getting list of DocIds");
+    log.info("Beginning full push of DocIds");
+    journal.recordFullPushStarted();
     for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
       try {
@@ -309,6 +315,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         break; // Success
       } catch (InterruptedException ex) {
         // Stop early.
+        journal.recordFullPushInterrupted();
+        log.info("Interrupted. Aborted full push of DocIds");
         throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
@@ -317,9 +325,13 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       } else {
+        journal.recordFullPushFailed();
+        log.warning("Gave up. Failed full push of DocIds");
         return; // Bail
       }
     }
+    journal.recordFullPushSuccessful();
+    log.info("Completed full pushing DocIds");
   }
 
   /**
