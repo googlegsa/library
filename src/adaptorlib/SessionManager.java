@@ -187,7 +187,8 @@ class SessionManager<E> {
       implements ClientStore<HttpExchange> {
 
     private final String cookieName;
-    private final String exchangeAttributeName;
+    private Map<HttpExchange, String> exchangeCookieMap
+        = Collections.synchronizedMap(new WeakHashMap<HttpExchange, String>());
 
     public HttpExchangeClientStore() {
       this("sessid");
@@ -198,12 +199,11 @@ class SessionManager<E> {
         throw new NullPointerException();
       }
       this.cookieName = cookieName;
-      this.exchangeAttributeName = this.getClass().getName() + "." + cookieName;
     }
 
     @Override
     public String retrieve(HttpExchange ex) {
-      String value = (String) ex.getAttribute(exchangeAttributeName);
+      String value = exchangeCookieMap.get(ex);
       if (value != null) {
         return value;
       }
@@ -230,7 +230,7 @@ class SessionManager<E> {
 
     @Override
     public void store(HttpExchange ex, String value) {
-      ex.setAttribute(exchangeAttributeName, value);
+      exchangeCookieMap.put(ex, value);
       ex.getResponseHeaders().set("Set-Cookie", cookieName + "=" + value
                                   + "; Path=/");
     }
