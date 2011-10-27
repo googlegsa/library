@@ -71,6 +71,8 @@ class SessionManager<E> {
     }
 
     synchronized (this) {
+      // Check for expiration now.
+      cleanupIfExpiredSession(value);
       Session session = sessions.get(value);
       if (session != null) {
         updateLastAccess(value);
@@ -78,7 +80,7 @@ class SessionManager<E> {
       }
 
       // Could not find session specified. Assume it expired.
-      return createSession(clientState);
+      return create ? createSession(clientState) : null;
     }
   }
 
@@ -105,9 +107,9 @@ class SessionManager<E> {
     }
 
     List<String> toRemove = new LinkedList<String>();
-    long ageLimit = currentTime - sessionLifetime;
+    long lastAccessLimit = currentTime - sessionLifetime;
     for (Map.Entry<String, Long> me : lastAccess.entrySet()) {
-      if (ageLimit > (long) me.getValue()) {
+      if (lastAccessLimit > me.getValue()) {
         toRemove.add(me.getKey());
       }
     }
@@ -118,6 +120,20 @@ class SessionManager<E> {
     }
 
     nextCleanup = currentTime + cleanupFrequency;
+  }
+
+  protected synchronized void cleanupIfExpiredSession(String id) {
+    Long lastAccessForId = lastAccess.get(id);
+    if (lastAccessForId == null) {
+      return;
+    }
+
+    long currentTime = timeProvider.currentTimeMillis();
+    long lastAccessLimit = currentTime - sessionLifetime;
+    if (lastAccessLimit > lastAccessForId) {
+      sessions.remove(id);
+      lastAccess.remove(id);
+    }
   }
 
   /**
@@ -152,6 +168,10 @@ class SessionManager<E> {
       s = "0" + s;
     }
     return s;
+  }
+
+  int getSessionCount() {
+    return sessions.size();
   }
 
   /** A single-value storage per client. */
