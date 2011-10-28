@@ -77,6 +77,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private CircularLogRpcMethod circularLogRpcMethod;
   private Thread shutdownHook;
   private Timer configWatcherTimer = new Timer("configWatcher", true);
+  private IncrementalAdaptorPoller incrementalAdaptorPoller;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     this.adaptor = adaptor;
@@ -180,6 +181,13 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
           (ConfigModificationListener) adaptor);
     }*/
 
+    if (adaptor instanceof PollingIncrementalAdaptor) {
+      incrementalAdaptorPoller = new IncrementalAdaptorPoller(
+          (PollingIncrementalAdaptor) adaptor, pusher);
+      incrementalAdaptorPoller.start(
+          config.getAdaptorIncrementalPollPeriodMillis());
+    }
+
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(), docIdSender);
@@ -222,6 +230,9 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     docIdSender.stop();
     if (scheduler.isStarted()) {
       scheduler.stop();
+    }
+    if (incrementalAdaptorPoller != null) {
+      incrementalAdaptorPoller.cancel();
     }
     if (server != null) {
       server.stop(maxDelay);

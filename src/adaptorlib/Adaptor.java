@@ -27,14 +27,15 @@ import java.util.Set;
  * <p>Once configuration is prepared, {@link #init} will be called. This is
  * guaranteed to occur before any calls to {@link #getDocContent}, {@link
  * #getDocIds}, or {@link #isUserAuthorized}. When the adaptor needs to
- * shutdown, {@link #destoy} will be called.
+ * shutdown, {@link #destroy} will be called.
  *
  * <p>If the adaptor is using {@link AbstractAdaptor#main}, then {@link
  * #initConfig} will be called before {@link #init} to allow the adaptor an
  * opportunity to set and override default configuration values.
  *
  * @see adaptorlib.examples.AdaptorTemplate
- * @see adaptorlib.AbstractAdaptor
+ * @see AbstractAdaptor
+ * @see PollingIncrementalAdaptor
  */
 public interface Adaptor {
   /**

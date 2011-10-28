@@ -72,6 +72,8 @@ public class Config {
     addKey("adaptor.autoUnzip", "false");
     // 3:00 AM every day.
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
+    // 15 minutes.
+    addKey("adaptor.incrementalPollPeriodSecs", "900");
     // In seconds.
     addKey("config.pollPeriodSecs", "30");
   }
@@ -260,6 +262,10 @@ public class Config {
    */
   public String getAdaptorFullListingSchedule() {
     return getValue("adaptor.fullListingSchedule");
+  }
+
+  public long getAdaptorIncrementalPollPeriodMillis() {
+    return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
   }
 
   /**

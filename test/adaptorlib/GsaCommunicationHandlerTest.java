@@ -21,6 +21,7 @@ import org.junit.rules.ExpectedException;
 
 import java.net.*;
 import java.util.*;
+import java.util.concurrent.*;
 import java.util.logging.*;
 
 /**
@@ -114,6 +115,24 @@ public class GsaCommunicationHandlerTest {
     decodeAndEncode("/drop/table/now");
     decodeAndEncode("//drop/table/now");
     decodeAndEncode("//d&op/t+b+e/n*w");
+  }
+
+  @Test
+  public void testPollingIncrementalAdaptor() throws Exception {
+    class PollingIncrNullAdaptor extends NullAdaptor
+        implements PollingIncrementalAdaptor {
+      public final ArrayBlockingQueue<Object> queue
+          = new ArrayBlockingQueue<Object>(1);
+
+      @Override
+      public void getModifiedDocIds(DocIdPusher pusher) {
+        queue.offer(new Object());
+      }
+    }
+    PollingIncrNullAdaptor adaptor = new PollingIncrNullAdaptor();
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    gsa.start();
+    assertNotNull(adaptor.queue.poll(1, TimeUnit.SECONDS));
   }
 
   @Test
