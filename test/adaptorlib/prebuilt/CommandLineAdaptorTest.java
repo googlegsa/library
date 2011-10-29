@@ -22,6 +22,8 @@ import adaptorlib.DocId;
 import static adaptorlib.TestHelper.getDocIds;
 import static adaptorlib.TestHelper.getDocContent;
 
+import com.google.enterprise.apis.client.GsaService;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -53,8 +55,9 @@ public class CommandLineAdaptorTest {
     @Override
     public byte[] getStdout() {
       StringBuilder result = new StringBuilder();
+      result.append("GSA Adaptor Data Version 1 [\n]\n");
       for (DocId docId : original) {
-        result.append(docId.getUniqueId()).append("\n");
+        result.append("id=").append(docId.getUniqueId()).append("\n");
       }
       return result.toString().getBytes();
     }
@@ -62,21 +65,28 @@ public class CommandLineAdaptorTest {
 
   private static class MockRetrieverCommand extends Command {
 
-    private byte[] result;
+    private String docId;
+    private String content;
     @Override
     public int exec(String[] command, File workingDir, byte[] stdin) {
-      result = idToContent(command[1]);
+      docId = command[1];
+      content = idToContent(docId);
       return 0;
     }
 
     @Override
     public byte[] getStdout() {
-      return result;
+      StringBuffer result = new StringBuffer();
+      result.append("GSA Adaptor Data Version 1 [\n]\n");
+      result.append("id=").append(docId).append("\n");
+      result.append("content").append("\n");
+      result.append(content);
+      return result.toString().getBytes();
     }
 
-    private static byte[] idToContent(String id) {
+    private static String idToContent(String id) {
       String result = "Content of document " + id;
-      return result.getBytes();
+      return result;
     }
   }
 
@@ -97,11 +107,11 @@ public class CommandLineAdaptorTest {
 
     Adaptor adaptor = new CommandLineAdaptorTestMock();
 
-    List<DocId> retrieved = getDocIds(adaptor);
-    assertEquals(MockListerCommand.original, retrieved);
+    List<DocId> idList = getDocIds(adaptor);
+    assertEquals(MockListerCommand.original, idList);
 
-    for (DocId docId : retrieved) {
-      assertArrayEquals(MockRetrieverCommand.idToContent(docId.getUniqueId()),
+    for (DocId docId : idList) {
+      assertArrayEquals(MockRetrieverCommand.idToContent(docId.getUniqueId()).getBytes(),
                         getDocContent(adaptor, docId));
     }
   }

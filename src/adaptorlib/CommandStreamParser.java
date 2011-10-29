@@ -20,10 +20,13 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -85,8 +88,8 @@ import java.util.regex.Pattern;
  * recent previously specified document ID.<p>
  *
  * "id=" -- specifies a document id<p>
- * "last-crawled=" -- specifies the last time the GSA crawled the associated
- *                    document in milliseconds from epoch.<p>
+ * "last-modified=" -- specifies the last time the document or its metadata has changed
+ *                     in milliseconds from epoch.<p>
  * "up-to-date=" -- specifies (true or false) for whether a document is
  *                  up-to-date based upon its last-crawled time.<p>
  * "id-list" -- specified a list of document ids, separated by the
@@ -95,14 +98,8 @@ import java.util.regex.Pattern;
  * "meta-name=" -- specifies a metadata name associated with the most recent id<p>
  * "meta-value=" -- specifies a metadata value associated with the
  *                  previous metadata-name<p>
- * "content-to-end" -- signals the beginning of binary content to the end
- *                     of the file or stream<p>
- * "content-to-marker" -- signals the beginning of binary content that
- *                        continues until the following marker is encountered<br>
- * 4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B<p>
- *
- * "content-bytes=" -- marks the beginning of binary content that runs for the
- *                     specified number of bytes.<p>
+ * "content" -- signals the beginning of binary content which continues
+ *              to the end of the file or stream<p>
  *
  *
  * Two or more consecutive delimiters are treated as one. Reaching
@@ -171,7 +168,7 @@ import java.util.regex.Pattern;
  * {@code
  * meta-name=Creator
  * meta-content=howardhawks
- * content-to-end
+ * content
  * <binary content to the end of the file>
  * }
  * </pre>
@@ -182,15 +179,12 @@ import java.util.regex.Pattern;
  * {@code
  * GSA Adaptor Data Version 1 [<delimiter>]
  * id=/home/repository/docs/file1
- * content-bytes=32432
- * <binary content for 32432 bytes>
  * id=/home/repository/docs/file2
  * id=/home/repository/docs/file3
  * id=/home/repository/docs/file3
- * content-to-marker
+ * content
  * <arbitrary block of binary content>
- * 4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B
- * }
+ *
  * </pre>
  *
  */
@@ -207,13 +201,10 @@ public class CommandStreamParser {
   static {
     Map<String, CommandWithArgCount> stringToCommand = new HashMap<String, CommandWithArgCount>();
     stringToCommand.put("id", new CommandWithArgCount(CommandType.ID, 1));
-    stringToCommand.put("last-crawled", new CommandWithArgCount(CommandType.LAST_CRAWLED, 1));
     stringToCommand.put("up-to-date", new CommandWithArgCount(CommandType.UP_TO_DATE, 1));
     stringToCommand.put("meta-name", new CommandWithArgCount(CommandType.META_NAME, 1));
     stringToCommand.put("meta-value", new CommandWithArgCount(CommandType.META_VALUE, 1));
-    stringToCommand.put("content-to-end", new CommandWithArgCount(CommandType.CONTENT, 0));
-    stringToCommand.put("content-to-marker", new CommandWithArgCount(CommandType.CONTENT, 0));
-    stringToCommand.put("content-bytes", new CommandWithArgCount(CommandType.CONTENT, 1));
+    stringToCommand.put("content", new CommandWithArgCount(CommandType.CONTENT, 0));
     STRING_TO_COMMAND = Collections.unmodifiableMap(stringToCommand);
   }
 
@@ -225,9 +216,53 @@ public class CommandStreamParser {
   private boolean inIdList;
   private CharsetDecoder charsetDecoder = charset.newDecoder();
   
-  CommandStreamParser(InputStream inputStream) {
+  public CommandStreamParser(InputStream inputStream) {
     this.inputStream = inputStream;
     inIdList = false;
+  }
+
+  /** */
+  public static class RetrieverInfo {
+    boolean upToDate;
+    DocInfo docInfo;
+    byte[] contents;
+
+    public boolean isUpToDate() {
+      return upToDate;
+    }
+
+    public DocInfo getDocInfo() {
+      return docInfo;
+    }
+
+    public byte[] getContents() {
+      return contents;
+    }
+
+    RetrieverInfo(DocInfo docInfo, byte[] contents, boolean upToDate) {
+      this.docInfo = docInfo;
+      this.contents = contents;
+      this.upToDate = upToDate;
+    }
+
+  }
+
+  private static class CommandWithArgCount {
+    CommandType commandType;
+    int argumentCount;
+
+    public CommandType getCommandType() {
+      return commandType;
+    }
+
+    public int getArgumentCount() {
+      return argumentCount;
+    }
+
+    CommandWithArgCount(CommandType commandType, int argumentCount) {
+      this.commandType = commandType;
+      this.argumentCount = argumentCount;
+    }
   }
 
   /** */
@@ -255,23 +290,61 @@ public class CommandStreamParser {
     }
   }
 
-  private static class CommandWithArgCount {
-    CommandType commandType;
-    int argumentCount;
+  public ArrayList<DocInfo> readFromLister() throws IOException {
+    ArrayList<DocInfo> result = new ArrayList<DocInfo>();
+    Command command = readCommand();
 
-    public CommandType getCommandType() {
-      return commandType;
+    while (command != null) {
+      if (command.getCommandType() == CommandType.ID) {
+        result.add(new DocInfo(new DocId(command.getArgument()),Metadata.EMPTY));
+        }
+      command = readCommand();
     }
 
-    public int getArgumentCount() {
-      return argumentCount;
-    }
-
-    CommandWithArgCount(CommandType commandType, int argumentCount) {
-      this.commandType = commandType;
-      this.argumentCount = argumentCount;
-    }
+    return result;
   }
+
+  public RetrieverInfo readFromRetriever() throws IOException {
+
+    Set<MetaItem> metadata = new HashSet<MetaItem>();
+    byte[] content = null;
+    boolean upToDate = false;
+    Command command = readCommand();
+
+    if (command == null) {
+      throw new IOException("Invalid or missing retriever data.");
+    } else if (command.getCommandType() != CommandType.ID) {
+      throw new IOException("Retriever messages must begin with a document ID.");
+    }
+
+    String docId = command.getArgument();
+    command = readCommand();
+    while (command != null) {
+      if (command.getCommandType() == CommandType.ID) {
+        throw new IOException("Only one document ID can be specified in a retriever message");
+      } else if (command.getCommandType() == CommandType.CONTENT) {
+        content = command.getContents();
+      } else if (command.getCommandType() == CommandType.META_NAME) {
+        String metaName = command.getArgument();
+        command = readCommand();
+        if (command == null || command.getCommandType() != CommandType.META_VALUE) {
+          throw new IOException("meta-name must be immediately followed by meta-value");
+        }
+        metadata.add(MetaItem.raw(metaName, command.getArgument()));
+      } else if (command.getCommandType() == CommandType.UP_TO_DATE) {
+        if (command.argument.equals("true")) {
+          upToDate = true;
+        } else if (!command.argument.equals("false")) {
+          throw new IOException("up-to-date values must be either 'true' or 'false'");
+        }
+      }
+      command = readCommand();
+    }
+
+    return new RetrieverInfo(new DocInfo(new DocId(docId), new Metadata(metadata)),
+        content, upToDate);
+  }
+
 
   public Command readCommand() throws IOException {
     if (delimiter == null) {
@@ -320,14 +393,8 @@ public class CommandStreamParser {
         argument = tokens[1];
     }
 
-    if (tokens[0].equals("content-to-end")) {
+    if (tokens[0].equals("content")) {
         content = readBytesUntilEnd();
-    } else if (tokens[0].equals("content-to-marker")) {
-        content = readBytesUntilMarker(END_BINARY_MARKER);
-    } else if (tokens[0].equals("content-bytes")) {
-        int byteCount = Integer.parseInt(tokens[1]);
-        content = readBytes(byteCount);
-        argument = null;
     }
 
     return new Command(commandWithArgCount.getCommandType(), argument, content);

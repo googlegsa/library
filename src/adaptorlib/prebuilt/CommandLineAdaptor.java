@@ -15,11 +15,13 @@
 package adaptorlib.prebuilt;
 
 import adaptorlib.AbstractAdaptor;
+import adaptorlib.CommandStreamParser;
 import adaptorlib.DocId;
 import adaptorlib.DocIdPusher;
 import adaptorlib.Request;
 import adaptorlib.Response;
 
+import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -40,7 +42,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     Command command = newListerCommand();
 
     try {
-      log.finest("Command: ./list-doc-ids-filesystem.sh");
+      log.finest("Command: ./list-doc-ids.sh");
       commandResult = command.exec(new String[] {"./list-doc-ids.sh"});
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
@@ -50,13 +52,13 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     if (commandResult != 0) {
       throw new IOException("External command error. code = " + commandResult + ".");
     } else {
-      String docIdString = new String(command.getStdout(), encoding);
-      ArrayList<DocId> docIds = new ArrayList<DocId>();
-      for (String docId : docIdString.split("\n")) {
-        docIds.add(new DocId(docId));
-        log.finest("Pushing Doc ID: '" + docId + "'");
-      }
-      pusher.pushDocIds(docIds);
+
+      String listerData = new String(command.getStdout(), encoding);
+
+      CommandStreamParser parser = new CommandStreamParser(
+          new ByteArrayInputStream(listerData.getBytes()));
+      log.finest("Pushing Doc Info.");
+      pusher.pushDocInfos(parser.readFromLister());
     }
   }
 
@@ -83,7 +85,13 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     } else {
       log.finest("Returning document contents for ID '" + id.getUniqueId() + ".");
     }
-    resp.getOutputStream().write(command.getStdout());
+
+    String retrieverData = new String(command.getStdout(), encoding);
+
+    CommandStreamParser parser = new CommandStreamParser(
+        new ByteArrayInputStream(retrieverData.getBytes()));
+    log.finest("Retrieving Doc Contents");
+    resp.getOutputStream().write(parser.readFromRetriever().getContents());
   }
 
   protected Command newListerCommand() {
