@@ -288,10 +288,13 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
-      } else {
-        log.log(Level.WARNING, "Gave up. First item in list: {0}",
-                docInfos.get(0));
       }
+    }
+    if (success) {
+      log.info("Pushing batch succeeded");
+    } else {
+      log.log(Level.WARNING, "Gave up. First item in list: {0}",
+              docInfos.get(0));
     }
     log.info("Finished pushing batch");
     return success ? null : docInfos.get(0);
