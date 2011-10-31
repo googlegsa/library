@@ -29,6 +29,7 @@ import java.util.logging.*;
 public class GsaCommunicationHandlerTest {
   private Config config;
   private GsaCommunicationHandler gsa;
+  private NullAdaptor adaptor = new NullAdaptor();
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -39,12 +40,13 @@ public class GsaCommunicationHandlerTest {
     config.setValue("gsa.hostname", "localhost");
     // Let the OS choose the port
     config.setValue("server.port", "0");
-    gsa = new GsaCommunicationHandler(new NullAdaptor(), config);
+    gsa = new GsaCommunicationHandler(adaptor, config);
   }
 
   @After
   public void teardown() {
     gsa.stop(0);
+    assertFalse(adaptor.inited);
   }
 
   @Test
@@ -153,6 +155,7 @@ public class GsaCommunicationHandlerTest {
   @Test
   public void testBasicListen() throws Exception {
     gsa.start();
+    assertTrue(adaptor.inited);
     URL url = new URL("http", "localhost", config.getServerPort(), "/");
     URLConnection conn = url.openConnection();
     thrown.expect(java.io.FileNotFoundException.class);
@@ -160,6 +163,18 @@ public class GsaCommunicationHandlerTest {
   }
 
   private static class NullAdaptor extends AbstractAdaptor {
+    private boolean inited;
+
+    @Override
+    public void init(Config config, DocIdPusher pusher) {
+      inited = true;
+    }
+
+    @Override
+    public void destroy() {
+      inited = false;
+    }
+
     @Override
     public void getDocIds(DocIdPusher pusher) {
       throw new UnsupportedOperationException();

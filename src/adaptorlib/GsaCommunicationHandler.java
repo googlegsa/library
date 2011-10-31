@@ -227,6 +227,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       server.stop(maxDelay);
       server = null;
     }
+    adaptor.destroy();
   }
 
   private AdministratorSecurityHandler createAdminSecurityHandler(
