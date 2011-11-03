@@ -38,6 +38,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeMap;
+import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -74,6 +75,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
    */
   private String sendDocIdsSchedId;
   private HttpServer server;
+  private HttpServer dashboardServer;
   private CircularLogRpcMethod circularLogRpcMethod;
   private Thread shutdownHook;
   private Timer configWatcherTimer = new Timer("configWatcher", true);
@@ -127,6 +129,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     // useful during testing.
     port = server.getAddress().getPort();
     config.setValue("server.port", "" + port);
+    Executor executor = Executors.newCachedThreadPool();
+    server.setExecutor(executor);
 
     SessionManager<HttpExchange> sessionManager
         = new SessionManager<HttpExchange>(
@@ -157,17 +161,34 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager, null));
+    server.start();
 
-    server.createContext("/dashboard",
+    int dashboardPort = config.getServerDashboardPort();
+    InetSocketAddress dashboardAddr = new InetSocketAddress(dashboardPort);
+    if (!secure) {
+      dashboardServer = HttpServer.create(dashboardAddr, 0);
+    } else {
+      dashboardServer = HttpsServer.create(dashboardAddr, 0);
+    }
+    // If the port is zero, then the OS chose a port for us. This is mainly
+    // useful during testing.
+    dashboardPort = dashboardServer.getAddress().getPort();
+    config.setValue("server.dashboardPort", "" + dashboardPort);
+    dashboardServer.setExecutor(executor);
+    dashboardServer.createContext("/dashboard",
         createAdminSecurityHandler(new DashboardHandler(config, journal),
                                        config, sessionManager, secure));
-    server.createContext("/rpc",
+    dashboardServer.createContext("/rpc",
         createAdminSecurityHandler(createRpcHandler(sessionManager), config,
                                    sessionManager, secure));
-    server.setExecutor(Executors.newCachedThreadPool());
-    server.start();
+    dashboardServer.createContext("/",
+        new RedirectHandler(config.getServerHostname(),
+            config.getGsaCharacterEncoding(), "/dashboard"));
+    dashboardServer.start();
+
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
+    log.info("dashboard is listening on port #" + dashboardPort);
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
@@ -237,6 +258,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     if (server != null) {
       server.stop(maxDelay);
       server = null;
+    }
+    if (dashboardServer != null) {
+      dashboardServer.stop(1);
+      dashboardServer = null;
     }
     adaptor.destroy();
   }

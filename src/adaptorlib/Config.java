@@ -55,6 +55,7 @@ public class Config {
     }
     addKey("server.hostname", hostname);
     addKey("server.port", "5678");
+    addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.gsaIps", "");
     addKey("server.addResolvedGsaHostnameToGsaIps", "true");
@@ -103,6 +104,13 @@ public class Config {
    */
   public int getServerPort() {
     return Integer.parseInt(getValue("server.port"));
+  }
+
+  /**
+   * Local port, on this computer, from which the dashboard is served.
+   */
+  public int getServerDashboardPort() {
+    return Integer.parseInt(getValue("server.dashboardPort"));
   }
 
   /* More sophisticated preferences that can be left
