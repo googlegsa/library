@@ -16,10 +16,12 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
-import org.junit.Test;
+import org.junit.*;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -28,9 +30,29 @@ import java.nio.charset.Charset;
  * Tests for {@link RpcHandler}.
  */
 public class RpcHandlerTest {
-  private RpcHandler handler
-      = new RpcHandler("localhost", Charset.forName("UTF-8"), null);
+  private static final String SESSION_COOKIE_NAME = "testSess";
+  private SessionManager.ClientStore<HttpExchange> clientStore
+      = new SessionManager.HttpExchangeClientStore(SESSION_COOKIE_NAME);
+  private SessionManager<HttpExchange> sessionManager
+      = new SessionManager<HttpExchange>(new MockTimeProvider(),
+         clientStore, 10000, 1000);
+  private RpcHandler handler = new RpcHandler(
+      "localhost", Charset.forName("UTF-8"), null, sessionManager);
   private Charset charset = Charset.forName("UTF-8");
+  private String sessionId;
+  private String xsrfToken;
+
+  @Before
+  public void loadXsrfToken() throws Exception {
+    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    handler.handle(ex);
+    assertEquals(409, ex.getResponseCode());
+    xsrfToken = (String) ex.getResponseHeaders().getFirst(
+        RpcHandler.XSRF_TOKEN_HEADER_NAME);
+    assertNotNull(xsrfToken);
+    sessionId = clientStore.retrieve(ex);
+    assertNotNull(sessionId);
+  }
 
   @Test
   public void testGet() throws Exception {
@@ -57,6 +79,17 @@ public class RpcHandlerTest {
     JSONObject obj = (JSONObject) JSONValue.parse(response);
     assertTrue(obj.get("error") != null);
     assertTrue(obj.get("result") == null);
+  }
+
+  @Test
+  public void testInvalidXsrfToken() throws Exception {
+    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/r",
+        new MockHttpContext(handler, "/r"));
+    ex.getRequestHeaders().set("Cookie", SESSION_COOKIE_NAME + "=" + sessionId);
+    handler.handle(ex);
+    assertEquals(409, ex.getResponseCode());
+    assertNotNull(ex.getResponseHeaders().get(
+        RpcHandler.XSRF_TOKEN_HEADER_NAME));
   }
 
   @Test
@@ -88,8 +121,11 @@ public class RpcHandlerTest {
 
   private MockHttpExchange makeExchange(String protocol, String method,
         String path, String contextPath) throws Exception {
-    return new MockHttpExchange(protocol, method, path,
+    MockHttpExchange ex = new MockHttpExchange(protocol, method, path,
                                 new MockHttpContext(handler, contextPath));
+    ex.getRequestHeaders().set(RpcHandler.XSRF_TOKEN_HEADER_NAME, xsrfToken);
+    ex.getRequestHeaders().set("Cookie", SESSION_COOKIE_NAME + "=" + sessionId);
+    return ex;
   }
 
   private InputStream stringToStream(String str) {

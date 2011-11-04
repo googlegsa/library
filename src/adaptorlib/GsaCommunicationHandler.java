@@ -162,8 +162,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         createAdminSecurityHandler(new DashboardHandler(config, journal),
                                        config, sessionManager, secure));
     server.createContext("/rpc",
-        createAdminSecurityHandler(createRpcHandler(), config,
-                                       sessionManager, secure));
+        createAdminSecurityHandler(createRpcHandler(sessionManager), config,
+                                   sessionManager, secure));
     server.setExecutor(Executors.newCachedThreadPool());
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
@@ -249,9 +249,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         config.getGsaHostname(), secure);
   }
 
-  private synchronized RpcHandler createRpcHandler() {
+  private synchronized RpcHandler createRpcHandler(
+      SessionManager<HttpExchange> sessionManager) {
     RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), this);
+        config.getGsaCharacterEncoding(), this, sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
     circularLogRpcMethod = new CircularLogRpcMethod();
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
