@@ -161,6 +161,9 @@ public class AdministratorSecurityHandler extends AbstractHandler {
 
   @Override
   public void handle(HttpExchange ex) throws IOException {
+    // Clickjacking defence.
+    ex.getResponseHeaders().set("X-Frame-Options", "deny");
+
     // Perform fast-path checking here to prevent double-logging most requests.
     Session session = sessionManager.getSession(ex, false);
     if (session != null && session.getAttribute(SESSION_ATTR_NAME) != null) {
