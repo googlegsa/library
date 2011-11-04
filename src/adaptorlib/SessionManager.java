@@ -232,7 +232,7 @@ class SessionManager<E> {
     public void store(HttpExchange ex, String value) {
       exchangeCookieMap.put(ex, value);
       ex.getResponseHeaders().set("Set-Cookie", cookieName + "=" + value
-                                  + "; Path=/");
+                                  + "; Path=/; HttpOnly");
     }
   }
 }
