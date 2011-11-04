@@ -23,7 +23,7 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.Charset;
-import java.util.logging.Logger;
+import java.util.logging.*;
 
 /**
  * Require GSA-Administrator authentication before allowing access to wrapped
@@ -133,7 +133,7 @@ public class AdministratorSecurityHandler extends AbstractHandler {
         }
       }
     } catch (Exception e) {
-      log.fine("Processing POST caused exception");
+      log.log(Level.FINE, "Processing POST caused exception", e);
       // Assume that they were POSTing to a different page, since they didn't
       // provide the expected input.
       username = null;
@@ -193,6 +193,7 @@ public class AdministratorSecurityHandler extends AbstractHandler {
       try {
         new GsaClient(protocol, gsaHostname, port, username, password);
       } catch (AuthenticationException e) {
+        log.log(Level.FINE, "AuthenticationException", e);
         return AuthzStatus.DENY;
       }
       return AuthzStatus.PERMIT;
