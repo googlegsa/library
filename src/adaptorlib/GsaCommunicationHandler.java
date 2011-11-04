@@ -169,6 +169,9 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       dashboardServer = HttpServer.create(dashboardAddr, 0);
     } else {
       dashboardServer = HttpsServer.create(dashboardAddr, 0);
+      HttpsConfigurator httpsConf
+          = new HttpsConfigurator(SSLContext.getDefault());
+      ((HttpsServer) dashboardServer).setHttpsConfigurator(httpsConf);
     }
     // If the port is zero, then the OS chose a port for us. This is mainly
     // useful during testing.
