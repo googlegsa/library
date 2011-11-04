@@ -134,7 +134,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
 
     SessionManager<HttpExchange> sessionManager
         = new SessionManager<HttpExchange>(
-          new SessionManager.HttpExchangeClientStore("sessid_" + port),
+          new SessionManager.HttpExchangeClientStore("sessid_" + port, secure),
           30 * 60 * 1000 /* session lifetime: 30 minutes */,
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
     AuthnHandler authnHandler = null;

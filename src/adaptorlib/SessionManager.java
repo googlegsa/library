@@ -161,6 +161,7 @@ class SessionManager<E> {
       implements ClientStore<HttpExchange> {
 
     private final String cookieName;
+    private final boolean secure;
     private Map<HttpExchange, String> exchangeCookieMap
         = Collections.synchronizedMap(new WeakHashMap<HttpExchange, String>());
 
@@ -169,10 +170,15 @@ class SessionManager<E> {
     }
 
     public HttpExchangeClientStore(String cookieName) {
+      this(cookieName, false);
+    }
+
+    public HttpExchangeClientStore(String cookieName, boolean secure) {
       if (cookieName == null) {
         throw new NullPointerException();
       }
       this.cookieName = cookieName;
+      this.secure = secure;
     }
 
     @Override
@@ -206,7 +212,7 @@ class SessionManager<E> {
     public void store(HttpExchange ex, String value) {
       exchangeCookieMap.put(ex, value);
       ex.getResponseHeaders().set("Set-Cookie", cookieName + "=" + value
-                                  + "; Path=/; HttpOnly");
+          + "; Path=/; HttpOnly" + (secure ? "; Secure" : ""));
     }
   }
 }
