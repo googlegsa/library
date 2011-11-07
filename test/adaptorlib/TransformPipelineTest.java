@@ -15,69 +15,75 @@
 package adaptorlib;
 
 import static org.junit.Assert.*;
-import org.junit.Test;
+
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Tests for {@link TransformPipeline}.
  */
 public class TransformPipelineTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   @Test
-  public void testNoOp() throws IOException, TransformException {
+  public void testNoOpEmpty() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
-    params.put("key1", "value1");
-    pipeline.transform(new byte[0], new byte[0], contentOut, metadataOut, params);
+    pipeline.transform(new byte[0], contentOut, metadata, params);
 
     assertEquals(0, contentOut.size());
-    assertEquals(0, metadataOut.size());
-    assertEquals("value1", params.get("key1"));
-    assertEquals(1, params.keySet().size());
+    assertEquals(Collections.emptyMap(), metadata);
+    assertEquals(Collections.emptyMap(), params);
   }
 
   @Test
   public void testNoOpWithInput() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("key1", "value1");
     Map<String, String> params = new HashMap<String, String>();
-    params.put("key1", "value1");
+    params.put("key2", "value2");
     String testString = "Here is some input";
-    pipeline.transform(testString.getBytes(), new byte[0], contentOut, metadataOut, params);
+    pipeline.transform(testString.getBytes(), contentOut, metadata, params);
 
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadataOut.size());
-    assertEquals("value1", params.get("key1"));
-    assertEquals(1, params.keySet().size());
+    assertEquals(Collections.singletonMap("key1", "value1"), metadata);
+    assertEquals(Collections.singletonMap("key2", "value2"), params);
   }
 
   @Test
-  public void testModifyParams() throws IOException, TransformException {
+  public void testAddMetadataAndParams() throws IOException, TransformException {
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("key1", "value1");
     Map<String, String> params = new HashMap<String, String>();
-    params.put("key1", "value1");
+    params.put("key2", "value2");
 
     TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new DocumentTransform("Param Transform") {
+    pipeline.add(new DocumentTransform("Metadata/Param Transform") {
         @Override
-        public void transform(ByteArrayOutputStream cIn, ByteArrayOutputStream mIn,
-                              OutputStream cOut, OutputStream mOut,
+        public void transform(ByteArrayOutputStream cIn, OutputStream cOut, Map<String, String> m,
                               Map<String, String> p) throws TransformException, IOException {
+          m.put("newMeta", "metaValue");
           p.put("newKey", "newValue");
         }
       });
-    pipeline.transform(new byte[0], new byte[0],
-                       new ByteArrayOutputStream(), new ByteArrayOutputStream(), params);
+    pipeline.transform(new byte[0], new ByteArrayOutputStream(), metadata, params);
 
-    assertEquals("value1", params.get("key1"));
+    assertEquals("value1", metadata.get("key1"));
+    assertEquals("metaValue", metadata.get("newMeta"));
+    assertEquals(2, metadata.size());
+    assertEquals("value2", params.get("key2"));
     assertEquals("newValue", params.get("newKey"));
-    assertEquals(2, params.keySet().size());
+    assertEquals(2, params.size());
   }
 
   @Test
@@ -85,12 +91,16 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream mOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("int", "0");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("int", "1");
 
-    pipeline.transform(new byte[] {1, 2, 3}, new byte[0], out, mOut, new HashMap<String, String>());
+    pipeline.transform(new byte[] {1, 2, 3}, out, metadata, params);
 
     assertArrayEquals(new byte[] {2, 3, 4}, out.toByteArray());
-    assertArrayEquals(new byte[0], mOut.toByteArray());
+    assertEquals(Collections.singletonMap("int", "1"), metadata);
+    assertEquals(Collections.singletonMap("int", "2"), params);
   }
 
   @Test
@@ -99,12 +109,16 @@ public class TransformPipelineTest {
     pipeline.add(new IncrementTransform());
     pipeline.add(new ProductTransform(2));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream mOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("int", "0");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("int", "1");
 
-    pipeline.transform(new byte[] {1, 2, 3}, new byte[0], out, mOut, new HashMap<String, String>());
+    pipeline.transform(new byte[] {1, 2, 3}, out, metadata, params);
 
     assertArrayEquals(new byte[] {4, 6, 8}, out.toByteArray());
-    assertArrayEquals(new byte[0], mOut.toByteArray());
+    assertEquals(Collections.singletonMap("int", "2"), metadata);
+    assertEquals(Collections.singletonMap("int", "4"), params);
   }
 
   @Test
@@ -114,12 +128,16 @@ public class TransformPipelineTest {
     pipeline.add(new ErroringTransform());
     pipeline.get(1).errorHaltsPipeline(false);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream mOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("int", "0");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("int", "1");
 
-    pipeline.transform(new byte[] {1, 2, 3}, new byte[0], out, mOut, new HashMap<String, String>());
+    pipeline.transform(new byte[] {1, 2, 3}, out, metadata, params);
 
     assertArrayEquals(new byte[] {2, 3, 4}, out.toByteArray());
-    assertArrayEquals(new byte[0], mOut.toByteArray());
+    assertEquals(Collections.singletonMap("int", "1"), metadata);
+    assertEquals(Collections.singletonMap("int", "2"), params);
   }
 
   @Test
@@ -129,12 +147,38 @@ public class TransformPipelineTest {
     pipeline.get(0).errorHaltsPipeline(false);
     pipeline.add(new IncrementTransform());
     ByteArrayOutputStream out = new ByteArrayOutputStream();
-    ByteArrayOutputStream mOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("int", "0");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("int", "1");
 
-    pipeline.transform(new byte[] {1, 2, 3}, new byte[0], out, mOut, new HashMap<String, String>());
+    pipeline.transform(new byte[] {1, 2, 3}, out, metadata, params);
 
     assertArrayEquals(new byte[] {2, 3, 4}, out.toByteArray());
-    assertArrayEquals(new byte[0], mOut.toByteArray());
+    assertEquals(Collections.singletonMap("int", "1"), metadata);
+    assertEquals(Collections.singletonMap("int", "2"), params);
+  }
+
+  @Test
+  public void testTransformErrorFatal() throws IOException, TransformException {
+    TransformPipeline pipeline = new TransformPipeline();
+    pipeline.add(new IncrementTransform());
+    pipeline.add(new ErroringTransform());
+    pipeline.get(1).errorHaltsPipeline(true);
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("int", "0");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("int", "1");
+
+    thrown.expect(TransformException.class);
+    try {
+      pipeline.transform(new byte[] {1, 2, 3}, out, metadata, params);
+    } finally {
+      assertArrayEquals(new byte[] {}, out.toByteArray());
+      assertEquals(Collections.singletonMap("int", "0"), metadata);
+      assertEquals(Collections.singletonMap("int", "1"), params);
+    }
   }
 
   private static class IncrementTransform extends DocumentTransform {
@@ -143,15 +187,16 @@ public class TransformPipelineTest {
     }
 
     @Override
-    public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                          OutputStream contentOut, OutputStream metadataOut, Map<String, String> p)
-                          throws TransformException, IOException {
+    public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                          Map<String, String> metadata, Map<String, String> p)
+        throws TransformException, IOException {
       byte[] content = contentIn.toByteArray();
       for (int i = 0; i < content.length; i++) {
         content[i]++;
       }
       contentOut.write(content);
-      metadataIn.writeTo(metadataOut);
+      metadata.put("int", "" + (Integer.parseInt(metadata.get("int")) + 1));
+      p.put("int", "" + (Integer.parseInt(p.get("int")) + 1));
     }
   }
 
@@ -164,15 +209,16 @@ public class TransformPipelineTest {
     }
 
     @Override
-    public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                          OutputStream contentOut, OutputStream metadataOut, Map<String, String> p)
-                          throws TransformException, IOException {
+    public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                          Map<String, String> metadata, Map<String, String> p)
+        throws TransformException, IOException {
       byte[] content = contentIn.toByteArray();
       for (int i = 0; i < content.length; i++) {
         content[i] *= factor;
       }
       contentOut.write(content);
-      metadataIn.writeTo(metadataOut);
+      metadata.put("int", "" + (Integer.parseInt(metadata.get("int")) * factor));
+      p.put("int", "" + (Integer.parseInt(p.get("int")) * factor));
     }
   }
 
@@ -182,12 +228,14 @@ public class TransformPipelineTest {
     }
 
     @Override
-    public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                          OutputStream contentOut, OutputStream metadataOut,
-                          Map<String, String> p) throws TransformException, IOException {
+    public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                          Map<String, String> metadata, Map<String, String> p)
+        throws TransformException, IOException {
       // Do some work, but don't complete.
       contentOut.write(new byte[] {1});
-      throw new TransformException("something went wrong");
+      metadata.put("trash", "value");
+      p.put("more trash", "values");
+      throw new TransformException("test exception");
     }
   }
 }

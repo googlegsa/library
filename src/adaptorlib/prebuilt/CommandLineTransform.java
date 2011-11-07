@@ -40,9 +40,9 @@ public class CommandLineTransform extends DocumentTransform {
   }
 
   @Override
-  public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                        OutputStream contentOut, OutputStream metadataOut,
-                        Map<String, String> params) throws TransformException, IOException {
+  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                        Map<String, String> metadataIn, Map<String, String> params)
+      throws TransformException, IOException {
     // Java Processes can only take input on 1 channel, stdin. If we want
     // to have two separate channels, we would need to either:
     // - Have two separate commands that get called for content and metadata

@@ -82,9 +82,9 @@ public class CalaisNERTransform extends DocumentTransform {
    * </ul>
    */
   @Override
-  public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                        OutputStream contentOut, OutputStream metadataOut,
-                        Map<String, String> params) throws TransformException, IOException {
+  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                        Map<String, String> metadata, Map<String, String> params)
+      throws TransformException, IOException {
     String apiKey = params.get("OpenCalaisApiKey");
     if (apiKey == null) {
       throw new IllegalArgumentException("No api key given. Please set param: OpenCalaisApiKey");
@@ -116,6 +116,5 @@ public class CalaisNERTransform extends DocumentTransform {
     // </HEAD> element and inserts the metadata right before it.
     content = content.replaceFirst("</(HEAD|head)", "\n" + sb.toString() + "</HEAD");
     contentOut.write(content.getBytes());
-    metadataIn.writeTo(metadataOut);
   }
 }

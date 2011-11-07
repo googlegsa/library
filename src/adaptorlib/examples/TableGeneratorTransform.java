@@ -57,9 +57,9 @@ public class TableGeneratorTransform extends DocumentTransform {
   }
 
   @Override
-  public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                        OutputStream contentOut, OutputStream metadataOut,
-                        Map<String, String> params) throws TransformException, IOException {
+  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                        Map<String, String> metadata, Map<String, String> params)
+      throws TransformException, IOException {
     String csv = contentIn.toString();
     List<String[]> records = new CSVReader(new StringReader(csv)).readAll();
     StringBuilder tableBuilder = new StringBuilder();
@@ -78,7 +78,6 @@ public class TableGeneratorTransform extends DocumentTransform {
     }
     String content = htmlTemplate.replace(SIGIL, tableBuilder.toString());
     contentOut.write(content.getBytes());
-    metadataIn.writeTo(metadataOut);
   }
 
   private void loadTemplateFile(String templateFile) throws IOException {

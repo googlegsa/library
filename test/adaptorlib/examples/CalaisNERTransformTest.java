@@ -14,6 +14,8 @@
 
 package adaptorlib.examples;
 
+import static org.junit.Assert.*;
+
 import adaptorlib.TransformException;
 
 import mx.bigdata.jcalais.CalaisClient;
@@ -21,7 +23,6 @@ import mx.bigdata.jcalais.CalaisConfig;
 import mx.bigdata.jcalais.CalaisObject;
 import mx.bigdata.jcalais.CalaisResponse;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -132,9 +133,8 @@ public class CalaisNERTransformTest {
   public void testRestrictedSet() throws IOException, TransformException {
     CalaisNERTransform transform = new CalaisNERTransform(new Factory());
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("OpenCalaisApiKey", "4ydv87zawg7tf29jzex22d9u");
     params.put("UseCalaisEntity:Person", "True");
@@ -158,7 +158,7 @@ public class CalaisNERTransformTest {
         + " which they say he used to fund a bloody civil war in Sierra Leone."
         + "</BODY></HTML>";
     contentIn.write(testInput.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
     assertEquals(golden, contentOut.toString());
   }
 
@@ -166,9 +166,8 @@ public class CalaisNERTransformTest {
   public void testAllEntities() throws IOException, TransformException {
     CalaisNERTransform transform = new CalaisNERTransform(new Factory());
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("OpenCalaisApiKey", "4ydv87zawg7tf29jzex22d9u");
     params.put("UseCalaisEntity:All", "True");
@@ -192,7 +191,7 @@ public class CalaisNERTransformTest {
         + " which they say he used to fund a bloody civil war in Sierra Leone."
         + "</BODY></HTML>";
     contentIn.write(testInput.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
     assertEquals(golden, contentOut.toString());
   }
 }

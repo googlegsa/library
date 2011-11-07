@@ -14,11 +14,12 @@
 
 package adaptorlib.prebuilt;
 
+import static org.junit.Assert.*;
+
 import adaptorlib.TestHelper;
 import adaptorlib.TransformException;
 import adaptorlib.TransformPipeline;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -45,8 +46,7 @@ public class CommandLineTransformTest {
     cmd.transformCommand("sed s/i/1/");
     cmd.commandAcceptsParameters(false);
     pipeline.add(cmd);
-    pipeline.transform(testStr.getBytes(), new byte[0],
-                       contentOut, new ByteArrayOutputStream(), params);
+    pipeline.transform(testStr.getBytes(), contentOut, new HashMap<String, String>(), params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
     assertEquals("value1", params.get("key1"));

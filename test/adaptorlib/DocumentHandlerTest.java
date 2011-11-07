@@ -223,23 +223,53 @@ public class DocumentHandlerTest {
   @Test
   public void testTransform() throws Exception {
     final byte[] golden = new byte[] {2, 3, 4};
+    final String key = "testing key";
     TransformPipeline transform = new TransformPipeline() {
       @Override
-      public void transform(byte[] contentIn, byte[] metadataIn,
-                            OutputStream contentOut, OutputStream metadataOut,
+      public void transform(byte[] contentIn, OutputStream contentOut,
+                            Map<String, String> metadata,
                             Map<String, String> params) throws IOException {
         assertArrayEquals(mockAdaptor.documentBytes, contentIn);
         contentOut.write(golden);
+        metadata.put(key, metadata.get(key).toUpperCase());
+        metadata.put("docid", params.get("DocId"));
       }
     };
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException {
+        Set<MetaItem> metaSet = new HashSet<MetaItem>();
+        metaSet.add(MetaItem.raw(key, "testing value"));
+        response.setMetadata(new Metadata(metaSet));
+        super.getDocContent(request, response);
+      }
+    };
+    // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
-        new String[0], null, sessionManager, transform);
+        new String[] {"127.0.0.3"}, null, sessionManager, transform);
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
+    assertEquals("docid=http%3A%2F%2Flocalhost%2F,"
+                 + "testing%20key=TESTING%20VALUE",
+                 ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+
+    // Test again but without acting like we are the GSA. This time there should
+    // be no metadata.
+    handler = new DocumentHandler("localhost",
+        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
+        new String[0], null, sessionManager, transform);
+    ex = new MockHttpExchange("http", "GET", "/",
+        new MockHttpContext(null, "/"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertArrayEquals(golden, ex.getResponseBytes());
+    assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
   }
 
   @Test
