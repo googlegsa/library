@@ -157,7 +157,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
                             config.getGsaCharacterEncoding(), this,
-                            getJournal(), adaptor,
+                            journal, adaptor,
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager, null));
@@ -178,9 +178,11 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     dashboardPort = dashboardServer.getAddress().getPort();
     config.setValue("server.dashboardPort", "" + dashboardPort);
     dashboardServer.setExecutor(executor);
+    HttpHandler dashboardHandler = new DashboardHandler(
+        config.getServerHostname(), config.getGsaCharacterEncoding());
     dashboardServer.createContext("/dashboard",
-        createAdminSecurityHandler(new DashboardHandler(config, journal),
-                                       config, sessionManager, secure));
+        createAdminSecurityHandler(dashboardHandler, config, sessionManager,
+                                   secure));
     dashboardServer.createContext("/rpc",
         createAdminSecurityHandler(createRpcHandler(sessionManager), config,
                                    sessionManager, secure));
@@ -280,7 +282,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private synchronized RpcHandler createRpcHandler(
       SessionManager<HttpExchange> sessionManager) {
     RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), this, sessionManager);
+        config.getGsaCharacterEncoding(), sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
     circularLogRpcMethod = new CircularLogRpcMethod();
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
@@ -442,21 +444,6 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       id = id.replaceAll("(^|/)(\\.+)\\.\\.(?=$|/)", "$1$2");
       return new DocId(id);
     }
-  }
-
-  URI formNamespacedUri(String namespace) {
-    URI uri;
-    try {
-      uri = new URI(null, null, config.getServerBaseUri().getPath() + namespace,
-                    null);
-    } catch (URISyntaxException e) {
-      throw new IllegalStateException(e);
-    }
-    return config.getServerBaseUri().resolve(uri);
-  }
-
-  Journal getJournal() {
-    return journal;
   }
 
   private class InnerDocIdPusher extends AbstractDocIdPusher {

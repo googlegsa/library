@@ -34,16 +34,13 @@ class RpcHandler extends AbstractHandler {
   public static final String XSRF_TOKEN_HEADER_NAME = "X-Adaptor-XSRF-Token";
 
   private final Charset charset = Charset.forName("UTF-8");
-  private final GsaCommunicationHandler commHandler;
   private final Map<String, RpcMethod> methods
       = new HashMap<String, RpcMethod>();
   private final SessionManager<HttpExchange> sessionManager;
 
   public RpcHandler(String defaultHostname, Charset defaultCharset,
-                    GsaCommunicationHandler commHandler,
                     SessionManager<HttpExchange> sessionManager) {
     super(defaultHostname, defaultCharset);
-    this.commHandler = commHandler;
     this.sessionManager = sessionManager;
   }
 

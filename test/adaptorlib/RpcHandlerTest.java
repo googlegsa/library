@@ -37,7 +37,7 @@ public class RpcHandlerTest {
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
          clientStore, 10000, 1000);
   private RpcHandler handler = new RpcHandler(
-      "localhost", Charset.forName("UTF-8"), null, sessionManager);
+      "localhost", Charset.forName("UTF-8"), sessionManager);
   private Charset charset = Charset.forName("UTF-8");
   private String sessionId;
   private String xsrfToken;
