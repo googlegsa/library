@@ -30,6 +30,54 @@
   white-space: pre;
 }
 
+#gaf-stats {
+  float: left;
+}
+
+#gaf-status {
+  margin: 0 5em 0 0;
+}
+
+#gaf-status-table td {
+  border-bottom: 1px dotted black;
+}
+
+#gaf-status-table tr:last-child td {
+  border-bottom: none;
+}
+
+.gaf-status-unavailable,
+.gaf-status-inactive,
+.gaf-status-normal,
+.gaf-status-warning,
+.gaf-status-error {
+  display: inline-block;
+  border: 1px solid black;
+  height: .5em;
+  margin: 0 .5em 0 1em;
+  width: 1em;
+}
+
+.gaf-status-unavailable {
+  background: black;
+}
+
+.gaf-status-inactive {
+  background: white;
+}
+
+.gaf-status-normal {
+  background: #3c3;
+}
+
+.gaf-status-warning {
+  background: yellow;
+}
+
+.gaf-status-error {
+  background: #f33;
+}
+
 #gaf-log {
   height: 20em;
   overflow: auto;

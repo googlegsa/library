@@ -290,7 +290,51 @@ function getConfigCallback(result, error) {
   }
 }
 
+function getStatusesCallback(result, error) {
+  if (result === null)
+    throw error;
+
+  var codeToClassMap = {
+    UNAVAILABLE: 'gaf-status-unavailable',
+    INACTIVE: 'gaf-status-inactive',
+    NORMAL: 'gaf-status-normal',
+    WARNING: 'gaf-status-warning',
+    ERROR: 'gaf-status-error'
+  };
+
+  var codeToDefaultDescrMap = {
+    UNAVAILABLE: 'Unavailable',
+    INACTIVE: 'Status checking inactive',
+    NORMAL: 'Normal',
+    WARNING: 'Warning',
+    ERROR: 'Error'
+  };
+
+  var statuses = result;
+  var statusTable = $('#gaf-status-table');
+  var curStatus, tr, td, led, message;
+  for (var i = 0; i < statuses.length; i++) {
+    curStatus = statuses[i];
+    tr = document.createElement('tr');
+    td = document.createElement('td');
+    td.appendChild(document.createTextNode(curStatus.source));
+    tr.appendChild(td);
+    td = document.createElement('td');
+    led = document.createElement('span');
+    led.className = codeToClassMap[curStatus.code];
+    td.appendChild(led);
+    message = curStatus.message;
+    if (!message) {
+      message = codeToDefaultDescrMap[curStatus.code];
+    }
+    td.appendChild(document.createTextNode(message));
+    tr.appendChild(td);
+    statusTable.append(tr);
+  }
+}
+
 $(document).ready(function() {
+  rpc('getStatuses', null, getStatusesCallback);
   rpc('getStats', null, getStatsCallback);
   rpc('getConfig', null, getConfigCallback);
   rpc('getLog', null, getLogCallback);

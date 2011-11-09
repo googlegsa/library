@@ -59,6 +59,13 @@ class Journal {
   private long lastSuccessfulPushStart;
   /** Date in milliseconds. */
   private long lastSuccessfulPushEnd;
+  private CompletionStatus lastPushStatus = CompletionStatus.SUCCESS;
+
+  enum CompletionStatus {
+    SUCCESS,
+    INTERRUPTION,
+    FAILURE,
+  }
 
   public Journal() {
     this(new SystemTimeProvider());
@@ -85,9 +92,16 @@ class Journal {
     totalPushes += pushed.size();
   }
 
-  synchronized void recordGsaContentRequest(DocId docId) {
-    increment(timesGsaRequested, docId); 
-    totalGsaRequests++;
+  void recordGsaContentRequest(DocId docId) {
+    long time = timeProvider.currentTimeMillis();
+    synchronized (this) {
+      increment(timesGsaRequested, docId);
+      totalGsaRequests++;
+      for (Stats stats : timeStats) {
+        Stat stat = stats.getCurrentStat(time);
+        stat.gsaRetrievedDocument = true;
+      }
+    }
   }
 
   synchronized void recordNonGsaContentRequest(DocId requested) {
@@ -130,11 +144,14 @@ class Journal {
   }
 
   /**
-   * Record that the processing this thread was performing to satify the request
-   * has completed.
+   * Record that the processing this thread was performing to satisfy the
+   * request has completed.
    */
   void recordRequestProcessingEnd(long responseSize) {
-    long time = timeProvider.currentTimeMillis();
+    recordRequestProcessingEnd(responseSize, timeProvider.currentTimeMillis());
+  }
+
+  private void recordRequestProcessingEnd(long responseSize, long time) {
     long duration = endDuration(requestProcessingStart, time);
     synchronized (this) {
       for (Stats stats : timeStats) {
@@ -144,6 +161,21 @@ class Journal {
         stat.requestProcessingsMaxDuration = Math.max(
             stat.requestProcessingsMaxDuration, duration);
         stat.requestProcessingsThroughput += responseSize;
+      }
+    }
+  }
+
+  /**
+   * Record that the processing this thread was performing to satisfy the
+   * request has completed, but with an error.
+   */
+  void recordRequestProcessingFailure() {
+    long time = timeProvider.currentTimeMillis();
+    synchronized (this) {
+      recordRequestProcessingEnd(0, time);
+      for (Stats stats : timeStats) {
+        Stat stat = stats.getCurrentStat(time);
+        stat.requestProcessingsFailureCount++;
       }
     }
   }
@@ -193,7 +225,7 @@ class Journal {
   /**
    * Record that a full push has started. Only one is tracked at a time.
    */
-  void recordFullPushStarted() {
+  synchronized void recordFullPushStarted() {
     if (currentPushStart != 0) {
       throw new IllegalStateException("Full push already started");
     }
@@ -205,32 +237,84 @@ class Journal {
    */
   void recordFullPushSuccessful() {
     long endTime = timeProvider.currentTimeMillis();
-    long startTime = currentPushStart;
-    currentPushStart = 0;
     synchronized (this) {
+      long startTime = currentPushStart;
+      currentPushStart = 0;
       this.lastSuccessfulPushStart = startTime;
       this.lastSuccessfulPushEnd = endTime;
+      lastPushStatus = CompletionStatus.SUCCESS;
     }
   }
 
   /**
    * Record that the full push was interrupted prematurely.
    */
-  void recordFullPushInterrupted() {
+  synchronized void recordFullPushInterrupted() {
     if (currentPushStart == 0) {
       throw new IllegalStateException("Full push not already started");
     }
     currentPushStart = 0;
+    lastPushStatus = CompletionStatus.INTERRUPTION;
   }
 
   /**
    * Record that the full push was interrupted prematurely.
    */
-  void recordFullPushFailed() {
+  synchronized void recordFullPushFailed() {
     if (currentPushStart == 0) {
       throw new IllegalStateException("Full push not already started");
     }
     currentPushStart = 0;
+    lastPushStatus = CompletionStatus.FAILURE;
+  }
+
+  synchronized CompletionStatus getLastPushStatus() {
+    return lastPushStatus;
+  }
+
+  double getRetrieverErrorRate(long maxCount) {
+    long currentTime = timeProvider.currentTimeMillis();
+    long count = 0;
+    long failures = 0;
+
+    synchronized (Journal.this) {
+      // Get statistics for the past day.
+      Stats stats = timeStats[timeStats.length - 1];
+      // Update bookkeeping.
+      stats.getCurrentStat(currentTime);
+
+      for (int i = 0; i < stats.stats.length && count < maxCount; i++) {
+        // Walk through indexes in reverse order, starting with most current.
+        int index = (stats.currentStat - i + stats.stats.length)
+            % stats.stats.length;
+        Stat stat = stats.stats[index];
+        count += stat.requestProcessingsCount;
+        failures += stat.requestProcessingsFailureCount;
+      }
+    }
+
+    double rate = 0;
+    if (count > 0) {
+      rate = failures / (double) count;
+    }
+    return rate;
+  }
+
+  boolean getGsaCrawled() {
+    long currentTime = timeProvider.currentTimeMillis();
+    synchronized (Journal.this) {
+      // Get statistics for the past day.
+      Stats stats = timeStats[timeStats.length - 1];
+      // Update bookkeeping.
+      stats.getCurrentStat(currentTime);
+
+      for (Stat stat : stats.stats) {
+        if (stat.gsaRetrievedDocument) {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 
   /**
@@ -390,6 +474,10 @@ class Journal {
      */
     long requestProcessingsCount;
     /**
+     * The number of request processings that errored.
+     */
+    long requestProcessingsFailureCount;
+    /**
      * The total duration of response processings.
      */
     long requestProcessingsDurationSum;
@@ -401,6 +489,10 @@ class Journal {
      * Number of bytes generated by the adaptor.
      */
     long requestProcessingsThroughput;
+    /**
+     * True if the GSA requested a document.
+     */
+    boolean gsaRetrievedDocument;
 
     public Stat() {
       reset();
@@ -416,9 +508,11 @@ class Journal {
       requestResponsesThroughput = 0;
 
       requestProcessingsCount = 0;
+      requestProcessingsFailureCount = 0;
       requestProcessingsDurationSum = 0;
       requestProcessingsMaxDuration = 0;
       requestProcessingsThroughput = 0;
+      gsaRetrievedDocument = false;
     }
 
     public Object clone() throws CloneNotSupportedException {

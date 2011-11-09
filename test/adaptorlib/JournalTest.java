@@ -268,4 +268,85 @@ public class JournalTest {
   public void testDefaultTimeProvider() {
     new Journal();
   }
+
+  @Test
+  public void testLastPushStatus() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+
+    assertEquals(Journal.CompletionStatus.SUCCESS, journal.getLastPushStatus());
+
+    journal.recordFullPushStarted();
+    journal.recordFullPushInterrupted();
+    assertEquals(Journal.CompletionStatus.INTERRUPTION,
+        journal.getLastPushStatus());
+
+    journal.recordFullPushStarted();
+    journal.recordFullPushFailed();
+    assertEquals(Journal.CompletionStatus.FAILURE, journal.getLastPushStatus());
+
+    journal.recordFullPushStarted();
+    journal.recordFullPushSuccessful();
+    assertEquals(Journal.CompletionStatus.SUCCESS, journal.getLastPushStatus());
+  }
+
+  @Test
+  public void testRetrieverStatusSource() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    timeProvider.autoIncrement = false;
+    DocId docId = new DocId("");
+    final long hourInMillis = 1000 * 60 * 60;
+
+    double rate = journal.getRetrieverErrorRate(10);
+    assertEquals(0., rate, 0.);
+
+    journal.recordRequestProcessingStart();
+    journal.recordRequestProcessingFailure();
+    rate = journal.getRetrieverErrorRate(10);
+    assertEquals(1., rate, 0.);
+
+    timeProvider.time += hourInMillis;
+    for (int i = 0; i < 7; i++) {
+      journal.recordRequestProcessingStart();
+      journal.recordRequestProcessingEnd(0);
+    }
+    rate = journal.getRetrieverErrorRate(10);
+    assertEquals(1. / 8., rate, 0.);
+
+    timeProvider.time += hourInMillis;
+    for (int i = 0; i < 7; i++) {
+      journal.recordRequestProcessingStart();
+      journal.recordRequestProcessingFailure();
+    }
+    rate = journal.getRetrieverErrorRate(10);
+    assertEquals(1. / 2., rate, 0.);
+    rate = journal.getRetrieverErrorRate(7);
+    assertEquals(1., rate, 0.);
+
+    timeProvider.time += hourInMillis;
+    for (int i = 0; i < 10; i++) {
+      journal.recordRequestProcessingStart();
+      journal.recordRequestProcessingEnd(0);
+    }
+    rate = journal.getRetrieverErrorRate(10);
+    assertEquals(0., rate, 0.);
+  }
+
+  @Test
+  public void testGsaCrawlingStatusSource() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    timeProvider.autoIncrement = false;
+    DocId docId = new DocId("");
+
+    assertFalse(journal.getGsaCrawled());
+
+    journal.recordGsaContentRequest(docId);
+    assertTrue(journal.getGsaCrawled());
+
+    final long dayInMillis = 1000 * 60 * 60 * 24;
+    timeProvider.time += 2 * dayInMillis;
+    assertFalse(journal.getGsaCrawled());
+  }
 }

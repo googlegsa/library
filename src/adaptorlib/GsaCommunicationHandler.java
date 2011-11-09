@@ -34,6 +34,7 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -80,6 +81,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   private Thread shutdownHook;
   private Timer configWatcherTimer = new Timer("configWatcher", true);
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
+  private StatusMonitor monitor = new StatusMonitor();
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     this.adaptor = adaptor;
@@ -87,6 +89,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     this.fileSender = new GsaFeedFileSender(config.getGsaCharacterEncoding(),
                                             config.isServerSecure());
     this.fileMaker = new GsaFeedFileMaker(this);
+
+    monitor.addSource(new LastPushStatusSource(journal));
+    monitor.addSource(new RetrieverStatusSource(journal));
+    monitor.addSource(new GsaCrawlingStatusSource(journal));
   }
 
   /**
@@ -184,8 +190,8 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         createAdminSecurityHandler(dashboardHandler, config, sessionManager,
                                    secure));
     dashboardServer.createContext("/rpc",
-        createAdminSecurityHandler(createRpcHandler(sessionManager), config,
-                                   sessionManager, secure));
+        createAdminSecurityHandler(createRpcHandler(sessionManager, monitor),
+            config, sessionManager, secure));
     dashboardServer.createContext("/",
         new RedirectHandler(config.getServerHostname(),
             config.getGsaCharacterEncoding(), "/dashboard"));
@@ -280,7 +286,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
   }
 
   private synchronized RpcHandler createRpcHandler(
-      SessionManager<HttpExchange> sessionManager) {
+      SessionManager<HttpExchange> sessionManager, StatusMonitor monitor) {
     RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding(), sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
@@ -288,6 +294,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
     rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
+    rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
     return rpcHandler;
   }
 
@@ -545,12 +552,35 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
       this.config = config;
     }
 
+    @Override
     public Object run(List request) {
       TreeMap<String, String> configMap = new TreeMap<String, String>();
       for (String key : config.getAllKeys()) {
         configMap.put(key, config.getValue(key));
       }
       return configMap;
+    }
+  }
+
+  static class StatusRpcMethod implements RpcHandler.RpcMethod {
+    private final StatusMonitor monitor;
+
+    public StatusRpcMethod(StatusMonitor monitor) {
+      this.monitor = monitor;
+    }
+
+    @Override
+    public Object run(List request) {
+      Map<StatusSource, Status> statuses = monitor.retrieveStatuses();
+      List<Object> flatStatuses = new ArrayList<Object>(statuses.size());
+      for (Map.Entry<StatusSource, Status> me : statuses.entrySet()) {
+        Map<String, String> obj = new TreeMap<String, String>();
+        obj.put("source", me.getKey().getName());
+        obj.put("code", me.getValue().getCode().name());
+        obj.put("message", me.getValue().getMessage());
+        flatStatuses.add(obj);
+      }
+      return flatStatuses;
     }
   }
 
@@ -587,6 +617,87 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
         log.log(Level.WARNING, "Error while trying to reload configuration",
                 ex);
       }
+    }
+  }
+
+  static class LastPushStatusSource implements StatusSource {
+    private final Journal journal;
+
+    public LastPushStatusSource(Journal journal) {
+      this.journal = journal;
+    }
+
+    @Override
+    public Status retrieveStatus() {
+      switch (journal.getLastPushStatus()) {
+        case SUCCESS:
+          return new Status(StatusCode.NORMAL);
+        case INTERRUPTION:
+          return new Status(StatusCode.WARNING, "Push was interrupted");
+        case FAILURE:
+        default:
+          return new Status(StatusCode.ERROR);
+      }
+    }
+
+    @Override
+    public String getName() {
+      return "Feed Pushing";
+    }
+  }
+
+  static class RetrieverStatusSource implements StatusSource {
+    static final double ERROR_THRESHOLD = 1. / 8.;
+    static final double WARNING_THRESHOLD = 1. / 16.;
+    private static final int MAX_COUNT = 1000;
+
+    private final Journal journal;
+
+    public RetrieverStatusSource(Journal journal) {
+      this.journal = journal;
+    }
+
+    @Override
+    public Status retrieveStatus() {
+      double rate = journal.getRetrieverErrorRate(MAX_COUNT);
+      StatusCode code;
+      if (rate >= ERROR_THRESHOLD) {
+        code = StatusCode.ERROR;
+      } else if (rate >= WARNING_THRESHOLD) {
+        code = StatusCode.WARNING;
+      } else {
+        code = StatusCode.NORMAL;
+      }
+      return new Status(code,
+          "Error rate: " + (int) Math.ceil(rate * 100) + "%");
+    }
+
+    @Override
+    public String getName() {
+      return "Retriever Error Rate";
+    }
+  }
+
+  static class GsaCrawlingStatusSource implements StatusSource {
+    private final Journal journal;
+
+    public GsaCrawlingStatusSource(Journal journal) {
+      this.journal = journal;
+    }
+
+    @Override
+    public Status retrieveStatus() {
+      if (journal.getGsaCrawled()) {
+        return new Status(StatusCode.NORMAL);
+      } else {
+        return new Status(StatusCode.WARNING,
+            "No accesses within the past day");
+      }
+    }
+
+    @Override
+    public String getName() {
+      return "GSA Crawling";
     }
   }
 }
