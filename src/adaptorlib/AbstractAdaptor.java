@@ -58,7 +58,7 @@ public abstract class AbstractAdaptor implements Adaptor {
    * <p>This implementation does nothing.
    */
   @Override
-  public void init(Config config, DocIdPusher pusher) throws Exception {}
+  public void init(AdaptorContext context) throws Exception {}
 
   /**
    * {@inheritDoc}

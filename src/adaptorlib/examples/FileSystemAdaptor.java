@@ -42,9 +42,9 @@ public class FileSystemAdaptor extends AbstractAdaptor {
   }
 
   @Override
-  public void init(Config config, DocIdPusher pusher) throws Exception {
+  public void init(AdaptorContext context) throws Exception {
     // Process configuration.
-    String source = config.getValue("filesystemadaptor.src");
+    String source = context.getConfig().getValue("filesystemadaptor.src");
     serveDir = new File(source).getCanonicalFile();
   }
 

@@ -42,8 +42,13 @@ public class TestHelper {
   }
 
   public static List<DocId> getDocIds(Adaptor adaptor) throws Exception {
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
-    adaptor.init(null, pusher);
+    final AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    adaptor.init(new WrapperAdaptor.WrapperAdaptorContext(null) {
+      @Override
+      public DocIdPusher getDocIdPusher() {
+        return pusher;
+      }
+    });
     adaptor.getDocIds(pusher);
     return pusher.getDocIds();
   }

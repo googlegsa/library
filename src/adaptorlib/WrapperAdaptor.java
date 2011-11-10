@@ -49,8 +49,8 @@ abstract class WrapperAdaptor implements Adaptor {
   }
 
   @Override
-  public void init(Config config, DocIdPusher pusher) throws Exception {
-    adaptor.init(config, pusher);
+  public void init(AdaptorContext context) throws Exception {
+    adaptor.init(context);
   }
 
   @Override
@@ -206,6 +206,24 @@ abstract class WrapperAdaptor implements Adaptor {
                                 PushErrorHandler handler)
         throws InterruptedException {
       return pusher.pushDocInfos(docInfos, handler);
+    }
+  }
+
+  public static class WrapperAdaptorContext implements AdaptorContext {
+    private AdaptorContext context;
+
+    public WrapperAdaptorContext(AdaptorContext context) {
+      this.context = context;
+    }
+
+    @Override
+    public Config getConfig() {
+      return context.getConfig();
+    }
+
+    @Override
+    public DocIdPusher getDocIdPusher() {
+      return context.getDocIdPusher();
     }
   }
 }

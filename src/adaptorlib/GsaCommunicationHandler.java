@@ -203,7 +203,7 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-    adaptor.init(config, pusher);
+    adaptor.init(new AdaptorContextImpl());
 
     config.addConfigModificationListener(new GsaConfigModListener());
     // Since we are white-listing particular keys for auto-update, things aren't
@@ -698,6 +698,18 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     @Override
     public String getName() {
       return "GSA Crawling";
+    }
+  }
+
+  private class AdaptorContextImpl implements AdaptorContext {
+    @Override
+    public Config getConfig() {
+      return config;
+    }
+
+    @Override
+    public DocIdPusher getDocIdPusher() {
+      return pusher;
     }
   }
 }

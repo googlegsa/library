@@ -293,7 +293,7 @@ public class GsaCommunicationHandlerTest {
     private boolean inited;
 
     @Override
-    public void init(Config config, DocIdPusher pusher) {
+    public void init(AdaptorContext context) {
       inited = true;
     }
 

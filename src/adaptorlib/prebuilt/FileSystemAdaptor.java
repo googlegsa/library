@@ -54,7 +54,8 @@ public class FileSystemAdaptor extends AbstractAdaptor {
   }
 
   @Override
-  public void init(Config config, DocIdPusher pusher) throws Exception {
+  public void init(AdaptorContext context) throws Exception {
+    Config config = context.getConfig();
     String source = config.getValue(CONFIG_SRC);
     this.serveDir = new File(source).getCanonicalFile();
 
