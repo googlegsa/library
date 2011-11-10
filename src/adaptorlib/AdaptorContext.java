@@ -28,4 +28,9 @@ public interface AdaptorContext {
    * Callback object for pushing {@code DocId}s to the GSA at any time.
    */
   public DocIdPusher getDocIdPusher();
+
+  /**
+   * A way to construct URIs from DocIds.
+   */
+  public DocIdEncoder getDocIdEncoder();
 }

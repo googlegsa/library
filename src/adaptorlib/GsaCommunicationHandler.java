@@ -711,5 +711,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     public DocIdPusher getDocIdPusher() {
       return pusher;
     }
+
+    @Override
+    public DocIdEncoder getDocIdEncoder() {
+      return GsaCommunicationHandler.this;
+    }
   }
 }

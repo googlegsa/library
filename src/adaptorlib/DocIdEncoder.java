@@ -16,6 +16,14 @@ package adaptorlib;
 
 import java.net.URI;
 
-interface DocIdEncoder {
-  URI encodeDocId(DocId docId);
+/**
+ * Allows generating a URI for a particular DocId.
+ *
+ * @see DocIdDecoder
+ */
+public interface DocIdEncoder {
+  /**
+   * Encode the provided DocId into a URI.
+   */
+  public URI encodeDocId(DocId docId);
 }

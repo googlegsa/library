@@ -225,5 +225,10 @@ abstract class WrapperAdaptor implements Adaptor {
     public DocIdPusher getDocIdPusher() {
       return context.getDocIdPusher();
     }
+
+    @Override
+    public DocIdEncoder getDocIdEncoder() {
+      return context.getDocIdEncoder();
+    }
   }
 }

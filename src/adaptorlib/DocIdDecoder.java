@@ -16,6 +16,16 @@ package adaptorlib;
 
 import java.net.URI;
 
+/**
+ * Allows converting from a URI to a unvalidated DocId.
+ *
+ * @see DocIdEncoder
+ */
 interface DocIdDecoder {
+  /**
+   * Extract the DocId from the provided URI. Note that the DocId is not
+   * guaranteed to have been created by the adaptor library; they can easily be
+   * faked.
+   */
   public DocId decodeDocId(URI uri);
 }
