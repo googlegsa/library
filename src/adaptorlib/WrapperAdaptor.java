@@ -230,5 +230,15 @@ abstract class WrapperAdaptor implements Adaptor {
     public DocIdEncoder getDocIdEncoder() {
       return context.getDocIdEncoder();
     }
+
+    @Override
+    public void addStatusSource(StatusSource source) {
+      context.addStatusSource(source);
+    }
+
+    @Override
+    public void removeStatusSource(StatusSource source) {
+      context.removeStatusSource(source);
+    }
   }
 }

@@ -33,4 +33,14 @@ public interface AdaptorContext {
    * A way to construct URIs from DocIds.
    */
   public DocIdEncoder getDocIdEncoder();
+
+  /**
+   * Add a status source to the dashboard.
+   */
+  public void addStatusSource(StatusSource source);
+
+  /**
+   * Remove a previously added status source to the dashboard.
+   */
+  public void removeStatusSource(StatusSource source);
 }

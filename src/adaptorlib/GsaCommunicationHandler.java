@@ -716,5 +716,15 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     public DocIdEncoder getDocIdEncoder() {
       return GsaCommunicationHandler.this;
     }
+
+    @Override
+    public void addStatusSource(StatusSource source) {
+      monitor.addSource(source);
+    }
+
+    @Override
+    public void removeStatusSource(StatusSource source) {
+      monitor.removeSource(source);
+    }
   }
 }

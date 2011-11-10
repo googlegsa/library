@@ -17,6 +17,9 @@ package adaptorlib;
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+/**
+ * Collection of various status LED sources.
+ */
 class StatusMonitor {
   private List<StatusSource> sources = new CopyOnWriteArrayList<StatusSource>();
 
