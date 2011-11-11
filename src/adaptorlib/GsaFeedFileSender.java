@@ -30,21 +30,21 @@ class GsaFeedFileSender {
 
   /** Indicates failure creating connection to GSA. */
   static class FailedToConnect extends Exception {
-    private FailedToConnect(IOException e) {
+    public FailedToConnect(IOException e) {
       super(e);
     }
     // TODO(pjo): Add corrective tips.
   }
   /** Indicates failure to send XML feed file to GSA. */
   static class FailedWriting extends Exception {
-    private FailedWriting(IOException e) {
+    public FailedWriting(IOException e) {
       super(e);
     }
     // TODO(pjo): Add corrective tips.
   }
   /** Indicates failure to read response to sent XML feed file. */
   static class FailedReadingReply extends Exception {
-    private FailedReadingReply(IOException e) {
+    public FailedReadingReply(IOException e) {
       super(e);
     }
     // TODO(pjo): Add corrective tips.

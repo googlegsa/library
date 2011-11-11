@@ -240,5 +240,15 @@ abstract class WrapperAdaptor implements Adaptor {
     public void removeStatusSource(StatusSource source) {
       context.removeStatusSource(source);
     }
+
+    @Override
+    public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler) {
+      context.setGetDocIdsErrorHandler(handler);
+    }
+
+    @Override
+    public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
+      return context.getGetDocIdsErrorHandler();
+    }
   }
 }

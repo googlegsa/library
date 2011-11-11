@@ -20,10 +20,10 @@ package adaptorlib;
  */
 public interface GetDocIdsErrorHandler {
   /**
-   * {@link GsaCommunicationHandler#pushDocIds} had a failure reading from this
-   * Adaptor's {@link Adaptor#getDocIds}. The thrown exception is provided as
-   * well as the number of times that this batch was attempted to be sent.
-   * Return {@code true} to retry, perhaps after a Thread.sleep() of some time.
+   * {@link DocIdSender#pushDocIds} had a failure reading from this Adaptor's
+   * {@link Adaptor#getDocIds}. The thrown exception is provided as well as the
+   * number of times that this batch was attempted to be sent. Return {@code
+   * true} to retry, perhaps after a Thread.sleep() of some time.
    */
   public boolean handleFailedToGetDocIds(Exception ex, int ntries)
       throws InterruptedException;

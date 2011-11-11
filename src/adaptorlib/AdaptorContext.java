@@ -16,6 +16,7 @@ package adaptorlib;
 
 /**
  * Methods for an Adaptor to communicate with the adaptor library.
+ * Implementations of this class must be thread-safe.
  */
 public interface AdaptorContext {
   /**
@@ -43,4 +44,14 @@ public interface AdaptorContext {
    * Remove a previously added status source to the dashboard.
    */
   public void removeStatusSource(StatusSource source);
+
+  /**
+   * Override the default {@link GetDocIdsErrorHandler}.
+   */
+  public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler);
+
+  /**
+   * Retrieve the current {@link GetDocIdsErrorHandler}.
+   */
+  public GetDocIdsErrorHandler getGetDocIdsErrorHandler();
 }

@@ -77,19 +77,6 @@ public abstract class AbstractAdaptor implements Adaptor {
    * on startup.
    */
   public static GsaCommunicationHandler main(Adaptor adaptor, String[] args) {
-    return main(adaptor, args, null);
-  }
-
-  /**
-   * Standard main for all adaptors (including those not extending
-   * AbstractAdaptor).
-   *
-   * <p>This method starts the HTTP server for serving doc contents, schedules
-   * sending {@code DocId}s on a schedule, and optionally sends {@code DocId}s
-   * on startup.
-   */
-  public static GsaCommunicationHandler main(Adaptor adaptor, String[] args,
-                                             GetDocIdsErrorHandler handler) {
     Config config = new Config();
     adaptor.initConfig(config);
     config.autoConfig(args);
@@ -98,11 +85,6 @@ public abstract class AbstractAdaptor implements Adaptor {
       adaptor = new AutoUnzipAdaptor(adaptor);
     }
     GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
-
-    if (handler != null) {
-      // Override default handler.
-      gsa.setGetDocIdsErrorHandler(handler);
-    }
 
     // Setup providing content.
     try {
