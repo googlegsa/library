@@ -22,8 +22,6 @@ import org.junit.rules.ExpectedException;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
-import java.util.logging.*;
 
 /**
  * Tests for {@link GsaCommunicationHandler}.
@@ -70,61 +68,6 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
-  public void testLogRpcMethod() {
-    String golden = "Testing\n";
-
-    GsaCommunicationHandler.CircularLogRpcMethod method
-        = new GsaCommunicationHandler.CircularLogRpcMethod();
-    try {
-      Logger logger = Logger.getLogger("");
-      Level origLevel = logger.getLevel();
-      logger.setLevel(Level.FINEST);
-      Logger.getLogger("").finest("Testing");
-      logger.setLevel(origLevel);
-      String str = (String) method.run(null);
-      assertTrue(str.endsWith(golden));
-    } finally {
-      method.close();
-    }
-  }
-
-  @Test
-  public void testConfigRpcMethod() {
-    Map<String, String> golden = new HashMap<String, String>();
-    golden.put("gsa.characterEncoding", "UTF-8");
-    golden.put("server.hostname", "localhost");
-
-    MockConfig config = new MockConfig();
-    config.setKey("gsa.characterEncoding", "UTF-8");
-    config.setKey("server.hostname", "localhost");
-    GsaCommunicationHandler.ConfigRpcMethod method
-        = new GsaCommunicationHandler.ConfigRpcMethod(config);
-    Map map = (Map) method.run(null);
-    assertEquals(golden, map);
-  }
-
-  @Test
-  public void testStatusRpcMethod() {
-    List<Map<String, Object>> golden = new ArrayList<Map<String, Object>>();
-    {
-      Map<String, Object> goldenObj = new HashMap<String, Object>();
-      goldenObj.put("source", "mock");
-      goldenObj.put("code", "NORMAL");
-      goldenObj.put("message", "fine");
-      golden.add(goldenObj);
-    }
-
-    StatusMonitor monitor = new StatusMonitor();
-    Status status = new Status(Status.Code.NORMAL, "fine");
-    BasicStatusSource source = new BasicStatusSource("mock", status);
-    monitor.addSource(source);
-    GsaCommunicationHandler.StatusRpcMethod method
-        = new GsaCommunicationHandler.StatusRpcMethod(monitor);
-    List list = (List) method.run(null);
-    assertEquals(golden, list);
-  }
-
-  @Test
   public void testBasicListen() throws Exception {
     gsa.start();
     assertTrue(adaptor.inited);
@@ -132,92 +75,6 @@ public class GsaCommunicationHandlerTest {
     URLConnection conn = url.openConnection();
     thrown.expect(java.io.FileNotFoundException.class);
     conn.getContent();
-  }
-
-  @Test
-  public void testLastPushStatusSource() {
-    final MockTimeProvider timeProvider = new MockTimeProvider();
-    final AtomicReference<Journal.CompletionStatus> ref
-        = new AtomicReference<Journal.CompletionStatus>();
-    final Journal journal = new Journal(timeProvider) {
-      @Override
-      public CompletionStatus getLastPushStatus() {
-        return ref.get();
-      }
-    };
-    StatusSource source
-        = new GsaCommunicationHandler.LastPushStatusSource(journal);
-    assertNotNull(source.getName());
-    Status status;
-
-    ref.set(Journal.CompletionStatus.SUCCESS);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.NORMAL, status.getCode());
-
-    ref.set(Journal.CompletionStatus.INTERRUPTION);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.WARNING, status.getCode());
-
-    ref.set(Journal.CompletionStatus.FAILURE);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.ERROR, status.getCode());
-  }
-
-  @Test
-  public void testRetrieverStatusSource() {
-    final MockTimeProvider timeProvider = new MockTimeProvider();
-    final AtomicReference<Double> errorRate = new AtomicReference<Double>();
-    final Journal journal = new Journal(timeProvider) {
-      @Override
-      public double getRetrieverErrorRate(long maxCount) {
-        return errorRate.get();
-      }
-    };
-    StatusSource source
-        = new GsaCommunicationHandler.RetrieverStatusSource(journal);
-    assertNotNull(source.getName());
-    Status status;
-
-    errorRate.set(0.);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.NORMAL, status.getCode());
-    assertNotNull(status.getMessage());
-
-    errorRate.set(
-        GsaCommunicationHandler.RetrieverStatusSource.WARNING_THRESHOLD);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.WARNING, status.getCode());
-    assertNotNull(status.getMessage());
-
-    errorRate.set(
-        GsaCommunicationHandler.RetrieverStatusSource.ERROR_THRESHOLD);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.ERROR, status.getCode());
-    assertNotNull(status.getMessage());
-  }
-
-  @Test
-  public void testGsaCrawlingStatusSource() {
-    final MockTimeProvider timeProvider = new MockTimeProvider();
-    final AtomicBoolean gsaCrawled = new AtomicBoolean();
-    final Journal journal = new Journal(timeProvider) {
-      @Override
-      public boolean hasGsaCrawledWithinLastDay() {
-        return gsaCrawled.get();
-      }
-    };
-    StatusSource source
-        = new GsaCommunicationHandler.GsaCrawlingStatusSource(journal);
-    assertNotNull(source.getName());
-    Status status;
-
-    gsaCrawled.set(true);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.NORMAL, status.getCode());
-
-    gsaCrawled.set(false);
-    status = source.retrieveStatus();
-    assertEquals(Status.Code.WARNING, status.getCode());
   }
 
   private static class NullAdaptor extends AbstractAdaptor {
