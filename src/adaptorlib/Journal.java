@@ -44,6 +44,7 @@ class Journal {
    * different time period.
    */
   private Stats[] timeStats;
+  private Stats dayStatsByHalfHour;
 
   /** Response start time storage until response completion. */
   private ThreadLocal<Long> requestResponseStart = new ThreadLocal<Long>();
@@ -83,6 +84,7 @@ class Journal {
       new Stats(60, 1000 * 60,      time), /* one hour, minute granularity */
       new Stats(48, 1000 * 60 * 30, time), /* one day, half-hour granularity */
     };
+    this.dayStatsByHalfHour = this.timeStats[this.timeStats.length - 1];
   }
 
   synchronized void recordDocIdPush(List<DocInfo> pushed) {
@@ -278,8 +280,7 @@ class Journal {
     long failures = 0;
 
     synchronized (Journal.this) {
-      // Get statistics for the past day.
-      Stats stats = timeStats[timeStats.length - 1];
+      Stats stats = dayStatsByHalfHour;
       // Update bookkeeping.
       stats.getCurrentStat(currentTime);
 
@@ -300,11 +301,10 @@ class Journal {
     return rate;
   }
 
-  boolean getGsaCrawled() {
+  boolean hasGsaCrawledWithinLastDay() {
     long currentTime = timeProvider.currentTimeMillis();
     synchronized (Journal.this) {
-      // Get statistics for the past day.
-      Stats stats = timeStats[timeStats.length - 1];
+      Stats stats = dayStatsByHalfHour;
       // Update bookkeeping.
       stats.getCurrentStat(currentTime);
 

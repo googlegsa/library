@@ -15,8 +15,8 @@
 package adaptorlib;
 
 /**
- * Simplistic implementation of {@link StatusSource} where setting the Status is
- * foreign logic.
+ * Simplistic implementation of {@link StatusSource} for use with foreign logic
+ * calling {@link #setStatus} to update state.
  *
  * <p>This class is thread-safe and can safely have its status viewed and
  * changed in multiple threads without external synchronization.
@@ -38,6 +38,11 @@ public class BasicStatusSource implements StatusSource {
     return status;
   }
 
+  /**
+   * Set the status.
+   *
+   * @throws NullPointerException when {@code status} is {@code null}
+   */
   public void setStatus(Status status) {
     if (status == null) {
       throw new NullPointerException();

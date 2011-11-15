@@ -340,13 +340,13 @@ public class JournalTest {
     timeProvider.autoIncrement = false;
     DocId docId = new DocId("");
 
-    assertFalse(journal.getGsaCrawled());
+    assertFalse(journal.hasGsaCrawledWithinLastDay());
 
     journal.recordGsaContentRequest(docId);
-    assertTrue(journal.getGsaCrawled());
+    assertTrue(journal.hasGsaCrawledWithinLastDay());
 
     final long dayInMillis = 1000 * 60 * 60 * 24;
     timeProvider.time += 2 * dayInMillis;
-    assertFalse(journal.getGsaCrawled());
+    assertFalse(journal.hasGsaCrawledWithinLastDay());
   }
 }

@@ -19,6 +19,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Collection of various status LED sources.
+ *
+ * <p>This class is thread-safe.
  */
 class StatusMonitor {
   private List<StatusSource> sources = new CopyOnWriteArrayList<StatusSource>();
@@ -32,6 +34,11 @@ class StatusMonitor {
     return statuses;
   }
 
+  /**
+   * Add a {@code StatusSource}.
+   *
+   * @throws NullPointerException when {@code source} is {@code null}
+   */
   public void addSource(StatusSource source) {
     if (source == null) {
       throw new NullPointerException();

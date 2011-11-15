@@ -184,7 +184,7 @@ public class GsaCommunicationHandlerTest {
     }
 
     StatusMonitor monitor = new StatusMonitor();
-    Status status = new Status(StatusCode.NORMAL, "fine");
+    Status status = new Status(Status.Code.NORMAL, "fine");
     BasicStatusSource source = new BasicStatusSource("mock", status);
     monitor.addSource(source);
     GsaCommunicationHandler.StatusRpcMethod method
@@ -221,15 +221,15 @@ public class GsaCommunicationHandlerTest {
 
     ref.set(Journal.CompletionStatus.SUCCESS);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.NORMAL, status.getCode());
+    assertEquals(Status.Code.NORMAL, status.getCode());
 
     ref.set(Journal.CompletionStatus.INTERRUPTION);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.WARNING, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
 
     ref.set(Journal.CompletionStatus.FAILURE);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.ERROR, status.getCode());
+    assertEquals(Status.Code.ERROR, status.getCode());
   }
 
   @Test
@@ -249,19 +249,19 @@ public class GsaCommunicationHandlerTest {
 
     errorRate.set(0.);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.NORMAL, status.getCode());
+    assertEquals(Status.Code.NORMAL, status.getCode());
     assertNotNull(status.getMessage());
 
     errorRate.set(
         GsaCommunicationHandler.RetrieverStatusSource.WARNING_THRESHOLD);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.WARNING, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
     assertNotNull(status.getMessage());
 
     errorRate.set(
         GsaCommunicationHandler.RetrieverStatusSource.ERROR_THRESHOLD);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.ERROR, status.getCode());
+    assertEquals(Status.Code.ERROR, status.getCode());
     assertNotNull(status.getMessage());
   }
 
@@ -271,7 +271,7 @@ public class GsaCommunicationHandlerTest {
     final AtomicBoolean gsaCrawled = new AtomicBoolean();
     final Journal journal = new Journal(timeProvider) {
       @Override
-      public boolean getGsaCrawled() {
+      public boolean hasGsaCrawledWithinLastDay() {
         return gsaCrawled.get();
       }
     };
@@ -282,11 +282,11 @@ public class GsaCommunicationHandlerTest {
 
     gsaCrawled.set(true);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.NORMAL, status.getCode());
+    assertEquals(Status.Code.NORMAL, status.getCode());
 
     gsaCrawled.set(false);
     status = source.retrieveStatus();
-    assertEquals(StatusCode.WARNING, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
   }
 
   private static class NullAdaptor extends AbstractAdaptor {

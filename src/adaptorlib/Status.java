@@ -19,19 +19,35 @@ package adaptorlib;
  * the system.
  */
 public class Status {
-  private final StatusCode statusCode;
+  /**
+   * Available statuses for displaying state indicators on the dashboard.
+   */
+  public enum Code {
+    /** Empty LED. */
+    INACTIVE,
+    /** Empty LED. */
+    UNAVAILABLE,
+    /** Green LED. */
+    NORMAL,
+    /** Yellow LED. */
+    WARNING,
+    /** Red LED. */
+    ERROR,
+  }
+
+  private final Code statusCode;
   private final String message;
 
-  public Status(StatusCode statusCode) {
+  public Status(Code statusCode) {
     this(statusCode, null);
   }
 
-  public Status(StatusCode statusCode, String message) {
+  public Status(Code statusCode, String message) {
     this.statusCode = statusCode;
     this.message = message;
   }
 
-  public StatusCode getCode() {
+  public Code getCode() {
     return statusCode;
   }
 

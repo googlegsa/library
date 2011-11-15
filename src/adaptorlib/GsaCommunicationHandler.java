@@ -631,12 +631,12 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     public Status retrieveStatus() {
       switch (journal.getLastPushStatus()) {
         case SUCCESS:
-          return new Status(StatusCode.NORMAL);
+          return new Status(Status.Code.NORMAL);
         case INTERRUPTION:
-          return new Status(StatusCode.WARNING, "Push was interrupted");
+          return new Status(Status.Code.WARNING, "Push was interrupted");
         case FAILURE:
         default:
-          return new Status(StatusCode.ERROR);
+          return new Status(Status.Code.ERROR);
       }
     }
 
@@ -660,13 +660,13 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
     @Override
     public Status retrieveStatus() {
       double rate = journal.getRetrieverErrorRate(MAX_COUNT);
-      StatusCode code;
+      Status.Code code;
       if (rate >= ERROR_THRESHOLD) {
-        code = StatusCode.ERROR;
+        code = Status.Code.ERROR;
       } else if (rate >= WARNING_THRESHOLD) {
-        code = StatusCode.WARNING;
+        code = Status.Code.WARNING;
       } else {
-        code = StatusCode.NORMAL;
+        code = Status.Code.NORMAL;
       }
       return new Status(code,
           "Error rate: " + (int) Math.ceil(rate * 100) + "%");
@@ -687,10 +687,10 @@ public class GsaCommunicationHandler implements DocIdEncoder, DocIdDecoder {
 
     @Override
     public Status retrieveStatus() {
-      if (journal.getGsaCrawled()) {
-        return new Status(StatusCode.NORMAL);
+      if (journal.hasGsaCrawledWithinLastDay()) {
+        return new Status(Status.Code.NORMAL);
       } else {
-        return new Status(StatusCode.WARNING,
+        return new Status(Status.Code.WARNING,
             "No accesses within the past day");
       }
     }
