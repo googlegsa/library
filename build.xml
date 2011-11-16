@@ -157,6 +157,13 @@
     </javac>
 
     <mkdir dir="${build-test.dir}"/>
+    <!-- Compile JUnit helper -->
+    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
+      includeantruntime="true" encoding="utf-8">
+      <compilerarg value="-Xlint:unchecked"/>
+      <include name="JUnitLogFixFormatter.java"/>
+    </javac>
+
     <!-- Compile tests, excluding example tests. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
       includeantruntime="false" encoding="utf-8">
@@ -335,6 +342,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <formatter type="plain" usefile="false"/>
+      <formatter classname="JUnitLogFixFormatter" usefile="false"/>
       <batchtest>
         <fileset dir="${test.dir}">
           <include name="**/*Test.java"/>
