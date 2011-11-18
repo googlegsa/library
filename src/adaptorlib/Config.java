@@ -77,6 +77,7 @@ public class Config {
     addKey("adaptor.incrementalPollPeriodSecs", "900");
     // In seconds.
     addKey("config.pollPeriodSecs", "30");
+    addKey("transform.pipeline", "");
   }
 
   public Set<String> getAllKeys() {
@@ -281,6 +282,28 @@ public class Config {
    */
   public long getConfigPollPeriodMillis() {
     return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
+  }
+
+  public synchronized List<Map<String, String>> getTransformPipeline() {
+    final String configKey = "transform.pipeline";
+    String configValue = getValue(configKey).trim();
+    if ("".equals(configValue)) {
+      return Collections.emptyList();
+    }
+    String[] items = getValue(configKey).split(",");
+    List<Map<String, String>> transforms
+        = new ArrayList<Map<String, String>>(items.length);
+    for (String item : items) {
+      item = item.trim();
+      if ("".equals(item)) {
+        throw new RuntimeException("Invalid format: " + configValue);
+      }
+      Map<String, String> params
+          = getValuesWithPrefix(configKey + "." + item + ".");
+      params.put("name", item);
+      transforms.add(params);
+    }
+    return transforms;
   }
 
 // TODO(pjo): Implement on GSA
@@ -491,6 +514,21 @@ public class Config {
           "You must set configuration key ''{0}''.", key));
     }
     return value;
+  }
+
+  /**
+   * Gets all configuration values that begin with {@code prefix}, returning
+   * them as a map with the keys having {@code prefix} removed.
+   */
+  public synchronized Map<String, String> getValuesWithPrefix(String prefix) {
+    Map<String, String> values = new HashMap<String, String>();
+    for (String key : config.stringPropertyNames()) {
+      if (!key.startsWith(prefix)) {
+        continue;
+      }
+      values.put(key.substring(prefix.length()), config.getProperty(key));
+    }
+    return values;
   }
 
   /**

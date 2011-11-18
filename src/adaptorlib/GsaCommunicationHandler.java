@@ -26,10 +26,9 @@ import it.sauronsoftware.cron4j.Scheduler;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
+import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
-import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -148,7 +147,8 @@ public class GsaCommunicationHandler {
                             journal, adaptor,
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
-                            authnHandler, sessionManager, null));
+                            authnHandler, sessionManager,
+                            createTransformPipeline()));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
@@ -180,6 +180,50 @@ public class GsaCommunicationHandler {
 
     long period = config.getConfigPollPeriodMillis();
     configWatcherTimer.schedule(new ConfigWatcher(config), period, period);
+  }
+
+  private TransformPipeline createTransformPipeline() {
+    List<Map<String, String>> pipelineConfig = config.getTransformPipeline();
+    TransformPipeline pipeline = new TransformPipeline();
+    for (Map<String, String> element : pipelineConfig) {
+      System.out.println(element);
+      final String name = element.get("name");
+      final String confPrefix = "transform.pipeline." + name + ".";
+      String className = element.get("class");
+      if (className == null) {
+        throw new RuntimeException(
+            "Missing " + confPrefix + "class configuration setting");
+      }
+      Class<?> klass;
+      try {
+        klass = Class.forName(className);
+      } catch (ClassNotFoundException ex) {
+        throw new RuntimeException(
+            "Could not load class for transform " + name, ex);
+      }
+      Constructor<?> constructor;
+      try {
+        constructor = klass.getConstructor(Map.class);
+      } catch (NoSuchMethodException ex) {
+        throw new RuntimeException(
+            "Could not find constructor for " + className + ". It must have a "
+            + "constructor that accepts a Map as the lone parameter.", ex);
+      }
+      Object o;
+      try {
+        o = constructor.newInstance(Collections.unmodifiableMap(element));
+      } catch (Exception ex) {
+        throw new RuntimeException("Could not instantiate " + className, ex);
+      }
+      if (!(o instanceof DocumentTransform)) {
+        throw new RuntimeException(className
+            + " is not an instance of DocumentTransform");
+      }
+      DocumentTransform transform = (DocumentTransform) o;
+      transform.name(name);
+      pipeline.add(transform);
+    }
+    return pipeline;
   }
 
   // Useful as a separate method during testing.
