@@ -26,6 +26,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.logging.Logger;
 
 /**
@@ -51,15 +52,12 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     }
     if (commandResult != 0) {
       throw new IOException("External command error. code = " + commandResult + ".");
-    } else {
-
-      String listerData = new String(command.getStdout(), encoding);
-
-      CommandStreamParser parser = new CommandStreamParser(
-          new ByteArrayInputStream(listerData.getBytes()));
-      log.finest("Pushing Doc Info.");
-      pusher.pushDocInfos(parser.readFromLister());
     }
+
+    CommandStreamParser parser = new CommandStreamParser(
+        new ByteArrayInputStream(command.getStdout()));
+    log.finest("Pushing Document IDs.");
+    pusher.pushDocInfos(parser.readFromLister());
   }
 
   /** Gives the bytes of a document referenced with id. */
@@ -70,28 +68,53 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     Command command = newRetrieverCommand();
 
     try {
-      log.finest("Command: ./get-doc-contents-filesystem.sh " + id.getUniqueId());
-      commandResult = command.exec(
-          new String[] {"./get-doc-contents.sh", id.getUniqueId()});
+      Date lastCrawled = req.getLastAccessTime();
+      long lastCrawledMillis = 0;
+      if (lastCrawled != null) {
+        lastCrawledMillis = lastCrawled.getTime();
+      }
+      log.finest("Command: ./get-doc-contents.sh " + id.getUniqueId() +
+          " " + lastCrawledMillis);
+      commandResult = command.exec(new String[] {"./get-doc-contents.sh", id.getUniqueId(),
+              Long.toString(lastCrawledMillis)});
     } catch (InterruptedException e) {
       throw new IOException("Thread intrupted while waiting for external command.", e);
     } catch (IOException e) {
       throw new IOException("External command could not be executed.", e);
     }
-    if (commandResult == 2) {
-      throw new FileNotFoundException("Document not found.");
-    } else if (commandResult != 0) {
+    if (commandResult != 0) {
       throw new IOException("External command error. code=" + commandResult + ".");
-    } else {
-      log.finest("Returning document contents for ID '" + id.getUniqueId() + ".");
     }
 
-    String retrieverData = new String(command.getStdout(), encoding);
-
     CommandStreamParser parser = new CommandStreamParser(
-        new ByteArrayInputStream(retrieverData.getBytes()));
-    log.finest("Retrieving Doc Contents");
-    resp.getOutputStream().write(parser.readFromRetriever().getContents());
+        new ByteArrayInputStream(command.getStdout()));
+    CommandStreamParser.RetrieverInfo retrieverInfo = parser.readFromRetriever();
+
+    if (!req.getDocId().equals(retrieverInfo.getDocId())) {
+      throw new IOException("requested document "  + req.getDocId() + " does not match retrieved "
+          + "document  " + retrieverInfo.getDocId() + ".");
+    }
+    if (retrieverInfo.isUpToDate()) {
+      log.finest("Retriever: " + id.getUniqueId() + " is up to date.");
+      resp.respondNotModified();
+
+    } else {
+      if (retrieverInfo.getContents() != null) {
+         resp.getOutputStream().write(retrieverInfo.getContents());
+      } else {
+        throw new IOException("No content returned by retriever for "  + req.getDocId() + ".");
+      }
+      if (retrieverInfo.getMimeType() != null) {
+        log.finest("Retriever: " + id.getUniqueId() + " has mime-type "
+            + retrieverInfo.getMimeType());
+        resp.setContentType(retrieverInfo.getMimeType());
+      };
+      if (retrieverInfo.getMetadata() != null) {
+        log.finest("Retriever: " + id.getUniqueId() + " has metadata "
+            + retrieverInfo.getMetadata());
+        resp.setMetadata(retrieverInfo.getMetadata());
+      };
+    }
   }
 
   protected Command newListerCommand() {

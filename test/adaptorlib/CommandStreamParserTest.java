@@ -14,11 +14,10 @@
 
 package adaptorlib;
 
-import adaptorlib.CommandStreamParser.CommandType;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,30 +27,17 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
  * Tests for {@link CommandStreamParser}.
  */
 public class CommandStreamParserTest {
-
   @Rule
   public ExpectedException thrown = ExpectedException.none();
-
-  void checkCommand(CommandType expectedCommandType, String expectedArgument,
-      byte[] expectedContents, CommandStreamParser.Command command) {
-    assertEquals(expectedCommandType, command.getCommandType());
-    if (expectedArgument != null) {
-      assertEquals(expectedArgument, command.getArgument());
-    } else {
-      assertNull(command.getArgument());
-    }
-    if (expectedContents != null) {
-      assertArrayEquals(expectedContents, command.getContents());
-    } else {
-      assertNull(command.getContents());
-    }
-  }
 
   @Test
   public void testReadDocIds() throws IOException {
@@ -61,13 +47,13 @@ public class CommandStreamParserTest {
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    checkCommand(CommandType.ID, "123", null, parser.readCommand());
-    checkCommand(CommandType.ID, "456", null, parser.readCommand());
-    checkCommand(CommandType.ID, "10", null, parser.readCommand());
-    checkCommand(CommandType.ID, "20", null, parser.readCommand());
-    checkCommand(CommandType.ID, "30", null, parser.readCommand());
-    checkCommand(CommandType.ID, "789", null, parser.readCommand());
-    assertNull(parser.readCommand());
+    ArrayList<DocInfo> docInfoList = parser.readFromLister();
+    assertEquals("123", docInfoList.get(0).getDocId().getUniqueId());
+    assertEquals("456", docInfoList.get(1).getDocId().getUniqueId());
+    assertEquals("10", docInfoList.get(2).getDocId().getUniqueId());
+    assertEquals("20", docInfoList.get(3).getDocId().getUniqueId());
+    assertEquals("30", docInfoList.get(4).getDocId().getUniqueId());
+    assertEquals("789", docInfoList.get(5).getDocId().getUniqueId());
   }
 
   @Test
@@ -79,59 +65,47 @@ public class CommandStreamParserTest {
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
     thrown.expect(IOException.class);
-    parser.readCommand();
+    parser.readFromLister();
 
   }
 
   @Test
   public void testInvalidVersion() throws IOException {
     String source = "GSA Adaptor Data Version 1a [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n" +
-        "id=789\nend-message";
+        "id=789\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
     thrown.expect(IOException.class);
-    parser.readCommand();
-
-  }
-
-  @Test
-  public void testUnsupportedVersion() throws IOException {
-    String source = "GSA Adaptor Data Version 2 [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n" +
-        "id=789\nend-message";
-
-    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
-    CommandStreamParser parser = new CommandStreamParser(inputStream);
-
-    thrown.expect(IOException.class);
-    parser.readCommand();
+    parser.readFromLister();
 
   }
 
   @Test
   public void testEmptyDelimiter() throws IOException {
     String source = "GSA Adaptor Data Version 1 []\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
-        "\nend-message";
+        "\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
     thrown.expect(IOException.class);
-    parser.readCommand();
+    parser.readFromLister();
 
   }
 
   void checkDelimiter(String delimiter, boolean isValid) throws IOException {
-    String source = "GSA Adaptor Data Version 1 [" + delimiter + "]" + delimiter + "id=123" +
-        delimiter + "end-message";
+    String source = "GSA Adaptor Data Version 1 [" + delimiter + "]" + delimiter + "id=123";
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     if (!isValid) {
       thrown.expect(IOException.class);
-      parser.readCommand();
-    } else {
-      checkCommand(CommandType.ID, "123", null, parser.readCommand());
+    }
+    ArrayList<DocInfo> docInfoList = parser.readFromLister();
+
+    if (isValid) {
+      assertEquals(new DocId("123"), docInfoList.get(0).getDocId()); //.getUniqueId());
     }
 
   }
@@ -173,28 +147,30 @@ public class CommandStreamParserTest {
   }
 
   @Test
-  public void testAllValidCommands() throws IOException {
+  public void testRetriever() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=123\nid-list\n10\n\n" +
-        "up-to-date=false\n" +
+        "id=123\n" +
+        "up-to-date\n" +
+        "UNKNOWN_COMMAND=abcdefghi\n" +
         "meta-name=project\nmeta-value=plexi\ncontent\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    int version = parser.readHeader();
+    int version = parser.getVersionNumber();
     assertEquals(1, version);
 
-    checkCommand(CommandType.ID, "123", null, parser.readCommand());
-    checkCommand(CommandType.ID, "10", null, parser.readCommand());
-    checkCommand(CommandType.UP_TO_DATE, "false", null, parser.readCommand());
-    checkCommand(CommandType.META_NAME, "project", null, parser.readCommand());
-    checkCommand(CommandType.META_VALUE, "plexi", null, parser.readCommand());
-    checkCommand(CommandType.CONTENT, null, "2468".getBytes(), parser.readCommand());
+    CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
+    assertEquals("123", info.getDocId().getUniqueId());
+    assertTrue(info.isUpToDate());
+    assertArrayEquals("2468".getBytes(), info.getContents());
+    Map<String, String> metadata = info.getMetadata().toMap();
+    assertEquals(1, metadata.size());
+    assertEquals("plexi", metadata.get("project"));
   }
 
   @Test
   public void testReadContentAllBytes() throws IOException {
-    String commandSource = "GSA Adaptor Data Version 1 [\n]\ncontent\n";
+    String commandSource = "GSA Adaptor Data Version 1 [\n]\nid=5\ncontent\n";
 
     byte[] byteSource = new byte[256];
 
@@ -211,7 +187,8 @@ public class CommandStreamParserTest {
     InputStream inputStream = new ByteArrayInputStream(source);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    checkCommand(CommandType.CONTENT, null, byteSource, parser.readCommand());
+    CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
+    assertArrayEquals(byteSource, info.getContents());
   }
 
 }
