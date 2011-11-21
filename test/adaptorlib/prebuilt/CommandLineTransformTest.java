@@ -24,8 +24,7 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 /**
  * Tests for {@link CommandLineTransform}.
@@ -37,19 +36,58 @@ public class CommandLineTransformTest {
 
     TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> params = new HashMap<String, String>();
     // The newline causes the test to work with both BSD and GNU sed.
     String testStr = "testing\n";
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("metaKey1", "metaValue1");
+    Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
     CommandLineTransform cmd = new CommandLineTransform("regex replace");
-    cmd.transformCommand("sed s/i/1/");
+    cmd.transformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.commandAcceptsParameters(false);
     pipeline.add(cmd);
     pipeline.transform(testStr.getBytes(), contentOut, new HashMap<String, String>(), params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
+    assertEquals("metaValue1", metadata.get("metaKey1"));
+    assertEquals(1, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
+  }
+
+  @Test
+  public void testSedWithMetadata() throws IOException, TransformException {
+    TestHelper.assumeOsIsNotWindows();
+
+    TransformPipeline pipeline = new TransformPipeline();
+    ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
+    // The newline causes the test to work with both BSD and GNU sed.
+    String testStr = "testing\n";
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("metaKey1", "metaValue1");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("key1", "value1");
+
+    CommandLineTransform cmd = new CommandLineTransform("regex replace");
+    cmd.transformCommand(Arrays.asList(new String[] {"/bin/sh", "-c",
+      // Process content.
+      "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(tempfile);"
+      // Process metadata.
+      + "(sed s/1/2/g < \"$META\" > \"$TMPFILE\"; cp \"$TMPFILE\" \"$META\") >&2;"
+      // Process params.
+      + "(sed s/1/3/g < \"$PARAM\" > \"$TMPFILE\"; cp \"$TMPFILE\" \"$PARAM\") >&2;"
+      // Cleanup.
+      + "rm \"$TMPFILE\" >&2;"
+    }));
+    cmd.commandAcceptsParameters(true);
+    pipeline.add(cmd);
+    pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
+
+    assertEquals(testStr.replace("i", "1"), contentOut.toString());
+    assertEquals("metaValue2", metadata.get("metaKey2"));
+    assertEquals(1, metadata.size());
+    assertEquals("value3", params.get("key3"));
+    assertEquals(1, params.size());
   }
 }

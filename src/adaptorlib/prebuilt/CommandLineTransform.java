@@ -18,88 +18,144 @@ import adaptorlib.DocumentTransform;
 import adaptorlib.IOHelper;
 import adaptorlib.TransformException;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.io.*;
+import java.nio.charset.Charset;
+import java.util.*;
+import java.util.logging.*;
 
 /**
  * A conduit that allows a simple way to create a document transform based on
  * a command line program.
  */
 public class CommandLineTransform extends DocumentTransform {
-
+  private static final Logger log
+      = Logger.getLogger(CommandLineTransform.class.getName());
   private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB
+
+  private final Charset charset = Charset.forName("UTF-8");
 
   public CommandLineTransform(String name) {
     super(name);
   }
 
+  public CommandLineTransform(Map<String, String> config) {
+    super("CommandLineTransform");
+    List<String> cmd = new ArrayList<String>();
+    for (Map.Entry<String, String> me : config.entrySet()) {
+      String key = me.getKey();
+      String value = me.getValue();
+      if ("cmd".equals(key)) {
+        cmd.add(value);
+      } else if ("workingDirectory".equals(key)) {
+        workingDirectory(new File(value));
+      } else if ("errorHaltsPipeline".equals(key)) {
+        errorHaltsPipeline(Boolean.parseBoolean(value));
+      }
+    }
+    if (cmd.size() == 0) {
+      throw new RuntimeException("cmd configuration property must be set");
+    }
+    for (int i = 1;; i++) {
+      String value = config.get("arg" + i);
+      if (value == null) {
+        break;
+      }
+      cmd.add(value);
+    }
+    transformCommand = cmd;
+  }
+
   @Override
   public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadataIn, Map<String, String> params)
+                        Map<String, String> metadata, Map<String, String> params)
       throws TransformException, IOException {
-    // Java Processes can only take input on 1 channel, stdin. If we want
-    // to have two separate channels, we would need to either:
-    // - Have two separate commands that get called for content and metadata
-    // - Write metadata to file and send filename as parameter.
-    // - Send them both in through stdin with some separator.
-    //
-    // We don't yet support sending metadata with content, so this version of
-    // CommandLineTransform only handles the content. In the case of HTML, the
-    // metadata is baked in anyway.
-
-    List<String> command = Arrays.asList(transformCommand.split(" "));
-    if (commandAcceptsParameters) {
-      for (Map.Entry<String, String> param : params.entrySet()) {
-        command.add("-" + param.getKey());
-        command.add(param.getValue());
-      }
+    if (transformCommand == null) {
+      throw new NullPointerException("transformCommand must not be null");
     }
-
-    ProcessBuilder pb = new ProcessBuilder(command);
-    pb.redirectErrorStream(false);  // We want 2 streams to come out for stdout and stderr.
-    if (workingDirectory != null && !workingDirectory.isEmpty()) {
-      pb.directory(new File(workingDirectory));
-    }
-
-    Process p = pb.start();
-
-    // Streams can be confusing because an input to one component is an output
-    // to another based on the frame of reference.
-    // Here, stdin is an OutputStream, because we write to it.
-    // stdout and stderr are InputStreams, because we read from them.
-    OutputStream stdin = p.getOutputStream();
-    InputStream stdout = p.getInputStream();
-    InputStream stderr = p.getErrorStream();
-
+    File metadataFile = null;
+    File paramsFile = null;
     try {
-      // Run it
-      contentIn.writeTo(stdin);
-      stdin.close();  // Necessary for some commands that expect EOF.
-      int exitCode = p.waitFor();
+      String[] commandLine;
+      if (commandAcceptsParameters) {
+        metadataFile = writeMapToTempFile(metadata);
+        paramsFile = writeMapToTempFile(params);
+
+        commandLine = new String[transformCommand.size() + 2];
+        transformCommand.toArray(commandLine);
+        commandLine[transformCommand.size()] = metadataFile.getAbsolutePath();
+        commandLine[transformCommand.size() + 1] = paramsFile.getAbsolutePath();
+      } else {
+        commandLine = transformCommand.toArray(new String[0]);
+      }
+
+      Command command = new Command();
+      try {
+        command.exec(commandLine, workingDirectory, contentIn.toByteArray());
+      } catch (InterruptedException ex) {
+        throw new TransformException(ex);
+      }
+
+      int exitCode = command.getReturnCode();
 
       // Handle stderr
-      if (exitCode != 0 || stderr.available() > 0) {
-        byte[] buf = new byte[STDERR_BUFFER_SIZE];
-        stderr.read(buf);
-        throw new TransformException(new String(buf));
+      if (exitCode != 0) {
+        String errorOutput = new String(command.getStderr(), charset);
+        throw new TransformException("Exit code " + exitCode + ". Stderr: " + errorOutput);
       }
 
-      // Copy stdout
-      IOHelper.copyStream(stdout, contentOut);
-    } catch (InterruptedException e) {
-      throw new TransformException(e);
+      if (command.getStderr().length > 0) {
+        String errorOutput = new String(command.getStderr(), charset);
+        log.log(Level.INFO, "Stderr: {0}", new Object[] {errorOutput});
+      }
+
+      contentOut.write(command.getStdout());
+      if (commandAcceptsParameters) {
+        metadata.clear();
+        metadata.putAll(readMapFromFile(metadataFile));
+        params.clear();
+        params.putAll(readMapFromFile(paramsFile));
+      }
     } finally {
-      stdin.close();
-      stdout.close();
-      stderr.close();
-      p.destroy();
+      if (metadataFile != null) {
+        metadataFile.delete();
+      }
+      if (paramsFile != null) {
+        paramsFile.delete();
+      }
     }
+  }
+
+  private File writeMapToTempFile(Map<String, String> map) throws IOException, TransformException {
+    StringBuilder sb = new StringBuilder();
+    for (Map.Entry<String, String> me : map.entrySet()) {
+      if (me.getKey().contains("\0")) {
+        throw new TransformException("Key cannot contain the null character: " + me.getKey());
+      }
+      if (me.getValue().contains("\0")) {
+        throw new TransformException("Value for key '" + me.getKey() + "' cannot contain the null "
+                                   + "character: " + me.getKey());
+      }
+      sb.append(me.getKey()).append('\0');
+      sb.append(me.getValue()).append('\0');
+    }
+    return IOHelper.writeToTempFile(sb.toString(), charset);
+  }
+
+  private Map<String, String> readMapFromFile(File file) throws IOException {
+    InputStream is = new FileInputStream(file);
+    String str;
+    try {
+      str = IOHelper.readInputStreamToString(is, charset);
+    } finally {
+      is.close();
+    }
+
+    String[] list = str.split("\0");
+    Map<String, String> map = new HashMap<String, String>(list.length);
+    for (int i = 0; i + 1 < list.length; i += 2) {
+      map.put(list[i], list[i + 1]);
+    }
+    return map;
   }
 
   /**
@@ -118,37 +174,39 @@ public class CommandLineTransform extends DocumentTransform {
   /**
    * Sets the command that is in charge of transforming the document content.
    * This command should take input on stdin, and print the output to stdout.
-   * Transform parameters are sent on the command line as flags.
-   *    e.g. /path/to/command -param1 value1 -param2 value2 ...
+   *    e.g. /path/to/command metadataFile paramsFile
    *
    * Errors should be printed to stderr. If anything is printed to stderr, it
    * will cause a failure for this transform operation.
    */
-  public void transformCommand(String transformCommand) {
-    this.transformCommand = transformCommand;
+  public void transformCommand(List<String> transformCommand) {
+    this.transformCommand = new ArrayList<String>(transformCommand);
+  }
+
+  public List<String> transformCommand() {
+    return Collections.unmodifiableList(transformCommand);
   }
 
   /**
    * Sets the working directory. Must be valid.
-   * @return true on success.
+   *
+   * @throws IllegalArgumentException if {@code dir} is not a directory
    */
-  public boolean workingDirectory(String dir) {
-    File file = new File(dir);
-    if (file.isDirectory()) {
-      workingDirectory = dir;
-      return true;
+  public void workingDirectory(File dir) {
+    if (!dir.isDirectory()) {
+      throw new IllegalArgumentException("File must be a directory");
     }
-    return false;
+    workingDirectory = dir;
   }
 
   /**
    * @return The working directory for the command line process.
    */
-  public String workingDirectory() {
+  public File workingDirectory() {
     return workingDirectory;
   }
 
   private boolean commandAcceptsParameters = true;
-  private String transformCommand = "";
-  private String workingDirectory = null;
+  private List<String> transformCommand;
+  private File workingDirectory;
 }
