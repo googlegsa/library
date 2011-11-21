@@ -19,28 +19,28 @@ package adaptorlib;
  */
 public interface PushErrorHandler {
   /**
-   * {@link GsaCommunicationHandler#pushDocIds} had a failure connecting with
-   * GSA to send a batch. The thrown exception is provided as well as the number
-   * of times that this batch was attempted to be sent. Return {@code true} to
-   * retry, perhaps after a Thread.sleep() of some time.
+   * {@link DocIdSender#pushDocIds} had a failure connecting with GSA to send a
+   * batch. The thrown exception is provided as well as the number of times that
+   * this batch was attempted to be sent. Return {@code true} to retry, perhaps
+   * after a Thread.sleep() of some time.
    */
   public boolean handleFailedToConnect(Exception ex, int ntries)
       throws InterruptedException;
 
   /**
-   * {@link GsaCommunicationHandler#pushDocIds} had a failure writing to the GSA
-   * while sending a batch.  The thrown exception is provided as well as the
-   * number of times that this batch was attempted to be sent. Return {@code
-   * true} to retry, perhaps after a Thread.sleep() of some time.
+   * {@link DocIdSender#pushDocIds} had a failure writing to the GSA while
+   * sending a batch.  The thrown exception is provided as well as the number of
+   * times that this batch was attempted to be sent. Return {@code true} to
+   * retry, perhaps after a Thread.sleep() of some time.
    */
   public boolean handleFailedWriting(Exception ex, int ntries)
       throws InterruptedException;
 
   /**
-   * {@link GsaCommunicationHandler#pushDocIds} had a failure reading response
-   * from GSA. The thrown exception is provided as well as the number of times
-   * that this batch was attempted to be sent. Return {@code true} to retry,
-   * perhaps after a Thread.sleep() of some time.
+   * {@link DocIdSender#pushDocIds} had a failure reading response from GSA. The
+   * thrown exception is provided as well as the number of times that this batch
+   * was attempted to be sent. Return {@code true} to retry, perhaps after a
+   * Thread.sleep() of some time.
    */
   public boolean handleFailedReadingReply(Exception ex, int ntries)
       throws InterruptedException;

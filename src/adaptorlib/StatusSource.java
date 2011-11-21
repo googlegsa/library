@@ -14,18 +14,21 @@
 
 package adaptorlib;
 
-import java.net.URI;
-
 /**
- * Allows converting from a URI to a unvalidated DocId.
- *
- * @see DocIdEncoder
+ * A source of {@link Status} messages.
  */
-interface DocIdDecoder {
+public interface StatusSource {
   /**
-   * Extract the DocId from the provided URI. Note that the DocId is not
-   * guaranteed to have been created by the adaptor library; they can easily be
-   * faked.
+   * Retrieve the current status. This method should return quickly, within the
+   * order of ten milliseconds. That necessitates that most implementations
+   * perform their status checks outside of this method. This method should
+   * never return {@code null}.
    */
-  public DocId decodeDocId(URI uri);
+  public Status retrieveStatus();
+
+  /**
+   * Get the name of this source, for displaying to the user. This method should
+   * never return {@code null}.
+   */
+  public String getName();
 }

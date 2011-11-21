@@ -16,7 +16,10 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import org.junit.Test;
+import com.sun.net.httpserver.HttpExchange;
+
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test cases for {@link SessionManager}.
@@ -26,6 +29,9 @@ public class SessionManagerTest {
   private SessionManager<Reference> sessionManager
       = new SessionManager<Reference>(
           timeProvider, new ReferenceClientStore(), 1000, 500);
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @Test
   public void testGetSessionNormal() {
@@ -97,6 +103,27 @@ public class SessionManagerTest {
     timeProvider.time += 1000;
     Session sess2 = sessionManager.getSession(ref1);
     assertNotSame(sess1, sess2);
+  }
+
+  @Test
+  public void testHttpExchangeClientStoreInitNull() {
+    thrown.expect(NullPointerException.class);
+    new SessionManager.HttpExchangeClientStore(null);
+  }
+
+  @Test
+  public void testHttpExchangeClientStoreCookies() {
+    SessionManager.ClientStore<HttpExchange> clientStore1
+        = new SessionManager.HttpExchangeClientStore("test1");
+    SessionManager.ClientStore<HttpExchange> clientStore2
+        = new SessionManager.HttpExchangeClientStore("test2");
+    SessionManager.ClientStore<HttpExchange> clientStore3
+        = new SessionManager.HttpExchangeClientStore("notfound");
+    HttpExchange ex = new MockHttpExchange("http", "GET", "/", null);
+    ex.getRequestHeaders().set("Cookie", "test1=value1; value; test2=value2");
+    assertEquals("value1", clientStore1.retrieve(ex));
+    assertEquals("value2", clientStore2.retrieve(ex));
+    assertNull(clientStore3.retrieve(ex));
   }
 
   private static class ReferenceClientStore

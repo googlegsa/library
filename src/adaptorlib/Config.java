@@ -55,6 +55,7 @@ public class Config {
     }
     addKey("server.hostname", hostname);
     addKey("server.port", "5678");
+    addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.gsaIps", "");
     addKey("server.addResolvedGsaHostnameToGsaIps", "true");
@@ -72,6 +73,8 @@ public class Config {
     addKey("adaptor.autoUnzip", "false");
     // 3:00 AM every day.
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
+    // 15 minutes.
+    addKey("adaptor.incrementalPollPeriodSecs", "900");
     // In seconds.
     addKey("config.pollPeriodSecs", "30");
   }
@@ -101,6 +104,13 @@ public class Config {
    */
   public int getServerPort() {
     return Integer.parseInt(getValue("server.port"));
+  }
+
+  /**
+   * Local port, on this computer, from which the dashboard is served.
+   */
+  public int getServerDashboardPort() {
+    return Integer.parseInt(getValue("server.dashboardPort"));
   }
 
   /* More sophisticated preferences that can be left
@@ -260,6 +270,10 @@ public class Config {
    */
   public String getAdaptorFullListingSchedule() {
     return getValue("adaptor.fullListingSchedule");
+  }
+
+  public long getAdaptorIncrementalPollPeriodMillis() {
+    return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
   }
 
   /**

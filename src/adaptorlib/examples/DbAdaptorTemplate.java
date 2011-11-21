@@ -31,7 +31,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
   private Charset encoding = Charset.forName("UTF-8");
 
   @Override
-  public void init(Config config, DocIdPusher pusher) throws Exception {
+  public void init(AdaptorContext context) throws Exception {
     Class.forName("org.gjt.mm.mysql.Driver");
     log.info("loaded driver");
   }

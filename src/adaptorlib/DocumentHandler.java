@@ -186,11 +186,14 @@ class DocumentHandler extends AbstractHandler {
       try {
         try {
           adaptor.getDocContent(request, response);
-        } finally {
-          // We want this to be recorded immediately, not after sending error
-          // codes
-          journal.recordRequestProcessingEnd(response.getWrittenContentSize());
+        } catch (RuntimeException e) {
+          journal.recordRequestProcessingFailure();
+          throw e;
+        } catch (IOException e) {
+          journal.recordRequestProcessingFailure();
+          throw e;
         }
+        journal.recordRequestProcessingEnd(response.getWrittenContentSize());
 
         content = response.getWrittenContent();
         contentType = response.contentType;

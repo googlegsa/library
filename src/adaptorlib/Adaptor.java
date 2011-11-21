@@ -27,14 +27,15 @@ import java.util.Set;
  * <p>Once configuration is prepared, {@link #init} will be called. This is
  * guaranteed to occur before any calls to {@link #getDocContent}, {@link
  * #getDocIds}, or {@link #isUserAuthorized}. When the adaptor needs to
- * shutdown, {@link #destoy} will be called.
+ * shutdown, {@link #destroy} will be called.
  *
  * <p>If the adaptor is using {@link AbstractAdaptor#main}, then {@link
  * #initConfig} will be called before {@link #init} to allow the adaptor an
  * opportunity to set and override default configuration values.
  *
  * @see adaptorlib.examples.AdaptorTemplate
- * @see adaptorlib.AbstractAdaptor
+ * @see AbstractAdaptor
+ * @see PollingIncrementalAdaptor
  */
 public interface Adaptor {
   /**
@@ -108,13 +109,18 @@ public interface Adaptor {
   public void initConfig(Config config);
 
   /**
-   * Initialize adaptor with the current configuration and pusher object. This
-   * is the ideal time to start any threads to do extra behind-the-scenes work.
-   * The {@code pusher} is allowed to be called whenever the Adaptor wishes.
-   * This allows doing event-based incremental pushes at any time. The method is
-   * called at the end of {@link GsaCommunicationHandler#start}.
+   * Initialize adaptor with the current context. This is the ideal time to
+   * start any threads to do extra behind-the-scenes work. The {@code context}
+   * points to other useful objects that can be used at any time. For example,
+   * methods on {@link DocIdPusher} provided via {@link
+   * AdaptorContext#getDocIdPusher} are allowed to be called whenever the
+   * Adaptor wishes. This allows doing event-based incremental pushes at any
+   * time.
+   *
+   * <p>The method is called at the end of {@link
+   * GsaCommunicationHandler#start}.
    */
-  public void init(Config config, DocIdPusher pusher) throws Exception;
+  public void init(AdaptorContext context) throws Exception;
 
   /**
    * Shutdown and release resources of adaptor.

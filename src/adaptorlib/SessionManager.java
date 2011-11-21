@@ -18,6 +18,7 @@ import com.sun.net.httpserver.HttpExchange;
 
 import java.security.SecureRandom;
 import java.util.*;
+import javax.xml.bind.DatatypeConverter;
 
 /**
  * Generic session management, but intended for authn bookkeeping. It implements
@@ -87,9 +88,7 @@ class SessionManager<E> {
   protected synchronized Session createSession(E clientState) {
     cleanupExpiredSessions();
     Session session = new Session();
-    byte[] rawId = new byte[16];
-    random.nextBytes(rawId);
-    String id = bytesToString(rawId);
+    String id = generateRandomIdentifier();
     sessions.put(id, session);
     clientStore.store(clientState, id);
     updateLastAccess(id);
@@ -137,37 +136,12 @@ class SessionManager<E> {
   }
 
   /**
-   * Formats the provided bytes as a string. {@code b} must be a multiple of 4.
+   * Generate a secure, random, 128-bit, base64-encoded identifier.
    */
-  private static String bytesToString(byte[] b) {
-    String s = "";
-    for (int i = 0; i < b.length; i += 4) {
-      int j = bytesToInt(b, i);
-      s += toFixedSizeHexString(j);
-    }
-    return s;
-  }
-
-  /**
-   * Packs the first four bytes starting at {@code start} into a single integer.
-   */
-  private static int bytesToInt(byte[] b, int start) {
-    return ((b[start + 0] & 0xff) << 24)
-        | ((b[start + 1] & 0xff) << 16)
-        | ((b[start + 2] & 0xff) << 8)
-        | ((b[start + 3] & 0xff) << 0);
-  }
-
-  /**
-   * Converts the provided integer to an eight character string.
-   */
-  private static String toFixedSizeHexString(int i) {
-    String s = Integer.toHexString(i);
-    int padding = Integer.SIZE / 4 - s.length();
-    for (int j = 0; j < padding; j++) {
-      s = "0" + s;
-    }
-    return s;
+  synchronized String generateRandomIdentifier() {
+    byte[] rawId = new byte[16];
+    random.nextBytes(rawId);
+    return DatatypeConverter.printBase64Binary(rawId);
   }
 
   int getSessionCount() {
@@ -187,6 +161,7 @@ class SessionManager<E> {
       implements ClientStore<HttpExchange> {
 
     private final String cookieName;
+    private final boolean secure;
     private Map<HttpExchange, String> exchangeCookieMap
         = Collections.synchronizedMap(new WeakHashMap<HttpExchange, String>());
 
@@ -195,10 +170,15 @@ class SessionManager<E> {
     }
 
     public HttpExchangeClientStore(String cookieName) {
+      this(cookieName, false);
+    }
+
+    public HttpExchangeClientStore(String cookieName, boolean secure) {
       if (cookieName == null) {
         throw new NullPointerException();
       }
       this.cookieName = cookieName;
+      this.secure = secure;
     }
 
     @Override
@@ -232,7 +212,7 @@ class SessionManager<E> {
     public void store(HttpExchange ex, String value) {
       exchangeCookieMap.put(ex, value);
       ex.getResponseHeaders().set("Set-Cookie", cookieName + "=" + value
-                                  + "; Path=/");
+          + "; Path=/; HttpOnly" + (secure ? "; Secure" : ""));
     }
   }
 }

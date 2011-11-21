@@ -28,15 +28,20 @@ import java.util.*;
  * JSON-RPC handler for communication with the dashboard.
  */
 class RpcHandler extends AbstractHandler {
+  /** Key used to store the XSRF-prevention token in the session. */
+  private static final String XSRF_TOKEN_ATTR_NAME = "rpc-xsrf-token";
+  /** Cookie name used to provide the XSRF token to client. */
+  public static final String XSRF_TOKEN_HEADER_NAME = "X-Adaptor-XSRF-Token";
+
   private final Charset charset = Charset.forName("UTF-8");
-  private final GsaCommunicationHandler commHandler;
   private final Map<String, RpcMethod> methods
       = new HashMap<String, RpcMethod>();
+  private final SessionManager<HttpExchange> sessionManager;
 
   public RpcHandler(String defaultHostname, Charset defaultCharset,
-                    GsaCommunicationHandler commHandler) {
+                    SessionManager<HttpExchange> sessionManager) {
     super(defaultHostname, defaultCharset);
-    this.commHandler = commHandler;
+    this.sessionManager = sessionManager;
   }
 
   /**
@@ -73,6 +78,23 @@ class RpcHandler extends AbstractHandler {
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
       cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
                     "Not found");
+      return;
+    }
+    // Make sure the session has a XSRF token.
+    Session session = sessionManager.getSession(ex);
+    String xsrfToken = (String) session.getAttribute(XSRF_TOKEN_ATTR_NAME);
+    if (xsrfToken == null) {
+      xsrfToken = sessionManager.generateRandomIdentifier();
+      session.setAttribute(XSRF_TOKEN_ATTR_NAME, xsrfToken);
+    }
+    // Make sure the client provided the correct XSRF token.
+    String providedXsrfToken
+        = ex.getRequestHeaders().getFirst(XSRF_TOKEN_HEADER_NAME);
+    if (!xsrfToken.equals(providedXsrfToken)) {
+      ex.getResponseHeaders().set(XSRF_TOKEN_HEADER_NAME, xsrfToken);
+      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT, "text/plain",
+          "You must provide a valid " + XSRF_TOKEN_HEADER_NAME
+          + " HTTP header");
       return;
     }
     Object requestObj;

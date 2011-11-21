@@ -292,9 +292,9 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
   }
 
   @Override
-  public void init(Config config, DocIdPusher pusher) throws Exception {
-    this.pusher = pusher;
-    super.init(config, innerPusher);
+  public void init(AdaptorContext context) throws Exception {
+    this.pusher = context.getDocIdPusher();
+    super.init(new InnerAdaptorContext(context, innerPusher));
   }
 
   @Override
@@ -426,6 +426,20 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
                                 PushErrorHandler handler)
         throws InterruptedException {
       return AutoUnzipAdaptor.this.pushDocInfos(docInfos, handler);
+    }
+  }
+
+  private static class InnerAdaptorContext extends WrapperAdaptorContext {
+    private DocIdPusher pusher;
+
+    public InnerAdaptorContext(AdaptorContext context, DocIdPusher pusher) {
+      super(context);
+      this.pusher = pusher;
+    }
+
+    @Override
+    public DocIdPusher getDocIdPusher() {
+      return pusher;
     }
   }
 }

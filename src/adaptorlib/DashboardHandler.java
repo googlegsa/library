@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
+import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -29,16 +30,10 @@ class DashboardHandler extends AbstractHandler {
   private static final Logger log
       = Logger.getLogger(DashboardHandler.class.getName());
   /** Subpackage to look for static resources within. */
-  private static final String staticPackage = "static";
+  private static final String STATIC_PACKAGE = "static";
 
-  private final Config config;
-  private final Journal journal;
-
-  public DashboardHandler(Config configuration, Journal journal) {
-    super(configuration.getServerHostname(),
-        configuration.getGsaCharacterEncoding());
-    this.config = configuration;
-    this.journal = journal;
+  public DashboardHandler(String fallbackHostname, Charset defaultEncoding) {
+    super(fallbackHostname, defaultEncoding);
   }
 
   protected void meteredHandle(HttpExchange ex) throws IOException {
@@ -66,7 +61,7 @@ class DashboardHandler extends AbstractHandler {
         path = "index.html";
       }
       java.net.URL url = DashboardHandler.class.getResource(
-          staticPackage + "/" + path);
+          STATIC_PACKAGE + "/" + path);
       if (url == null) {
         cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
                       "404: Not found");
@@ -105,7 +100,7 @@ class DashboardHandler extends AbstractHandler {
    */
   private byte[] loadPage(String path) throws IOException {
     InputStream in = DashboardHandler.class.getResourceAsStream(
-        staticPackage + "/" + path);
+        STATIC_PACKAGE + "/" + path);
     if (null == in) {
       throw new FileNotFoundException(path);
     } else {

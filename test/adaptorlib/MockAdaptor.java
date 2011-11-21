@@ -23,13 +23,14 @@ class MockAdaptor extends AbstractAdaptor {
   public byte[] documentBytes = new byte[] {1, 2, 3};
 
   @Override
-  public void getDocIds(DocIdPusher pusher) {
+  public void getDocIds(DocIdPusher pusher) throws InterruptedException,
+      IOException {
     throw new UnsupportedOperationException();
   }
 
   @Override
   public void getDocContent(Request request, Response response)
-  throws IOException {
+      throws IOException {
     response.getOutputStream().write(documentBytes);
   }
 }

@@ -170,8 +170,50 @@ function getStatsCallback(result, error) {
       'Throughput (KiB/s)', null, '%#I:%M %p');
 }
 
+var xsrfToken;
+var XSRF_TOKEN_HEADER_NAME = 'X-Adaptor-XSRF-Token';
+var rpcRetrievingXsrfToken = false;
+var pendingRpcRequests = [];
+
 function rpc(method, params, callback) {
+  // If we don't yet have an XSRF token, queue the real RPC request and issue a
+  // request to retrieve the XSRF token. After obtaining the XSRF token, perform
+  // the queued RPC requests.
+  if (!xsrfToken) {
+    pendingRpcRequests[pendingRpcRequests.length] = function() {
+      rpc(method, params, callback);
+    };
+    if (!rpcRetrievingXsrfToken) {
+      rpcRetrievingXsrfToken = true;
+      $.ajax({
+        type: 'POST',
+        url: '/rpc',
+        success: function() {
+          // This should never happen.
+          rpcRetrievingXsrfToken = false;
+          throw 'Could not retrieve XSRF token';
+        },
+        error: function(xmlHttpRequest) {
+          // Handle expected 409 Conflict response from server.
+          rpcRetrievingXsrfToken = false;
+          var token = xmlHttpRequest.getResponseHeader(XSRF_TOKEN_HEADER_NAME);
+          if (!token) {
+            throw 'Could not retrieve XSRF token';
+          }
+
+          xsrfToken = token;
+          for (var x = 0; x < pendingRpcRequests.length; x++) {
+            pendingRpcRequests[x]();
+          }
+        }
+      });
+    }
+    return;
+  }
+
   var request = {method: method, params: params, id: null};
+  var headers = {};
+  headers[XSRF_TOKEN_HEADER_NAME] = xsrfToken;
   $.ajax({
     accepts: 'application/json',
     contentType: 'application/json',
@@ -179,8 +221,12 @@ function rpc(method, params, callback) {
     processData: false,
     type: 'POST',
     url: '/rpc',
+    headers: headers,
     success: function(data) {
       callback(data.result, data.error);
+    },
+    error: function(xmlHttpRequest, textStatus) {
+      callback(null, textStatus);
     }
   });
 }
@@ -212,9 +258,9 @@ function getLogCallback(result, error) {
   if (result === null) {
     throw error;
   } else {
-    result = result.replace(/&/g, '&amp;').replace(/</g, '&lt;');
-    // Replace \n with <br> as a workaround for IE
-    $('#gaf-log').html(result.replace(/\n/g, '<br>'));
+    var gafLog = $('#gaf-log');
+    gafLog.empty();
+    gafLog.append(document.createTextNode(result));
   }
 }
 
@@ -244,7 +290,51 @@ function getConfigCallback(result, error) {
   }
 }
 
+function getStatusesCallback(result, error) {
+  if (result === null)
+    throw error;
+
+  var codeToClassMap = {
+    UNAVAILABLE: 'gaf-status-unavailable',
+    INACTIVE: 'gaf-status-inactive',
+    NORMAL: 'gaf-status-normal',
+    WARNING: 'gaf-status-warning',
+    ERROR: 'gaf-status-error'
+  };
+
+  var codeToDefaultDescrMap = {
+    UNAVAILABLE: 'Unavailable',
+    INACTIVE: 'Status checking inactive',
+    NORMAL: 'Normal',
+    WARNING: 'Warning',
+    ERROR: 'Error'
+  };
+
+  var statuses = result;
+  var statusTable = $('#gaf-status-table');
+  var curStatus, tr, td, led, message;
+  for (var i = 0; i < statuses.length; i++) {
+    curStatus = statuses[i];
+    tr = document.createElement('tr');
+    td = document.createElement('td');
+    td.appendChild(document.createTextNode(curStatus.source));
+    tr.appendChild(td);
+    td = document.createElement('td');
+    led = document.createElement('span');
+    led.className = codeToClassMap[curStatus.code];
+    td.appendChild(led);
+    message = curStatus.message;
+    if (!message) {
+      message = codeToDefaultDescrMap[curStatus.code];
+    }
+    td.appendChild(document.createTextNode(message));
+    tr.appendChild(td);
+    statusTable.append(tr);
+  }
+}
+
 $(document).ready(function() {
+  rpc('getStatuses', null, getStatusesCallback);
   rpc('getStats', null, getStatsCallback);
   rpc('getConfig', null, getConfigCallback);
   rpc('getLog', null, getLogCallback);
