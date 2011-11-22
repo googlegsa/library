@@ -101,12 +101,12 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void respondNotModified() {
+    public void respondNotModified() throws IOException {
       response.respondNotModified();
     }
 
     @Override
-    public OutputStream getOutputStream() {
+    public OutputStream getOutputStream() throws IOException {
       return response.getOutputStream();
     }
 

@@ -78,6 +78,8 @@ public class Config {
     // In seconds.
     addKey("config.pollPeriodSecs", "30");
     addKey("transform.pipeline", "");
+    // 1 MiB.
+    addKey("transform.maxDocumentBytes", "1048576");
   }
 
   public Set<String> getAllKeys() {
@@ -304,6 +306,10 @@ public class Config {
       transforms.add(params);
     }
     return transforms;
+  }
+
+  public int getTransformMaxDocumentBytes() {
+    return Integer.parseInt(getValue("transform.maxDocumentBytes"));
   }
 
 // TODO(pjo): Implement on GSA

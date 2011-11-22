@@ -153,16 +153,17 @@ abstract class AbstractHandler implements HttpHandler {
   }
 
   /**
-   * Sends response to GSA. Should not be used directly if the request method
-   * is HEAD.
+   * Sends headers and configures {@code ex} for (possibly) sending content.
+   * Completing the request is the caller's responsibility.
    */
-  protected void respond(HttpExchange ex, int code, String contentType,
-                         byte response[]) throws IOException {
+  protected void startResponse(HttpExchange ex, int code, String contentType,
+                               boolean hasBody) throws IOException {
+    log.finest("Starting response");
     if (contentType != null) {
       ex.getResponseHeaders().set("Content-Type", contentType);
     }
-    ex.setAttribute(ATTR_HEADERS_SENT , true);
-    if (response == null) {
+    ex.setAttribute(ATTR_HEADERS_SENT, true);
+    if (!hasBody) {
       // No body. Required for HEAD requests
       ex.sendResponseHeaders(code, -1);
     } else {
@@ -174,6 +175,17 @@ abstract class AbstractHandler implements HttpHandler {
         // since the constructor writes data to the provided OutputStream
         ex.setStreams(null, new GZIPOutputStream(ex.getResponseBody()));
       }
+    }
+  }
+
+  /**
+   * Sends response to GSA. Should not be used directly if the request method
+   * is HEAD.
+   */
+  protected void respond(HttpExchange ex, int code, String contentType,
+                         byte response[]) throws IOException {
+    startResponse(ex, code, contentType, response != null);
+    if (response != null) {
       OutputStream responseBody = ex.getResponseBody();
       log.finest("before writing response");
       responseBody.write(response);
