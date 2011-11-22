@@ -326,11 +326,7 @@ class Journal {
     for (int i = 0; i < timeStats.length; i++) {
       // Cause stats to update its internal structures
       timeStats[i].getCurrentStat(currentTime);
-      try {
-        timeStatsClone[i] = (Stats) timeStats[i].clone();
-      } catch (CloneNotSupportedException ex) {
-        throw new IllegalStateException(ex);
-      }
+      timeStatsClone[i] = timeStats[i].clone();
     }
 
     return new JournalSnapshot(this, currentTime, timeStatsClone);
@@ -437,11 +433,16 @@ class Journal {
       return stats[currentStat];
     }
 
-    public Object clone() throws CloneNotSupportedException {
-      Stats statsClone = (Stats) super.clone();
+    public Stats clone() {
+      Stats statsClone;
+      try {
+        statsClone = (Stats) super.clone();
+      } catch (CloneNotSupportedException ex) {
+        throw new AssertionError();
+      }
       statsClone.stats = new Stat[stats.length];
       for (int i = 0; i < stats.length; i++) {
-        statsClone.stats[i] = (Stat) stats[i].clone();
+        statsClone.stats[i] = stats[i].clone();
       }
       return statsClone;
     }
@@ -515,8 +516,12 @@ class Journal {
       gsaRetrievedDocument = false;
     }
 
-    public Object clone() throws CloneNotSupportedException {
-      return super.clone();
+    public Stat clone() {
+      try {
+        return (Stat) super.clone();
+      } catch (CloneNotSupportedException ex) {
+        throw new AssertionError();
+      }
     }
   }
 }
