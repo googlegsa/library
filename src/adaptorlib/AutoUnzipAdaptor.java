@@ -22,7 +22,7 @@ import java.util.zip.*;
 /**
  * Wrapping Adaptor that auto-unzips zips within the nested Adaptor.
  */
-public class AutoUnzipAdaptor extends WrapperAdaptor {
+class AutoUnzipAdaptor extends WrapperAdaptor {
   private static final Logger log
       = Logger.getLogger(AutoUnzipAdaptor.class.getName());
   /**
