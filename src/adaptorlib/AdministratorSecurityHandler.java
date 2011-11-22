@@ -110,12 +110,8 @@ public class AdministratorSecurityHandler extends AbstractHandler {
     String username = null;
     String password = null;
     try {
-      String request;
-      {
-        byte[] bytes
-            = IOHelper.readInputStreamToByteArray(ex.getRequestBody());
-        request = new String(bytes, "US-ASCII");
-      }
+      String request = IOHelper.readInputStreamToString(
+          ex.getRequestBody(), Charset.forName("US-ASCII"));
       for (String pair : request.split("&")) {
         String[] splitPair = pair.split("=", 2);
         if (splitPair.length != 2) {

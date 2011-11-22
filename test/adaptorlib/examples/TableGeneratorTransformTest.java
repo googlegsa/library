@@ -14,9 +14,10 @@
 
 package adaptorlib.examples;
 
+import static org.junit.Assert.*;
+
 import adaptorlib.TransformException;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -32,16 +33,14 @@ public class TableGeneratorTransformTest {
   public void testNoInput() throws IOException, TransformException {
     TableGeneratorTransform transform = new TableGeneratorTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals("<HTML><HEAD></HEAD><BODY></BODY></HTML>", contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -50,9 +49,8 @@ public class TableGeneratorTransformTest {
   public void testFull() throws IOException, TransformException {
     TableGeneratorTransform transform = new TableGeneratorTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -78,11 +76,10 @@ public class TableGeneratorTransformTest {
         "</tr>\n" +
         "</table></BODY></HTML>";
     contentIn.write(csv.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenOutput, contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }

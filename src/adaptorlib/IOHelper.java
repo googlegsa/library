@@ -15,6 +15,7 @@
 package adaptorlib;
 
 import java.io.*;
+import java.nio.charset.Charset;
 
 /**
  * Utility class for providing useful methods when handling streams or other
@@ -48,6 +49,14 @@ public class IOHelper {
   }
 
   /**
+   * Form a string from the contents of {@code is} with charset {@code charset}.
+   */
+  public static String readInputStreamToString(InputStream is,
+      Charset charset) throws IOException {
+    return new String(readInputStreamToByteArray(is), charset);
+  }
+
+  /**
    * Write contents of {@code in} to a temporary file. Caller is responsible for
    * deleting the temporary file after use.
    */
@@ -65,6 +74,16 @@ public class IOHelper {
       throw ex;
     }
     return tmpFile;
+  }
+
+  public static File writeToTempFile(String string, Charset charset) throws IOException {
+    byte[] bytes;
+    try {
+      bytes = string.getBytes(charset.name());
+    } catch (UnsupportedEncodingException ex) {
+      throw new AssertionError(ex);
+    }
+    return IOHelper.writeToTempFile(new ByteArrayInputStream(bytes));
   }
 
   /**

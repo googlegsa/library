@@ -99,8 +99,9 @@ class RpcHandler extends AbstractHandler {
     }
     Object requestObj;
     {
-      byte[] request = IOHelper.readInputStreamToByteArray(ex.getRequestBody());
-      requestObj = JSONValue.parse(new String(request, charset));
+      String request = IOHelper.readInputStreamToString(
+          ex.getRequestBody(), charset);
+      requestObj = JSONValue.parse(request);
     }
     if (requestObj == null) {
       cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",

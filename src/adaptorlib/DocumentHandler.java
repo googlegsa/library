@@ -194,11 +194,6 @@ class DocumentHandler extends AbstractHandler {
           throw e;
         }
         journal.recordRequestProcessingEnd(response.getWrittenContentSize());
-
-        content = response.getWrittenContent();
-        contentType = response.contentType;
-        httpResponseCode = response.httpResponseCode;
-        metadata = response.metadata;
       } catch (FileNotFoundException e) {
         log.log(Level.FINE, "FileNotFound during getDocContent. Message: {0}",
                 e.getMessage());
@@ -207,6 +202,10 @@ class DocumentHandler extends AbstractHandler {
                       "Unknown document");
         return;
       }
+      content = response.getWrittenContent();
+      contentType = response.contentType;
+      httpResponseCode = response.httpResponseCode;
+      metadata = response.metadata != null ? response.metadata : Metadata.EMPTY;
 
       if (httpResponseCode != HttpURLConnection.HTTP_OK
           && httpResponseCode != HttpURLConnection.HTTP_NOT_MODIFIED) {
@@ -224,18 +223,23 @@ class DocumentHandler extends AbstractHandler {
         log.finer("processed request; response is size=" + content.length);
         if (transform != null) {
           ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-          ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+          Map<String, String> metadataMap = metadata.toMap();
+          Map<String, String> params = new HashMap<String, String>();
+          params.put("DocId", docId.getUniqueId());
           try {
-            // TODO(ejona): hookup metadata once the transform handles it
-            // reasonably.
-            transform.transform(content, new byte[0], contentOut, metadataOut,
-                                new HashMap<String, String>());
+            transform.transform(content, contentOut, metadataMap, params);
           } catch (TransformException e) {
             throw new IOException(e);
           }
           content = contentOut.toByteArray();
+          Set<MetaItem> metadataSet
+              = new HashSet<MetaItem>(metadataMap.size() * 2);
+          for (Map.Entry<String, String> me : metadataMap.entrySet()) {
+            metadataSet.add(MetaItem.raw(me.getKey(), me.getValue()));
+          }
+          metadata = new Metadata(metadataSet);
         }
-        if (metadata != null && requestIsFromGsa(ex)) {
+        if (!metadata.isEmpty() && requestIsFromGsa(ex)) {
           ex.getResponseHeaders().set("X-Gsa-External-Metadata",
                                       formMetadataHeader(metadata));
         }

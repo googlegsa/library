@@ -14,9 +14,10 @@
 
 package adaptorlib.examples;
 
+import static org.junit.Assert.*;
+
 import adaptorlib.TransformException;
 
-import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
@@ -34,20 +35,18 @@ public class MetaTaggerTransformTest {
   public void testNoInput() throws IOException, TransformException {
     MetaTaggerTransform transform = new MetaTaggerTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
     String testString = "";
     contentIn.write(testString.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(testString, contentIn.toString());
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -56,20 +55,18 @@ public class MetaTaggerTransformTest {
   public void testNoPattern() throws IOException, TransformException {
     MetaTaggerTransform transform = new MetaTaggerTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
     String testString = "Here is some input";
     contentIn.write(testString.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(testString, contentIn.toString());
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -78,9 +75,8 @@ public class MetaTaggerTransformTest {
   public void testSimple() throws IOException, TransformException {
     MetaTaggerTransform transform = new MetaTaggerTransform(TEST_DIR + "testPattern1.txt");
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
     String content =
@@ -101,11 +97,10 @@ public class MetaTaggerTransformTest {
         "</BODY>\n" +
         "</HTML>\n";
     contentIn.write(content.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenContent, contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -114,9 +109,8 @@ public class MetaTaggerTransformTest {
   public void testNoHead() throws IOException, TransformException {
     MetaTaggerTransform transform = new MetaTaggerTransform(TEST_DIR + "testPattern1.txt");
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
     String content =
@@ -125,11 +119,10 @@ public class MetaTaggerTransformTest {
         "transform would be inserting metadata somewhere in this doc.\n" +
         "  We should end up with the same output as input.\n";
     contentIn.write(content.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(content, contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -138,9 +131,8 @@ public class MetaTaggerTransformTest {
   public void testDuplicatePatternsInPatternFile() throws IOException, TransformException {
     MetaTaggerTransform transform = new MetaTaggerTransform(TEST_DIR + "testPatternDup.txt");
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
+    Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -162,11 +154,10 @@ public class MetaTaggerTransformTest {
         "</BODY>\n" +
         "</HTML>\n";
     contentIn.write(content.getBytes());
-    transform.transform(contentIn, metadataIn, contentOut, metadataOut, params);
+    transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenContent, contentOut.toString());
-    assertEquals(0, metadataIn.size());
-    assertEquals(0, metadataOut.size());
+    assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
