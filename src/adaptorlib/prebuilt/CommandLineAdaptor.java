@@ -85,6 +85,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     if (commandResult != 0) {
       throw new IOException("External command error. code=" + commandResult + ".");
     }
+    // TODO(johnfelton) log any output sent to stderr
 
     CommandStreamParser parser = new CommandStreamParser(
         new ByteArrayInputStream(command.getStdout()));
@@ -94,16 +95,14 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       throw new IOException("requested document "  + req.getDocId() + " does not match retrieved "
           + "document  " + retrieverInfo.getDocId() + ".");
     }
-    if (retrieverInfo.isUpToDate()) {
+    if (retrieverInfo.notFound()) {
+      throw new FileNotFoundException("Could not find file '" + retrieverInfo.getDocId());
+    }
+    else if (retrieverInfo.isUpToDate()) {
       log.finest("Retriever: " + id.getUniqueId() + " is up to date.");
       resp.respondNotModified();
 
     } else {
-      if (retrieverInfo.getContents() != null) {
-         resp.getOutputStream().write(retrieverInfo.getContents());
-      } else {
-        throw new IOException("No content returned by retriever for "  + req.getDocId() + ".");
-      }
       if (retrieverInfo.getMimeType() != null) {
         log.finest("Retriever: " + id.getUniqueId() + " has mime-type "
             + retrieverInfo.getMimeType());
@@ -114,6 +113,11 @@ public class CommandLineAdaptor extends AbstractAdaptor {
             + retrieverInfo.getMetadata());
         resp.setMetadata(retrieverInfo.getMetadata());
       };
+      if (retrieverInfo.getContents() != null) {
+        resp.getOutputStream().write(retrieverInfo.getContents());
+      } else {
+        throw new IOException("No content returned by retriever for "  + req.getDocId() + ".");
+      }
     }
   }
 
