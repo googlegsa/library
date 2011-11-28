@@ -60,7 +60,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(), false,
-        "localhost", new String[0], authnHandler, sessionManager, null);
+        "localhost", new String[0], authnHandler, sessionManager, null, 0);
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
   }
@@ -145,7 +145,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"127.0.0.3", " "}, null, sessionManager, null);
+        new String[] {"127.0.0.3", " "}, null, sessionManager, null, 0);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -158,7 +158,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "127.0.0.3",
-        new String[0], null, sessionManager, null);
+        new String[0], null, sessionManager, null, 0);
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -170,7 +170,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "127.0.0.3",
-        new String[0], null, sessionManager, null);
+        new String[0], null, sessionManager, null, 0);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -183,7 +183,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"-no-such-host-"}, null, sessionManager, null);
+        new String[] {"-no-such-host-"}, null, sessionManager, null, 0);
   }
 
   @Test
@@ -193,7 +193,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "-no-such-host-",
-        new String[0], null, sessionManager, null);
+        new String[0], null, sessionManager, null, 0);
   }
 
   @Test
@@ -224,17 +224,19 @@ public class DocumentHandlerTest {
   public void testTransform() throws Exception {
     final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
-    TransformPipeline transform = new TransformPipeline() {
+    TransformPipeline transform = new TransformPipeline();
+    transform.add(new DocumentTransform("testing") {
       @Override
-      public void transform(byte[] contentIn, OutputStream contentOut,
+      public void transform(ByteArrayOutputStream contentIn,
+                            OutputStream contentOut,
                             Map<String, String> metadata,
                             Map<String, String> params) throws IOException {
-        assertArrayEquals(mockAdaptor.documentBytes, contentIn);
+        assertArrayEquals(mockAdaptor.documentBytes, contentIn.toByteArray());
         contentOut.write(golden);
         metadata.put(key, metadata.get(key).toUpperCase());
         metadata.put("docid", params.get("DocId"));
       }
-    };
+    });
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
@@ -249,7 +251,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
-        new String[] {"127.0.0.3"}, null, sessionManager, transform);
+        new String[] {"127.0.0.3"}, null, sessionManager, transform, 100);
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -257,15 +259,40 @@ public class DocumentHandlerTest {
     assertEquals("docid=http%3A%2F%2Flocalhost%2F,"
                  + "testing%20key=TESTING%20VALUE",
                  ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
 
-    // Test again but without acting like we are the GSA. This time there should
-    // be no metadata.
-    handler = new DocumentHandler("localhost",
+  @Test
+  public void testTransformDocumentTooLarge() throws Exception {
+    TransformPipeline transform = new TransformPipeline();
+    transform.add(new DocumentTransform("testing") {
+      @Override
+      public void transform(ByteArrayOutputStream contentIn,
+                            OutputStream contentOut,
+                            Map<String, String> metadata,
+                            Map<String, String> params) throws IOException {
+        // This is not the content we are looking for.
+        contentOut.write(new byte[] {2, 3, 4});
+      }
+    });
+    final byte[] golden = new byte[] {-1, 2, -3, 4, 5};
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException {
+        OutputStream os = response.getOutputStream();
+        // Just for the heck of it, test using the single byte version.
+        os.write(golden[0]);
+        os.write(golden[1]);
+        // Write out too much content for the buffer to hold here.
+        os.write(golden, 2, golden.length - 2 - 1);
+        os.write(golden, golden.length - 1, 1);
+      }
+    };
+    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
-        new String[0], null, sessionManager, transform);
-    ex = new MockHttpExchange("http", "GET", "/",
-        new MockHttpContext(null, "/"));
+        new String[] {"127.0.0.3"}, null, sessionManager, transform, 3);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
@@ -487,7 +514,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         adaptor, false, "localhost", new String[0], null,
-        sessionManager, null);
+        sessionManager, null, 0);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -497,7 +524,7 @@ public class DocumentHandlerTest {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         adaptor, false, "localhost", new String[0], null,
-        sessionManager, null);
+        sessionManager, null, 0);
   }
 
   @Test

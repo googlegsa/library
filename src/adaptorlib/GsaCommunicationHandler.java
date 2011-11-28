@@ -148,7 +148,8 @@ public class GsaCommunicationHandler {
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager,
-                            createTransformPipeline()));
+                            createTransformPipeline(),
+                            config.getTransformMaxDocumentBytes()));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
@@ -223,7 +224,8 @@ public class GsaCommunicationHandler {
       transform.name(name);
       pipeline.add(transform);
     }
-    return pipeline;
+    // If we created an empty pipeline, then we don't need the pipeline at all.
+    return pipeline.size() > 0 ? pipeline : null;
   }
 
   // Useful as a separate method during testing.
