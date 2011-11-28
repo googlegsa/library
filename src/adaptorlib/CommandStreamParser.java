@@ -32,13 +32,14 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Parses the adaptor data format into individual commands with associated data.<p>
+ * Parses the adaptor data format into individual commands with associated data.
  *
  * This format is used for communication between the adaptor library and various command line
  * adaptor components (lister, retriever, transformer, authorizor, etc.). It supports responses
  * coming back from the command line adaptor implementation. The format supports a mixture of
- * character and binary data. All character data must be encoded in UTF-8.<p> <h3>Header
- * Format</h3>
+ * character and binary data. All character data must be encoded in UTF-8.<p>
+ *
+ * <h3>Header Format</h3>
  *
  * Communications (via either file or stream) begin with the header:<p>
  *
@@ -100,16 +101,16 @@ import java.util.regex.Pattern;
  * Failure to retrieve the document during re-crawling will not result in
  * removal of the document. If every document in the GSA is
  * locked then locked document may be forced out when maximum capacity is
- * reached.
+ * reached.<p>
  *
- * "delete" -- this document should be deleted from the GSA index.
+ * "delete" -- this document should be deleted from the GSA index.<p>
  *
  * <h1>Retriever Commands:</h1>
  *
  * "up-to-date" -- specifies that the document is up-to-date with respect to its last crawled
  * time.<p>
  *
- * "document-not-found" -- the document no longer exists in the repository
+ * "document-not-found" -- the document does not exists in the repository<p>
  *
  * "mime-type=" -- specifies the document's mime-type. If unspecified then the GSA will
  * automatically assign a type to the document. <p>
@@ -122,9 +123,9 @@ import java.util.regex.Pattern;
  *
  *
  * End-of-stream terminates the data transmission. Multiple consecutive delimiters are collapsed
- * into a single delimiter and terminates the current id-list should one exist.
+ * into a single delimiter and terminates the current id-list should one exist.<p>
  *
- * Unrecognized commands generate a warning but are otherwise ignored
+ * Unrecognized commands generate a warning but are otherwise ignored.
  *
  * <h3>Examples</h3>
  *
@@ -166,6 +167,7 @@ import java.util.regex.Pattern;
  */
 public class CommandStreamParser {
 
+
   public static enum Operation {
     ID,
     LAST_MODIFIED,
@@ -174,7 +176,7 @@ public class CommandStreamParser {
     LOCK,
     DELETE,
     UP_TO_DATE,
-    DOCUMENT_NOT_FOUND,
+    NOT_FOUND,
     MIME_TYPE,
     META_NAME,
     META_VALUE,
@@ -183,9 +185,7 @@ public class CommandStreamParser {
 
   private static final String HEADER_PREFIX = "GSA Adaptor Data Version";
   private static final String DISALLOWED_DELIMITER_CHARS_REGEX = "[a-zA-Z0-9:/\\-_ =\\+\\[\\]]";
-  private static final Charset charset = Charset.forName("UTF-8");
-  private static final byte[] END_BINARY_MARKER =
-      "4387BDFA-C831-11E0-827B-48354824019B-7B19137E-0D3D-4447-8F55-44B52248A18B".getBytes(charset);
+  private static final Charset CHARSET = Charset.forName("UTF-8");
 
   private static final Map<String, Operation> STRING_TO_OPERATION;
 
@@ -198,7 +198,7 @@ public class CommandStreamParser {
     stringToOperation.put("lock", Operation.LOCK);
     stringToOperation.put("delete", Operation.DELETE);
     stringToOperation.put("up-to-date", Operation.UP_TO_DATE);
-    stringToOperation.put("document-not-found", Operation.DOCUMENT_NOT_FOUND);
+    stringToOperation.put("not-found", Operation.NOT_FOUND);
     stringToOperation.put("mime-type", Operation.MIME_TYPE);
     stringToOperation.put("meta-name", Operation.META_NAME);
     stringToOperation.put("meta-value", Operation.META_VALUE);
@@ -220,26 +220,27 @@ public class CommandStreamParser {
   private int versionNumber = 0;
   private String delimiter;
   private boolean inIdList;
-  private CharsetDecoder charsetDecoder = charset.newDecoder();
-
-  public CommandStreamParser(InputStream inputStream) {
-    this.inputStream = inputStream;
-    inIdList = false;
-  }
-
-  public int getVersionNumber() throws IOException {
-    checkHeader();
-    return versionNumber;
-  }
+  private CharsetDecoder charsetDecoder = CHARSET.newDecoder();
 
   /** */
   public static class RetrieverInfo {
 
     private boolean upToDate;
+    private boolean notFound;
     private DocId docId;
     private String mimeType;
     private Metadata metadata;
     private byte[] contents;
+
+    RetrieverInfo(DocId docId, Metadata metadata, byte[] contents, boolean upToDate,
+        String mimeType, boolean notFound) {
+      this.docId = docId;
+      this.metadata = metadata;
+      this.contents = contents;
+      this.upToDate = upToDate;
+      this.mimeType = mimeType;
+      this.notFound = notFound;
+    }
 
     public String getMimeType() {
       return mimeType;
@@ -247,6 +248,10 @@ public class CommandStreamParser {
 
     public boolean isUpToDate() {
       return upToDate;
+    }
+
+    public boolean notFound() {
+      return notFound;
     }
 
     public DocId getDocId() {
@@ -260,23 +265,20 @@ public class CommandStreamParser {
     public byte[] getContents() {
       return contents;
     }
-
-    RetrieverInfo(DocId docId, Metadata metadata, byte[] contents, boolean upToDate,
-        String mimeType) {
-      this.docId = docId;
-      this.metadata = metadata;
-      this.contents = contents;
-      this.upToDate = upToDate;
-      this.mimeType = mimeType;
-    }
   }
 
   /** */
-  public static class Command {
+  private static class Command {
 
     private Operation operation;
     private String argument;
     private byte[] contents;
+
+    Command(Operation operation, String argument, byte[] contents) {
+      this.operation = operation;
+      this.argument = argument;
+      this.contents = contents;
+    }
 
     public Operation getOperation() {
       return operation;
@@ -289,12 +291,16 @@ public class CommandStreamParser {
     public byte[] getContents() {
       return contents;
     }
+  }
 
-    Command(Operation operation, String argument, byte[] contents) {
-      this.operation = operation;
-      this.argument = argument;
-      this.contents = contents;
-    }
+  public CommandStreamParser(InputStream inputStream) {
+    this.inputStream = inputStream;
+    inIdList = false;
+  }
+
+  public int getVersionNumber() throws IOException {
+    checkHeader();
+    return versionNumber;
   }
 
   public ArrayList<DocInfo> readFromLister() throws IOException {
@@ -362,6 +368,7 @@ public class CommandStreamParser {
     Set<MetaItem> metadata = new HashSet<MetaItem>();
     byte[] content = null;
     boolean upToDate = false;
+    boolean notFound = false;
     String mimeType = null;
     Command command = readCommand();
 
@@ -392,6 +399,9 @@ public class CommandStreamParser {
         case UP_TO_DATE:
           upToDate = true;
           break;
+        case NOT_FOUND:
+          notFound = true;
+          break;
         case MIME_TYPE:
           mimeType = command.getArgument();
           break;
@@ -403,13 +413,13 @@ public class CommandStreamParser {
     }
 
     return new RetrieverInfo(new DocId(docId), new Metadata(metadata),
-        content, upToDate, mimeType);
+        content, upToDate, mimeType, notFound);
   }
 
   /**
    * Read a command from the command stream
    *
-   * @return The next command from the command stream. for end-of-stearm null is returned.
+   * @return The next command from the command stream. for end-of-steam null is returned.
    * @throws IOException on stream read error
    */
   private Command readCommand() throws IOException {
@@ -421,7 +431,8 @@ public class CommandStreamParser {
       if (commandTokens == null) {
         return null;
       } else if ((commandTokens[0].equals("repository-unavailable"))) {
-        throw new IOException("Error: repository unavailable.");
+        throw new IOException("Error: repository unavailable. "
+            + (commandTokens.length > 1 ? commandTokens[1] : ""));
       }
 
       Operation operation = STRING_TO_OPERATION.get(commandTokens[0]);
@@ -458,8 +469,7 @@ public class CommandStreamParser {
       // If nothing is between the last delimiter and this one then exit ID list mode
       if (inIdList && line.length() == 0) {
         inIdList = false;
-      }
-      if (line.equals("id-list")) {
+      } else if (!inIdList && line.equals("id-list")) {
         inIdList = true;
         line = ""; // loop again
       }
@@ -503,8 +513,7 @@ public class CommandStreamParser {
     }
 
     try {
-      versionNumber = Integer.parseInt(versionNumberString.substring(1,
-          versionNumberString.length() - 1));
+      versionNumber = Integer.parseInt(versionNumberString.trim());
     } catch (NumberFormatException e) {
       throw new IOException("Format version '" + versionNumberString + "' is invalid.");
     }
@@ -546,7 +555,7 @@ public class CommandStreamParser {
   }
 
   private String readCharsUntilMarker(String marker) throws IOException {
-    byte[] byteMarker = marker.getBytes(charset);
+    byte[] byteMarker = marker.getBytes(CHARSET);
     byte[] bytes = readBytesUntilMarker(byteMarker);
     if (bytes == null) {
       return null;
@@ -568,6 +577,5 @@ public class CommandStreamParser {
       return result;
     }
   }
-
 
 }

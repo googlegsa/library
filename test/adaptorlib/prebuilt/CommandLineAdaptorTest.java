@@ -20,20 +20,14 @@ import static org.junit.Assert.assertEquals;
 import adaptorlib.*;
 
 import static adaptorlib.TestHelper.getDocIds;
-import static adaptorlib.TestHelper.getDocContent;
 
-import com.google.enterprise.apis.client.GsaService;
-
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -41,8 +35,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.swing.text.AbstractDocument;
 
 /**
  * Tests for {@link CommandLineAdaptor}.
