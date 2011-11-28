@@ -284,7 +284,11 @@ public class Config {
     return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
   }
 
-  public synchronized List<Map<String, String>> getTransformPipeline() {
+  /**
+   * Returns of list of maps correspending to each transform in the pipeline.
+   * Each map is the configuration entries for that transform.
+   */
+  public synchronized List<Map<String, String>> getTransformPipelineSpec() {
     final String configKey = "transform.pipeline";
     String configValue = getValue(configKey).trim();
     if ("".equals(configValue)) {
