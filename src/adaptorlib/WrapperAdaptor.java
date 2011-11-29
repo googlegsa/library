@@ -202,8 +202,8 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                PushErrorHandler handler)
+    public DocIdPusher.DocInfo pushDocInfos(
+        Iterable<DocIdPusher.DocInfo> docInfos, PushErrorHandler handler)
         throws InterruptedException {
       return pusher.pushDocInfos(docInfos, handler);
     }

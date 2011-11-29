@@ -76,4 +76,48 @@ public interface DocIdPusher {
   public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
                               PushErrorHandler handler)
       throws InterruptedException;
+
+  /**
+   * DocId and PushAttributes pair for passing with {@link DocIdPusher}.
+   */
+  public static class DocInfo {
+    private final DocId docId;
+    private final PushAttributes pushAttrs;
+  
+    public DocInfo(DocId docId, PushAttributes pushAttrs) {
+      if (docId == null || pushAttrs == null) {
+        throw new NullPointerException();
+      }
+      this.docId = docId;
+      this.pushAttrs = pushAttrs;
+    }
+  
+    public DocId getDocId() {
+      return docId;
+    }
+  
+    public PushAttributes getPushAttributes() {
+      return pushAttrs;
+    }
+  
+    @Override
+    public boolean equals(Object o) {
+      if (o == null || !getClass().equals(o.getClass())) {
+        return false;
+      }
+      DocInfo docRecord = (DocInfo) o;
+      return docId.equals(docRecord.docId)
+          && pushAttrs.equals(docRecord.pushAttrs);
+    }
+  
+    @Override
+    public int hashCode() {
+      return docId.hashCode() ^ pushAttrs.hashCode();
+    }
+  
+    @Override
+    public String toString() {
+      return "DocIdPusher.DocInfo(" + docId + "," + pushAttrs + ")";
+    }
+  }
 }

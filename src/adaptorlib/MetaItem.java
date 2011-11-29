@@ -17,6 +17,8 @@ package adaptorlib;
 import java.util.Arrays;
 import java.util.List;
 
+/* TODO: Remove display url */
+
 /** A single meta item consists of a name and value. */
 public final class MetaItem implements Comparable<MetaItem> {
   private final String n, v;

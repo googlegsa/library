@@ -46,19 +46,20 @@ public class DocIdSenderTest {
 
   @Test
   public void testPushDocIdsFromAdaptorNormal() throws Exception {
-    adaptor.pushItems = new ArrayList<List<DocInfo>>();
-    DocInfo[] docInfos = new DocInfo[6];
+    adaptor.pushItems = new ArrayList<List<DocIdPusher.DocInfo>>();
+    DocIdPusher.DocInfo[] docInfos = new DocIdPusher.DocInfo[6];
     for (int i = 0; i < docInfos.length; i++) {
-      docInfos[i] = new DocInfo(new DocId("test" + i), Metadata.EMPTY);
+      DocId id = new DocId("test" + i);
+      docInfos[i] = new DocIdPusher.DocInfo(id, PushAttributes.DEFAULT);
     }
-    List<DocInfo> infos = new ArrayList<DocInfo>();
+    List<DocIdPusher.DocInfo> infos = new ArrayList<DocIdPusher.DocInfo>();
     infos.add(docInfos[0]);
     infos.add(docInfos[1]);
     infos.add(docInfos[2]);
     infos.add(docInfos[3]);
     infos.add(docInfos[4]);
     adaptor.pushItems.add(infos);
-    infos = new ArrayList<DocInfo>();
+    infos = new ArrayList<DocIdPusher.DocInfo>();
     infos.add(docInfos[5]);
     adaptor.pushItems.add(infos);
     config.setValue("feed.maxUrls", "2");
@@ -70,10 +71,10 @@ public class DocIdSenderTest {
       "testing", "testing", "testing", "testing",
     }), fileMaker.names);
     assertEquals(Arrays.asList(new List[] {
-      Arrays.asList(new DocInfo[] {docInfos[0], docInfos[1]}),
-      Arrays.asList(new DocInfo[] {docInfos[2], docInfos[3]}),
-      Arrays.asList(new DocInfo[] {docInfos[4]}),
-      Arrays.asList(new DocInfo[] {docInfos[5]}),
+      Arrays.asList(new DocIdPusher.DocInfo[] {docInfos[0], docInfos[1]}),
+      Arrays.asList(new DocIdPusher.DocInfo[] {docInfos[2], docInfos[3]}),
+      Arrays.asList(new DocIdPusher.DocInfo[] {docInfos[4]}),
+      Arrays.asList(new DocIdPusher.DocInfo[] {docInfos[5]}),
     }), fileMaker.docInfoses);
 
     assertEquals(Arrays.asList(new String[] {
@@ -90,7 +91,7 @@ public class DocIdSenderTest {
   @Test
   public void testPushDocIdsNoHandler() throws Exception {
     // Don't send anything.
-    adaptor.pushItems = new ArrayList<List<DocInfo>>();
+    adaptor.pushItems = new ArrayList<List<DocIdPusher.DocInfo>>();
     thrown.expect(NullPointerException.class);
     docIdSender.pushDocIdsFromAdaptor(null);
   }
@@ -216,7 +217,8 @@ public class DocIdSenderTest {
 
   private static class MockGsaFeedFileMaker extends GsaFeedFileMaker {
     List<String> names = new ArrayList<String>();
-    List<List<DocInfo>> docInfoses = new ArrayList<List<DocInfo>>();
+    List<List<DocIdPusher.DocInfo>> docInfoses
+        = new ArrayList<List<DocIdPusher.DocInfo>>();
     int i;
 
     public MockGsaFeedFileMaker() {
@@ -224,7 +226,8 @@ public class DocIdSenderTest {
     }
 
     @Override
-    public String makeMetadataAndUrlXml(String name, List<DocInfo> docInfos) {
+    public String makeMetadataAndUrlXml(String name,
+        List<DocIdPusher.DocInfo> docInfos) {
       names.add(name);
       docInfoses.add(docInfos);
       return "" + i++;
@@ -288,7 +291,7 @@ public class DocIdSenderTest {
   }
 
   private static class DocIdsMockAdaptor extends MockAdaptor {
-    public List<List<DocInfo>> pushItems;
+    public List<List<DocIdPusher.DocInfo>> pushItems;
     public int timesGetDocIdsCalled;
 
     /**
@@ -299,7 +302,7 @@ public class DocIdSenderTest {
     public void getDocIds(DocIdPusher pusher) throws InterruptedException,
         IOException {
       timesGetDocIdsCalled++;
-      for (List<DocInfo> infos : pushItems) {
+      for (List<DocIdPusher.DocInfo> infos : pushItems) {
         pusher.pushDocInfos(infos);
       }
     }

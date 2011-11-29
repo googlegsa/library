@@ -87,8 +87,8 @@ class Journal {
     this.dayStatsByHalfHour = this.timeStats[this.timeStats.length - 1];
   }
 
-  synchronized void recordDocIdPush(List<DocInfo> pushed) {
-    for (DocInfo record : pushed) {
+  synchronized void recordDocIdPush(List<DocIdPusher.DocInfo> pushed) {
+    for (DocIdPusher.DocInfo record : pushed) {
       increment(timesPushed, record.getDocId());
     }
     totalPushes += pushed.size();

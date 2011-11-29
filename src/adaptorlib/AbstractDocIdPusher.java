@@ -39,7 +39,7 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
       throws InterruptedException {
     List<DocInfo> docInfos = new ArrayList<DocInfo>();
     for (DocId docId : docIds) {
-      docInfos.add(new DocInfo(docId, Metadata.EMPTY));
+      docInfos.add(new DocInfo(docId, PushAttributes.DEFAULT));
     }
     DocInfo record = pushDocInfos(docInfos, handler);
     return record == null ? null : record.getDocId();

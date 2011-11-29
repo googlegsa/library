@@ -35,15 +35,15 @@ public class JournalTest {
     DocId id2 = new DocId("id2");
     DocId id3 = new DocId("id3");
     DocId id4 = new DocId("id4");
-    ArrayList<DocInfo> docs = new ArrayList<DocInfo>();
-    docs.add(new DocInfo(id, Metadata.EMPTY));
-    docs.add(new DocInfo(id2, Metadata.EMPTY));
-    docs.add(new DocInfo(id3, Metadata.EMPTY));
+    ArrayList<DocIdPusher.DocInfo> docs = new ArrayList<DocIdPusher.DocInfo>();
+    docs.add(new DocIdPusher.DocInfo(id, PushAttributes.DEFAULT));
+    docs.add(new DocIdPusher.DocInfo(id2, PushAttributes.DEFAULT));
+    docs.add(new DocIdPusher.DocInfo(id3, PushAttributes.DEFAULT));
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
-    docs.add(new DocInfo(id4, Metadata.EMPTY));
+    docs.add(new DocIdPusher.DocInfo(id4, PushAttributes.DEFAULT));
     journal.recordDocIdPush(docs);
     assertEquals(4, journal.getSnapshot().numUniqueDocIdsPushed);
   }

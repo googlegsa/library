@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-/** Tests for {@link DocInfo}. */
+/** Tests for {@link DocIdPusher.DocInfo}. */
 public class DocInfoTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -27,22 +27,27 @@ public class DocInfoTest {
   @Test
   public void testNullDocId() {
     thrown.expect(NullPointerException.class);
-    new DocInfo(null, Metadata.EMPTY);
+    new DocIdPusher.DocInfo(null, PushAttributes.DEFAULT);
   }
 
   @Test
   public void testNullMetadata() {
     thrown.expect(NullPointerException.class);
-    new DocInfo(new DocId("test"), null);
+    new DocIdPusher.DocInfo(new DocId("test"), null);
   }
 
   @Test
   public void testEquals() {
-    DocInfo info1 = new DocInfo(new DocId("test"), Metadata.EMPTY);
-    DocInfo info2 = new DocInfo(new DocId("test"), Metadata.EMPTY);
-    DocInfo info3 = new DocInfo(new DocId("test2"), Metadata.EMPTY);
-    DocInfo info4 = new DocInfo(new DocId("test"), Metadata.DELETED);
-    DocInfo info5 = new DocInfo(new DocId("test2"), Metadata.DELETED);
+    DocIdPusher.DocInfo info1 = new DocIdPusher.DocInfo(new DocId("test"),
+        PushAttributes.DEFAULT);
+    DocIdPusher.DocInfo info2 = new DocIdPusher.DocInfo(new DocId("test"),
+        PushAttributes.DEFAULT);
+    DocIdPusher.DocInfo info3 = new DocIdPusher.DocInfo(new DocId("test2"),
+        PushAttributes.DEFAULT);
+    DocIdPusher.DocInfo info4 = new DocIdPusher.DocInfo(new DocId("test"),
+        new PushAttributes.Builder().setDeleteFromIndex(true).build());
+    DocIdPusher.DocInfo info5 = new DocIdPusher.DocInfo(new DocId("test2"),
+        new PushAttributes.Builder().setDeleteFromIndex(true).build());
     assertFalse(info1.equals(null));
     assertFalse(info1.equals(new Object()));
     assertEquals(info1, info2);
@@ -53,7 +58,10 @@ public class DocInfoTest {
 
   @Test
   public void testToString() {
-    assertEquals("DocInfo(DocId(a),[])",
-                 new DocInfo(new DocId("a"), Metadata.EMPTY).toString());
+    String golden = "DocIdPusher.DocInfo(DocId(a),PushAttributes(delete=false"
+        + ",lastModified=null,displayUrl=null,crawlImmediately=false"
+        + ",crawlOnce=false,lock=false,noFollow=false))";
+    assertEquals(golden,
+        "" + new DocIdPusher.DocInfo(new DocId("a"), PushAttributes.DEFAULT));
   }
 }

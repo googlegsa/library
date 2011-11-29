@@ -55,16 +55,17 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
     super.getDocIds(innerPusher);
   }
 
-  private DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                               PushErrorHandler handler)
+  private DocIdPusher.DocInfo pushDocInfos(
+      Iterable<DocIdPusher.DocInfo> docInfos, PushErrorHandler handler)
       throws InterruptedException {
-    List<DocInfo> expanded = new ArrayList<DocInfo>();
-    // Used for returning the original DocInfo instead of an equivalent
-    // DocInfo when an error occurs.
-    Map<DocInfo, DocInfo> newOrigMap = new HashMap<DocInfo, DocInfo>();
-    for (DocInfo docRecord : docInfos) {
+    List<DocIdPusher.DocInfo> expanded = new ArrayList<DocIdPusher.DocInfo>();
+    // Used for returning the original DocIdPusher.DocInfo instead of an
+    // equivalent DocIdPusher.DocInfo when an error occurs.
+    Map<DocIdPusher.DocInfo, DocIdPusher.DocInfo> newOrigMap
+        = new HashMap<DocIdPusher.DocInfo, DocIdPusher.DocInfo>();
+    for (DocIdPusher.DocInfo docRecord : docInfos) {
       DocId docId = docRecord.getDocId();
-      DocInfo newRecord = createDerivativeDocInfo(docRecord,
+      DocIdPusher.DocInfo newRecord = createDerivativeDocInfo(docRecord,
           escape(docId.getUniqueId()));
       expanded.add(newRecord);
       newOrigMap.put(newRecord, docRecord);
@@ -75,7 +76,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
       // Add the children documents of a zip immediately after the zip, so when
       // an error occurs we can correctly inform the client which document the
       // failure was on.
-      if (Metadata.DELETED.equals(docRecord.getMetadata())) {
+      if (docRecord.getPushAttributes().isToBeDeleted()) {
         // Not a great case since we don't remember what files were in each zip.
         // The GSA will have to figure out the files are gone via 404s later.
         continue;
@@ -104,7 +105,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
           log.log(Level.FINE, "Exception trying to auto-expand a zip", ex);
           continue;
         }
-        DocInfo escaped = createDerivativeDocInfo(docRecord,
+        DocIdPusher.DocInfo escaped = createDerivativeDocInfo(docRecord,
             escape(docId.getUniqueId()));
         listZip(escaped, tmpFile, expanded, newOrigMap);
       } finally {
@@ -112,7 +113,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
       }
     }
 
-    DocInfo failedRecord = pusher.pushDocInfos(expanded, handler);
+    DocIdPusher.DocInfo failedRecord = pusher.pushDocInfos(expanded, handler);
     if (failedRecord == null) {
       // Success.
       return null;
@@ -125,21 +126,22 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
   }
 
   /**
-   * Creates a new {@code DocInfo} that is a copy of {@code docRecord}, but
-   * with a different uniqueId of its {@link DocId}.
+   * Creates a new {@code DocIdPusher.DocInfo} that is a copy
+   * of {@code docRecord}, but with a different uniqueId of its {@link DocId}.
    */
-  private static DocInfo createDerivativeDocInfo(DocInfo docRecord,
-                                                     String uniqueId) {
-    return new DocInfo(new DocId(uniqueId), docRecord.getMetadata());
+  private static DocIdPusher.DocInfo createDerivativeDocInfo(
+      DocIdPusher.DocInfo docRecord, String uniqueId) {
+    PushAttributes attrs = docRecord.getPushAttributes();
+    return new DocIdPusher.DocInfo(new DocId(uniqueId), attrs);
   }
 
   /**
    * Get list of files within zip. Recursive method to handle listing ZIPs in
    * ZIPs.
    */
-  private static void listZip(DocInfo docRecord, File rawZip,
-                              List<DocInfo> expanded,
-                              Map<DocInfo, DocInfo> newOrigMap) {
+  private static void listZip(DocIdPusher.DocInfo docRecord, File rawZip,
+      List<DocIdPusher.DocInfo> expanded,
+      Map<DocIdPusher.DocInfo, DocIdPusher.DocInfo> newOrigMap) {
     DocId docId = docRecord.getDocId();
     ZipFile zip;
     try {
@@ -157,7 +159,8 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
           continue;
         }
         String uniqId = docId.getUniqueId() + DELIMITER + escape(e.getName());
-        DocInfo nestedRecord = createDerivativeDocInfo(docRecord, uniqId);
+        DocIdPusher.DocInfo nestedRecord
+            = createDerivativeDocInfo(docRecord, uniqId);
         expanded.add(nestedRecord);
         newOrigMap.put(nestedRecord, docRecord);
         if (uniqId.endsWith(".zip")) {
@@ -422,8 +425,8 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
 
   private class InnerDocIdPusher extends AbstractDocIdPusher {
     @Override
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                PushErrorHandler handler)
+    public DocIdPusher.DocInfo pushDocInfos(
+        Iterable<DocIdPusher.DocInfo> docInfos, PushErrorHandler handler)
         throws InterruptedException {
       return AutoUnzipAdaptor.this.pushDocInfos(docInfos, handler);
     }

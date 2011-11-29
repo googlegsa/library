@@ -22,6 +22,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 
+/* TODO: Remove DELETED. */
+
 /** Represents a fixed set of validated {@link MetaItem}s. */
 public final class Metadata implements Iterable<MetaItem> {
   /** Object instance to denote documents that have been deleted. */

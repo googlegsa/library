@@ -57,28 +57,15 @@ class GsaFeedFileMaker {
   /** Adds a single record to feed-file-document's group,
       communicating the information represented by DocId. */
   private void constructSingleMetadataAndUrlFeedFileRecord(
-      Document doc, Element group, DocInfo docRecord) {
+      Document doc, Element group, DocIdPusher.DocInfo docRecord) {
     DocId docForGsa = docRecord.getDocId();
-    Metadata metadata = docRecord.getMetadata();
+    PushAttributes attrs = docRecord.getPushAttributes();
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
-    record.setAttribute("action",
-                        Metadata.DELETED.equals(metadata) ? "delete" : "add");
+    record.setAttribute("action", attrs.isToBeDeleted() ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
 
-    // Deleted items must not have a metadata tag.
-    if (!Metadata.DELETED.equals(metadata)) {
-      Element metadataXml = doc.createElement("metadata");
-      record.appendChild(metadataXml);
-      if (!Metadata.EMPTY.equals(metadata)) {
-        addMetadataHelper(doc, metadataXml, metadata);
-      } else {
-        // The GSA requires a metadata tag and at least one item within, so we
-        // add some useless piece of metadata.
-        addMetadataHelper(doc, metadataXml, EMPTY_METADATA_DEFAULT);
-      }
-    }
     // TODO(pjo): Add "no-recrawl" signal.
     // TODO(pjo): Add "crawl-immediately" signal.
     // TODO(pjo): Add "no-follow" signal.
@@ -97,17 +84,17 @@ class GsaFeedFileMaker {
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<DocInfo> docInfos) {
+      Element root, List<DocIdPusher.DocInfo> docInfos) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (DocInfo docRecord : docInfos) {
+    for (DocIdPusher.DocInfo docRecord : docInfos) {
       constructSingleMetadataAndUrlFeedFileRecord(doc, group, docRecord);
     }
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<DocInfo> docInfos) {
+      String srcName, List<DocIdPusher.DocInfo> docInfos) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
@@ -135,7 +122,8 @@ class GsaFeedFileMaker {
   /** Makes a metadata-and-url feed file from upto 
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
-  public String makeMetadataAndUrlXml(String srcName, List<DocInfo> docInfos) {
+  public String makeMetadataAndUrlXml(String srcName,
+      List<DocIdPusher.DocInfo> docInfos) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
