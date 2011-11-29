@@ -287,8 +287,10 @@ public class Config {
   }
 
   /**
-   * Returns of list of maps correspending to each transform in the pipeline.
-   * Each map is the configuration entries for that transform.
+   * Returns a list of maps correspending to each transform in the pipeline.
+   * Each map is the configuration entries for that transform. The 'name'
+   * configuration entry is added in each map based on the name provided by the
+   * user.
    */
   public synchronized List<Map<String, String>> getTransformPipelineSpec() {
     final String configKey = "transform.pipeline";

@@ -184,8 +184,11 @@ public class GsaCommunicationHandler {
   }
 
   private TransformPipeline createTransformPipeline() {
-    List<Map<String, String>> pipelineConfig
-        = config.getTransformPipelineSpec();
+    return createTransformPipeline(config.getTransformPipelineSpec());
+  }
+
+  static TransformPipeline createTransformPipeline(
+      List<Map<String, String>> pipelineConfig) {
     TransformPipeline pipeline = new TransformPipeline();
     for (Map<String, String> element : pipelineConfig) {
       final String name = element.get("name");
