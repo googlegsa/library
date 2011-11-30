@@ -70,7 +70,7 @@ class GsaFeedFileMaker {
   /** Adds a single record to feed-file-document's group,
       communicating the information represented by DocId. */
   private void constructSingleMetadataAndUrlFeedFileRecord(
-      Document doc, Element group, DocIdPusher.DocInfo docRecord) {
+      Document doc, Element group, DocIdPusher.Record docRecord) {
     DocId docForGsa = docRecord.getDocId();
     PushAttributes attrs = docRecord.getPushAttributes();
     Element record = doc.createElement("record");
@@ -104,21 +104,21 @@ class GsaFeedFileMaker {
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<DocIdPusher.DocInfo> docInfos) {
+      Element root, List<DocIdPusher.Record> records) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (DocIdPusher.DocInfo docRecord : docInfos) {
+    for (DocIdPusher.Record docRecord : records) {
       constructSingleMetadataAndUrlFeedFileRecord(doc, group, docRecord);
     }
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<DocIdPusher.DocInfo> docInfos) {
+      String srcName, List<DocIdPusher.Record> records) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
-    constructMetadataAndUrlFeedFileBody(doc, root, docInfos);
+    constructMetadataAndUrlFeedFileBody(doc, root, records);
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
@@ -143,12 +143,12 @@ class GsaFeedFileMaker {
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
   public String makeMetadataAndUrlXml(String srcName,
-      List<DocIdPusher.DocInfo> docInfos) {
+      List<DocIdPusher.Record> records) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
-      constructMetadataAndUrlFeedFile(doc, srcName, docInfos);
+      constructMetadataAndUrlFeedFile(doc, srcName, records);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {

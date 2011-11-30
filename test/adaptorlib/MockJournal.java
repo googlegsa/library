@@ -26,7 +26,7 @@ public class MockJournal extends Journal {
   }
 
   @Override
-  void recordDocIdPush(List<DocIdPusher.DocInfo> pushed) {
+  void recordDocIdPush(List<DocIdPusher.Record> pushed) {
     throw new UnsupportedOperationException();
   }
 

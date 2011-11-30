@@ -51,7 +51,7 @@ public class GsaFeedFileMakerTest {
         + "<group/>\n"
         + "</gsafeed>\n";
     String xml = meker.makeMetadataAndUrlXml("t3sT",
-        new ArrayList<DocIdPusher.DocInfo>());
+        new ArrayList<DocIdPusher.Record>());
     assertEquals(golden, xml);
   }
 
@@ -73,10 +73,10 @@ public class GsaFeedFileMakerTest {
         + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
-    ArrayList<DocIdPusher.DocInfo> ids = new ArrayList<DocIdPusher.DocInfo>();
-    ids.add(new DocIdPusher.DocInfo(new DocId("E11"),
+    ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
+    ids.add(new DocIdPusher.Record(new DocId("E11"),
         PushAttributes.DEFAULT));
-    ids.add(new DocIdPusher.DocInfo(new DocId("elefenta"), 
+    ids.add(new DocIdPusher.Record(new DocId("elefenta"), 
         PushAttributes.DEFAULT));
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     assertEquals(golden, xml);
@@ -107,18 +107,18 @@ public class GsaFeedFileMakerTest {
         + " lock=\"false\" mimetype=\"text/plain\" url=\"gone\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
-    ArrayList<DocIdPusher.DocInfo> ids = new ArrayList<DocIdPusher.DocInfo>();
+    ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
     PushAttributes.Builder attrBuilder = new PushAttributes.Builder();
     attrBuilder.setDisplayUrl(new URL("http://f000nkey.net"));
-    ids.add(new DocIdPusher.DocInfo(new DocId("E11"), attrBuilder.build()));
+    ids.add(new DocIdPusher.Record(new DocId("E11"), attrBuilder.build()));
     attrBuilder.setDisplayUrl(new URL("http://yankee.doodle.com"));    
     attrBuilder.setLastModified(new Date(0));    
     attrBuilder.setCrawlImmediately(true);    
-    ids.add(new DocIdPusher.DocInfo(new DocId("elefenta"), attrBuilder.build()));
+    ids.add(new DocIdPusher.Record(new DocId("elefenta"), attrBuilder.build()));
     attrBuilder.setDisplayUrl(new URL("http://google.com/news"));    
     attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
     attrBuilder.setCrawlImmediately(false);    
-    ids.add(new DocIdPusher.DocInfo(new DocId("gone"), attrBuilder.build()));
+    ids.add(new DocIdPusher.Record(new DocId("gone"), attrBuilder.build()));
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     //throw new RuntimeException("\n" + xml);
     assertEquals(golden, xml);

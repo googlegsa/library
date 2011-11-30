@@ -22,11 +22,11 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   private List<DocId> ids = new ArrayList<DocId>();
 
   @Override
-  public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+  public Record pushRecords(Iterable<Record> records,
                           PushErrorHandler handler)
       throws InterruptedException {
-    for (DocInfo docInfo : docInfos) {
-      ids.add(docInfo.getDocId());
+    for (Record record : records) {
+      ids.add(record.getDocId());
     }
     return null;
   }

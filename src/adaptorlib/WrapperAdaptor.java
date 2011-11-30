@@ -202,10 +202,10 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public DocIdPusher.DocInfo pushDocInfos(
-        Iterable<DocIdPusher.DocInfo> docInfos, PushErrorHandler handler)
+    public DocIdPusher.Record pushRecords(
+        Iterable<DocIdPusher.Record> records, PushErrorHandler handler)
         throws InterruptedException {
-      return pusher.pushDocInfos(docInfos, handler);
+      return pusher.pushRecords(records, handler);
     }
   }
 

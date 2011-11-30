@@ -86,7 +86,7 @@ public class IncrementalAdaptorPollerTest {
 
   private static class FakeDocIdPusher extends AbstractDocIdPusher {
     @Override
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+    public Record pushRecords(Iterable<Record> records,
                                 PushErrorHandler handler) {
       throw new UnsupportedOperationException();
     }
