@@ -29,22 +29,39 @@ public final class PushAttributes {
   private final boolean crawlImmediately;
   private final boolean crawlOnce;
   private final boolean lock;
-  private final boolean noFollow;
 
   private PushAttributes(boolean delete, Date lastModified, URL displayUrl,
-      boolean crawlImmediately, boolean crawlOnce, boolean lock,
-      boolean noFollow) {
+      boolean crawlImmediately, boolean crawlOnce, boolean lock) {
     this.delete = delete;
     this.lastModified = lastModified;
     this.displayUrl = displayUrl;
     this.crawlImmediately = crawlImmediately;
     this.crawlOnce = crawlOnce;
     this.lock = lock;
-    this.noFollow = noFollow;
   }
 
   public boolean isToBeDeleted() {
     return delete;
+  }
+
+  public Date lastModified() {
+    return lastModified;
+  }
+
+  public URL displayUrl() {
+    return displayUrl;
+  }
+
+  public boolean crawlImmediately() {
+    return crawlImmediately;
+  }
+
+  public boolean crawlOnce() {
+    return crawlOnce;
+  }
+
+  public boolean lock() {
+    return lock;
   }
 
   @Override
@@ -56,7 +73,6 @@ public final class PushAttributes {
           && (this.crawlImmediately == other.crawlImmediately)
           && (this.crawlOnce == other.crawlOnce)
           && (this.lock == other.lock)
-          && (this.noFollow == other.noFollow)
           && equalsNullSafe(lastModified, other.lastModified)
           && equalsNullSafe(displayUrl, other.displayUrl);
     } 
@@ -77,8 +93,7 @@ public final class PushAttributes {
         + ",displayUrl=" + displayUrl
         + ",crawlImmediately=" + crawlImmediately
         + ",crawlOnce=" + crawlOnce
-        + ",lock=" + lock
-        + ",noFollow=" + noFollow + ")";
+        + ",lock=" + lock + ")";
   }
 
   /**
@@ -92,7 +107,6 @@ public final class PushAttributes {
     private boolean crawlImmediately = false;
     private boolean crawlOnce = false;
     private boolean lock = false;
-    private boolean noFollow = false;
 
     public Builder() {}
   
@@ -126,15 +140,10 @@ public final class PushAttributes {
       return this;
     }
 
-    public Builder setNoFollow(boolean b) {
-      this.noFollow = b;
-      return this;
-    }
-
     /** Creates single instance of PushAttributes.  Does not reset builder. */
     public PushAttributes build() {
       return new PushAttributes(delete, lastModified, displayUrl,
-          crawlImmediately, crawlOnce, lock, noFollow);
+          crawlImmediately, crawlOnce, lock);
     }
   }
 

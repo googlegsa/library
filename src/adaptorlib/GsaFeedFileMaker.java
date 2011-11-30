@@ -17,19 +17,32 @@ package adaptorlib;
 import org.w3c.dom.*;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 
+
 /** Makes XML metadata-and-url feed file from DocIds.
   This code is based on information provided by Google at
   http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html
  */
 class GsaFeedFileMaker {
-  private static final Metadata EMPTY_METADATA_DEFAULT
-      = new Metadata(Collections.singleton(MetaItem.isPublic()));
+  // DateFormats are relatively expensive to create, and cannot be used from
+  // multiple threads
+  private static ThreadLocal<DateFormat> rfc822DateFormat
+      = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+          DateFormat df = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
+          df.setTimeZone(TimeZone.getTimeZone("GMT"));
+          return df;
+        }
+      };
+
   private DocIdEncoder idEncoder;
 
   public GsaFeedFileMaker(DocIdEncoder encoder) {
@@ -63,12 +76,19 @@ class GsaFeedFileMaker {
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
+    if (null != attrs.displayUrl()) {
+      record.setAttribute("displayurl", "" + attrs.displayUrl());
+    }
     record.setAttribute("action", attrs.isToBeDeleted() ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
-
-    // TODO(pjo): Add "no-recrawl" signal.
-    // TODO(pjo): Add "crawl-immediately" signal.
-    // TODO(pjo): Add "no-follow" signal.
+    if (null != attrs.lastModified()) {
+      String dateStr = rfc822DateFormat.get().format(attrs.lastModified());
+      record.setAttribute("last-modified", dateStr);
+    }
+    record.setAttribute("lock", "" + attrs.lock());
+    record.setAttribute("crawl-immediately", "" + attrs.crawlImmediately());
+    record.setAttribute("crawl-once", "" + attrs.crawlOnce());
+    // TODO: record.setAttribute(no-follow,);
   }
 
   private void addMetadataHelper(Document doc, Element metadataXml,

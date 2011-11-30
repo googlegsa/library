@@ -17,8 +17,6 @@ package adaptorlib;
 import java.util.Arrays;
 import java.util.List;
 
-/* TODO: Remove display url */
-
 /** A single meta item consists of a name and value. */
 public final class MetaItem implements Comparable<MetaItem> {
   private final String n, v;
@@ -56,11 +54,6 @@ public final class MetaItem implements Comparable<MetaItem> {
     return new MetaItem("google:ispublic", "false");
   }
  
-  /** Adds displayurl named meta item. */
-  public static MetaItem displayUrl(String displayUrl) {
-    return new MetaItem("displayurl", displayUrl);
-  }
-
   public static MetaItem permittedUsers(List<String> aclUsers) {
     for (String user : aclUsers) {
       throwIfInvalidName(user);
@@ -81,7 +74,7 @@ public final class MetaItem implements Comparable<MetaItem> {
   }
 
   private static void throwIfInvalidName(String name) { 
-    // TODO(pjo): Figure out complete rules.
+    // TODO: Figure out complete rules.
     if (name.contains(",")) {
       throw new IllegalArgumentException("name " + name + " contains comma");
     }

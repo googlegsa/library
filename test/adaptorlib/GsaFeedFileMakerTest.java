@@ -19,10 +19,9 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.Date;
 
 /** Tests for {@link GsaFeedFileMaker}. */
 public class GsaFeedFileMakerTest {
@@ -51,12 +50,10 @@ public class GsaFeedFileMakerTest {
         + "</header>\n"
         + "<group/>\n"
         + "</gsafeed>\n";
-    String xml = meker.makeMetadataAndUrlXml("t3sT", new ArrayList());
+    String xml = meker.makeMetadataAndUrlXml("t3sT",
+        new ArrayList<DocIdPusher.DocInfo>());
     assertEquals(golden, xml);
   }
-
-/*
-  TODO: Replace tests after PushAttributes is in place.
 
   @Test
   public void testSimple() {
@@ -70,16 +67,10 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record action=\"add\" mimetype=\"text/plain\" url=\"E11\">\n"
-        + "<metadata>\n"
-        + "<meta content=\"true\" name=\"google:ispublic\"/>\n"
-        + "</metadata>\n"
-        + "</record>\n"
-        + "<record action=\"add\" mimetype=\"text/plain\" url=\"elefenta\">\n"
-        + "<metadata>\n"
-        + "<meta content=\"true\" name=\"google:ispublic\"/>\n"
-        + "</metadata>\n"
-        + "</record>\n"
+        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + " lock=\"false\" mimetype=\"text/plain\" url=\"E11\"/>\n"
+        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.DocInfo> ids = new ArrayList<DocIdPusher.DocInfo>();
@@ -92,7 +83,7 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testMetadata() {
+  public void testPushAttributes() throws java.net.MalformedURLException {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -103,36 +94,33 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record action=\"add\" mimetype=\"text/plain\" url=\"E11\">\n"
-        + "<metadata>\n"
-        + "<meta content=\"true\" name=\"google:ispublic\"/>\n"
-        + "</metadata>\n"
-        + "</record>\n"
-        + "<record action=\"add\" mimetype=\"text/plain\" url=\"elefenta\">\n"
-        + "<metadata>\n"
-        + "<meta content=\"f000nkey\" name=\"displayurl\"/>\n"
-        + "<meta content=\"in rods\" name=\"distance\"/>\n"
-        + "<meta content=\"Po\" name=\"google:aclgroups\"/>\n"
-        + "<meta content=\"Ty\" name=\"google:aclusers\"/>\n"
-        + "</metadata>\n"
-        + "</record>\n"
-        + "<record action=\"delete\" mimetype=\"text/plain\" url=\"gone\"/>\n"
+        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + " displayurl=\"http://f000nkey.net\" lock=\"false\""
+        + " mimetype=\"text/plain\" url=\"E11\"/>\n"
+        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + " displayurl=\"http://yankee.doodle.com\""
+        + " last-modified=\"Thu, 01 Jan 1970 00:00:00 +0000\""
+        + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
+        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + " displayurl=\"http://google.com/news\"" 
+        + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
+        + " lock=\"false\" mimetype=\"text/plain\" url=\"gone\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.DocInfo> ids = new ArrayList<DocIdPusher.DocInfo>();
-    Set<MetaItem> item1 = Collections.singleton(MetaItem.isPublic());
-    Metadata metadata1 = new Metadata(item1);
-    ids.add(new DocIdPusher.DocInfo(new DocId("E11"), PushAttributes.DEFAULT));
-    Set<MetaItem> items2 = new TreeSet<MetaItem>();
-    items2.add(MetaItem.displayUrl("f000nkey"));
-    items2.add(MetaItem.raw("distance", "in rods"));
-    items2.add(MetaItem.permittedGroups(Collections.singletonList("Po")));
-    items2.add(MetaItem.permittedUsers(Collections.singletonList("Ty")));
-    Metadata metadata2 = new Metadata(items2);
-    ids.add(new DocIdPusher.DocInfo(new DocId("elefenta"), metadata2));
-    ids.add(new DocIdPusher.DocInfo(new DocId("gone"), PushAttributes.DEFAULT));
+    PushAttributes.Builder attrBuilder = new PushAttributes.Builder();
+    attrBuilder.setDisplayUrl(new URL("http://f000nkey.net"));
+    ids.add(new DocIdPusher.DocInfo(new DocId("E11"), attrBuilder.build()));
+    attrBuilder.setDisplayUrl(new URL("http://yankee.doodle.com"));    
+    attrBuilder.setLastModified(new Date(0));    
+    attrBuilder.setCrawlImmediately(true);    
+    ids.add(new DocIdPusher.DocInfo(new DocId("elefenta"), attrBuilder.build()));
+    attrBuilder.setDisplayUrl(new URL("http://google.com/news"));    
+    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
+    attrBuilder.setCrawlImmediately(false);    
+    ids.add(new DocIdPusher.DocInfo(new DocId("gone"), attrBuilder.build()));
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
+    //throw new RuntimeException("\n" + xml);
     assertEquals(golden, xml);
   }
-*/
 }

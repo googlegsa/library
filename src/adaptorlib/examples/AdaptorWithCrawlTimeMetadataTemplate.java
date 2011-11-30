@@ -68,8 +68,6 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       Set<MetaItem> metaItems = new TreeSet<MetaItem>();
       // A document that's not public and has no ACLs causes head requests.
       metaItems.add(MetaItem.isNotPublic());
-      // Set display URL.
-      metaItems.add(MetaItem.displayUrl("http://www.google.com"));
       // Add custom meta items.
       metaItems.add(MetaItem.raw("date", "better never than late"));
       // Make metadata object, which checks items for consistency.

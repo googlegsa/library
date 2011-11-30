@@ -60,7 +60,7 @@ public class DocInfoTest {
   public void testToString() {
     String golden = "DocIdPusher.DocInfo(DocId(a),PushAttributes(delete=false"
         + ",lastModified=null,displayUrl=null,crawlImmediately=false"
-        + ",crawlOnce=false,lock=false,noFollow=false))";
+        + ",crawlOnce=false,lock=false))";
     assertEquals(golden,
         "" + new DocIdPusher.DocInfo(new DocId("a"), PushAttributes.DEFAULT));
   }
