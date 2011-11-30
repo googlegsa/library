@@ -85,13 +85,6 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   private Map<String, Object> getStat(Journal.Stat stat, long time) {
     Map<String, Object> statMap = new TreeMap<String, Object>();
     statMap.put("time", time);
-    statMap.put("requestResponsesCount", stat.requestResponsesCount);
-    statMap.put("requestResponsesDurationSum",
-                stat.requestResponsesDurationSum);
-    statMap.put("requestResponsesMaxDuration",
-                stat.requestResponsesMaxDuration);
-    statMap.put("requestResponsesThroughput",
-                stat.requestResponsesThroughput);
     statMap.put("requestProcessingsCount", stat.requestProcessingsCount);
     statMap.put("requestProcessingsDurationSum",
                 stat.requestProcessingsDurationSum);
