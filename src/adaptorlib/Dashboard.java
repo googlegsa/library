@@ -24,7 +24,7 @@ import java.io.*;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
-import java.util.concurrent.Executor;
+import java.util.concurrent.*;
 import java.util.logging.*;
 
 import javax.net.ssl.SSLContext;
@@ -55,8 +55,7 @@ class Dashboard {
   }
 
   /** Starts listening for connections to the dashboard. */
-  public void start(Executor executor,
-                    SessionManager<HttpExchange> sessionManager)
+  public void start(SessionManager<HttpExchange> sessionManager)
       throws IOException, NoSuchAlgorithmException {
     int dashboardPort = config.getServerDashboardPort();
     boolean secure = config.isServerSecure();
@@ -73,6 +72,12 @@ class Dashboard {
     // useful during testing.
     dashboardPort = dashboardServer.getAddress().getPort();
     config.setValue("server.dashboardPort", "" + dashboardPort);
+    // Use separate Executor for Dashboard to allow the administrator to
+    // investigate why things are going wrong without waiting on the normal work
+    // queue.
+    int maxThreads = 4;
+    Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
+        10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
     dashboardServer.setExecutor(executor);
     HttpHandler dashboardHandler = new DashboardHandler(
         config.getServerHostname(), config.getGsaCharacterEncoding());

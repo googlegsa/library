@@ -29,8 +29,7 @@ import org.opensaml.xml.ConfigurationException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -116,7 +115,16 @@ public class GsaCommunicationHandler {
     // useful during testing.
     port = server.getAddress().getPort();
     config.setValue("server.port", "" + port);
-    Executor executor = Executors.newCachedThreadPool();
+    int maxThreads = config.getServerMaxWorkerThreads();
+    int queueCapacity = config.getServerQueueCapacity();
+    BlockingQueue<Runnable> blockingQueue
+        = new ArrayBlockingQueue<Runnable>(queueCapacity);
+    // The Executor can't reject jobs directly, because HttpServer does not
+    // appear to handle that case.
+    RejectedExecutionHandler policy
+        = new SuggestHandlerAbortPolicy(AbstractHandler.abortImmediately);
+    Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
+        1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
 
     SessionManager<HttpExchange> sessionManager
@@ -154,7 +162,7 @@ public class GsaCommunicationHandler {
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
 
-    dashboard.start(executor, sessionManager);
+    dashboard.start(sessionManager);
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
@@ -404,6 +412,31 @@ public class GsaCommunicationHandler {
     public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
       return ((PushRunnable) docIdFullPusher.getRunnable())
           .getGetDocIdsErrorHandler();
+    }
+  }
+
+  /**
+   * Executes Runnable in current thread, but only after setting a thread-local
+   * object. The code that will be run, is expected to take notice of the set
+   * variable and abort immediately. This is a hack.
+   */
+  private static class SuggestHandlerAbortPolicy
+      implements RejectedExecutionHandler {
+    private final ThreadLocal<Object> abortImmediately;
+    private final Object signal = new Object();
+
+    public SuggestHandlerAbortPolicy(ThreadLocal<Object> abortImmediately) {
+      this.abortImmediately = abortImmediately;
+    }
+
+    @Override
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+      abortImmediately.set(signal);
+      try {
+        r.run();
+      } finally {
+        abortImmediately.set(null);
+      }
     }
   }
 }

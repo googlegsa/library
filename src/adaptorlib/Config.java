@@ -61,6 +61,10 @@ public class Config {
     addKey("server.addResolvedGsaHostnameToGsaIps", "true");
     addKey("server.secure", "false");
     addKey("server.keyAlias", "adaptor");
+    addKey("server.maxWorkerThreads", "16");
+    // A queue that takes one second to drain, assuming 16 threads and 100 ms
+    // for each request.
+    addKey("server.queueCapacity", "160");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
@@ -231,6 +235,23 @@ public class Config {
    */
   public String getServerKeyAlias() {
     return getValue("server.keyAlias");
+  }
+
+  /**
+   * The maximum number of worker threads to use to respond to document
+   * requests. The main reason to limit the number of threads is that each can
+   * be using a transform pipeline and will have multiple complete copies of the
+   * response in memory at the same time.
+   */
+  public int getServerMaxWorkerThreads() {
+    return Integer.parseInt(getValue("server.maxWorkerThreads"));
+  }
+
+  /**
+   * The maximum request queue length.
+   */
+  public int getServerQueueCapacity() {
+    return Integer.parseInt(getValue("server.queueCapacity"));
   }
 
   /**
