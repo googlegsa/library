@@ -41,16 +41,6 @@ public class MockJournal extends Journal {
   }
 
   @Override
-  void recordRequestResponseStart() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  void recordRequestResponseEnd(long responseSize) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   void recordRequestProcessingStart() {
     throw new UnsupportedOperationException();
   }

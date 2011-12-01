@@ -165,17 +165,6 @@ class DocumentHandler extends AbstractHandler {
     }
   }
 
-  @Override
-  protected void respond(HttpExchange ex, int code, String contentType,
-                         byte[] response) throws IOException {
-    journal.recordRequestResponseStart();
-    try {
-      super.respond(ex, code, contentType, response);
-    } finally {
-      journal.recordRequestResponseEnd(response == null ? 0 : response.length);
-    }
-  }
-
   /**
    * Check authz of user to access document. If the user is not authzed, the
    * method handles responding to the HttpExchange.
