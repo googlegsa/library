@@ -216,4 +216,14 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   public File getWorkingDirectory() {
     return workingDirectory;
   }
+
+  @Override
+  public void setName(String name) {
+    super.setName(name);
+  }
+
+  @Override
+  public void setRequired(boolean required) {
+    super.setRequired(required);
+  }
 }

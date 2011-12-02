@@ -125,8 +125,7 @@ public class TransformPipelineTest {
   public void testNotLastTransformError() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
-    pipeline.add(new ErroringTransform());
-    ((ErroringTransform) pipeline.get(1)).setRequired(false);
+    pipeline.add(new ErroringTransform(false));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -143,8 +142,7 @@ public class TransformPipelineTest {
   @Test
   public void testLastTransformError() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new ErroringTransform());
-    ((ErroringTransform) pipeline.get(0)).setRequired(false);
+    pipeline.add(new ErroringTransform(false));
     pipeline.add(new IncrementTransform());
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
@@ -163,8 +161,7 @@ public class TransformPipelineTest {
   public void testTransformErrorFatal() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
-    pipeline.add(new ErroringTransform());
-    ((ErroringTransform) pipeline.get(1)).setRequired(true);
+    pipeline.add(new ErroringTransform(true));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -218,6 +215,10 @@ public class TransformPipelineTest {
   }
 
   private static class ErroringTransform extends AbstractDocumentTransform {
+    public ErroringTransform(boolean required) {
+      super(null, required);
+    }
+
     @Override
     public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                           Map<String, String> metadata, Map<String, String> p)
