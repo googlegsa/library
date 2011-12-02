@@ -303,8 +303,8 @@ public class CommandStreamParser {
     return versionNumber;
   }
 
-  public ArrayList<DocInfo> readFromLister() throws IOException {
-    ArrayList<DocInfo> result = new ArrayList<DocInfo>();
+  public ArrayList<DocIdPusher.Record> readFromLister() throws IOException {
+    ArrayList<DocIdPusher.Record> result = new ArrayList<DocIdPusher.Record>();
     String docId = null;
     String lastModified = null;
     boolean crawlOnce = false;
@@ -328,7 +328,9 @@ public class CommandStreamParser {
         case ID:
           if (docId != null) {
             // TODO (johnfelton) add lister options when API is available
-            result.add(new DocInfo(new DocId(docId), Metadata.EMPTY));
+            DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
+            builder.setDocId(new DocId(docId));
+            result.add(builder.build());
           }
           docId = command.getArgument();
           lastModified = null;
@@ -358,7 +360,9 @@ public class CommandStreamParser {
       command = readCommand();
     }
     // TODO (johnfelton) add lister options when API is available
-    result.add(new DocInfo(new DocId(docId), Metadata.EMPTY));
+    DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
+    builder.setDocId(new DocId(docId));
+    result.add(builder.build());
 
     return result;
   }
