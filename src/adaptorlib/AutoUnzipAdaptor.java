@@ -131,8 +131,8 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
    */
   private static DocIdPusher.Record createDerivativeRecord(
       DocIdPusher.Record docRecord, String uniqueId) {
-    DocIdPusher.Record.Builder duper = new DocIdPusher.Record.Builder(docRecord);
-    return duper.setDocId(new DocId(uniqueId)).build();
+    DocIdPusher.Record.Builder dup = new DocIdPusher.Record.Builder(docRecord);
+    return dup.setDocId(new DocId(uniqueId)).build();
   }
 
   /**

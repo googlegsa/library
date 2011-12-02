@@ -66,15 +66,19 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + "<record action=\"add\" crawl-immediately=\"false\""
+        + " crawl-once=\"false\""
         + " lock=\"false\" mimetype=\"text/plain\" url=\"E11\"/>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
+        + "<record action=\"add\" crawl-immediately=\"false\""
+        + " crawl-once=\"false\""
         + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    ids.add(new DocIdPusher.Record.Builder().setDocId(new DocId("E11")).build());
-    ids.add(new DocIdPusher.Record.Builder().setDocId(new DocId("elefenta")).build());
+    ids.add(new DocIdPusher.Record.Builder()
+        .setDocId(new DocId("E11")).build());
+    ids.add(new DocIdPusher.Record.Builder()
+        .setDocId(new DocId("elefenta")).build());
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     assertEquals(golden, xml);
   }
@@ -91,15 +95,15 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
-        + " displayurl=\"http://f000nkey.net\" lock=\"false\""
-        + " mimetype=\"text/plain\" url=\"E11\"/>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
-        + " displayurl=\"http://yankee.doodle.com\""
+        + "<record action=\"add\" crawl-immediately=\"false\""
+        + " crawl-once=\"false\" displayurl=\"http://f000nkey.net\""
+        + " lock=\"false\" mimetype=\"text/plain\" url=\"E11\"/>\n"
+        + "<record action=\"add\" crawl-immediately=\"false\""
+        + " crawl-once=\"false\" displayurl=\"http://yankee.doodle.com\""
         + " last-modified=\"Thu, 01 Jan 1970 00:00:00 +0000\""
         + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\" crawl-once=\"false\""
-        + " displayurl=\"http://google.com/news\"" 
+        + "<record action=\"add\" crawl-immediately=\"false\""
+        + " crawl-once=\"false\" displayurl=\"http://google.com/news\"" 
         + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
         + " lock=\"false\" mimetype=\"text/plain\" url=\"gone\"/>\n"
         + "</group>\n"

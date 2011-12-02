@@ -33,7 +33,7 @@ import javax.xml.transform.stream.*;
 class GsaFeedFileMaker {
   // DateFormats are relatively expensive to create, and cannot be used from
   // multiple threads
-  private static ThreadLocal<DateFormat> rfc822DateFormat
+  private static ThreadLocal<DateFormat> rfc822Format
       = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
@@ -81,11 +81,12 @@ class GsaFeedFileMaker {
     record.setAttribute("action", docRecord.isToBeDeleted() ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
     if (null != docRecord.getLastModified()) {
-      String dateStr = rfc822DateFormat.get().format(docRecord.getLastModified());
+      String dateStr = rfc822Format.get().format(docRecord.getLastModified());
       record.setAttribute("last-modified", dateStr);
     }
     record.setAttribute("lock", "" + docRecord.isToBeLocked());
-    record.setAttribute("crawl-immediately", "" + docRecord.isToBeCrawledImmediately());
+    record.setAttribute("crawl-immediately",
+        "" + docRecord.isToBeCrawledImmediately());
     record.setAttribute("crawl-once", "" + docRecord.isToBeCrawledOnce());
     // TODO: record.setAttribute(no-follow,);
   }
