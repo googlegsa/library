@@ -31,8 +31,10 @@ public interface DocumentTransform {
    * @throws TransformException
    * @throws IOException
    */
-  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadata, Map<String, String> params)
+  public void transform(ByteArrayOutputStream contentIn,
+                        OutputStream contentOut,
+                        Map<String, String> metadata,
+                        Map<String, String> params)
       throws TransformException, IOException;
 
   /**
@@ -40,7 +42,7 @@ public interface DocumentTransform {
    * should not be {@code null}. Using the class name as a default is reasonable
    * if no name has been provided.
    */
-  public String name();
+  public String getName();
 
   /**
    * If this property is true, a failure of this transform will cause the entire

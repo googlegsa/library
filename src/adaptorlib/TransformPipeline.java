@@ -76,11 +76,12 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
                             contentOutTransit, metadataOutTransit, paramsOutTransit);
       } catch (TransformException e) {
         if (transform.isRequired()) {
-          log.log(Level.WARNING, "Transform Exception. Aborting '" + transform.name() + "'", e);
+          log.log(Level.WARNING, "Transform Exception. Aborting '"
+                  + transform.getName() + "'", e);
           throw e;
         } else {
-          log.log(Level.WARNING,
-                  "Transform Exception. Ignoring transform '" + transform.name() + "'", e);
+          log.log(Level.WARNING, "Transform Exception. Ignoring transform '"
+                  + transform.getName() + "'", e);
           continue;
         }
       }

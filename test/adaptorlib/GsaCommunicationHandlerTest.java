@@ -91,7 +91,7 @@ public class GsaCommunicationHandlerTest {
         = GsaCommunicationHandler.createTransformPipeline(config);
     assertEquals(1, pipeline.size());
     assertEquals(InstantiatableTransform.class, pipeline.get(0).getClass());
-    assertEquals("testing", pipeline.get(0).name());
+    assertEquals("testing", pipeline.get(0).getName());
   }
 
   @Test

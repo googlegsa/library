@@ -33,6 +33,9 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB
 
   private final Charset charset = Charset.forName("UTF-8");
+  private boolean commandAcceptsParameters = true;
+  private List<String> transformCommand;
+  private File workingDirectory;
 
   public CommandLineTransform() {}
 
@@ -49,7 +52,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
     String workingDirectory = config.get("workingDirectory");
     if (workingDirectory != null) {
-      workingDirectory(new File(workingDirectory));
+      setWorkingDirectory(new File(workingDirectory));
     }
 
     String cmdAcceptsParameters = config.get("cmdAcceptsParameters");
@@ -69,8 +72,10 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   }
 
   @Override
-  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadata, Map<String, String> params)
+  public void transform(ByteArrayOutputStream contentIn,
+                        OutputStream contentOut,
+                        Map<String, String> metadata,
+                        Map<String, String> params)
       throws TransformException, IOException {
     if (transformCommand == null) {
       throw new NullPointerException("transformCommand must not be null");
@@ -103,7 +108,8 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       // Handle stderr
       if (exitCode != 0) {
         String errorOutput = new String(command.getStderr(), charset);
-        throw new TransformException("Exit code " + exitCode + ". Stderr: " + errorOutput);
+        throw new TransformException("Exit code " + exitCode + ". Stderr: "
+                                     + errorOutput);
       }
 
       if (command.getStderr().length > 0) {
@@ -128,15 +134,17 @@ public class CommandLineTransform extends AbstractDocumentTransform {
     }
   }
 
-  private File writeMapToTempFile(Map<String, String> map) throws IOException, TransformException {
+  private File writeMapToTempFile(Map<String, String> map)
+      throws IOException, TransformException {
     StringBuilder sb = new StringBuilder();
     for (Map.Entry<String, String> me : map.entrySet()) {
       if (me.getKey().contains("\0")) {
-        throw new TransformException("Key cannot contain the null character: " + me.getKey());
+        throw new TransformException("Key cannot contain the null character: "
+                                     + me.getKey());
       }
       if (me.getValue().contains("\0")) {
-        throw new TransformException("Value for key '" + me.getKey() + "' cannot contain the null "
-                                   + "character: " + me.getKey());
+        throw new TransformException("Value for key '" + me.getKey()
+            + "' cannot contain the null " + "character: " + me.getKey());
       }
       sb.append(me.getKey()).append('\0');
       sb.append(me.getValue()).append('\0');
@@ -166,11 +174,11 @@ public class CommandLineTransform extends AbstractDocumentTransform {
    * along to the actual call to the command. This is useful in the case where a
    * binary might return erros when unexpected command line flags are passed in.
    */
-  public void commandAcceptsParameters(boolean commandAcceptsParameters) {
+  public void setCommandAcceptsParameters(boolean commandAcceptsParameters) {
     this.commandAcceptsParameters = commandAcceptsParameters;
   }
 
-  public boolean commandAcceptsParameters() {
+  public boolean getCommandAcceptsParameters() {
     return commandAcceptsParameters;
   }
 
@@ -182,11 +190,11 @@ public class CommandLineTransform extends AbstractDocumentTransform {
    * Errors should be printed to stderr. If anything is printed to stderr, it
    * will cause a failure for this transform operation.
    */
-  public void transformCommand(List<String> transformCommand) {
+  public void setTransformCommand(List<String> transformCommand) {
     this.transformCommand = new ArrayList<String>(transformCommand);
   }
 
-  public List<String> transformCommand() {
+  public List<String> getTransformCommand() {
     return Collections.unmodifiableList(transformCommand);
   }
 
@@ -195,7 +203,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
    *
    * @throws IllegalArgumentException if {@code dir} is not a directory
    */
-  public void workingDirectory(File dir) {
+  public void setWorkingDirectory(File dir) {
     if (!dir.isDirectory()) {
       throw new IllegalArgumentException("File must be a directory");
     }
@@ -205,11 +213,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   /**
    * @return The working directory for the command line process.
    */
-  public File workingDirectory() {
+  public File getWorkingDirectory() {
     return workingDirectory;
   }
-
-  private boolean commandAcceptsParameters = true;
-  private List<String> transformCommand;
-  private File workingDirectory;
 }

@@ -47,7 +47,7 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
     }
   }
 
-  public void name(String name) {
+  public void setName(String name) {
     if (name == null) {
       throw new NullPointerException();
     }
@@ -55,7 +55,9 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
   }
 
   @Override
-  public String name() { return name; }
+  public String getName() {
+    return name;
+  }
 
   public void setRequired(boolean required) {
     this.required = required;
