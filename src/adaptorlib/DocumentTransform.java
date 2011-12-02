@@ -36,7 +36,6 @@ public interface DocumentTransform {
                         Map<String, String> metadata, Map<String, String> params)
       throws TransformException, IOException;
 
-  public void name(String name);
   public String name();
 
   /**
@@ -48,7 +47,5 @@ public interface DocumentTransform {
    * If this is false and a error occurs, this transform is treated as a
    * identity transform.
    */
-  public void errorHaltsPipeline(boolean errorHaltsPipeline);
-
   public boolean errorHaltsPipeline();
 }

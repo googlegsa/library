@@ -43,7 +43,7 @@ public class CommandLineTransformTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
-    CommandLineTransform cmd = new CommandLineTransform("regex replace");
+    CommandLineTransform cmd = new CommandLineTransform();
     cmd.transformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.commandAcceptsParameters(false);
     pipeline.add(cmd);
@@ -69,7 +69,7 @@ public class CommandLineTransformTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
-    CommandLineTransform cmd = new CommandLineTransform("regex replace");
+    CommandLineTransform cmd = new CommandLineTransform();
     cmd.transformCommand(Arrays.asList(new String[] {"/bin/sh", "-c",
       // Process content.
       "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(tempfile);"

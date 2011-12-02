@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -38,18 +37,10 @@ import java.util.regex.Pattern;
 public class MetaTaggerTransform extends AbstractDocumentTransform {
   private static final Logger log = Logger.getLogger(MetaTaggerTransform.class.getName());
 
-  public MetaTaggerTransform() {
-    super("MetaTaggerTransform");
-  }
+  public MetaTaggerTransform() {}
 
-  public MetaTaggerTransform(String patternFile) {
-    super("MetaTaggerTransform");
-    try {
-      loadPatternFile(patternFile);
-    } catch (IOException ex) {
-      log.log(Level.SEVERE, "MetaTaggerTransform encountered an error while " +
-              "loading pattern file: " + patternFile, ex);
-    }
+  public MetaTaggerTransform(String patternFile) throws IOException {
+    loadPatternFile(patternFile);
   }
 
   @Override

@@ -30,7 +30,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -42,18 +41,10 @@ import java.util.logging.Logger;
 public class TableGeneratorTransform extends AbstractDocumentTransform {
   private static final Logger log = Logger.getLogger(TableGeneratorTransform.class.getName());
 
-  public TableGeneratorTransform() {
-    super("TableGeneratorTransform");
-  }
+  public TableGeneratorTransform() {}
 
-  public TableGeneratorTransform(String templateFile) {
-    super("TableGeneratorTransform");
-    try {
-      loadTemplateFile(templateFile);
-    } catch (IOException e) {
-      log.log(Level.WARNING, "TableGeneratorTransform could not load templateFile: " +
-              templateFile, e);
-    }
+  public TableGeneratorTransform(String templateFile) throws IOException {
+    loadTemplateFile(templateFile);
   }
 
   @Override

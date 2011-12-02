@@ -232,7 +232,6 @@ public class GsaCommunicationHandler {
             + " is not an instance of DocumentTransform");
       }
       DocumentTransform transform = (DocumentTransform) o;
-      transform.name(name);
       pipeline.add(transform);
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.

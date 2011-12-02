@@ -194,19 +194,18 @@ public class GsaCommunicationHandlerTest {
 
   static class InstantiatableTransform extends AbstractDocumentTransform {
     public InstantiatableTransform(Map<String, String> config) {
-      super("Test");
+      super(config);
     }
   }
 
   static class WrongConstructorTransform extends AbstractDocumentTransform {
     public WrongConstructorTransform() {
-      super("Test");
+      super(Collections.<String, String>emptyMap());
     }
   }
 
   static class CantInstantiateTransform extends AbstractDocumentTransform {
     public CantInstantiateTransform(Map<String, String> config) {
-      super("Test");
       throw new RuntimeException("This always seems to happen");
     }
   }

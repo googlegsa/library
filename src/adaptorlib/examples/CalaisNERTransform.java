@@ -43,7 +43,6 @@ public class CalaisNERTransform extends AbstractDocumentTransform {
   private final CalaisClientFactory clientFactory;
 
   CalaisNERTransform(CalaisClientFactory factory) {
-    super("CalaisNERTransform");
     this.clientFactory = factory;
   }
 

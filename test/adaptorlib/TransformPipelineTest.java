@@ -68,7 +68,7 @@ public class TransformPipelineTest {
     params.put("key2", "value2");
 
     TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new AbstractDocumentTransform("Metadata/Param Transform") {
+    pipeline.add(new AbstractDocumentTransform() {
         @Override
         public void transform(ByteArrayOutputStream cIn, OutputStream cOut, Map<String, String> m,
                               Map<String, String> p) throws TransformException, IOException {
@@ -126,7 +126,7 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
     pipeline.add(new ErroringTransform());
-    pipeline.get(1).errorHaltsPipeline(false);
+    ((ErroringTransform) pipeline.get(1)).errorHaltsPipeline(false);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -144,7 +144,7 @@ public class TransformPipelineTest {
   public void testLastTransformError() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new ErroringTransform());
-    pipeline.get(0).errorHaltsPipeline(false);
+    ((ErroringTransform) pipeline.get(0)).errorHaltsPipeline(false);
     pipeline.add(new IncrementTransform());
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
@@ -164,7 +164,7 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
     pipeline.add(new ErroringTransform());
-    pipeline.get(1).errorHaltsPipeline(true);
+    ((ErroringTransform) pipeline.get(1)).errorHaltsPipeline(true);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -182,10 +182,6 @@ public class TransformPipelineTest {
   }
 
   private static class IncrementTransform extends AbstractDocumentTransform {
-    public IncrementTransform() {
-      super("incrementTransform");
-    }
-
     @Override
     public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                           Map<String, String> metadata, Map<String, String> p)
@@ -204,7 +200,6 @@ public class TransformPipelineTest {
     private int factor;
 
     public ProductTransform(int factor) {
-      super("productTransform");
       this.factor = factor;
     }
 
@@ -223,10 +218,6 @@ public class TransformPipelineTest {
   }
 
   private static class ErroringTransform extends AbstractDocumentTransform {
-    public ErroringTransform() {
-      super("erroringTransform");
-    }
-
     @Override
     public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                           Map<String, String> metadata, Map<String, String> p)

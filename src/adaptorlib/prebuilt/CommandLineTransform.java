@@ -34,35 +34,38 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
   private final Charset charset = Charset.forName("UTF-8");
 
-  public CommandLineTransform(String name) {
-    super(name);
-  }
+  public CommandLineTransform() {}
 
   public CommandLineTransform(Map<String, String> config) {
-    super("CommandLineTransform");
-    List<String> cmd = new ArrayList<String>();
-    for (Map.Entry<String, String> me : config.entrySet()) {
-      String key = me.getKey();
-      String value = me.getValue();
-      if ("cmd".equals(key)) {
-        cmd.add(value);
-      } else if ("workingDirectory".equals(key)) {
-        workingDirectory(new File(value));
-      } else if ("errorHaltsPipeline".equals(key)) {
-        errorHaltsPipeline(Boolean.parseBoolean(value));
-      }
+    super(config);
+
+    List<String> cmdList = new ArrayList<String>();
+    String cmd = config.get("cmd");
+    if (cmd != null) {
+      cmdList.add(cmd);
+    } else {
+      throw new RuntimeException("'cmd' not defined in configuration");
     }
-    if (cmd.size() == 0) {
-      throw new RuntimeException("cmd configuration property must be set");
+
+    String workingDirectory = config.get("workingDirectory");
+    if (workingDirectory != null) {
+      workingDirectory(new File(workingDirectory));
     }
+
+    String cmdAcceptsParameters = config.get("cmdAcceptsParameters");
+    if (cmdAcceptsParameters != null) {
+      this.commandAcceptsParameters
+          = Boolean.parseBoolean(cmdAcceptsParameters);
+    }
+
     for (int i = 1;; i++) {
       String value = config.get("arg" + i);
       if (value == null) {
         break;
       }
-      cmd.add(value);
+      cmdList.add(value);
     }
-    transformCommand = cmd;
+    transformCommand = cmdList;
   }
 
   @Override

@@ -24,9 +24,31 @@ import java.util.Map;
  * Subclass this to add your own custom behavior.
  */
 public abstract class AbstractDocumentTransform implements DocumentTransform {
+  private String name = getClass().getName();
+  private boolean errorHaltsPipeline = true;
 
-  public AbstractDocumentTransform(String name) {
-    this.name = name;
+  public AbstractDocumentTransform() {}
+
+  /**
+   * If {@code name} is {@code null}, the default is used.
+   */
+  public AbstractDocumentTransform(String name, boolean errorHaltsPipeline) {
+    if (name != null) {
+      this.name = name;
+    }
+    this.errorHaltsPipeline = errorHaltsPipeline;
+  }
+
+  public AbstractDocumentTransform(Map<String, String> config) {
+    String name = config.get("name");
+    if (name != null) {
+      this.name = name;
+    }
+
+    String errorHaltsPipeline = config.get("errorHaltsPipeline");
+    if (errorHaltsPipeline != null) {
+      this.errorHaltsPipeline = Boolean.parseBoolean(errorHaltsPipeline);
+    }
   }
 
   /**
@@ -45,7 +67,12 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
     contentIn.writeTo(contentOut);
   }
 
-  public void name(String name) { this.name = name; }
+  public void name(String name) {
+    if (name == null) {
+      throw new NullPointerException();
+    }
+    this.name = name;
+  }
   public String name() { return name; }
 
   /**
@@ -64,7 +91,4 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
   public boolean errorHaltsPipeline() {
     return errorHaltsPipeline;
   }
-
-  private boolean errorHaltsPipeline = true;
-  private String name = "";
 }
