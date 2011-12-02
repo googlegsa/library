@@ -75,7 +75,7 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
         transform.transform(new UnmodifiableWrapperByteArrayOutputStream(contentInTransit),
                             contentOutTransit, metadataOutTransit, paramsOutTransit);
       } catch (TransformException e) {
-        if (transform.errorHaltsPipeline()) {
+        if (transform.isRequired()) {
           log.log(Level.WARNING, "Transform Exception. Aborting '" + transform.name() + "'", e);
           throw e;
         } else {

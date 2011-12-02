@@ -21,18 +21,18 @@ import java.util.Map;
  */
 public abstract class AbstractDocumentTransform implements DocumentTransform {
   private String name = getClass().getName();
-  private boolean errorHaltsPipeline = true;
+  private boolean required = true;
 
   public AbstractDocumentTransform() {}
 
   /**
    * If {@code name} is {@code null}, the default is used.
    */
-  public AbstractDocumentTransform(String name, boolean errorHaltsPipeline) {
+  public AbstractDocumentTransform(String name, boolean required) {
     if (name != null) {
       this.name = name;
     }
-    this.errorHaltsPipeline = errorHaltsPipeline;
+    this.required = required;
   }
 
   public AbstractDocumentTransform(Map<String, String> config) {
@@ -41,9 +41,9 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
       this.name = name;
     }
 
-    String errorHaltsPipeline = config.get("errorHaltsPipeline");
-    if (errorHaltsPipeline != null) {
-      this.errorHaltsPipeline = Boolean.parseBoolean(errorHaltsPipeline);
+    String required = config.get("required");
+    if (required != null) {
+      this.required = Boolean.parseBoolean(required);
     }
   }
 
@@ -53,22 +53,16 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
     }
     this.name = name;
   }
+
+  @Override
   public String name() { return name; }
 
-  /**
-   * If this property is true, a failure of this transform will cause the entire
-   * transform pipeline to abort. This is useful in the case where a particular
-   * transform is required in order to server data. For example, a transform
-   * tasked with redacting or filtering document content.
-   *
-   * If this is false and a error occurs, this transform is treated as a
-   * identity transform.
-   */
-  public void errorHaltsPipeline(boolean errorHaltsPipeline) {
-    this.errorHaltsPipeline = errorHaltsPipeline;
+  public void setRequired(boolean required) {
+    this.required = required;
   }
 
-  public boolean errorHaltsPipeline() {
-    return errorHaltsPipeline;
+  @Override
+  public boolean isRequired() {
+    return required;
   }
 }

@@ -126,7 +126,7 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
     pipeline.add(new ErroringTransform());
-    ((ErroringTransform) pipeline.get(1)).errorHaltsPipeline(false);
+    ((ErroringTransform) pipeline.get(1)).setRequired(false);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -144,7 +144,7 @@ public class TransformPipelineTest {
   public void testLastTransformError() throws IOException, TransformException {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new ErroringTransform());
-    ((ErroringTransform) pipeline.get(0)).errorHaltsPipeline(false);
+    ((ErroringTransform) pipeline.get(0)).setRequired(false);
     pipeline.add(new IncrementTransform());
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
@@ -164,7 +164,7 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
     pipeline.add(new ErroringTransform());
-    ((ErroringTransform) pipeline.get(1)).errorHaltsPipeline(true);
+    ((ErroringTransform) pipeline.get(1)).setRequired(true);
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");

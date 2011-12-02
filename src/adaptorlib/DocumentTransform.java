@@ -51,5 +51,5 @@ public interface DocumentTransform {
    * If this is false and a error occurs, this transform is treated as a
    * identity transform.
    */
-  public boolean errorHaltsPipeline();
+  public boolean isRequired();
 }
