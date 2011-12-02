@@ -14,7 +14,7 @@
 
 package adaptorlib;
 
-import java.net.URL;
+import java.net.URI;
 import java.util.Date;
 
 /** Controls for pushed {@link DocId} that dictate GSA's treatment. */
@@ -25,16 +25,16 @@ public final class PushAttributes {
 
   private final boolean delete;
   private final Date lastModified;
-  private final URL displayUrl;
+  private final URI displayLink;
   private final boolean crawlImmediately;
   private final boolean crawlOnce;
   private final boolean lock;
 
-  private PushAttributes(boolean delete, Date lastModified, URL displayUrl,
+  private PushAttributes(boolean delete, Date lastModified, URI displayLink,
       boolean crawlImmediately, boolean crawlOnce, boolean lock) {
     this.delete = delete;
     this.lastModified = lastModified;
-    this.displayUrl = displayUrl;
+    this.displayLink = displayLink;
     this.crawlImmediately = crawlImmediately;
     this.crawlOnce = crawlOnce;
     this.lock = lock;
@@ -44,23 +44,23 @@ public final class PushAttributes {
     return delete;
   }
 
-  public Date lastModified() {
+  public Date getLastModified() {
     return lastModified;
   }
 
-  public URL displayUrl() {
-    return displayUrl;
+  public URI getResultLink() {
+    return displayLink;
   }
 
-  public boolean crawlImmediately() {
+  public boolean isToBeCrawledImmediately() {
     return crawlImmediately;
   }
 
-  public boolean crawlOnce() {
+  public boolean isToBeCrawledOnce() {
     return crawlOnce;
   }
 
-  public boolean lock() {
+  public boolean isToBeLocked() {
     return lock;
   }
 
@@ -74,7 +74,7 @@ public final class PushAttributes {
           && (this.crawlOnce == other.crawlOnce)
           && (this.lock == other.lock)
           && equalsNullSafe(lastModified, other.lastModified)
-          && equalsNullSafe(displayUrl, other.displayUrl);
+          && equalsNullSafe(displayLink, other.displayLink);
     } 
     return same;
   }
@@ -82,7 +82,7 @@ public final class PushAttributes {
   @Override
   public int hashCode() {
     int code = (null == lastModified) ? 0 : lastModified.hashCode() * 31;
-    code += (null == displayUrl) ? 0 : displayUrl.hashCode();
+    code += (null == displayLink) ? 0 : displayLink.hashCode();
     return code;
   }
 
@@ -90,7 +90,7 @@ public final class PushAttributes {
   public String toString() {
     return "PushAttributes(delete=" + delete
         + ",lastModified=" + lastModified
-        + ",displayUrl=" + displayUrl
+        + ",resultLink=" + displayLink
         + ",crawlImmediately=" + crawlImmediately
         + ",crawlOnce=" + crawlOnce
         + ",lock=" + lock + ")";
@@ -103,7 +103,7 @@ public final class PushAttributes {
   public static class Builder {
     private boolean delete = false;
     private Date lastModified;
-    private URL displayUrl;
+    private URI displayLink;
     private boolean crawlImmediately = false;
     private boolean crawlOnce = false;
     private boolean lock = false;
@@ -120,8 +120,8 @@ public final class PushAttributes {
       return this;
     }
   
-    public Builder setDisplayUrl(URL displayUrl) {
-      this.displayUrl = displayUrl;
+    public Builder setResultLink(URI displayLink) {
+      this.displayLink = displayLink;
       return this;
     }
   
@@ -142,7 +142,7 @@ public final class PushAttributes {
 
     /** Creates single instance of PushAttributes.  Does not reset builder. */
     public PushAttributes build() {
-      return new PushAttributes(delete, lastModified, displayUrl,
+      return new PushAttributes(delete, lastModified, displayLink,
           crawlImmediately, crawlOnce, lock);
     }
   }

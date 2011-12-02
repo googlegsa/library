@@ -76,29 +76,19 @@ class GsaFeedFileMaker {
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
-    if (null != attrs.displayUrl()) {
-      record.setAttribute("displayurl", "" + attrs.displayUrl());
+    if (null != attrs.getResultLink()) {
+      record.setAttribute("displayurl", "" + attrs.getResultLink());
     }
     record.setAttribute("action", attrs.isToBeDeleted() ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
-    if (null != attrs.lastModified()) {
-      String dateStr = rfc822DateFormat.get().format(attrs.lastModified());
+    if (null != attrs.getLastModified()) {
+      String dateStr = rfc822DateFormat.get().format(attrs.getLastModified());
       record.setAttribute("last-modified", dateStr);
     }
-    record.setAttribute("lock", "" + attrs.lock());
-    record.setAttribute("crawl-immediately", "" + attrs.crawlImmediately());
-    record.setAttribute("crawl-once", "" + attrs.crawlOnce());
+    record.setAttribute("lock", "" + attrs.isToBeLocked());
+    record.setAttribute("crawl-immediately", "" + attrs.isToBeCrawledImmediately());
+    record.setAttribute("crawl-once", "" + attrs.isToBeCrawledOnce());
     // TODO: record.setAttribute(no-follow,);
-  }
-
-  private void addMetadataHelper(Document doc, Element metadataXml,
-      Metadata metadataValues) {
-    for (MetaItem item : metadataValues) {
-      Element metaXml = doc.createElement("meta");
-      metadataXml.appendChild(metaXml);
-      metaXml.setAttribute("name", item.getName());
-      metaXml.setAttribute("content", item.getValue());
-    }
   }
 
   /** Adds all the DocIds into feed-file-document one record

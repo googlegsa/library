@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.net.URI;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -83,7 +82,7 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testPushAttributes() throws java.net.MalformedURLException {
+  public void testPushAttributes() throws java.net.URISyntaxException {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -109,18 +108,17 @@ public class GsaFeedFileMakerTest {
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
     PushAttributes.Builder attrBuilder = new PushAttributes.Builder();
-    attrBuilder.setDisplayUrl(new URL("http://f000nkey.net"));
+    attrBuilder.setResultLink(new URI("http://f000nkey.net"));
     ids.add(new DocIdPusher.Record(new DocId("E11"), attrBuilder.build()));
-    attrBuilder.setDisplayUrl(new URL("http://yankee.doodle.com"));    
+    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    
     attrBuilder.setLastModified(new Date(0));    
     attrBuilder.setCrawlImmediately(true);    
     ids.add(new DocIdPusher.Record(new DocId("elefenta"), attrBuilder.build()));
-    attrBuilder.setDisplayUrl(new URL("http://google.com/news"));    
+    attrBuilder.setResultLink(new URI("http://google.com/news"));    
     attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
     attrBuilder.setCrawlImmediately(false);    
     ids.add(new DocIdPusher.Record(new DocId("gone"), attrBuilder.build()));
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
-    //throw new RuntimeException("\n" + xml);
     assertEquals(golden, xml);
   }
 }

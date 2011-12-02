@@ -59,7 +59,7 @@ public class RecordTest {
   @Test
   public void testToString() {
     String golden = "DocIdPusher.Record(DocId(a),PushAttributes(delete=false"
-        + ",lastModified=null,displayUrl=null,crawlImmediately=false"
+        + ",lastModified=null,resultLink=null,crawlImmediately=false"
         + ",crawlOnce=false,lock=false))";
     assertEquals(golden,
         "" + new DocIdPusher.Record(new DocId("a"), PushAttributes.DEFAULT));

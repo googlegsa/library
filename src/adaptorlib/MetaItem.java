@@ -74,7 +74,7 @@ public final class MetaItem implements Comparable<MetaItem> {
   }
 
   private static void throwIfInvalidName(String name) { 
-    // TODO: Figure out complete rules.
+    // TODO(pjo): Figure out complete rules.
     if (name.contains(",")) {
       throw new IllegalArgumentException("name " + name + " contains comma");
     }
