@@ -26,7 +26,7 @@ public class MockJournal extends Journal {
   }
 
   @Override
-  void recordDocIdPush(List<DocInfo> pushed) {
+  void recordDocIdPush(List<DocIdPusher.Record> pushed) {
     throw new UnsupportedOperationException();
   }
 
@@ -37,16 +37,6 @@ public class MockJournal extends Journal {
   
   @Override
   void recordNonGsaContentRequest(DocId requested) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  void recordRequestResponseStart() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  void recordRequestResponseEnd(long responseSize) {
     throw new UnsupportedOperationException();
   }
 

@@ -47,7 +47,7 @@ public class CommandStreamParserTest {
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    ArrayList<DocInfo> docInfoList = parser.readFromLister();
+    ArrayList<DocIdPusher.Record> docInfoList = parser.readFromLister();
     assertEquals("123", docInfoList.get(0).getDocId().getUniqueId());
     assertEquals("456", docInfoList.get(1).getDocId().getUniqueId());
     assertEquals("10", docInfoList.get(2).getDocId().getUniqueId());
@@ -102,7 +102,7 @@ public class CommandStreamParserTest {
     if (!isValid) {
       thrown.expect(IOException.class);
     }
-    ArrayList<DocInfo> docInfoList = parser.readFromLister();
+    ArrayList<DocIdPusher.Record> docInfoList = parser.readFromLister();
 
     if (isValid) {
       assertEquals(new DocId("123"), docInfoList.get(0).getDocId()); //.getUniqueId());

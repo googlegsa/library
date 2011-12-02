@@ -121,6 +121,53 @@ public class ConfigTest {
     assertEquals("notreal", config.getGsaHostname());
   }
 
+  @Test
+  public void testGetTransformPipelineSpecValid() throws Exception {
+    final List<Map<String, String>> golden
+        = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map;
+
+      map = new HashMap<String, String>();
+      map.put("name", "trans1");
+      map.put("key1", "value1");
+      golden.add(map);
+
+      map = new HashMap<String, String>();
+      map.put("name", "trans2");
+      map.put("key2", "value2");
+      map.put("key3", "value3");
+      golden.add(map);
+
+      map = new HashMap<String, String>();
+      map.put("name", "trans3");
+      golden.add(map);
+    }
+    configFile.setFileContents(
+        "transform.pipeline = trans1,  trans2  ,trans3\n"
+        + "transform.pipeline.trans1.key1=value1\n"
+        + "transform.pipeline.trans2.key2=value2\n"
+        + "transform.pipeline.trans2.key3=value3\n"
+    );
+    config.load(configFile);
+    assertEquals(golden, config.getTransformPipelineSpec());
+  }
+
+  @Test
+  public void testGetTransformPipelineSpecEmpty() throws Exception {
+    configFile.setFileContents("transform.pipeline=\n");
+    config.load(configFile);
+    assertEquals(Collections.emptyList(), config.getTransformPipelineSpec());
+  }
+
+  @Test
+  public void testGetTransformPipelineSpecInValid() throws Exception {
+    configFile.setFileContents("transform.pipeline=name1, ,name3\n");
+    config.load(configFile);
+    thrown.expect(RuntimeException.class);
+    config.getTransformPipelineSpec();
+  }
+
   private static class ModifiedConfig extends Config {
     public ModifiedConfig(MockFile file) {
       this.configFile = file;

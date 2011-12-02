@@ -46,20 +46,21 @@ public class DocIdSenderTest {
 
   @Test
   public void testPushDocIdsFromAdaptorNormal() throws Exception {
-    adaptor.pushItems = new ArrayList<List<DocInfo>>();
-    DocInfo[] docInfos = new DocInfo[6];
-    for (int i = 0; i < docInfos.length; i++) {
-      docInfos[i] = new DocInfo(new DocId("test" + i), Metadata.EMPTY);
+    adaptor.pushItems = new ArrayList<List<DocIdPusher.Record>>();
+    DocIdPusher.Record[] records = new DocIdPusher.Record[6];
+    for (int i = 0; i < records.length; i++) {
+      DocId id = new DocId("test" + i);
+      records[i] = new DocIdPusher.Record.Builder().setDocId(id).build();
     }
-    List<DocInfo> infos = new ArrayList<DocInfo>();
-    infos.add(docInfos[0]);
-    infos.add(docInfos[1]);
-    infos.add(docInfos[2]);
-    infos.add(docInfos[3]);
-    infos.add(docInfos[4]);
+    List<DocIdPusher.Record> infos = new ArrayList<DocIdPusher.Record>();
+    infos.add(records[0]);
+    infos.add(records[1]);
+    infos.add(records[2]);
+    infos.add(records[3]);
+    infos.add(records[4]);
     adaptor.pushItems.add(infos);
-    infos = new ArrayList<DocInfo>();
-    infos.add(docInfos[5]);
+    infos = new ArrayList<DocIdPusher.Record>();
+    infos.add(records[5]);
     adaptor.pushItems.add(infos);
     config.setValue("feed.maxUrls", "2");
     config.setValue("feed.name", "testing");
@@ -70,11 +71,11 @@ public class DocIdSenderTest {
       "testing", "testing", "testing", "testing",
     }), fileMaker.names);
     assertEquals(Arrays.asList(new List[] {
-      Arrays.asList(new DocInfo[] {docInfos[0], docInfos[1]}),
-      Arrays.asList(new DocInfo[] {docInfos[2], docInfos[3]}),
-      Arrays.asList(new DocInfo[] {docInfos[4]}),
-      Arrays.asList(new DocInfo[] {docInfos[5]}),
-    }), fileMaker.docInfoses);
+      Arrays.asList(new DocIdPusher.Record[] {records[0], records[1]}),
+      Arrays.asList(new DocIdPusher.Record[] {records[2], records[3]}),
+      Arrays.asList(new DocIdPusher.Record[] {records[4]}),
+      Arrays.asList(new DocIdPusher.Record[] {records[5]}),
+    }), fileMaker.recordses);
 
     assertEquals(Arrays.asList(new String[] {
       "localhost", "localhost", "localhost", "localhost",
@@ -90,7 +91,7 @@ public class DocIdSenderTest {
   @Test
   public void testPushDocIdsNoHandler() throws Exception {
     // Don't send anything.
-    adaptor.pushItems = new ArrayList<List<DocInfo>>();
+    adaptor.pushItems = new ArrayList<List<DocIdPusher.Record>>();
     thrown.expect(NullPointerException.class);
     docIdSender.pushDocIdsFromAdaptor(null);
   }
@@ -216,7 +217,8 @@ public class DocIdSenderTest {
 
   private static class MockGsaFeedFileMaker extends GsaFeedFileMaker {
     List<String> names = new ArrayList<String>();
-    List<List<DocInfo>> docInfoses = new ArrayList<List<DocInfo>>();
+    List<List<DocIdPusher.Record>> recordses
+        = new ArrayList<List<DocIdPusher.Record>>();
     int i;
 
     public MockGsaFeedFileMaker() {
@@ -224,9 +226,10 @@ public class DocIdSenderTest {
     }
 
     @Override
-    public String makeMetadataAndUrlXml(String name, List<DocInfo> docInfos) {
+    public String makeMetadataAndUrlXml(String name,
+        List<DocIdPusher.Record> records) {
       names.add(name);
-      docInfoses.add(docInfos);
+      recordses.add(records);
       return "" + i++;
     }
   }
@@ -288,7 +291,7 @@ public class DocIdSenderTest {
   }
 
   private static class DocIdsMockAdaptor extends MockAdaptor {
-    public List<List<DocInfo>> pushItems;
+    public List<List<DocIdPusher.Record>> pushItems;
     public int timesGetDocIdsCalled;
 
     /**
@@ -299,8 +302,8 @@ public class DocIdSenderTest {
     public void getDocIds(DocIdPusher pusher) throws InterruptedException,
         IOException {
       timesGetDocIdsCalled++;
-      for (List<DocInfo> infos : pushItems) {
-        pusher.pushDocInfos(infos);
+      for (List<DocIdPusher.Record> infos : pushItems) {
+        pusher.pushRecords(infos);
       }
     }
   }

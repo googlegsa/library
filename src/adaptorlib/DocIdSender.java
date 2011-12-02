@@ -85,30 +85,30 @@ class DocIdSender extends AbstractDocIdPusher {
    * This method blocks until all DocIds are sent or retrying failed.
    */
   @Override
-  public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
+  public Record pushRecords(Iterable<Record> records,
                               PushErrorHandler handler)
       throws InterruptedException {
     if (handler == null) {
       handler = defaultErrorHandler;
     }
-    return pushDocInfos(docInfos.iterator(), handler);
+    return pushRecords(records.iterator(), handler);
   }
 
-  private DocInfo pushDocInfos(Iterator<DocInfo> docInfos,
+  private Record pushRecords(Iterator<Record> records,
                                PushErrorHandler handler)
       throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
     final int max = config.getFeedMaxUrls();
-    while (docInfos.hasNext()) {
-      List<DocInfo> batch = new ArrayList<DocInfo>();
+    while (records.hasNext()) {
+      List<Record> batch = new ArrayList<Record>();
       for (int j = 0; j < max; j++) {
-        if (!docInfos.hasNext()) {
+        if (!records.hasNext()) {
           break;
         }
-        batch.add(docInfos.next());
+        batch.add(records.next());
       }
       log.log(Level.INFO, "Pushing group of {0} DocIds", batch.size());
-      DocInfo failedId = pushSizedBatchOfDocInfos(batch, handler);
+      Record failedId = pushSizedBatchOfRecords(batch, handler);
       if (failedId != null) {
         log.info("Failed to push all ids. Failed on docId: " + failedId);
         return failedId;
@@ -119,15 +119,15 @@ class DocIdSender extends AbstractDocIdPusher {
     return null;
   }
 
-  private DocInfo pushSizedBatchOfDocInfos(List<DocInfo> docInfos,
+  private Record pushSizedBatchOfRecords(List<Record> records,
                                            PushErrorHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
     String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(feedSourceName,
-        docInfos);
+        records);
     boolean keepGoing = true;
     boolean success = false;
-    log.log(Level.INFO, "Pushing batch of {0} DocIds to GSA", docInfos.size());
+    log.log(Level.INFO, "Pushing batch of {0} DocIds to GSA", records.size());
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("Sending feed to GSA host name: " + config.getGsaHostname());
@@ -156,9 +156,9 @@ class DocIdSender extends AbstractDocIdPusher {
       log.info("Pushing batch succeeded");
     } else {
       log.log(Level.WARNING, "Gave up. First item in list: {0}",
-              docInfos.get(0));
+              records.get(0));
     }
     log.info("Finished pushing batch");
-    return success ? null : docInfos.get(0);
+    return success ? null : records.get(0);
   }
 }

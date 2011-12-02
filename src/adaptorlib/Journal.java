@@ -46,8 +46,6 @@ class Journal {
   private Stats[] timeStats;
   private Stats dayStatsByHalfHour;
 
-  /** Response start time storage until response completion. */
-  private ThreadLocal<Long> requestResponseStart = new ThreadLocal<Long>();
   /** Request processing start time storage until processing completion. */
   private ThreadLocal<Long> requestProcessingStart = new ThreadLocal<Long>();
 
@@ -87,8 +85,8 @@ class Journal {
     this.dayStatsByHalfHour = this.timeStats[this.timeStats.length - 1];
   }
 
-  synchronized void recordDocIdPush(List<DocInfo> pushed) {
-    for (DocInfo record : pushed) {
+  synchronized void recordDocIdPush(List<DocIdPusher.Record> pushed) {
+    for (DocIdPusher.Record record : pushed) {
       increment(timesPushed, record.getDocId());
     }
     totalPushes += pushed.size();
@@ -109,32 +107,6 @@ class Journal {
   synchronized void recordNonGsaContentRequest(DocId requested) {
     increment(timesNonGsaRequested, requested); 
     totalNonGsaRequests++;
-  }
-
-  /**
-   * Record that the response of a request has been started on this thread. This
-   * relates to the actual I/O of sending the response.
-   */
-  void recordRequestResponseStart() {
-    requestResponseStart.set(timeProvider.currentTimeMillis());
-  }
-
-  /**
-   * Record that the response this thread was sending has completed.
-   */
-  void recordRequestResponseEnd(long responseSize) {
-    long time = timeProvider.currentTimeMillis();
-    long duration = endDuration(requestResponseStart, time);
-    synchronized (this) {
-      for (Stats stats : timeStats) {
-        Stat stat = stats.getCurrentStat(time);
-        stat.requestResponsesCount++;
-        stat.requestResponsesDurationSum += duration;
-        stat.requestResponsesMaxDuration = Math.max(
-            stat.requestResponsesMaxDuration, duration);
-        stat.requestResponsesThroughput += responseSize;
-      }
-    }
   }
 
   /**
@@ -454,23 +426,6 @@ class Journal {
    */
   static class Stat implements Cloneable {
     /**
-     * The number of responses sent.
-     */
-    long requestResponsesCount;
-    /**
-     * The total duration of responses sent.
-     */
-    long requestResponsesDurationSum;
-    /**
-     * The maximal duration of any one response.
-     */
-    long requestResponsesMaxDuration;
-    /**
-     * Number of bytes sent to client.
-     */
-    long requestResponsesThroughput;
-
-    /**
      * The number of requests processed.
      */
     long requestProcessingsCount;
@@ -503,11 +458,6 @@ class Journal {
      * Reset object for reuse.
      */
     private void reset() {
-      requestResponsesCount = 0;
-      requestResponsesDurationSum = 0;
-      requestResponsesMaxDuration = 0;
-      requestResponsesThroughput = 0;
-
       requestProcessingsCount = 0;
       requestProcessingsFailureCount = 0;
       requestProcessingsDurationSum = 0;

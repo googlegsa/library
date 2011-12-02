@@ -37,11 +37,8 @@ public class MetadataTest {
     assertEquals(couple, coupleB);
     assertEquals(triple, tripleB);
     assertEquals(Metadata.EMPTY, new Metadata(new TreeSet<MetaItem>()));
-    assertEquals(Metadata.DELETED, Metadata.DELETED);
     assertFalse(couple.equals(triple));
     assertFalse(triple.equals(couple));
-    assertFalse(Metadata.DELETED.equals(Metadata.EMPTY));
-    assertFalse(Metadata.EMPTY.equals(Metadata.DELETED));
     assertFalse(Metadata.EMPTY.equals(new Object()));
     assertFalse(Metadata.EMPTY.equals(null));
   }

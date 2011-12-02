@@ -54,11 +54,6 @@ public final class MetaItem implements Comparable<MetaItem> {
     return new MetaItem("google:ispublic", "false");
   }
  
-  /** Adds displayurl named meta item. */
-  public static MetaItem displayUrl(String displayUrl) {
-    return new MetaItem("displayurl", displayUrl);
-  }
-
   public static MetaItem permittedUsers(List<String> aclUsers) {
     for (String user : aclUsers) {
       throwIfInvalidName(user);

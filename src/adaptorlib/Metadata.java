@@ -24,9 +24,6 @@ import java.util.TreeSet;
 
 /** Represents a fixed set of validated {@link MetaItem}s. */
 public final class Metadata implements Iterable<MetaItem> {
-  /** Object instance to denote documents that have been deleted. */
-  public static final Metadata DELETED
-      = new Metadata(Collections.<MetaItem>emptySet());
   /** Empty convenience instance. */
   public static final Metadata EMPTY
       = new Metadata(Collections.<MetaItem>emptySet());
@@ -44,9 +41,6 @@ public final class Metadata implements Iterable<MetaItem> {
 
   @Override
   public boolean equals(Object o) {
-    if (this == DELETED || o == DELETED) {
-      return this == o;
-    }
     boolean same = false;
     if (null != o && this.getClass().equals(o.getClass())) {
       Metadata other = (Metadata) o;

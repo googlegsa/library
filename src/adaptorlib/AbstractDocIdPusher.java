@@ -30,27 +30,28 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
   }
 
   /**
-   * Calls {@link #pushDocInfos(Iterable, Adaptor.PushErrorHandler)} with empty
-   * metadata for each {@code DocInfo}.
+   * Calls {@link #pushRecords(Iterable, Adaptor.PushErrorHandler)} with empty
+   * metadata for each {@code Record}.
    */
   @Override
   public DocId pushDocIds(Iterable<DocId> docIds,
                           PushErrorHandler handler)
       throws InterruptedException {
-    List<DocInfo> docInfos = new ArrayList<DocInfo>();
+    List<Record> records = new ArrayList<Record>();
+    Record.Builder recordMaker = new Record.Builder();
     for (DocId docId : docIds) {
-      docInfos.add(new DocInfo(docId, Metadata.EMPTY));
+      records.add(recordMaker.setDocId(docId).build());
     }
-    DocInfo record = pushDocInfos(docInfos, handler);
+    Record record = pushRecords(records, handler);
     return record == null ? null : record.getDocId();
   }
 
   /**
-   * Calls {@code pushDocInfos(docInfos, null)}.
+   * Calls {@code pushRecords(records, null)}.
    */
   @Override
-  public DocInfo pushDocInfos(Iterable<DocInfo> docInfos)
+  public Record pushRecords(Iterable<Record> records)
       throws InterruptedException {
-    return pushDocInfos(docInfos, null);
+    return pushRecords(records, null);
   }
 }

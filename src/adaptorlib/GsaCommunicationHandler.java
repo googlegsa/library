@@ -29,8 +29,7 @@ import org.opensaml.xml.ConfigurationException;
 import java.lang.reflect.Constructor;
 import java.net.InetSocketAddress;
 import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -116,7 +115,16 @@ public class GsaCommunicationHandler {
     // useful during testing.
     port = server.getAddress().getPort();
     config.setValue("server.port", "" + port);
-    Executor executor = Executors.newCachedThreadPool();
+    int maxThreads = config.getServerMaxWorkerThreads();
+    int queueCapacity = config.getServerQueueCapacity();
+    BlockingQueue<Runnable> blockingQueue
+        = new ArrayBlockingQueue<Runnable>(queueCapacity);
+    // The Executor can't reject jobs directly, because HttpServer does not
+    // appear to handle that case.
+    RejectedExecutionHandler policy
+        = new SuggestHandlerAbortPolicy(AbstractHandler.abortImmediately);
+    Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
+        1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
 
     SessionManager<HttpExchange> sessionManager
@@ -148,12 +156,13 @@ public class GsaCommunicationHandler {
                             config.getServerAddResolvedGsaHostnameToGsaIps(),
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager,
-                            createTransformPipeline()));
+                            createTransformPipeline(),
+                            config.getTransformMaxDocumentBytes()));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
 
-    dashboard.start(executor, sessionManager);
+    dashboard.start(sessionManager);
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
@@ -183,10 +192,13 @@ public class GsaCommunicationHandler {
   }
 
   private TransformPipeline createTransformPipeline() {
-    List<Map<String, String>> pipelineConfig = config.getTransformPipeline();
+    return createTransformPipeline(config.getTransformPipelineSpec());
+  }
+
+  static TransformPipeline createTransformPipeline(
+      List<Map<String, String>> pipelineConfig) {
     TransformPipeline pipeline = new TransformPipeline();
     for (Map<String, String> element : pipelineConfig) {
-      System.out.println(element);
       final String name = element.get("name");
       final String confPrefix = "transform.pipeline." + name + ".";
       String className = element.get("class");
@@ -223,7 +235,8 @@ public class GsaCommunicationHandler {
       transform.name(name);
       pipeline.add(transform);
     }
-    return pipeline;
+    // If we created an empty pipeline, then we don't need the pipeline at all.
+    return pipeline.size() > 0 ? pipeline : null;
   }
 
   // Useful as a separate method during testing.
@@ -399,6 +412,31 @@ public class GsaCommunicationHandler {
     public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
       return ((PushRunnable) docIdFullPusher.getRunnable())
           .getGetDocIdsErrorHandler();
+    }
+  }
+
+  /**
+   * Executes Runnable in current thread, but only after setting a thread-local
+   * object. The code that will be run, is expected to take notice of the set
+   * variable and abort immediately. This is a hack.
+   */
+  private static class SuggestHandlerAbortPolicy
+      implements RejectedExecutionHandler {
+    private final ThreadLocal<Object> abortImmediately;
+    private final Object signal = new Object();
+
+    public SuggestHandlerAbortPolicy(ThreadLocal<Object> abortImmediately) {
+      this.abortImmediately = abortImmediately;
+    }
+
+    @Override
+    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
+      abortImmediately.set(signal);
+      try {
+        r.run();
+      } finally {
+        abortImmediately.set(null);
+      }
     }
   }
 }

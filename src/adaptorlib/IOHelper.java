@@ -76,7 +76,8 @@ public class IOHelper {
     return tmpFile;
   }
 
-  public static File writeToTempFile(String string, Charset charset) throws IOException {
+  public static File writeToTempFile(String string, Charset charset)
+      throws IOException {
     byte[] bytes;
     try {
       bytes = string.getBytes(charset.name());

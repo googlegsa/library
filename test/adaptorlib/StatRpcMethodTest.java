@@ -58,10 +58,6 @@ public class StatRpcMethodTest {
       data.put("requestProcessingsDurationSum", 0L);
       data.put("requestProcessingsMaxDuration", 0L);
       data.put("requestProcessingsThroughput", 0L);
-      data.put("requestResponsesCount", 0L);
-      data.put("requestResponsesDurationSum", 0L);
-      data.put("requestResponsesMaxDuration", 0L);
-      data.put("requestResponsesThroughput", 0L);
       data.put("time", -100L);
       datas.add(data);
       data = new HashMap<String, Object>();
@@ -69,10 +65,6 @@ public class StatRpcMethodTest {
       data.put("requestProcessingsDurationSum", 0L);
       data.put("requestProcessingsMaxDuration", 0L);
       data.put("requestProcessingsThroughput", 0L);
-      data.put("requestResponsesCount", 0L);
-      data.put("requestResponsesDurationSum", 0L);
-      data.put("requestResponsesMaxDuration", 0L);
-      data.put("requestResponsesThroughput", 0L);
       data.put("time", 0L);
       datas.add(data);
       stat.put("statData", datas);

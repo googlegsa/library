@@ -77,6 +77,97 @@ public class GsaCommunicationHandlerTest {
     conn.getContent();
   }
 
+  @Test
+  public void testCreateTransformPipeline() {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("class", InstantiatableTransform.class.getName());
+      config.add(map);
+    }
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+    assertEquals(1, pipeline.size());
+    assertEquals(InstantiatableTransform.class, pipeline.get(0).getClass());
+    assertEquals("testing", pipeline.get(0).name());
+  }
+
+  @Test
+  public void testCreateTransformPipelineEmpty() {
+    assertNull(GsaCommunicationHandler.createTransformPipeline(
+        Collections.<Map<String, String>>emptyList()));
+  }
+
+  @Test
+  public void testCreateTransformPipelineNoClassSpecified() {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      config.add(map);
+    }
+    thrown.expect(RuntimeException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testCreateTransformPipelineMissingClass() {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("class", "adaptorlib.NotARealClass");
+      config.add(map);
+    }
+    thrown.expect(RuntimeException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testCreateTransformPipelineNoGoodConstructor() throws Exception {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("class", WrongConstructorTransform.class.getName());
+      config.add(map);
+    }
+    thrown.expect(RuntimeException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testCreateTransformPipelineConstructorFails() throws Exception {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("class", CantInstantiateTransform.class.getName());
+      config.add(map);
+    }
+    thrown.expect(RuntimeException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testCreateTransformPipelineWrongType() throws Exception {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("class", WrongTypeTransform.class.getName());
+      config.add(map);
+    }
+    thrown.expect(RuntimeException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
   private static class NullAdaptor extends AbstractAdaptor {
     private boolean inited;
 
@@ -99,5 +190,28 @@ public class GsaCommunicationHandlerTest {
     public void getDocContent(Request req, Response resp) {
       throw new UnsupportedOperationException();
     }
+  }
+
+  static class InstantiatableTransform extends DocumentTransform {
+    public InstantiatableTransform(Map<String, String> config) {
+      super("Test");
+    }
+  }
+
+  static class WrongConstructorTransform extends DocumentTransform {
+    public WrongConstructorTransform() {
+      super("Test");
+    }
+  }
+
+  static class CantInstantiateTransform extends DocumentTransform {
+    public CantInstantiateTransform(Map<String, String> config) {
+      super("Test");
+      throw new RuntimeException("This always seems to happen");
+    }
+  }
+
+  static class WrongTypeTransform {
+    public WrongTypeTransform(Map<String, String> config) {}
   }
 }

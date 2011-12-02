@@ -126,7 +126,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     CommandStreamParser parser = new CommandStreamParser(
         new ByteArrayInputStream(command.getStdout()));
     log.finest("Pushing Document IDs.");
-    pusher.pushDocInfos(parser.readFromLister());
+    pusher.pushRecords(parser.readFromLister());
   }
 
   /** Gives the bytes of a document referenced with id. */

@@ -101,12 +101,12 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void respondNotModified() {
+    public void respondNotModified() throws IOException {
       response.respondNotModified();
     }
 
     @Override
-    public OutputStream getOutputStream() {
+    public OutputStream getOutputStream() throws IOException {
       return response.getOutputStream();
     }
 
@@ -202,10 +202,10 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public DocInfo pushDocInfos(Iterable<DocInfo> docInfos,
-                                PushErrorHandler handler)
+    public DocIdPusher.Record pushRecords(
+        Iterable<DocIdPusher.Record> records, PushErrorHandler handler)
         throws InterruptedException {
-      return pusher.pushDocInfos(docInfos, handler);
+      return pusher.pushRecords(records, handler);
     }
   }
 

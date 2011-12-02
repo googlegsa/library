@@ -19,30 +19,35 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-/** Tests for {@link DocInfo}. */
-public class DocInfoTest {
+/** Tests for {@link DocIdPusher.Record}. */
+public class RecordTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  public void testNullDocId() {
+  public void testNoDocId() {
     thrown.expect(NullPointerException.class);
-    new DocInfo(null, Metadata.EMPTY);
+    new DocIdPusher.Record.Builder().build();
   }
 
   @Test
-  public void testNullMetadata() {
+  public void testNullDocId() {
     thrown.expect(NullPointerException.class);
-    new DocInfo(new DocId("test"), null);
+    new DocIdPusher.Record.Builder().setDocId(null).build();
   }
 
   @Test
   public void testEquals() {
-    DocInfo info1 = new DocInfo(new DocId("test"), Metadata.EMPTY);
-    DocInfo info2 = new DocInfo(new DocId("test"), Metadata.EMPTY);
-    DocInfo info3 = new DocInfo(new DocId("test2"), Metadata.EMPTY);
-    DocInfo info4 = new DocInfo(new DocId("test"), Metadata.DELETED);
-    DocInfo info5 = new DocInfo(new DocId("test2"), Metadata.DELETED);
+    DocIdPusher.Record info1 = new DocIdPusher.Record.Builder()
+       .setDocId(new DocId("test")).build();
+    DocIdPusher.Record info2 = new DocIdPusher.Record.Builder()
+        .setDocId(new DocId("test")).build();
+    DocIdPusher.Record info3 = new DocIdPusher.Record.Builder()
+       .setDocId(new DocId("test2")).build();
+    DocIdPusher.Record info4 = new DocIdPusher.Record.Builder()
+        .setDocId(new DocId("test")).setDeleteFromIndex(true).build();
+    DocIdPusher.Record info5 = new DocIdPusher.Record.Builder()
+        .setDocId(new DocId("test2")).setDeleteFromIndex(true).build();
     assertFalse(info1.equals(null));
     assertFalse(info1.equals(new Object()));
     assertEquals(info1, info2);
@@ -53,7 +58,10 @@ public class DocInfoTest {
 
   @Test
   public void testToString() {
-    assertEquals("DocInfo(DocId(a),[])",
-                 new DocInfo(new DocId("a"), Metadata.EMPTY).toString());
+    String golden = "Record(docid=a,delete=false"
+        + ",lastModified=null,resultLink=null,crawlImmediately=false"
+        + ",crawlOnce=false,lock=false)";
+    assertEquals(golden,
+        "" + new DocIdPusher.Record.Builder().setDocId(new DocId("a")).build());
   }
 }

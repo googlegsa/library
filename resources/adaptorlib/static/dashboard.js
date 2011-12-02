@@ -129,18 +129,6 @@ function getStatsCallback(result, error) {
   vals.push(formatChartData(data.stats[0], data.simpleStats.timeResolution));
   vals.push(formatChartData(data.stats[1], data.simpleStats.timeResolution));
   vals.push(formatChartData(data.stats[2], data.simpleStats.timeResolution));
-  loadChartData('gaf-responses-chart-minute',
-      [vals[0].responsesAvg, vals[0].responsesMax, vals[0].responsesCount],
-      'Last Minute', ['Average', 'Max', 'Rate'], 'Time Period',
-      'Duration (ms)', 'Requests/s', '%#I:%M:%S %p');
-  loadChartData('gaf-responses-chart-hour',
-      [vals[1].responsesAvg, vals[1].responsesMax, vals[1].responsesCount],
-      'Last Hour', ['Average', 'Max', 'Rate'], 'Time Period',
-      'Duration (ms)', 'Requests/s', '%#I:%M %p');
-  loadChartData('gaf-responses-chart-day',
-      [vals[2].responsesAvg, vals[2].responsesMax, vals[2].responsesCount],
-      'Last Day', ['Average', 'Max', 'Rate'], 'Time Period',
-      'Duration (ms)', 'Requests/s', '%#I:%M %p');
   loadChartData('gaf-processings-chart-minute',
       [vals[0].processingsAvg, vals[0].processingsMax,
           vals[0].processingsCount],
@@ -157,16 +145,16 @@ function getStatsCallback(result, error) {
       'Last Day', ['Average', 'Max', 'Rate'], 'Time Period',
       'Duration (ms)', 'Requests/s', '%#I:%M %p');
   loadChartData('gaf-throughput-chart-minute',
-      [vals[0].processingsThroughput, vals[0].responsesThroughput],
-      'Last Minute', ['Processing', 'Response'], 'Time Period',
+      [vals[0].processingsThroughput],
+      'Last Minute', ['Response'], 'Time Period',
       'Throughput (KiB/s)', null, '%#I:%M %p');
   loadChartData('gaf-throughput-chart-hour',
-      [vals[1].processingsThroughput, vals[1].responsesThroughput],
-      'Last Hour', ['Processing', 'Response'], 'Time Period',
+      [vals[1].processingsThroughput],
+      'Last Hour', ['Response'], 'Time Period',
       'Throughput (KiB/s)', null, '%#I:%M %p');
   loadChartData('gaf-throughput-chart-day',
-      [vals[2].processingsThroughput, vals[2].responsesThroughput],
-      'Last Day', ['Processing', 'Response'], 'Time Period',
+      [vals[2].processingsThroughput],
+      'Last Day', ['Response'], 'Time Period',
       'Throughput (KiB/s)', null, '%#I:%M %p');
 }
 

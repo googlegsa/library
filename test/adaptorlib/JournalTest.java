@@ -35,15 +35,15 @@ public class JournalTest {
     DocId id2 = new DocId("id2");
     DocId id3 = new DocId("id3");
     DocId id4 = new DocId("id4");
-    ArrayList<DocInfo> docs = new ArrayList<DocInfo>();
-    docs.add(new DocInfo(id, Metadata.EMPTY));
-    docs.add(new DocInfo(id2, Metadata.EMPTY));
-    docs.add(new DocInfo(id3, Metadata.EMPTY));
+    ArrayList<DocIdPusher.Record> docs = new ArrayList<DocIdPusher.Record>();
+    docs.add(new DocIdPusher.Record.Builder().setDocId(id).build());
+    docs.add(new DocIdPusher.Record.Builder().setDocId(id2).build());
+    docs.add(new DocIdPusher.Record.Builder().setDocId(id3).build());
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
-    docs.add(new DocInfo(id4, Metadata.EMPTY));
+    docs.add(new DocIdPusher.Record.Builder().setDocId(id4).build());
     journal.recordDocIdPush(docs);
     assertEquals(4, journal.getSnapshot().numUniqueDocIdsPushed);
   }
@@ -104,13 +104,10 @@ public class JournalTest {
     timeProvider.autoIncrement = false;
     timeProvider.time
         = journal.getSnapshot().timeStats[0].pendingStatPeriodEnd;
-    journal.recordRequestResponseStart();
+    journal.recordRequestProcessingStart();
     Thread thread = new Thread() {
       public void run() {
         timeProvider.time += 2;
-        journal.recordRequestResponseStart();
-        timeProvider.time += 2;
-        journal.recordRequestResponseEnd(10);
         journal.recordRequestProcessingStart();
         timeProvider.time += 2;
         journal.recordRequestProcessingEnd(10);
@@ -118,18 +115,14 @@ public class JournalTest {
     };
     thread.start();
     thread.join();
-    journal.recordRequestResponseEnd(8);
+    journal.recordRequestProcessingEnd(8);
     Journal.JournalSnapshot snapshot = journal.getSnapshot();
     Journal.Stat stat
         = snapshot.timeStats[0].stats[snapshot.timeStats[0].currentStat];
-    assertEquals(2, stat.requestResponsesCount);
-    assertEquals(8, stat.requestResponsesDurationSum);
-    assertEquals(6, stat.requestResponsesMaxDuration);
-    assertEquals(18, stat.requestResponsesThroughput);
-    assertEquals(1, stat.requestProcessingsCount);
-    assertEquals(2, stat.requestProcessingsDurationSum);
-    assertEquals(2, stat.requestProcessingsMaxDuration);
-    assertEquals(10, stat.requestProcessingsThroughput);
+    assertEquals(2, stat.requestProcessingsCount);
+    assertEquals(6, stat.requestProcessingsDurationSum);
+    assertEquals(4, stat.requestProcessingsMaxDuration);
+    assertEquals(18, stat.requestProcessingsThroughput);
 
     // Did it swap out to a new stat correctly?
     journal.recordRequestProcessingStart();
@@ -139,10 +132,6 @@ public class JournalTest {
     journal.recordRequestProcessingEnd(101);
     snapshot = journal.getSnapshot();
     stat = snapshot.timeStats[0].stats[snapshot.timeStats[0].currentStat];
-    assertEquals(0, stat.requestResponsesCount);
-    assertEquals(0, stat.requestResponsesDurationSum);
-    assertEquals(0, stat.requestResponsesMaxDuration);
-    assertEquals(0, stat.requestResponsesThroughput);
     assertEquals(1, stat.requestProcessingsCount);
     assertEquals(timeProvider.time - previousTime,
                  stat.requestProcessingsDurationSum);
@@ -153,14 +142,10 @@ public class JournalTest {
     // Does it still have correct values for previous stat?
     stat = snapshot.timeStats[0].stats[(snapshot.timeStats[0].currentStat - 1)
         % snapshot.timeStats[0].stats.length];
-    assertEquals(2, stat.requestResponsesCount);
-    assertEquals(8, stat.requestResponsesDurationSum);
-    assertEquals(6, stat.requestResponsesMaxDuration);
-    assertEquals(18, stat.requestResponsesThroughput);
-    assertEquals(1, stat.requestProcessingsCount);
-    assertEquals(2, stat.requestProcessingsDurationSum);
-    assertEquals(2, stat.requestProcessingsMaxDuration);
-    assertEquals(10, stat.requestProcessingsThroughput);
+    assertEquals(2, stat.requestProcessingsCount);
+    assertEquals(6, stat.requestProcessingsDurationSum);
+    assertEquals(4, stat.requestProcessingsMaxDuration);
+    assertEquals(18, stat.requestProcessingsThroughput);
 
     // Did it clear out everything after a long time?
     // Subtract off a reasonable amount of time to prevevent overflow.
@@ -173,10 +158,6 @@ public class JournalTest {
         continue;
       }
       stat = snapshot.timeStats[0].stats[i];
-      assertEquals(0, stat.requestResponsesCount);
-      assertEquals(0, stat.requestResponsesDurationSum);
-      assertEquals(0, stat.requestResponsesMaxDuration);
-      assertEquals(0, stat.requestResponsesThroughput);
       assertEquals(0, stat.requestProcessingsCount);
       assertEquals(0, stat.requestProcessingsDurationSum);
       assertEquals(0, stat.requestProcessingsMaxDuration);

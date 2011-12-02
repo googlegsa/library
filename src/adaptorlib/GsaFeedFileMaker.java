@@ -17,19 +17,32 @@ package adaptorlib;
 import org.w3c.dom.*;
 
 import java.io.*;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import javax.xml.parsers.*;
 import javax.xml.transform.*;
 import javax.xml.transform.dom.*;
 import javax.xml.transform.stream.*;
 
+
 /** Makes XML metadata-and-url feed file from DocIds.
   This code is based on information provided by Google at
   http://code.google.com/apis/searchappliance/documentation/64/feedsguide.html
  */
 class GsaFeedFileMaker {
-  private static final Metadata EMPTY_METADATA_DEFAULT
-      = new Metadata(Collections.singleton(MetaItem.isPublic()));
+  // DateFormats are relatively expensive to create, and cannot be used from
+  // multiple threads
+  private static ThreadLocal<DateFormat> rfc822Format
+      = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+          DateFormat df = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
+          df.setTimeZone(TimeZone.getTimeZone("GMT"));
+          return df;
+        }
+      };
+
   private DocIdEncoder idEncoder;
 
   public GsaFeedFileMaker(DocIdEncoder encoder) {
@@ -57,61 +70,45 @@ class GsaFeedFileMaker {
   /** Adds a single record to feed-file-document's group,
       communicating the information represented by DocId. */
   private void constructSingleMetadataAndUrlFeedFileRecord(
-      Document doc, Element group, DocInfo docRecord) {
+      Document doc, Element group, DocIdPusher.Record docRecord) {
     DocId docForGsa = docRecord.getDocId();
-    Metadata metadata = docRecord.getMetadata();
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
-    record.setAttribute("action",
-                        Metadata.DELETED.equals(metadata) ? "delete" : "add");
+    if (null != docRecord.getResultLink()) {
+      record.setAttribute("displayurl", "" + docRecord.getResultLink());
+    }
+    record.setAttribute("action", docRecord.isToBeDeleted() ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
-
-    // Deleted items must not have a metadata tag.
-    if (!Metadata.DELETED.equals(metadata)) {
-      Element metadataXml = doc.createElement("metadata");
-      record.appendChild(metadataXml);
-      if (!Metadata.EMPTY.equals(metadata)) {
-        addMetadataHelper(doc, metadataXml, metadata);
-      } else {
-        // The GSA requires a metadata tag and at least one item within, so we
-        // add some useless piece of metadata.
-        addMetadataHelper(doc, metadataXml, EMPTY_METADATA_DEFAULT);
-      }
+    if (null != docRecord.getLastModified()) {
+      String dateStr = rfc822Format.get().format(docRecord.getLastModified());
+      record.setAttribute("last-modified", dateStr);
     }
-    // TODO(pjo): Add "no-recrawl" signal.
-    // TODO(pjo): Add "crawl-immediately" signal.
-    // TODO(pjo): Add "no-follow" signal.
-  }
-
-  private void addMetadataHelper(Document doc, Element metadataXml,
-      Metadata metadataValues) {
-    for (MetaItem item : metadataValues) {
-      Element metaXml = doc.createElement("meta");
-      metadataXml.appendChild(metaXml);
-      metaXml.setAttribute("name", item.getName());
-      metaXml.setAttribute("content", item.getValue());
-    }
+    record.setAttribute("lock", "" + docRecord.isToBeLocked());
+    record.setAttribute("crawl-immediately",
+        "" + docRecord.isToBeCrawledImmediately());
+    record.setAttribute("crawl-once", "" + docRecord.isToBeCrawledOnce());
+    // TODO: record.setAttribute(no-follow,);
   }
 
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<DocInfo> docInfos) {
+      Element root, List<DocIdPusher.Record> records) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (DocInfo docRecord : docInfos) {
+    for (DocIdPusher.Record docRecord : records) {
       constructSingleMetadataAndUrlFeedFileRecord(doc, group, docRecord);
     }
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<DocInfo> docInfos) {
+      String srcName, List<DocIdPusher.Record> records) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
-    constructMetadataAndUrlFeedFileBody(doc, root, docInfos);
+    constructMetadataAndUrlFeedFileBody(doc, root, records);
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
@@ -135,12 +132,13 @@ class GsaFeedFileMaker {
   /** Makes a metadata-and-url feed file from upto 
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
-  public String makeMetadataAndUrlXml(String srcName, List<DocInfo> docInfos) {
+  public String makeMetadataAndUrlXml(String srcName,
+      List<DocIdPusher.Record> records) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
-      constructMetadataAndUrlFeedFile(doc, srcName, docInfos);
+      constructMetadataAndUrlFeedFile(doc, srcName, records);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {
