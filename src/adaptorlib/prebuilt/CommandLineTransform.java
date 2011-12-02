@@ -14,7 +14,7 @@
 
 package adaptorlib.prebuilt;
 
-import adaptorlib.DocumentTransform;
+import adaptorlib.AbstractDocumentTransform;
 import adaptorlib.IOHelper;
 import adaptorlib.TransformException;
 
@@ -27,7 +27,7 @@ import java.util.logging.*;
  * A conduit that allows a simple way to create a document transform based on
  * a command line program.
  */
-public class CommandLineTransform extends DocumentTransform {
+public class CommandLineTransform extends AbstractDocumentTransform {
   private static final Logger log
       = Logger.getLogger(CommandLineTransform.class.getName());
   private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB

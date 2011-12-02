@@ -21,8 +21,14 @@ import java.util.Map;
 
 /**
  * Represents an individual transform in the transform pipeline.
+ * Subclass this to add your own custom behavior.
  */
-public interface DocumentTransform {
+public abstract class AbstractDocumentTransform implements DocumentTransform {
+
+  public AbstractDocumentTransform(String name) {
+    this.name = name;
+  }
+
   /**
    * Override this function to do the actual data transformation.
    * Read data from the ByteArrayOutputStream instances holding the incoming data,
@@ -34,10 +40,13 @@ public interface DocumentTransform {
    */
   public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                         Map<String, String> metadata, Map<String, String> params)
-      throws TransformException, IOException;
+      throws TransformException, IOException {
+    // Defaults to identity transform
+    contentIn.writeTo(contentOut);
+  }
 
-  public void name(String name);
-  public String name();
+  public void name(String name) { this.name = name; }
+  public String name() { return name; }
 
   /**
    * If this property is true, a failure of this transform will cause the entire
@@ -48,7 +57,14 @@ public interface DocumentTransform {
    * If this is false and a error occurs, this transform is treated as a
    * identity transform.
    */
-  public void errorHaltsPipeline(boolean errorHaltsPipeline);
+  public void errorHaltsPipeline(boolean errorHaltsPipeline) {
+    this.errorHaltsPipeline = errorHaltsPipeline;
+  }
 
-  public boolean errorHaltsPipeline();
+  public boolean errorHaltsPipeline() {
+    return errorHaltsPipeline;
+  }
+
+  private boolean errorHaltsPipeline = true;
+  private String name = "";
 }

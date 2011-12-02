@@ -14,7 +14,7 @@
 
 package adaptorlib.examples;
 
-import adaptorlib.DocumentTransform;
+import adaptorlib.AbstractDocumentTransform;
 import adaptorlib.TransformException;
 
 import java.io.ByteArrayOutputStream;
@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * the associated metadata is inserted at the end of the HEAD section of the
  * HTML. If no HEAD section exists, nothing gets inserted.
  */
-public class MetaTaggerTransform extends DocumentTransform {
+public class MetaTaggerTransform extends AbstractDocumentTransform {
   private static final Logger log = Logger.getLogger(MetaTaggerTransform.class.getName());
 
   public MetaTaggerTransform() {

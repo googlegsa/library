@@ -14,7 +14,7 @@
 
 package adaptorlib.examples;
 
-import adaptorlib.DocumentTransform;
+import adaptorlib.AbstractDocumentTransform;
 import adaptorlib.TransformException;
 
 import au.com.bytecode.opencsv.CSVReader;
@@ -39,7 +39,7 @@ import java.util.logging.Logger;
  * In the template HTML file, place <code>&amp;#0;</code> where you'd like the table
  * to be inserted.
  */
-public class TableGeneratorTransform extends DocumentTransform {
+public class TableGeneratorTransform extends AbstractDocumentTransform {
   private static final Logger log = Logger.getLogger(TableGeneratorTransform.class.getName());
 
   public TableGeneratorTransform() {
