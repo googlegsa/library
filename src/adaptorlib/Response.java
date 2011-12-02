@@ -14,7 +14,7 @@
 
 package adaptorlib;
 
-import java.io.OutputStream;
+import java.io.*;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent} for performing the
@@ -42,7 +42,7 @@ public interface Response {
    * not call this method. Once you call this method, for the rest of the
    * processing, exceptions may no longer be communicated to clients cleanly.
    */
-  public void respondNotModified();
+  public void respondNotModified() throws IOException;
 
   /**
    * Get stream to write document contents to. There is no need to flush or
@@ -54,7 +54,7 @@ public interface Response {
    * not call this method. Once you call this method, for the rest of the
    * processing, exceptions may no longer be communicated to clients cleanly.
    */
-  public OutputStream getOutputStream();
+  public OutputStream getOutputStream() throws IOException;
 
   /**
    * Describe the content type of the document.

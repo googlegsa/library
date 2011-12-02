@@ -46,8 +46,6 @@ class Journal {
   private Stats[] timeStats;
   private Stats dayStatsByHalfHour;
 
-  /** Response start time storage until response completion. */
-  private ThreadLocal<Long> requestResponseStart = new ThreadLocal<Long>();
   /** Request processing start time storage until processing completion. */
   private ThreadLocal<Long> requestProcessingStart = new ThreadLocal<Long>();
 
@@ -109,32 +107,6 @@ class Journal {
   synchronized void recordNonGsaContentRequest(DocId requested) {
     increment(timesNonGsaRequested, requested); 
     totalNonGsaRequests++;
-  }
-
-  /**
-   * Record that the response of a request has been started on this thread. This
-   * relates to the actual I/O of sending the response.
-   */
-  void recordRequestResponseStart() {
-    requestResponseStart.set(timeProvider.currentTimeMillis());
-  }
-
-  /**
-   * Record that the response this thread was sending has completed.
-   */
-  void recordRequestResponseEnd(long responseSize) {
-    long time = timeProvider.currentTimeMillis();
-    long duration = endDuration(requestResponseStart, time);
-    synchronized (this) {
-      for (Stats stats : timeStats) {
-        Stat stat = stats.getCurrentStat(time);
-        stat.requestResponsesCount++;
-        stat.requestResponsesDurationSum += duration;
-        stat.requestResponsesMaxDuration = Math.max(
-            stat.requestResponsesMaxDuration, duration);
-        stat.requestResponsesThroughput += responseSize;
-      }
-    }
   }
 
   /**
@@ -326,11 +298,7 @@ class Journal {
     for (int i = 0; i < timeStats.length; i++) {
       // Cause stats to update its internal structures
       timeStats[i].getCurrentStat(currentTime);
-      try {
-        timeStatsClone[i] = (Stats) timeStats[i].clone();
-      } catch (CloneNotSupportedException ex) {
-        throw new IllegalStateException(ex);
-      }
+      timeStatsClone[i] = timeStats[i].clone();
     }
 
     return new JournalSnapshot(this, currentTime, timeStatsClone);
@@ -437,11 +405,16 @@ class Journal {
       return stats[currentStat];
     }
 
-    public Object clone() throws CloneNotSupportedException {
-      Stats statsClone = (Stats) super.clone();
+    public Stats clone() {
+      Stats statsClone;
+      try {
+        statsClone = (Stats) super.clone();
+      } catch (CloneNotSupportedException ex) {
+        throw new AssertionError();
+      }
       statsClone.stats = new Stat[stats.length];
       for (int i = 0; i < stats.length; i++) {
-        statsClone.stats[i] = (Stat) stats[i].clone();
+        statsClone.stats[i] = stats[i].clone();
       }
       return statsClone;
     }
@@ -452,23 +425,6 @@ class Journal {
    * as controlled by {@link Stats}.
    */
   static class Stat implements Cloneable {
-    /**
-     * The number of responses sent.
-     */
-    long requestResponsesCount;
-    /**
-     * The total duration of responses sent.
-     */
-    long requestResponsesDurationSum;
-    /**
-     * The maximal duration of any one response.
-     */
-    long requestResponsesMaxDuration;
-    /**
-     * Number of bytes sent to client.
-     */
-    long requestResponsesThroughput;
-
     /**
      * The number of requests processed.
      */
@@ -502,11 +458,6 @@ class Journal {
      * Reset object for reuse.
      */
     private void reset() {
-      requestResponsesCount = 0;
-      requestResponsesDurationSum = 0;
-      requestResponsesMaxDuration = 0;
-      requestResponsesThroughput = 0;
-
       requestProcessingsCount = 0;
       requestProcessingsFailureCount = 0;
       requestProcessingsDurationSum = 0;
@@ -515,8 +466,12 @@ class Journal {
       gsaRetrievedDocument = false;
     }
 
-    public Object clone() throws CloneNotSupportedException {
-      return super.clone();
+    public Stat clone() {
+      try {
+        return (Stat) super.clone();
+      } catch (CloneNotSupportedException ex) {
+        throw new AssertionError();
+      }
     }
   }
 }

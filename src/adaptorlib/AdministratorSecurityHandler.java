@@ -29,7 +29,7 @@ import java.util.logging.*;
  * Require GSA-Administrator authentication before allowing access to wrapped
  * handler.
  */
-public class AdministratorSecurityHandler extends AbstractHandler {
+class AdministratorSecurityHandler extends AbstractHandler {
   private static final Logger log
       = Logger.getLogger(AdministratorSecurityHandler.class.getName());
   /** Key used to store the fact the user has been authenticated. */
@@ -110,12 +110,8 @@ public class AdministratorSecurityHandler extends AbstractHandler {
     String username = null;
     String password = null;
     try {
-      String request;
-      {
-        byte[] bytes
-            = IOHelper.readInputStreamToByteArray(ex.getRequestBody());
-        request = new String(bytes, "US-ASCII");
-      }
+      String request = IOHelper.readInputStreamToString(
+          ex.getRequestBody(), Charset.forName("US-ASCII"));
       for (String pair : request.split("&")) {
         String[] splitPair = pair.split("=", 2);
         if (splitPair.length != 2) {

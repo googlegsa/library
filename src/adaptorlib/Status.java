@@ -15,8 +15,8 @@
 package adaptorlib;
 
 /**
- * Tri-state indicator providing the user with a notification of broken parts of
- * the system.
+ * Multi-state indicator providing the user with a notification of broken parts
+ * of the system.
  */
 public class Status {
   /**

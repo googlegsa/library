@@ -49,6 +49,7 @@ class DocumentHandler extends AbstractHandler {
   private final HttpHandler authnHandler;
   private final SessionManager<HttpExchange> sessionManager;
   private final TransformPipeline transform;
+  private final int transformMaxBytes;
 
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
@@ -60,7 +61,7 @@ class DocumentHandler extends AbstractHandler {
                          String gsaHostname, String[] gsaIps,
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
-                         TransformPipeline transform) {
+                         TransformPipeline transform, int transformMaxBytes) {
     super(defaultHostname, defaultCharset);
     if (docIdDecoder == null || journal == null || adaptor == null
         || sessionManager == null) {
@@ -72,6 +73,7 @@ class DocumentHandler extends AbstractHandler {
     this.authnHandler = authnHandler;
     this.sessionManager = sessionManager;
     this.transform = transform;
+    this.transformMaxBytes = transformMaxBytes;
 
     if (addResolvedGsaHostnameToGsaIps) {
       try {
@@ -119,86 +121,34 @@ class DocumentHandler extends AbstractHandler {
 
   @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
-    // TODO(ejona): split this method into reasonably-sized submethods.
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
-      // TODO(ejona): Need to namespace all docids to allow random support URLs
       DocId docId = docIdDecoder.decodeDocId(getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
 
-      if (requestIsFromGsa(ex)) {
-        journal.recordGsaContentRequest(docId);
-      } else {
-        journal.recordNonGsaContentRequest(docId);
-        // Default to anonymous.
-        String principal = null;
-        Set<String> groups = Collections.emptySet();
-
-        Session session = sessionManager.getSession(ex, false);
-        if (session != null) {
-          AuthnState authnState
-              = (AuthnState) session.getAttribute(AuthnState.SESSION_ATTR_NAME);
-          if (authnState != null && authnState.isAuthenticated()) {
-            principal = authnState.getPrincipal();
-            groups = authnState.getGroups();
-          }
-        }
-
-        Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(principal,
-            groups, Collections.singletonList(docId));
-
-        AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
-        if (status == null) {
-          status = AuthzStatus.DENY;
-          log.log(Level.WARNING, "Adaptor did not provide an authorization "
-                  + "result for the requested DocId ''{0}''. Instead provided: "
-                  + "{1}", new Object[] {docId, authzMap});
-        }
-
-        if (status == AuthzStatus.INDETERMINATE) {
-          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                        "Unknown document");
-          return;
-        } else if (status == AuthzStatus.DENY) {
-          if (principal == null && authnHandler != null) {
-            // User was anonymous and document is not public, so try to authn
-            // user.
-            authnHandler.handle(ex);
-            return;
-          } else {
-            cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
-                          "403: Forbidden");
-            return;
-          }
-        }
+      if (!authzed(ex, docId)) {
+        return;
       }
 
       DocumentRequest request = new DocumentRequest(ex, docId,
                                                     dateFormat.get());
-      DocumentResponse response = new DocumentResponse(ex);
-      // TODO(ejona): if text, support providing encoding
+      DocumentResponse response = new DocumentResponse(ex, docId);
       journal.recordRequestProcessingStart();
-      byte[] content;
-      String contentType;
-      int httpResponseCode;
-      Metadata metadata;
       try {
         try {
           adaptor.getDocContent(request, response);
         } catch (RuntimeException e) {
           journal.recordRequestProcessingFailure();
           throw e;
+        } catch (FileNotFoundException e) {
+          journal.recordRequestProcessingEnd(0);
+          throw e;
         } catch (IOException e) {
           journal.recordRequestProcessingFailure();
           throw e;
         }
         journal.recordRequestProcessingEnd(response.getWrittenContentSize());
-
-        content = response.getWrittenContent();
-        contentType = response.contentType;
-        httpResponseCode = response.httpResponseCode;
-        metadata = response.metadata;
       } catch (FileNotFoundException e) {
         log.log(Level.FINE, "FileNotFound during getDocContent. Message: {0}",
                 e.getMessage());
@@ -208,60 +158,67 @@ class DocumentHandler extends AbstractHandler {
         return;
       }
 
-      if (httpResponseCode != HttpURLConnection.HTTP_OK
-          && httpResponseCode != HttpURLConnection.HTTP_NOT_MODIFIED) {
-        log.log(Level.WARNING, "Unexpected response code (was any response "
-                + "sent from the adaptor?): {0}", httpResponseCode);
-        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                      "Tried to return unexpected response code");
-        return;
-      }
-
-      if (content == null) {
-        log.finer("processed request; response is null. This is normal for HEAD"
-            + " requests or when the response is 304 Not Modified.");
-      } else {
-        log.finer("processed request; response is size=" + content.length);
-        if (transform != null) {
-          ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-          ByteArrayOutputStream metadataOut = new ByteArrayOutputStream();
-          try {
-            // TODO(ejona): hookup metadata once the transform handles it
-            // reasonably.
-            transform.transform(content, new byte[0], contentOut, metadataOut,
-                                new HashMap<String, String>());
-          } catch (TransformException e) {
-            throw new IOException(e);
-          }
-          content = contentOut.toByteArray();
-        }
-        if (metadata != null && requestIsFromGsa(ex)) {
-          ex.getResponseHeaders().set("X-Gsa-External-Metadata",
-                                      formMetadataHeader(metadata));
-        }
-      }
-      // TODO(ejona): decide when to use compression based on mime-type
-      enableCompressionIfSupported(ex);
-      if ("GET".equals(requestMethod)) {
-        respond(ex, httpResponseCode, contentType, content);
-      } else {
-        respondToHead(ex, httpResponseCode, contentType);
-      }
+      response.complete();
     } else {
       cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
                     "Unsupported request method");
     }
   }
 
-  @Override
-  protected void respond(HttpExchange ex, int code, String contentType,
-                         byte[] response) throws IOException {
-    journal.recordRequestResponseStart();
-    try {
-      super.respond(ex, code, contentType, response);
-    } finally {
-      journal.recordRequestResponseEnd(response == null ? 0 : response.length);
+  /**
+   * Check authz of user to access document. If the user is not authzed, the
+   * method handles responding to the HttpExchange.
+   *
+   * @return {@code true} if user authzed
+   */
+  private boolean authzed(HttpExchange ex, DocId docId) throws IOException {
+    if (requestIsFromGsa(ex)) {
+      journal.recordGsaContentRequest(docId);
+    } else {
+      journal.recordNonGsaContentRequest(docId);
+      // Default to anonymous.
+      String principal = null;
+      Set<String> groups = Collections.emptySet();
+
+      Session session = sessionManager.getSession(ex, false);
+      if (session != null) {
+        AuthnState authnState
+            = (AuthnState) session.getAttribute(AuthnState.SESSION_ATTR_NAME);
+        if (authnState != null && authnState.isAuthenticated()) {
+          principal = authnState.getPrincipal();
+          groups = authnState.getGroups();
+        }
+      }
+
+      Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(principal,
+          groups, Collections.singletonList(docId));
+
+      AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
+      if (status == null) {
+        status = AuthzStatus.DENY;
+        log.log(Level.WARNING, "Adaptor did not provide an authorization "
+                + "result for the requested DocId ''{0}''. Instead provided: "
+                + "{1}", new Object[] {docId, authzMap});
+      }
+
+      if (status == AuthzStatus.INDETERMINATE) {
+        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
+                      "Unknown document");
+        return false;
+      } else if (status == AuthzStatus.DENY) {
+        if (principal == null && authnHandler != null) {
+          // User was anonymous and document is not public, so try to authn
+          // user.
+          authnHandler.handle(ex);
+          return false;
+        } else {
+          cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
+                        "403: Forbidden");
+          return false;
+        }
+      }
     }
+    return true;
   }
 
   /**
@@ -344,29 +301,38 @@ class DocumentHandler extends AbstractHandler {
     }
   }
 
-  private static class DocumentResponse implements Response {
-    /** Special instance of stream that denotes that not modified was sent */
-    private static final OutputStream notModifiedOs = new SinkOutputStream();
+  /** Special instance of stream that denotes that not modified was sent */
+  private static final OutputStream notModifiedOs = new SinkOutputStream();
+
+  /**
+   * Handles incoming data from adaptor and sending it to the client. There are
+   * unfortunately many possible response cases. In short they are: document is
+   * Not Modified, document contents are ignored because we are responding to a
+   * HEAD request, transform pipeline is in use and document is small, transform
+   * pipeline is in use and document is large, and transform pipeline is not in
+   * use.
+   *
+   * <p>{@link #getOutputStream} and {@link #complete} are the main methods that
+   * need to be very aware of all the different possibilities.
+   */
+  private class DocumentResponse implements Response {
     private HttpExchange ex;
     private OutputStream os;
+    private CountingOutputStream countingOs;
     private String contentType;
-    private int httpResponseCode;
-    private Metadata metadata;
+    private Metadata metadata = Metadata.EMPTY;
+    private final DocId docId;
 
-    public DocumentResponse(HttpExchange ex) {
+    public DocumentResponse(HttpExchange ex, DocId docId) {
       this.ex = ex;
-      if ("HEAD".equals(ex.getRequestMethod())) {
-        // There is no need for them to call getOutputStream
-        httpResponseCode = HttpURLConnection.HTTP_OK;
-      }
+      this.docId = docId;
     }
 
     @Override
-    public void respondNotModified() {
+    public void respondNotModified() throws IOException {
       if (os != null) {
         throw new IllegalStateException("getOutputStream already called");
       }
-      httpResponseCode = HttpURLConnection.HTTP_NOT_MODIFIED;
       os = notModifiedOs;
     }
 
@@ -378,11 +344,15 @@ class DocumentHandler extends AbstractHandler {
       if (os != null) {
         return os;
       }
-      httpResponseCode = HttpURLConnection.HTTP_OK;
       if ("HEAD".equals(ex.getRequestMethod())) {
         os = new SinkOutputStream();
       } else {
-        os = new ByteArrayOutputStream();
+        countingOs = new CountingOutputStream(new LazyContentOutputStream());
+        if (transform != null) {
+          os = new MaxBufferOutputStream(countingOs, transformMaxBytes);
+        } else {
+          os = countingOs;
+        }
       }
       return os;
     }
@@ -404,22 +374,84 @@ class DocumentHandler extends AbstractHandler {
     }
 
     private long getWrittenContentSize() {
-      if (os instanceof ByteArrayOutputStream) {
-        return ((ByteArrayOutputStream) os).size();
-      } else {
-        return 0;
-      }
+      return countingOs == null ? 0 : countingOs.getBytesWritten();
     }
 
-    private byte[] getWrittenContent() {
-      if (os instanceof ByteArrayOutputStream) {
-        return ((ByteArrayOutputStream) os).toByteArray();
+    private void complete() throws IOException {
+      if (os == null) {
+        throw new IOException("No response sent from adaptor");
+      }
+      if (os == notModifiedOs) {
+        respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
+      } else if (os instanceof MaxBufferOutputStream) {
+        MaxBufferOutputStream mbos = (MaxBufferOutputStream) os;
+        byte[] buffer = mbos.getBufferedContent();
+        if (buffer == null) {
+          log.info("Not transforming document because document is too large");
+        } else {
+          ByteArrayOutputStream baos = transform(buffer);
+          buffer = null;
+          startSending(true);
+          baos.writeTo(ex.getResponseBody());
+        }
+        ex.getResponseBody().flush();
+        ex.getResponseBody().close();
+      } else if (os instanceof CountingOutputStream) {
+        // The adaptor called getOutputStream, but that doesn't mean they wrote
+        // out to it (consider an empty document). Thus, we force a usage of the
+        // output stream now.
+        os.flush();
+        ex.getResponseBody().flush();
+        ex.getResponseBody().close();
+      } else if (os instanceof SinkOutputStream) {
+        startSending(false);
       } else {
-        return null;
+        throw new IllegalStateException();
+      }
+      ex.close();
+    }
+
+    private void startSending(boolean hasContent) throws IOException {
+      if (!metadata.isEmpty() && requestIsFromGsa(ex)) {
+        ex.getResponseHeaders().set("X-Gsa-External-Metadata",
+                                    formMetadataHeader(metadata));
+      }
+      // TODO(ejona): decide when to use compression based on mime-type
+      enableCompressionIfSupported(ex);
+      startResponse(ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
+    }
+
+    private ByteArrayOutputStream transform(byte[] content) throws IOException {
+      ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
+      Map<String, String> metadataMap = metadata.toMap();
+      Map<String, String> params = new HashMap<String, String>();
+      params.put("DocId", docId.getUniqueId());
+      params.put("Content-Type", contentType);
+      try {
+        transform.transform(content, contentOut, metadataMap, params);
+      } catch (TransformException e) {
+        throw new IOException(e);
+      }
+      Set<MetaItem> metadataSet
+          = new HashSet<MetaItem>(metadataMap.size() * 2);
+      for (Map.Entry<String, String> me : metadataMap.entrySet()) {
+        metadataSet.add(MetaItem.raw(me.getKey(), me.getValue()));
+      }
+      metadata = new Metadata(metadataSet);
+      contentType = params.get("Content-Type");
+      return contentOut;
+    }
+
+    /**
+     * Used when transform pipeline is circumvented.
+     */
+    private class LazyContentOutputStream extends AbstractLazyOutputStream {
+      protected OutputStream retrieveOs() throws IOException {
+        startSending(true);
+        return ex.getResponseBody();
       }
     }
   }
-
 
   /**
    * OutputStream that forgets all input. It is equivalent to using /dev/null.
@@ -430,5 +462,136 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public void write(int b) throws IOException {}
+  }
+
+  private static class CountingOutputStream extends FastFilterOutputStream {
+    private long count;
+
+    public CountingOutputStream(OutputStream out) {
+      super(out);
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      super.write(b, off, len);
+      // Increment after write so that 'len' is known valid. If an exception is
+      // thrown then this is likely the better behavior as well.
+      count += len;
+    }
+
+    public long getBytesWritten() {
+      return count;
+    }
+  }
+
+  /**
+   * {@link ByteArrayOutputStream} that allows inquiring the current number of
+   * bytes written.
+   */
+  private static class CountByteArrayOutputStream
+      extends ByteArrayOutputStream {
+    public int getCount() {
+      return count;
+    }
+  }
+
+  /**
+   * Stream that buffers all content up to a maximum size, at which point it
+   * stops buffering altogether.
+   */
+  private static class MaxBufferOutputStream extends FastFilterOutputStream {
+    private static final Logger log
+        = Logger.getLogger(MaxBufferOutputStream.class.getName());
+
+    private CountByteArrayOutputStream buffer
+        = new CountByteArrayOutputStream();
+    private final int maxBytes;
+
+    public MaxBufferOutputStream(OutputStream out, int maxBytes) {
+      super(out);
+      this.maxBytes = maxBytes;
+    }
+
+    @Override
+    public void close() throws IOException {
+      if (buffer == null) {
+        super.close();
+      }
+    }
+
+    @Override
+    public void flush() throws IOException {
+      if (buffer == null) {
+        super.flush();
+      }
+    }
+
+    /**
+     * Returns the buffered content, or {@code null} when too much content was
+     * written an the provided {@code OutputStream} was used.
+     */
+    public byte[] getBufferedContent() {
+      if (buffer == null) {
+        return null;
+      }
+      return buffer.toByteArray();
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      if (buffer != null && buffer.getCount() + len > maxBytes) {
+        // Buffer begins overflowing. Flush buffer and stop using it.
+        log.fine("Buffer was exhausted. Stopping buffering.");
+        buffer.writeTo(out);
+        buffer = null;
+      }
+      if (buffer == null) {
+        // Buffer was exhausted. Write out directly.
+        super.write(b, off, len);
+        return;
+      }
+      // Write to buffer.
+      buffer.write(b, off, len);
+    }
+  }
+
+  /**
+   * {@link FilterOutputStream} replacement that uses {@link
+   * #write(byte[],int,int)} for all writes.
+   */
+  private static class FastFilterOutputStream extends OutputStream {
+    private byte[] singleByte = new byte[1];
+    // Protected to mimic FilterOutputStream.
+    protected OutputStream out;
+
+    public FastFilterOutputStream(OutputStream out) {
+      this.out = out;
+    }
+
+    @Override
+    public void close() throws IOException {
+      out.close();
+    }
+
+    @Override
+    public void flush() throws IOException {
+      out.close();
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      out.write(b, off, len);
+    }
+
+    @Override
+    public void write(byte[] b) throws IOException {
+      write(b, 0, b.length);
+    }
+
+    @Override
+    public void write(int b) throws IOException {
+      singleByte[0] = (byte) b;
+      write(singleByte);
+    }
   }
 }

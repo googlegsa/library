@@ -22,7 +22,7 @@ import java.util.zip.*;
 /**
  * Wrapping Adaptor that auto-unzips zips within the nested Adaptor.
  */
-public class AutoUnzipAdaptor extends WrapperAdaptor {
+class AutoUnzipAdaptor extends WrapperAdaptor {
   private static final Logger log
       = Logger.getLogger(AutoUnzipAdaptor.class.getName());
   /**
@@ -390,36 +390,15 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
    * writes directly to the {@code Response}, but also allows the code to
    * throwing a {@link FileNotFoundException} before writing to the stream.
    */
-  private static class LazyOutputStream extends OutputStream {
+  private static class LazyOutputStream extends AbstractLazyOutputStream {
     private Response resp;
-    private OutputStream os;
 
     public LazyOutputStream(Response resp) {
       this.resp = resp;
     }
 
-    public void close() throws IOException {
-      loadOs();
-      os.close();
-    }
-
-    public void flush() throws IOException {
-      loadOs();
-      os.flush();
-    }
-
-    public void write(byte[] b, int off, int len) throws IOException {
-      loadOs();
-      os.write(b, off, len);
-    }
-
-    public void write(int b) throws IOException {
-      loadOs();
-      os.write(b);
-    }
-
-    private void loadOs() {
-      os = resp.getOutputStream();
+    protected OutputStream retrieveOs() throws IOException {
+      return resp.getOutputStream();
     }
   }
 

@@ -61,6 +61,10 @@ public class Config {
     addKey("server.addResolvedGsaHostnameToGsaIps", "true");
     addKey("server.secure", "false");
     addKey("server.keyAlias", "adaptor");
+    addKey("server.maxWorkerThreads", "16");
+    // A queue that takes one second to drain, assuming 16 threads and 100 ms
+    // for each request.
+    addKey("server.queueCapacity", "160");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
@@ -77,6 +81,9 @@ public class Config {
     addKey("adaptor.incrementalPollPeriodSecs", "900");
     // In seconds.
     addKey("config.pollPeriodSecs", "30");
+    addKey("transform.pipeline", "");
+    // 1 MiB.
+    addKey("transform.maxDocumentBytes", "1048576");
   }
 
   public Set<String> getAllKeys() {
@@ -231,6 +238,23 @@ public class Config {
   }
 
   /**
+   * The maximum number of worker threads to use to respond to document
+   * requests. The main reason to limit the number of threads is that each can
+   * be using a transform pipeline and will have multiple complete copies of the
+   * response in memory at the same time.
+   */
+  public int getServerMaxWorkerThreads() {
+    return Integer.parseInt(getValue("server.maxWorkerThreads"));
+  }
+
+  /**
+   * The maximum request queue length.
+   */
+  public int getServerQueueCapacity() {
+    return Integer.parseInt(getValue("server.queueCapacity"));
+  }
+
+  /**
    * Optional (default false): Adds no-recrawl bit with sent records in feed
    * file. If connector handles updates and deletes then GSA does not have to
    * recrawl periodically to notice that a document is changed or deleted.
@@ -281,6 +305,38 @@ public class Config {
    */
   public long getConfigPollPeriodMillis() {
     return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
+  }
+
+  /**
+   * Returns a list of maps correspending to each transform in the pipeline.
+   * Each map is the configuration entries for that transform. The 'name'
+   * configuration entry is added in each map based on the name provided by the
+   * user.
+   */
+  public synchronized List<Map<String, String>> getTransformPipelineSpec() {
+    final String configKey = "transform.pipeline";
+    String configValue = getValue(configKey).trim();
+    if ("".equals(configValue)) {
+      return Collections.emptyList();
+    }
+    String[] items = getValue(configKey).split(",");
+    List<Map<String, String>> transforms
+        = new ArrayList<Map<String, String>>(items.length);
+    for (String item : items) {
+      item = item.trim();
+      if ("".equals(item)) {
+        throw new RuntimeException("Invalid format: " + configValue);
+      }
+      Map<String, String> params
+          = getValuesWithPrefix(configKey + "." + item + ".");
+      params.put("name", item);
+      transforms.add(params);
+    }
+    return transforms;
+  }
+
+  public int getTransformMaxDocumentBytes() {
+    return Integer.parseInt(getValue("transform.maxDocumentBytes"));
   }
 
 // TODO(pjo): Implement on GSA
@@ -491,6 +547,21 @@ public class Config {
           "You must set configuration key ''{0}''.", key));
     }
     return value;
+  }
+
+  /**
+   * Gets all configuration values that begin with {@code prefix}, returning
+   * them as a map with the keys having {@code prefix} removed.
+   */
+  public synchronized Map<String, String> getValuesWithPrefix(String prefix) {
+    Map<String, String> values = new HashMap<String, String>();
+    for (String key : config.stringPropertyNames()) {
+      if (!key.startsWith(prefix)) {
+        continue;
+      }
+      values.put(key.substring(prefix.length()), config.getProperty(key));
+    }
+    return values;
   }
 
   /**

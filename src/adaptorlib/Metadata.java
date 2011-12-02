@@ -65,11 +65,19 @@ public final class Metadata implements Iterable<MetaItem> {
   }
 
   public Map<String, String> toMap() {
-    Map<String, String> map = new HashMap<String, String>();
+    Map<String, String> map = new HashMap<String, String>(items.size() * 2);
     for (MetaItem item : this) {
       map.put(item.getName(), item.getValue());
     }
     return map;
+  }
+
+  public boolean isEmpty() {
+    return size() == 0;
+  }
+
+  public int size() {
+    return items.size();
   }
 
   private static void checkConsistency(Set<MetaItem> items,

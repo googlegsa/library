@@ -17,69 +17,89 @@ package adaptorlib;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
-/** */
+/**
+ * Modify content and metadata using multiple serial transforms. The transforms
+ * are arranged into a serial pipeline where the output of one becomes the
+ * input for the next in the series.
+ */
 public class TransformPipeline extends AbstractList<DocumentTransform> {
+  private static final Logger log
+      = Logger.getLogger(TransformPipeline.class.getName());
 
   /**
-   * ContentIn and metadataIn are guaranteed to remain unchanged.
+   * Transform {@code contentIn} and {@code metadata}. {@code ContentIn} is
+   * guaranteed to remain unchanged; the rest of the parameters are expected to
+   * change.
    */
   public void transform(byte[] contentIn,
-                        byte[] metadataIn,
                         OutputStream contentOut,
-                        OutputStream metadataOut,
+                        Map<String, String> metadata,
                         Map<String, String> params) throws TransformException, IOException {
     if (transformList.isEmpty()) {
       contentOut.write(contentIn);
-      metadataOut.write(metadataIn);
       return;
     }
 
     ByteArrayOutputStream contentInTransit = new ByteArrayOutputStream(contentIn.length);
-    ByteArrayOutputStream metaInTransit = new ByteArrayOutputStream(metadataIn.length);
     ByteArrayOutputStream contentOutTransit = new ByteArrayOutputStream(contentIn.length);
-    ByteArrayOutputStream metaOutTransit = new ByteArrayOutputStream(metadataIn.length);
+    Map<String, String> metadataInTransit = Collections.checkedMap(
+        new HashMap<String, String>(metadata.size() * 2), String.class, String.class);
+    Map<String, String> metadataOutTransit = Collections.checkedMap(
+        new HashMap<String, String>(metadata.size() * 2), String.class, String.class);
+    Map<String, String> paramsInTransit = Collections.checkedMap(
+        new HashMap<String, String>(params.size() * 2), String.class, String.class);
+    Map<String, String> paramsOutTransit = Collections.checkedMap(
+        new HashMap<String, String>(params.size() * 2), String.class, String.class);
+
     contentInTransit.write(contentIn);
-    metaInTransit.write(metadataIn);
-    for (int i = 0; i < transformList.size(); i++) {
-      DocumentTransform transform = transformList.get(i);
+    metadataInTransit.putAll(metadata);
+    paramsInTransit.putAll(params);
+
+    for (DocumentTransform transform : transformList) {
+      contentOutTransit.reset();
+      metadataOutTransit.clear();
+      metadataOutTransit.putAll(metadataInTransit);
+      paramsOutTransit.clear();
+      paramsOutTransit.putAll(paramsInTransit);
+
       try {
-        transform.transform(contentInTransit, metaInTransit, contentOutTransit, metaOutTransit,
-                            params);
+        transform.transform(new UnmodifiableWrapperByteArrayOutputStream(contentInTransit),
+                            contentOutTransit, metadataOutTransit, paramsOutTransit);
       } catch (TransformException e) {
-        // TODO(brandoni): Log error
         if (transform.errorHaltsPipeline()) {
+          log.log(Level.WARNING, "Transform Exception. Aborting '" + transform.name() + "'", e);
           throw e;
         } else {
-          if (i < transformList.size() - 1) {
-            contentOutTransit.reset();
-            metaOutTransit.reset();
-            continue;
-          } else {
-            contentInTransit.writeTo(contentOut);
-            metaInTransit.writeTo(metadataOut);
-            return;
-          }
+          log.log(Level.WARNING,
+                  "Transform Exception. Ignoring transform '" + transform.name() + "'", e);
+          continue;
         }
       }
-      if (i < transformList.size() - 1) {
-        // Swap input and output.
-        ByteArrayOutputStream tmp = contentInTransit;
-        contentInTransit = contentOutTransit;
-        contentOutTransit = tmp;
-        tmp = metaInTransit;
-        metaInTransit = metaOutTransit;
-        metaOutTransit = tmp;
-
-        contentOutTransit.reset();
-        metaOutTransit.reset();
-      }
+      // Swap input and output. The input is reused as the output for effeciency.
+      ByteArrayOutputStream tmp = contentInTransit;
+      contentInTransit = contentOutTransit;
+      contentOutTransit = tmp;
+      Map<String, String> tmpMap = metadataInTransit;
+      metadataInTransit = metadataOutTransit;
+      metadataOutTransit = tmpMap;
+      tmpMap = paramsInTransit;
+      paramsInTransit = paramsOutTransit;
+      paramsOutTransit = tmpMap;
     }
-    contentOutTransit.writeTo(contentOut);
-    metaOutTransit.writeTo(metadataOut);
+    contentInTransit.writeTo(contentOut);
+    metadata.clear();
+    metadata.putAll(metadataInTransit);
+    params.clear();
+    params.putAll(paramsInTransit);
   }
 
   @Override
@@ -108,4 +128,52 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
   }
 
   private ArrayList<DocumentTransform> transformList = new ArrayList<DocumentTransform>();
+
+  private static class UnmodifiableWrapperByteArrayOutputStream extends ByteArrayOutputStream {
+    private ByteArrayOutputStream os;
+
+    public UnmodifiableWrapperByteArrayOutputStream(ByteArrayOutputStream os) {
+      this.os = os;
+    }
+
+    @Override
+    public void reset() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public int size() {
+      return os.size();
+    }
+
+    @Override
+    public byte[] toByteArray() {
+      return os.toByteArray();
+    }
+
+    @Override
+    public String toString() {
+      return os.toString();
+    }
+
+    @Override
+    public String toString(String charsetName) throws UnsupportedEncodingException {
+      return os.toString(charsetName);
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void write(int b) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void writeTo(OutputStream out) throws IOException {
+      os.writeTo(out);
+    }
+  }
 }

@@ -53,9 +53,9 @@ public class MetaTaggerTransform extends DocumentTransform {
   }
 
   @Override
-  public void transform(ByteArrayOutputStream contentIn, ByteArrayOutputStream metadataIn,
-                        OutputStream contentOut, OutputStream metadataOut,
-                        Map<String, String> params) throws TransformException, IOException {
+  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                        Map<String, String> metadata, Map<String, String> params)
+      throws TransformException, IOException {
     String content = contentIn.toString();
     StringBuilder sb = new StringBuilder();
     for (Map.Entry<Pattern, String> entry : patternMappings.entrySet()) {
@@ -67,7 +67,6 @@ public class MetaTaggerTransform extends DocumentTransform {
     // </HEAD> element and inserts the metadata right before it.
     content = content.replaceFirst("</(HEAD|head)", "\n" + sb.toString() + "</HEAD");
     contentOut.write(content.getBytes());
-    metadataIn.writeTo(metadataOut);
   }
 
   private void loadPatternFile(String filename) throws IOException {

@@ -24,7 +24,7 @@ package adaptorlib;
  * of a particular document or when it wants to find
  * out if a particular user has read permissions for it.
  */
-public class DocId {
+public class DocId implements Comparable<DocId> {
   private final String uniqId;  // Not null.
 
   public DocId(String id) {
@@ -56,5 +56,10 @@ public class DocId {
   @Override
   public int hashCode() {
     return this.uniqId.hashCode();
+  }
+
+  @Override
+  public int compareTo(DocId docId) {
+    return uniqId.compareTo(docId.uniqId);
   }
 }

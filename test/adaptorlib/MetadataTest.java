@@ -156,6 +156,11 @@ public class MetadataTest {
                  couple.toString());
   }
 
+  @Test
+  public void testIsEmpty() {
+    assertEquals(true, Metadata.EMPTY.isEmpty());
+  }
+
   private static Set<MetaItem> makeCouple() {
     Set<MetaItem> coupleItems = new TreeSet<MetaItem>();
     coupleItems.add(MetaItem.raw("google:ispublic", "true"));
