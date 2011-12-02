@@ -39,8 +39,14 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
   public CommandLineTransform() {}
 
-  public CommandLineTransform(Map<String, String> config) {
-    super(config);
+  /**
+   * Accepts keys {@code "cmd"}, {@code "workingDirectory"}, {@code "arg?"}, and
+   * any keys accepted by the super class. The {@code "arg?"} configuration
+   * values should be numerically increasing starting from one: {@code "arg1"},
+   * {@code "arg2"}, {@code "arg3}, ...
+   */
+  protected void configure(Map<String, String> config) {
+    super.configure(config);
 
     List<String> cmdList = new ArrayList<String>();
     String cmd = config.get("cmd");
@@ -225,5 +231,11 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   @Override
   public void setRequired(boolean required) {
     super.setRequired(required);
+  }
+
+  public static CommandLineTransform create(Map<String, String> config) {
+    CommandLineTransform transform = new CommandLineTransform();
+    transform.configure(config);
+    return transform;
   }
 }

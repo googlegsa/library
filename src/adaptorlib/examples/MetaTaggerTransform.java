@@ -102,4 +102,17 @@ public class MetaTaggerTransform extends AbstractDocumentTransform {
       return p1.toString().equals(p2.toString());
     }
   }
+
+  public static MetaTaggerTransform create(Map<String, String> config)
+      throws IOException {
+    String patternFile = config.get("patternFile");
+    MetaTaggerTransform transform;
+    if (patternFile == null) {
+      transform = new MetaTaggerTransform();
+    } else {
+      transform = new MetaTaggerTransform(patternFile);
+    }
+    transform.configure(config);
+    return transform;
+  }
 }

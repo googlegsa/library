@@ -84,13 +84,13 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", InstantiatableTransform.class.getName());
+      map.put("factoryMethod", getClass().getName() + ".factoryMethod");
       config.add(map);
     }
     TransformPipeline pipeline
         = GsaCommunicationHandler.createTransformPipeline(config);
     assertEquals(1, pipeline.size());
-    assertEquals(InstantiatableTransform.class, pipeline.get(0).getClass());
+    assertEquals(IdentityTransform.class, pipeline.get(0).getClass());
     assertEquals("testing", pipeline.get(0).getName());
   }
 
@@ -119,7 +119,7 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", "adaptorlib.NotARealClass");
+      map.put("factoryMethod", "adaptorlib.NotARealClass.fakeMethod");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -133,7 +133,7 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", WrongConstructorTransform.class.getName());
+      map.put("factoryMethod", getClass().getName() + ".wrongFactoryMethod");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -147,7 +147,8 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", CantInstantiateTransform.class.getName());
+      map.put("factoryMethod",
+          getClass().getName() + ".cantInstantiateFactoryMethod");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -161,7 +162,22 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", WrongTypeTransform.class.getName());
+      map.put("factoryMethod",
+          getClass().getName() + ".wrongTypeFactoryMethod");
+      config.add(map);
+    }
+    thrown.expect(ClassCastException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testCreateTransformPipelineNoMethod() throws Exception {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("factoryMethod", "noFactoryMethodToBeFound");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -194,12 +210,6 @@ public class GsaCommunicationHandlerTest {
   }
 
   static class IdentityTransform extends AbstractDocumentTransform {
-    public IdentityTransform() {}
-
-    public IdentityTransform(Map<String, String> config) {
-      super(config);
-    }
-
     @Override
     public void transform(ByteArrayOutputStream contentIn,
                           OutputStream contentOut,
@@ -209,25 +219,22 @@ public class GsaCommunicationHandlerTest {
     }
   }
 
-  static class InstantiatableTransform extends IdentityTransform {
-    public InstantiatableTransform(Map<String, String> config) {
-      super(config);
-    }
+  public static IdentityTransform factoryMethod(Map<String, String> config) {
+    IdentityTransform transform = new IdentityTransform();
+    transform.configure(config);
+    return transform;
   }
 
-  static class WrongConstructorTransform extends IdentityTransform {
-    public WrongConstructorTransform() {
-      super(Collections.<String, String>emptyMap());
-    }
+  public static IdentityTransform wrongFactoryMethod() {
+    return factoryMethod(Collections.<String, String>emptyMap());
   }
 
-  static class CantInstantiateTransform extends IdentityTransform {
-    public CantInstantiateTransform(Map<String, String> config) {
-      throw new RuntimeException("This always seems to happen");
-    }
+  public static IdentityTransform cantInstantiateFactoryMethod(
+      Map<String, String> config) {
+    throw new RuntimeException("This always seems to happen");
   }
 
-  static class WrongTypeTransform {
-    public WrongTypeTransform(Map<String, String> config) {}
+  public static Object wrongTypeFactoryMethod(Map<String, String> config) {
+    return new Object();
   }
 }

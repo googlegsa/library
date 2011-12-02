@@ -21,6 +21,11 @@ import java.util.Map;
 
 /**
  * Represents an individual transform in the transform pipeline.
+ *
+ * <p>Implementations should also typically have a static factory method with a
+ * single {@code Map<String, String>} argument for creating instances based on
+ * configuration. Implementations are encouraged to accept "name" and
+ * "required" as configuration keys.
  */
 public interface DocumentTransform {
   /**

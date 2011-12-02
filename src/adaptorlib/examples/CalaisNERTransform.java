@@ -116,4 +116,10 @@ public class CalaisNERTransform extends AbstractDocumentTransform {
     content = content.replaceFirst("</(HEAD|head)", "\n" + sb.toString() + "</HEAD");
     contentOut.write(content.getBytes());
   }
+
+  public static CalaisNERTransform create(Map<String, String> config) {
+    CalaisNERTransform transform = new CalaisNERTransform();
+    transform.configure(config);
+    return transform;
+  }
 }

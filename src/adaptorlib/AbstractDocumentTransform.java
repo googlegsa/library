@@ -18,6 +18,9 @@ import java.util.Map;
 
 /**
  * Convenience class for implementing {@code DocumentTransform}s.
+ * Implementations only need to implement {@link #transform}, although they
+ * should also likely have a static factory method as defined in {@link
+ * DocumentTransform}.
  */
 public abstract class AbstractDocumentTransform implements DocumentTransform {
   private String name = getClass().getName();
@@ -35,7 +38,12 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
     this.required = required;
   }
 
-  public AbstractDocumentTransform(Map<String, String> config) {
+  /**
+   * Configure this instance with provided {@code config}. Accepts keys {@code
+   * "name"} and {@code "required"}. Unknown keys are ignored. This method is
+   * intended as a convenience for use in a static factory method.
+   */
+  protected void configure(Map<String, String> config) {
     String name = config.get("name");
     if (name != null) {
       this.name = name;

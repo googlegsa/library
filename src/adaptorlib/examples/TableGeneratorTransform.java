@@ -89,4 +89,17 @@ public class TableGeneratorTransform extends AbstractDocumentTransform {
    * the escaped null character, because it is explicitly disallowed in HTML.
    */
   private static final String SIGIL = "&#0;";
+
+  public static TableGeneratorTransform create(Map<String, String> config)
+      throws IOException {
+    String templateFile = config.get("templateFile");
+    TableGeneratorTransform transform;
+    if (templateFile == null) {
+      transform = new TableGeneratorTransform();
+    } else {
+      transform = new TableGeneratorTransform(templateFile);
+    }
+    transform.configure(config);
+    return transform;
+  }
 }
