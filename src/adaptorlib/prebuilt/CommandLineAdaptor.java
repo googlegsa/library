@@ -15,18 +15,24 @@
 package adaptorlib.prebuilt;
 
 import adaptorlib.AbstractAdaptor;
+import adaptorlib.AdaptorContext;
 import adaptorlib.CommandStreamParser;
+import adaptorlib.Config;
 import adaptorlib.DocId;
 import adaptorlib.DocIdPusher;
 import adaptorlib.Request;
 import adaptorlib.Response;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 /**
@@ -35,6 +41,69 @@ import java.util.logging.Logger;
 public class CommandLineAdaptor extends AbstractAdaptor {
   private static final Logger log = Logger.getLogger(CommandLineAdaptor.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
+  private String cmd;
+  private List<String> listerCommand;
+  private List<String> retrieverCommand;
+
+  @Override
+  public void initConfig(Config config) {
+    // Setup default configuration values. The user is allowed to override them.
+
+    // Create a new configuration key for letting the user configure this
+    // adaptor.
+    config.addKey("commandlineadaptor.lister.cmd", "./lister.sh");
+    // Change the default to automatically provide unzipped zip contents to the
+    // GSA.
+    config.overrideKey("adaptor.autoUnzip", "true");
+  }
+
+  @Override
+  public void init(AdaptorContext context) throws Exception {
+    // Process configuration.
+    Map<String, String> config = context.getConfig().getValuesWithPrefix(
+        "commandlineadaptor.lister");
+    listerCommand = new ArrayList<String>();
+    
+    for (Map.Entry<String, String> me : config.entrySet()) {
+      String key = me.getKey();
+      String value = me.getValue();
+      if ("cmd".equals(key)) {
+        listerCommand.add(value);
+      } else if ("workingDirectory".equals(key)) {
+        workingDirectory(new File(value));
+      } else if ("errorHaltsPipeline".equals(key)) {
+        errorHaltsPipeline(Boolean.parseBoolean(value));
+      }
+    }
+    if (cmd.size() == 0) {
+      throw new RuntimeException("cmd configuration property must be set");
+    }
+    for (int i = 1;; i++) {
+      String value = config.get("arg" + i);
+      if (value == null) {
+        break;
+      }
+      cmd.add(value);
+    }
+    transformCommand = cmd;
+
+  }
+
+  public void setListerCommand(List<String> commandWithArgs) {
+    this.listerCommand = new ArrayList<String>(commandWithArgs);
+  }
+
+  public List<String> getListerCommand() {
+    return Collections.unmodifiableList(listerCommand);
+  }
+
+  public void setRetrieverCommand(List<String> commandWithArgs) {
+    this.retrieverCommand = new ArrayList<String>(commandWithArgs);
+  }
+
+  public List<String> geRetrieverCommand() {
+    return Collections.unmodifiableList(retrieverCommand);
+  }
 
   @Override
   public void getDocIds(DocIdPusher pusher) throws IOException,
@@ -43,7 +112,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     Command command = newListerCommand();
 
     try {
-      log.finest("Command: ./list-doc-ids.sh");
+      log.finest("Command: " + cmd);
       commandResult = command.exec(new String[] {"./list-doc-ids.sh"});
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
@@ -133,4 +202,5 @@ public class CommandLineAdaptor extends AbstractAdaptor {
   public static void main(String[] args) {
     AbstractAdaptor.main(new CommandLineAdaptor(), args);
   }
+
 }
