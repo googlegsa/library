@@ -15,6 +15,7 @@
 package adaptorlib;
 
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Date;
 
 /**
@@ -149,16 +150,9 @@ public interface DocIdPusher {
   
     @Override
     public int hashCode() {
-      int code = id.hashCode();
-      if (null != lastModified) {
-        code *= 31;
-        code += lastModified.hashCode();
-      }
-      if (null != link) {
-        code *= 37;
-        code += link.hashCode();
-      }
-      return code;
+      Object members[] = new Object[] { id, delete, lastModified, link,
+          crawlImmediately, crawlOnce, lock };
+      return Arrays.hashCode(members);
     }
   
     @Override
@@ -186,13 +180,13 @@ public interface DocIdPusher {
 
     /**
      * Used to create instances of Record, which are immutable.
-     * All fields have default values.
+     * DocId is required.
      */
     public static class Builder {
       private DocId docid = null;
       private boolean delete = false;
-      private Date lastModified;
-      private URI link;
+      private Date lastModified = null;
+      private URI link = null;
       private boolean crawlImmediately = false;
       private boolean crawlOnce = false;
       private boolean lock = false;
