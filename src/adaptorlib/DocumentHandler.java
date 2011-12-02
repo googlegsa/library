@@ -301,8 +301,28 @@ class DocumentHandler extends AbstractHandler {
     }
   }
 
-  /** Special instance of stream that denotes that not modified was sent */
-  private static final OutputStream notModifiedOs = new SinkOutputStream();
+  /**
+   * The state of the response. The state begins in SETUP mode, after which it
+   * should transition to another state and become fixed at that state.
+   */
+  private enum State {
+    /**
+     * The class has not been informed how to respond, so we can still make
+     * changes to what will be provided in headers.
+     */
+    SETUP,
+    /** No content to send, but we do need a different response code. */
+    NOT_MODIFIED,
+    /** Must not respond with content, but otherwise act like normal. */
+    HEAD,
+    /** No need to buffer contents before sending. */
+    NO_TRANSFORM,
+    /**
+     * Buffer "small" contents. Large file contents will be written without
+     * transformation.
+     */
+    TRANSFORM,
+  }
 
   /**
    * Handles incoming data from adaptor and sending it to the client. There are
@@ -316,6 +336,7 @@ class DocumentHandler extends AbstractHandler {
    * need to be very aware of all the different possibilities.
    */
   private class DocumentResponse implements Response {
+    private State state = State.SETUP;
     private HttpExchange ex;
     private OutputStream os;
     private CountingOutputStream countingOs;
@@ -330,27 +351,39 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public void respondNotModified() throws IOException {
-      if (os != null) {
-        throw new IllegalStateException("getOutputStream already called");
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
       }
-      os = notModifiedOs;
+      state = State.NOT_MODIFIED;
+      os = new SinkOutputStream();
     }
 
     @Override
     public OutputStream getOutputStream() {
-      if (os == notModifiedOs) {
-        throw new IllegalStateException("respondNotModified already called");
-      }
-      if (os != null) {
-        return os;
+      switch (state) {
+        case SETUP:
+          // We will need to make an OutputStream.
+          break;
+        case HEAD:
+        case NO_TRANSFORM:
+        case TRANSFORM:
+          // Already called before. Provide saved OutputStream.
+          return os;
+        case NOT_MODIFIED:
+          throw new IllegalStateException("respondNotModified already called");
+        default:
+          throw new IllegalStateException("Already responded");
       }
       if ("HEAD".equals(ex.getRequestMethod())) {
+        state = State.HEAD;
         os = new SinkOutputStream();
       } else {
         countingOs = new CountingOutputStream(new LazyContentOutputStream());
         if (transform != null) {
+          state = State.TRANSFORM;
           os = new MaxBufferOutputStream(countingOs, transformMaxBytes);
         } else {
+          state = State.NO_TRANSFORM;
           os = countingOs;
         }
       }
@@ -359,16 +392,16 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public void setContentType(String contentType) {
-      if (os != null) {
-        throw new IllegalStateException();
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
       }
       this.contentType = contentType;
     }
 
     @Override
     public void setMetadata(Metadata metadata) {
-      if (os != null) {
-        throw new IllegalStateException();
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
       }
       this.metadata = metadata;
     }
@@ -378,35 +411,44 @@ class DocumentHandler extends AbstractHandler {
     }
 
     private void complete() throws IOException {
-      if (os == null) {
-        throw new IOException("No response sent from adaptor");
-      }
-      if (os == notModifiedOs) {
-        respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
-      } else if (os instanceof MaxBufferOutputStream) {
-        MaxBufferOutputStream mbos = (MaxBufferOutputStream) os;
-        byte[] buffer = mbos.getBufferedContent();
-        if (buffer == null) {
-          log.info("Not transforming document because document is too large");
-        } else {
-          ByteArrayOutputStream baos = transform(buffer);
-          buffer = null;
-          startSending(true);
-          baos.writeTo(ex.getResponseBody());
-        }
-        ex.getResponseBody().flush();
-        ex.getResponseBody().close();
-      } else if (os instanceof CountingOutputStream) {
-        // The adaptor called getOutputStream, but that doesn't mean they wrote
-        // out to it (consider an empty document). Thus, we force a usage of the
-        // output stream now.
-        os.flush();
-        ex.getResponseBody().flush();
-        ex.getResponseBody().close();
-      } else if (os instanceof SinkOutputStream) {
-        startSending(false);
-      } else {
-        throw new IllegalStateException();
+      switch (state) {
+        case SETUP:
+          throw new IOException("No response sent from adaptor");
+
+        case NOT_MODIFIED:
+          respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
+          break;
+
+        case TRANSFORM:
+          MaxBufferOutputStream mbos = (MaxBufferOutputStream) os;
+          byte[] buffer = mbos.getBufferedContent();
+          if (buffer == null) {
+            log.info("Not transforming document because document is too large");
+          } else {
+            ByteArrayOutputStream baos = transform(buffer);
+            buffer = null;
+            startSending(true);
+            baos.writeTo(ex.getResponseBody());
+          }
+          ex.getResponseBody().flush();
+          ex.getResponseBody().close();
+          break;
+
+        case NO_TRANSFORM:
+          // The adaptor called getOutputStream, but that doesn't mean they
+          // wrote out to it (consider an empty document). Thus, we force a
+          // usage of the output stream now.
+          os.flush();
+          ex.getResponseBody().flush();
+          ex.getResponseBody().close();
+          break;
+
+        case HEAD:
+          startSending(false);
+          break;
+
+        default:
+          throw new IllegalStateException();
       }
       ex.close();
     }
