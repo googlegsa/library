@@ -50,6 +50,7 @@ class DocumentHandler extends AbstractHandler {
   private final SessionManager<HttpExchange> sessionManager;
   private final TransformPipeline transform;
   private final int transformMaxBytes;
+  private final boolean transformRequired;
 
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
@@ -61,7 +62,8 @@ class DocumentHandler extends AbstractHandler {
                          String gsaHostname, String[] gsaIps,
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
-                         TransformPipeline transform, int transformMaxBytes) {
+                         TransformPipeline transform, int transformMaxBytes,
+                         boolean transformRequired) {
     super(defaultHostname, defaultCharset);
     if (docIdDecoder == null || journal == null || adaptor == null
         || sessionManager == null) {
@@ -74,6 +76,7 @@ class DocumentHandler extends AbstractHandler {
     this.sessionManager = sessionManager;
     this.transform = transform;
     this.transformMaxBytes = transformMaxBytes;
+    this.transformRequired = transformRequired;
 
     if (addResolvedGsaHostnameToGsaIps) {
       try {
@@ -319,7 +322,7 @@ class DocumentHandler extends AbstractHandler {
     NO_TRANSFORM,
     /**
      * Buffer "small" contents. Large file contents will be written without
-     * transformation.
+     * transformation or cause an exception (depending on transformRequired).
      */
     TRANSFORM,
   }
@@ -378,12 +381,15 @@ class DocumentHandler extends AbstractHandler {
         state = State.HEAD;
         os = new SinkOutputStream();
       } else {
-        countingOs = new CountingOutputStream(new LazyContentOutputStream());
         if (transform != null) {
           state = State.TRANSFORM;
+          OutputStream innerOs = transformRequired
+              ? new CantUseOutputStream() : new LazyContentOutputStream();
+          countingOs = new CountingOutputStream(innerOs);
           os = new MaxBufferOutputStream(countingOs, transformMaxBytes);
         } else {
           state = State.NO_TRANSFORM;
+          countingOs = new CountingOutputStream(new LazyContentOutputStream());
           os = countingOs;
         }
       }
@@ -491,6 +497,17 @@ class DocumentHandler extends AbstractHandler {
       protected OutputStream retrieveOs() throws IOException {
         startSending(true);
         return ex.getResponseBody();
+      }
+    }
+    
+    /**
+     * Used when transform pipeline is circumvented, but the pipeline is
+     * required.
+     */
+    private class CantUseOutputStream extends AbstractLazyOutputStream {
+      protected OutputStream retrieveOs() throws IOException {
+        throw new IOException("Transform pipeline is required, but document is "
+                              + "too large");
       }
     }
   }

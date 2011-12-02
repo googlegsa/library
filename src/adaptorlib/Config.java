@@ -84,6 +84,7 @@ public class Config {
     addKey("transform.pipeline", "");
     // 1 MiB.
     addKey("transform.maxDocumentBytes", "1048576");
+    addKey("transform.required", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -337,6 +338,10 @@ public class Config {
 
   public int getTransformMaxDocumentBytes() {
     return Integer.parseInt(getValue("transform.maxDocumentBytes"));
+  }
+
+  public boolean isTransformRequired() {
+    return Boolean.parseBoolean(getValue("transform.required"));
   }
 
 // TODO(pjo): Implement on GSA

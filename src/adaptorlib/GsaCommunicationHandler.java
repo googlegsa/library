@@ -157,7 +157,8 @@ public class GsaCommunicationHandler {
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager,
                             createTransformPipeline(),
-                            config.getTransformMaxDocumentBytes()));
+                            config.getTransformMaxDocumentBytes(),
+                            config.isTransformRequired()));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
