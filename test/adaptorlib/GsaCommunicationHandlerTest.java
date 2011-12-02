@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -192,19 +193,35 @@ public class GsaCommunicationHandlerTest {
     }
   }
 
-  static class InstantiatableTransform extends AbstractDocumentTransform {
+  static class IdentityTransform extends AbstractDocumentTransform {
+    public IdentityTransform() {}
+
+    public IdentityTransform(Map<String, String> config) {
+      super(config);
+    }
+
+    @Override
+    public void transform(ByteArrayOutputStream contentIn,
+                          OutputStream contentOut,
+                          Map<String, String> metadata,
+                          Map<String, String> params) throws IOException {
+      contentIn.writeTo(contentOut);
+    }
+  }
+
+  static class InstantiatableTransform extends IdentityTransform {
     public InstantiatableTransform(Map<String, String> config) {
       super(config);
     }
   }
 
-  static class WrongConstructorTransform extends AbstractDocumentTransform {
+  static class WrongConstructorTransform extends IdentityTransform {
     public WrongConstructorTransform() {
       super(Collections.<String, String>emptyMap());
     }
   }
 
-  static class CantInstantiateTransform extends AbstractDocumentTransform {
+  static class CantInstantiateTransform extends IdentityTransform {
     public CantInstantiateTransform(Map<String, String> config) {
       throw new RuntimeException("This always seems to happen");
     }

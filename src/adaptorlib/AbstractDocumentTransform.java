@@ -14,14 +14,10 @@
 
 package adaptorlib;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 
 /**
- * Represents an individual transform in the transform pipeline.
- * Subclass this to add your own custom behavior.
+ * Convenience class for implementing {@code DocumentTransform}s.
  */
 public abstract class AbstractDocumentTransform implements DocumentTransform {
   private String name = getClass().getName();
@@ -49,22 +45,6 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
     if (errorHaltsPipeline != null) {
       this.errorHaltsPipeline = Boolean.parseBoolean(errorHaltsPipeline);
     }
-  }
-
-  /**
-   * Override this function to do the actual data transformation.
-   * Read data from the ByteArrayOutputStream instances holding the incoming data,
-   * and write them to the OutputStreams. Any changes to the params map will be
-   * passed on the subsequent transforms.
-   *
-   * @throws TransformException
-   * @throws IOException
-   */
-  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadata, Map<String, String> params)
-      throws TransformException, IOException {
-    // Defaults to identity transform
-    contentIn.writeTo(contentOut);
   }
 
   public void name(String name) {

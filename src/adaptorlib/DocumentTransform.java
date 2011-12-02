@@ -24,10 +24,9 @@ import java.util.Map;
  */
 public interface DocumentTransform {
   /**
-   * Override this function to do the actual data transformation.
-   * Read data from the ByteArrayOutputStream instances holding the incoming data,
-   * and write them to the OutputStreams. Any changes to the params map will be
-   * passed on the subsequent transforms.
+   * Read data from {@code contentIn}, transform it, and write it to {@code
+   * contentOut}. Any changes to {@code metadata} and {@code params} will be
+   * passed on to subsequent transforms. This method must be thread-safe.
    *
    * @throws TransformException
    * @throws IOException
@@ -36,6 +35,11 @@ public interface DocumentTransform {
                         Map<String, String> metadata, Map<String, String> params)
       throws TransformException, IOException;
 
+  /**
+   * The name of this transform instance, typically provided by the user. It
+   * should not be {@code null}. Using the class name as a default is reasonable
+   * if no name has been provided.
+   */
   public String name();
 
   /**
