@@ -76,7 +76,7 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
       // Add the children documents of a zip immediately after the zip, so when
       // an error occurs we can correctly inform the client which document the
       // failure was on.
-      if (docRecord.getPushAttributes().isToBeDeleted()) {
+      if (docRecord.isToBeDeleted()) {
         // Not a great case since we don't remember what files were in each zip.
         // The GSA will have to figure out the files are gone via 404s later.
         continue;
@@ -131,8 +131,8 @@ public class AutoUnzipAdaptor extends WrapperAdaptor {
    */
   private static DocIdPusher.Record createDerivativeRecord(
       DocIdPusher.Record docRecord, String uniqueId) {
-    PushAttributes attrs = docRecord.getPushAttributes();
-    return new DocIdPusher.Record(new DocId(uniqueId), attrs);
+    DocIdPusher.Record.Builder duper = new DocIdPusher.Record.Builder(docRecord);
+    return duper.setDocId(new DocId(uniqueId)).build();
   }
 
   /**

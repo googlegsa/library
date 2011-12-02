@@ -14,6 +14,9 @@
 
 package adaptorlib;
 
+import java.net.URI;
+import java.util.Date;
+
 /**
  * Interface that allows at-will pushing of {@code DocId}s to the GSA.
  */
@@ -73,51 +76,180 @@ public interface DocIdPusher {
    *
    * @return {@code null} on success, otherwise the first Record to fail
    */
-  public Record pushRecords(Iterable<Record> records,
-                              PushErrorHandler handler)
+  public Record pushRecords(Iterable<Record> records, PushErrorHandler handler)
       throws InterruptedException;
 
-  /**
-   * DocId and PushAttributes pair for passing with {@link DocIdPusher}.
-   */
-  public static class Record {
-    private final DocId docId;
-    private final PushAttributes pushAttrs;
+  /** Contains DocId and other feed file record attributes. */
+  public static final class Record {
+    private final DocId id; 
+    private final boolean delete;
+    private final Date lastModified;
+    private final URI link;
+    private final boolean crawlImmediately;
+    private final boolean crawlOnce;
+    private final boolean lock;
   
-    public Record(DocId docId, PushAttributes pushAttrs) {
-      if (docId == null || pushAttrs == null) {
+    private Record(DocId docid, boolean delete, Date lastModified,
+        URI link, boolean crawlImmediately, boolean crawlOnce, boolean lock) {
+      if (null == docid) {
         throw new NullPointerException();
       }
-      this.docId = docId;
-      this.pushAttrs = pushAttrs;
+      this.id = docid;
+      this.delete = delete;
+      this.lastModified = lastModified;
+      this.link = link;
+      this.crawlImmediately = crawlImmediately;
+      this.crawlOnce = crawlOnce;
+      this.lock = lock;
     }
-  
+    
     public DocId getDocId() {
-      return docId;
+      return id;
     }
   
-    public PushAttributes getPushAttributes() {
-      return pushAttrs;
+    public boolean isToBeDeleted() {
+      return delete;
+    }
+  
+    public Date getLastModified() {
+      return lastModified;
+    }
+  
+    public URI getResultLink() {
+      return link;
+    }
+  
+    public boolean isToBeCrawledImmediately() {
+      return crawlImmediately;
+    }
+  
+    public boolean isToBeCrawledOnce() {
+      return crawlOnce;
+    }
+  
+    public boolean isToBeLocked() {
+      return lock;
     }
   
     @Override
     public boolean equals(Object o) {
-      if (o == null || !getClass().equals(o.getClass())) {
-        return false;
-      }
-      Record docRecord = (Record) o;
-      return docId.equals(docRecord.docId)
-          && pushAttrs.equals(docRecord.pushAttrs);
+      boolean same = false;
+      if (null != o && this.getClass().equals(o.getClass())) {
+        Record other = (Record) o;
+        same = this.id.equals(other.id)
+            && (this.delete == other.delete)
+            && (this.crawlImmediately == other.crawlImmediately)
+            && (this.crawlOnce == other.crawlOnce)
+            && (this.lock == other.lock)
+            && equalsNullSafe(lastModified, other.lastModified)
+            && equalsNullSafe(link, other.link);
+      } 
+      return same;
     }
   
     @Override
     public int hashCode() {
-      return docId.hashCode() ^ pushAttrs.hashCode();
+      int code = id.hashCode();
+      if (null != lastModified) {
+        code *= 31;
+        code += lastModified.hashCode();
+      }
+      if (null != link) {
+        code *= 37;
+        code += link.hashCode();
+      }
+      return code;
     }
   
     @Override
     public String toString() {
-      return "DocIdPusher.Record(" + docId + "," + pushAttrs + ")";
+      return "Record(docid=" + id.getUniqueId()
+          + ",delete=" + delete
+          + ",lastModified=" + lastModified
+          + ",resultLink=" + link
+          + ",crawlImmediately=" + crawlImmediately
+          + ",crawlOnce=" + crawlOnce
+          + ",lock=" + lock + ")";
+    }
+  
+    private static boolean equalsNullSafe(Object a, Object b) {
+      boolean same;
+      if (null == a && null == b) {
+        same = true;
+      } else if (null != a && null != b) {
+        same = a.equals(b);
+      } else {
+        same = false;
+      }
+      return same;
+    }
+
+    /**
+     * Used to create instances of Record, which are immutable.
+     * All fields have default values.
+     */
+    public static class Builder {
+      private DocId docid = null;
+      private boolean delete = false;
+      private Date lastModified;
+      private URI link;
+      private boolean crawlImmediately = false;
+      private boolean crawlOnce = false;
+      private boolean lock = false;
+  
+      public Builder() {}
+
+      /** Makes Builder that can duplicate a record. */
+      public Builder(Record startPoint) {
+        this.docid = startPoint.id;
+        this.delete = startPoint.delete;
+        this.lastModified = startPoint.lastModified;
+        this.link = startPoint.link;
+        this.crawlImmediately = startPoint.crawlImmediately;
+        this.crawlOnce = startPoint.crawlOnce;
+        this.lock = startPoint.lock;
+      }
+
+      public Builder setDocId(DocId id) {
+        this.docid = id;
+        return this;
+      }
+    
+      public Builder setDeleteFromIndex(boolean b) {
+        this.delete = b;
+        return this;
+      }
+    
+      public Builder setLastModified(Date lastModified) {
+        this.lastModified = lastModified;
+        return this;
+      }
+    
+      public Builder setResultLink(URI link) {
+        this.link = link;
+        return this;
+      }
+    
+      public Builder setCrawlImmediately(boolean b) {
+        this.crawlImmediately = crawlImmediately;
+        return this;
+      }
+    
+      public Builder setCrawlOnce(boolean b) {
+        this.crawlOnce = crawlOnce;
+        return this;
+      }
+    
+      public Builder setLock(boolean b) {
+        this.lock = lock;
+        return this;
+      }
+  
+      /** Creates single instance of Record.  Does not reset builder. */
+      public Record build() {
+        return new Record(docid, delete, lastModified,
+            link, crawlImmediately, crawlOnce, lock);
+      }
     }
   }
 }

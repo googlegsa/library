@@ -38,8 +38,9 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
                           PushErrorHandler handler)
       throws InterruptedException {
     List<Record> records = new ArrayList<Record>();
+    Record.Builder recordMaker = new Record.Builder();
     for (DocId docId : docIds) {
-      records.add(new Record(docId, PushAttributes.DEFAULT));
+      records.add(recordMaker.setDocId(docId).build());
     }
     Record record = pushRecords(records, handler);
     return record == null ? null : record.getDocId();

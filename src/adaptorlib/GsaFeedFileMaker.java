@@ -72,22 +72,21 @@ class GsaFeedFileMaker {
   private void constructSingleMetadataAndUrlFeedFileRecord(
       Document doc, Element group, DocIdPusher.Record docRecord) {
     DocId docForGsa = docRecord.getDocId();
-    PushAttributes attrs = docRecord.getPushAttributes();
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
-    if (null != attrs.getResultLink()) {
-      record.setAttribute("displayurl", "" + attrs.getResultLink());
+    if (null != docRecord.getResultLink()) {
+      record.setAttribute("displayurl", "" + docRecord.getResultLink());
     }
-    record.setAttribute("action", attrs.isToBeDeleted() ? "delete" : "add");
+    record.setAttribute("action", docRecord.isToBeDeleted() ? "delete" : "add");
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
-    if (null != attrs.getLastModified()) {
-      String dateStr = rfc822DateFormat.get().format(attrs.getLastModified());
+    if (null != docRecord.getLastModified()) {
+      String dateStr = rfc822DateFormat.get().format(docRecord.getLastModified());
       record.setAttribute("last-modified", dateStr);
     }
-    record.setAttribute("lock", "" + attrs.isToBeLocked());
-    record.setAttribute("crawl-immediately", "" + attrs.isToBeCrawledImmediately());
-    record.setAttribute("crawl-once", "" + attrs.isToBeCrawledOnce());
+    record.setAttribute("lock", "" + docRecord.isToBeLocked());
+    record.setAttribute("crawl-immediately", "" + docRecord.isToBeCrawledImmediately());
+    record.setAttribute("crawl-once", "" + docRecord.isToBeCrawledOnce());
     // TODO: record.setAttribute(no-follow,);
   }
 
