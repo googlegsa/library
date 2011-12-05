@@ -48,31 +48,29 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
     String str;
     if ("1001".equals(id.getUniqueId())) {
       str = "Document 1001 says hello and apple orange";
-      // Make set to accumulate meta items.
-      Set<MetaItem> metaItems = new TreeSet<MetaItem>();
-      // Add user ACL.
       List<String> users1001 = Arrays.asList("peter", "bart", "simon");
-      metaItems.add(MetaItem.permittedUsers(users1001));
-      // Add group ACL.
       List<String> groups1001 = Arrays.asList("support", "sales");
-      metaItems.add(MetaItem.permittedGroups(groups1001));
-      // Add custom meta items.
-      metaItems.add(MetaItem.raw("my-special-key", "my-custom-value"));
-      metaItems.add(MetaItem.raw("date", "not soon enough"));
       // Make metadata object, which checks items for consistency.
       // Must set metadata before getting OutputStream
-      resp.setMetadata(new Metadata(metaItems));
+      resp.setMetadata(new Metadata.Builder()
+          // Add user ACL.
+          .add(MetaItem.permittedUsers(users1001))
+          // Add group ACL.
+          .add(MetaItem.permittedGroups(groups1001))
+          // Add custom meta items.
+          .add(MetaItem.raw("my-special-key", "my-custom-value"))
+          .add(MetaItem.raw("date", "not soon enough"))
+          .build());
     } else if ("1002".equals(id.getUniqueId())) {
       str = "Document 1002 says hello and banana strawberry";
-      // Another example.
-      Set<MetaItem> metaItems = new TreeSet<MetaItem>();
-      // A document that's not public and has no ACLs causes head requests.
-      metaItems.add(MetaItem.isNotPublic());
-      // Add custom meta items.
-      metaItems.add(MetaItem.raw("date", "better never than late"));
       // Make metadata object, which checks items for consistency.
       // Must set metadata before getting OutputStream
-      resp.setMetadata(new Metadata(metaItems));
+      resp.setMetadata(new Metadata.Builder()
+          // A document that's not public and has no ACLs causes head requests.
+          .add(MetaItem.isNotPublic())
+          // Add custom meta items.
+          .add(MetaItem.raw("date", "better never than late"))
+          .build());
     } else {
       throw new FileNotFoundException(id.getUniqueId());
     }
