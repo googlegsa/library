@@ -38,14 +38,24 @@ public class Config {
   protected final Set<String> noDefaultConfig = new HashSet<String>();
   /** Default configuration values. */
   protected final Properties defaultConfig = new Properties();
-  /** Overriding configuration values loaded from file. */
-  protected Properties configFileProperties = new Properties(defaultConfig);
   /** Overriding configuration values loaded from command line. */
-  protected Properties config = new Properties(configFileProperties);
-  protected File configFile = new File(DEFAULT_CONFIG_FILE);
+  // Reads require no additional locks, but modifications require lock on 'this'
+  // to prevent lost updates.
+  protected volatile Properties config = new Properties(defaultConfig);
+  /** Default configuration to use in {@link #loadDefaultConfigFile}. */
+  protected File defaultConfigFile = new File(DEFAULT_CONFIG_FILE);
+  /**
+   * The actual config file in use, or {@code null} if none have been loaded.
+   */
+  protected File configFile;
   protected long configFileLastModified;
   protected List<ConfigModificationListener> modificationListeners
       = new CopyOnWriteArrayList<ConfigModificationListener>();
+  /**
+   * Once the configuration has been read, we do not allow massive changes to
+   * the configuration, because too much code does not notice the updates.
+   */
+  protected volatile boolean configRead;
 
   public Config() {
     String hostname = null;
@@ -392,76 +402,77 @@ public class Config {
   }
 
   /**
-   * Load user-provided configuration file.
+   * Load user-provided configuration file, replacing any previously loaded file
+   * configuration.
    */
   private void load(Reader configFile) throws IOException {
-    configFileProperties.load(configFile);
+    Properties newConfigFileProperties = new Properties(defaultConfig);
+    newConfigFileProperties.load(configFile);
+
+    Config fakeOldConfig;
+    Set<String> differentKeys;
+    synchronized (this) {
+      // Create replacement config.
+      Properties newConfig = new Properties(newConfigFileProperties);
+      for (Object o : config.keySet()) {
+        newConfig.put(o, config.get(o));
+      }
+
+      // Find differences.
+      differentKeys = findDifferences(config, newConfig);
+
+      // Only allow adaptor.fullListingSchedule to be updated at the moment. No
+      // other code can handle updates. Since the Dashboard will show the
+      // current values, we don't want the Dashboard showing new values and the
+      // code using old values.
+      // TODO(ejona): Once more things support modification of configuration,
+      // this should be removed.
+      if (configRead) {
+        for (String name : new ArrayList<String>(differentKeys)) {
+          if (!"adaptor.fullListingSchedule".equals(name)) {
+            differentKeys.remove(name);
+            log.log(Level.INFO,
+                    "Ignoring modified key {0}, since it is not white-listed",
+                    name);
+            newConfigFileProperties.setProperty(name, config.getProperty(name));
+          }
+        }
+      }
+
+      if (differentKeys.isEmpty()) {
+        log.info("No configuration changes found");
+        return;
+      }
+
+      validate(newConfig);
+
+      fakeOldConfig = new Config();
+      fakeOldConfig.config = config;
+      this.config = newConfig;
+    }
+    log.info("New configuration file loaded");
+    fireConfigModificationEvent(fakeOldConfig, differentKeys);
   }
 
-  Reader createReader(File file) throws IOException {
+  Reader createReader(File configFile) throws IOException {
     return new InputStreamReader(new BufferedInputStream(
         new FileInputStream(configFile)), Charset.forName("UTF-8"));
   }
 
-  public synchronized void ensureLatestConfigLoaded() throws IOException {
-    if (!configFile.exists() || !configFile.isFile()) {
-      return;
-    }
-    // Check for modifications.
-    long newLastModified = configFile.lastModified();
-    if (configFileLastModified == newLastModified || newLastModified == 0) {
-      return;
-    }
-    log.info("Noticed modified configuration file");
-    // Go ahead and update the modification time now, to prevent constantly
-    // trying to load the configuration file, in case of errors.
-    configFileLastModified = newLastModified;
-
-    // Load freshly-modified file.
-    Properties newConfigFileProperties = new Properties(defaultConfig);
-    Properties newConfig = new Properties(newConfigFileProperties);
-    Reader reader = createReader(configFile);
-    try {
-      newConfigFileProperties.load(reader);
-    } finally {
-      reader.close();
-    }
-
-    for (Object o : config.keySet()) {
-      newConfig.put(o, config.get(o));
-    }
-
-    // Find differences.
-    Set<String> differentKeys = findDifferences(config, newConfig);
-
-    // Only allow adaptor.fullListingSchedule to be updated at the moment. No
-    // other code can handle updates. Since the Dashboard will show the current
-    // values, we don't want the Dashboard showing new values and the code using
-    // old values. TODO(ejona): Once more things support modification of
-    // configuration, this should be removed.
-    for (String name : new ArrayList<String>(differentKeys)) {
-      if (!"adaptor.fullListingSchedule".equals(name)) {
-        differentKeys.remove(name);
-        log.log(Level.INFO,
-            "Ignoring modified key {0}, since it is not white-listed", name);
-        newConfigFileProperties.setProperty(name, config.getProperty(name));
+  public void ensureLatestConfigLoaded() throws IOException {
+    synchronized (this) {
+      if (configFile == null || !configFile.exists() || !configFile.isFile()) {
+        return;
       }
+      // Check for modifications.
+      long newLastModified = configFile.lastModified();
+      if (configFileLastModified == newLastModified || newLastModified == 0) {
+        return;
+      }
+      log.info("Noticed modified configuration file");
+
+      load(configFile);
     }
-
-    if (differentKeys.isEmpty()) {
-      log.info("No configuration changes found");
-      return;
-    }
-
-    validate(newConfig);
-
-    Config fakeOldConfig = new Config();
-    fakeOldConfig.configFileProperties = configFileProperties;
-    fakeOldConfig.config = config;
-    this.configFileProperties = newConfigFileProperties;
-    this.config = newConfig;
-    log.info("New configuration file loaded");
-    fireConfigModificationEvent(fakeOldConfig, differentKeys);
   }
 
   private Set<String> findDifferences(Properties config, Properties newConfig) {
@@ -487,6 +498,7 @@ public class Config {
    * error handling, since this is typically non-fatal.
    */
   public void loadDefaultConfigFile() {
+    configFile = defaultConfigFile;
     if (configFile.exists() && configFile.isFile()) {
       try {
         load(configFile);
@@ -520,7 +532,6 @@ public class Config {
    * @throws IllegalStateException when not all configuration keys have values
    */
   public String[] autoConfig(String[] args) {
-    loadDefaultConfigFile();
     int i;
     for (i = 0; i < args.length; i++) {
       if (!args[i].startsWith("-D")) {
@@ -533,6 +544,7 @@ public class Config {
       }
       setValue(parts[0], parts[1]);
     }
+    loadDefaultConfigFile();
     validate();
     if (i == 0) {
       return args;
@@ -546,7 +558,8 @@ public class Config {
    *
    * @throws IllegalStateException if {@code key} has no value
    */
-  public synchronized String getValue(String key) {
+  public String getValue(String key) {
+    configRead = true;
     String value = config.getProperty(key);
     if (value == null) {
       throw new IllegalStateException(MessageFormat.format(

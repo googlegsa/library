@@ -111,10 +111,12 @@ public class GsaCommunicationHandler {
         throw new RuntimeException(ex);
       }
     }
-    // If the port is zero, then the OS chose a port for us. This is mainly
-    // useful during testing.
-    port = server.getAddress().getPort();
-    config.setValue("server.port", "" + port);
+    if (port == 0) {
+        // If the port is zero, then the OS chose a port for us. This is mainly
+        // useful during testing.
+        port = server.getAddress().getPort();
+        config.setValue("server.port", "" + port);
+    }
     int maxThreads = config.getServerMaxWorkerThreads();
     int queueCapacity = config.getServerQueueCapacity();
     BlockingQueue<Runnable> blockingQueue
