@@ -14,7 +14,7 @@
 
 package adaptorlib.examples;
 
-import adaptorlib.DocumentTransform;
+import adaptorlib.AbstractDocumentTransform;
 import adaptorlib.TransformException;
 
 import java.io.ByteArrayOutputStream;
@@ -26,7 +26,6 @@ import java.util.Map;
 import java.util.Scanner;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -35,21 +34,13 @@ import java.util.regex.Pattern;
  * the associated metadata is inserted at the end of the HEAD section of the
  * HTML. If no HEAD section exists, nothing gets inserted.
  */
-public class MetaTaggerTransform extends DocumentTransform {
+public class MetaTaggerTransform extends AbstractDocumentTransform {
   private static final Logger log = Logger.getLogger(MetaTaggerTransform.class.getName());
 
-  public MetaTaggerTransform() {
-    super("MetaTaggerTransform");
-  }
+  public MetaTaggerTransform() {}
 
-  public MetaTaggerTransform(String patternFile) {
-    super("MetaTaggerTransform");
-    try {
-      loadPatternFile(patternFile);
-    } catch (IOException ex) {
-      log.log(Level.SEVERE, "MetaTaggerTransform encountered an error while " +
-              "loading pattern file: " + patternFile, ex);
-    }
+  public MetaTaggerTransform(String patternFile) throws IOException {
+    loadPatternFile(patternFile);
   }
 
   @Override
@@ -110,5 +101,18 @@ public class MetaTaggerTransform extends DocumentTransform {
     public boolean equals(Pattern p1, Pattern p2) {
       return p1.toString().equals(p2.toString());
     }
+  }
+
+  public static MetaTaggerTransform create(Map<String, String> config)
+      throws IOException {
+    String patternFile = config.get("patternFile");
+    MetaTaggerTransform transform;
+    if (patternFile == null) {
+      transform = new MetaTaggerTransform();
+    } else {
+      transform = new MetaTaggerTransform(patternFile);
+    }
+    transform.configure(config);
+    return transform;
   }
 }

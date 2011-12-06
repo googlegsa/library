@@ -26,7 +26,7 @@ import it.sauronsoftware.cron4j.Scheduler;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
-import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
@@ -218,11 +218,20 @@ public class GsaCommunicationHandler {
     for (Map<String, String> element : pipelineConfig) {
       final String name = element.get("name");
       final String confPrefix = "transform.pipeline." + name + ".";
-      String className = element.get("class");
-      if (className == null) {
+      String factoryMethodName = element.get("factoryMethod");
+      if (factoryMethodName == null) {
         throw new RuntimeException(
-            "Missing " + confPrefix + "class configuration setting");
+            "Missing " + confPrefix + "factoryMethod configuration setting");
       }
+      int sepIndex = factoryMethodName.lastIndexOf(".");
+      if (sepIndex == -1) {
+        throw new RuntimeException("Could not separate method name from class "
+            + "name");
+      }
+      String className = factoryMethodName.substring(0, sepIndex);
+      String methodName = factoryMethodName.substring(sepIndex + 1);
+      log.log(Level.FINE, "Split {0} into class {1} and method {2}",
+          new Object[] {factoryMethodName, className, methodName});
       Class<?> klass;
       try {
         klass = Class.forName(className);
@@ -230,26 +239,26 @@ public class GsaCommunicationHandler {
         throw new RuntimeException(
             "Could not load class for transform " + name, ex);
       }
-      Constructor<?> constructor;
+      Method method;
       try {
-        constructor = klass.getConstructor(Map.class);
+        method = klass.getDeclaredMethod(methodName, Map.class);
       } catch (NoSuchMethodException ex) {
-        throw new RuntimeException(
-            "Could not find constructor for " + className + ". It must have a "
-            + "constructor that accepts a Map as the lone parameter.", ex);
+        throw new RuntimeException("Could not find method " + methodName
+            + " on class " + className, ex);
       }
+      log.log(Level.FINE, "Found method {0}", new Object[] {method});
       Object o;
       try {
-        o = constructor.newInstance(Collections.unmodifiableMap(element));
+        o = method.invoke(null, Collections.unmodifiableMap(element));
       } catch (Exception ex) {
-        throw new RuntimeException("Could not instantiate " + className, ex);
+        throw new RuntimeException("Failure while running factory method "
+            + factoryMethodName, ex);
       }
       if (!(o instanceof DocumentTransform)) {
-        throw new RuntimeException(className
+        throw new ClassCastException(o.getClass().getName()
             + " is not an instance of DocumentTransform");
       }
       DocumentTransform transform = (DocumentTransform) o;
-      transform.name(name);
       pipeline.add(transform);
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.

@@ -226,7 +226,7 @@ public class DocumentHandlerTest {
     final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
     TransformPipeline transform = new TransformPipeline();
-    transform.add(new DocumentTransform("testing") {
+    transform.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -265,7 +265,7 @@ public class DocumentHandlerTest {
   @Test
   public void testTransformDocumentTooLarge() throws Exception {
     TransformPipeline transform = new TransformPipeline();
-    transform.add(new DocumentTransform("testing") {
+    transform.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
