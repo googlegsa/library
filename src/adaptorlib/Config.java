@@ -21,6 +21,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.*;
 
 /**
@@ -44,7 +45,7 @@ public class Config {
   protected File configFile = new File(DEFAULT_CONFIG_FILE);
   protected long configFileLastModified;
   protected List<ConfigModificationListener> modificationListeners
-      = new LinkedList<ConfigModificationListener>();
+      = new CopyOnWriteArrayList<ConfigModificationListener>();
 
   public Config() {
     String hostname = null;
@@ -612,30 +613,24 @@ public class Config {
 
   public void addConfigModificationListener(
       ConfigModificationListener listener) {
-    synchronized (modificationListeners) {
-      modificationListeners.add(listener);
-    }
+    modificationListeners.add(listener);
   }
 
   public void removeConfigModificationListener(
       ConfigModificationListener listener) {
-    synchronized (modificationListeners) {
-      modificationListeners.remove(listener);
-    }
+    modificationListeners.remove(listener);
   }
 
   private void fireConfigModificationEvent(Config oldConfig,
                                            Set<String> modifiedKeys) {
     ConfigModificationEvent ev
         = new ConfigModificationEvent(this, oldConfig, modifiedKeys);
-    synchronized (modificationListeners) {
-      for (ConfigModificationListener listener : modificationListeners) {
-        try {
-          listener.configModified(ev);
-        } catch (Exception ex) {
-          log.log(Level.WARNING,
-                  "Unexpected exception. Consider filing a bug.", ex);
-        }
+    for (ConfigModificationListener listener : modificationListeners) {
+      try {
+        listener.configModified(ev);
+      } catch (Exception ex) {
+        log.log(Level.WARNING,
+                "Unexpected exception. Consider filing a bug.", ex);
       }
     }
   }
