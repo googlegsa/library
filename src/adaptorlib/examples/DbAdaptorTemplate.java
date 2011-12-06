@@ -91,7 +91,8 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       // First handle cases with no data to return.
       boolean hasResult = rs.next();
       if (!hasResult) {
-        throw new FileNotFoundException("no document with id: " + id);
+        resp.respondNotFound();
+        return;
       }
       ResultSetMetaData rsMetaData = rs.getMetaData();
       int numberOfColumns = rsMetaData.getColumnCount();

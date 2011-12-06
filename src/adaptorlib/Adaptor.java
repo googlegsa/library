@@ -44,8 +44,6 @@ public interface Adaptor {
    * to three concurrent calls may be average during initial GSA crawling, but
    * twenty or more concurrent calls is typical when the GSA is recrawling
    * unmodified content.
-   *
-   * @throws java.io.FileNotFoundException when requested document doesn't exist
    */
   public void getDocContent(Request request, Response response)
       throws IOException;
@@ -81,8 +79,8 @@ public interface Adaptor {
    * <p>If the document doesn't exist, then there are several possibilities. If
    * the repository is fully-public then it will return {@code PERMIT}. This
    * will allow the caller to provide a cached version of the file to the user
-   * or call {@link #getDocContent} which should throw a {@link java.io.
-   * FileNotFoundException}. If the adaptor is not sensitive to users knowing
+   * or call {@link #getDocContent} which should call {@link
+   * Response#respondNotFound}. If the adaptor is not sensitive to users knowing
    * that certain documents do not exist, then it will return {@code
    * INDETERMINATE}. This will be interpreted as the document does not exist; no
    * cached copy will be provided to the user but the user may be informed the

@@ -93,8 +93,13 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
         try {
           OutputStream os = new FileOutputStream(tmpFile);
           try {
-            Response resp = new GetContentsResponse(os);
+            GetContentsResponse resp = new GetContentsResponse(os);
             super.getDocContent(new GetContentsRequest(docId), resp);
+            if (resp.isNotFound()) {
+              log.log(Level.FINE, "Unexpectedly, a doc just listed doesn't "
+                  + "exist: {0}", docId);
+              continue;
+            }
           } finally {
             os.close();
           }
@@ -242,6 +247,7 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
           return;
 
         case NOTMODIFIED:
+        case NOTFOUND:
           // No content needed, we are done here
           return;
 
@@ -251,9 +257,10 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
       try {
         extractDocFromZip(parts[1], tmpFile, new LazyOutputStream(resp));
       } catch (FileNotFoundException e) {
-        throw new FileNotFoundException(
-            "Could not find file within zip for docId '" + docId.getUniqueId()
-            + "': " + e.getMessage());
+        log.log(Level.FINE, "Could not find file within zip for docId ''{0}'': "
+                + "{1}", new Object[] {docId.getUniqueId(), e.getMessage()});
+        resp.respondNotFound();
+        return;
       }
     } finally {
       tmpFile.delete();
@@ -353,8 +360,15 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
     }
 
     @Override
-    public void respondNotModified() {
+    public void respondNotModified() throws IOException {
       state = State.NOTMODIFIED;
+      super.respondNotModified();
+    }
+
+    @Override
+    public void respondNotFound() throws IOException {
+      state = State.NOTFOUND;
+      super.respondNotFound();
     }
 
     @Override
@@ -368,7 +382,7 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
       return state;
     }
 
-    static enum State {NORESPONSE, NOTMODIFIED, CONTENT};
+    static enum State {NORESPONSE, NOTMODIFIED, NOTFOUND, CONTENT};
   }
 
   /**
@@ -388,7 +402,7 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
    * {@link Response#getOutputStream}, but calls {@code getOutputStream} only
    * once needed. This allows for code to be provided an OutputStream that
    * writes directly to the {@code Response}, but also allows the code to
-   * throwing a {@link FileNotFoundException} before writing to the stream.
+   * call {@link Response#respondNotFound} before writing to the stream.
    */
   private static class LazyOutputStream extends AbstractLazyOutputStream {
     private Response resp;
@@ -397,6 +411,7 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
       this.resp = resp;
     }
 
+    @Override
     protected OutputStream retrieveOs() throws IOException {
       return resp.getOutputStream();
     }

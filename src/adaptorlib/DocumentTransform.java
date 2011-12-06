@@ -21,32 +21,33 @@ import java.util.Map;
 
 /**
  * Represents an individual transform in the transform pipeline.
- * Subclass this to add your own custom behavior.
+ *
+ * <p>Implementations should also typically have a static factory method with a
+ * single {@code Map<String, String>} argument for creating instances based on
+ * configuration. Implementations are encouraged to accept "name" and
+ * "required" as configuration keys.
  */
-public class DocumentTransform  {
-
-  public DocumentTransform(String name) {
-    this.name = name;
-  }
-
+public interface DocumentTransform {
   /**
-   * Override this function to do the actual data transformation.
-   * Read data from the ByteArrayOutputStream instances holding the incoming data,
-   * and write them to the OutputStreams. Any changes to the params map will be
-   * passed on the subsequent transforms.
+   * Read data from {@code contentIn}, transform it, and write it to {@code
+   * contentOut}. Any changes to {@code metadata} and {@code params} will be
+   * passed on to subsequent transforms. This method must be thread-safe.
    *
    * @throws TransformException
    * @throws IOException
    */
-  public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadata, Map<String, String> params)
-      throws TransformException, IOException {
-    // Defaults to identity transform
-    contentIn.writeTo(contentOut);
-  }
+  public void transform(ByteArrayOutputStream contentIn,
+                        OutputStream contentOut,
+                        Map<String, String> metadata,
+                        Map<String, String> params)
+      throws TransformException, IOException;
 
-  public void name(String name) { this.name = name; }
-  public String name() { return name; }
+  /**
+   * The name of this transform instance, typically provided by the user. It
+   * should not be {@code null}. Using the class name as a default is reasonable
+   * if no name has been provided.
+   */
+  public String getName();
 
   /**
    * If this property is true, a failure of this transform will cause the entire
@@ -57,14 +58,5 @@ public class DocumentTransform  {
    * If this is false and a error occurs, this transform is treated as a
    * identity transform.
    */
-  public void errorHaltsPipeline(boolean errorHaltsPipeline) {
-    this.errorHaltsPipeline = errorHaltsPipeline;
-  }
-
-  public boolean errorHaltsPipeline() {
-    return errorHaltsPipeline;
-  }
-
-  private boolean errorHaltsPipeline = true;
-  private String name = "";
+  public boolean isRequired();
 }

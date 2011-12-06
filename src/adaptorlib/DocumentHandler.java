@@ -19,7 +19,6 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -139,27 +138,15 @@ class DocumentHandler extends AbstractHandler {
       DocumentResponse response = new DocumentResponse(ex, docId);
       journal.recordRequestProcessingStart();
       try {
-        try {
-          adaptor.getDocContent(request, response);
-        } catch (RuntimeException e) {
-          journal.recordRequestProcessingFailure();
-          throw e;
-        } catch (FileNotFoundException e) {
-          journal.recordRequestProcessingEnd(0);
-          throw e;
-        } catch (IOException e) {
-          journal.recordRequestProcessingFailure();
-          throw e;
-        }
-        journal.recordRequestProcessingEnd(response.getWrittenContentSize());
-      } catch (FileNotFoundException e) {
-        log.log(Level.FINE, "FileNotFound during getDocContent. Message: {0}",
-                e.getMessage());
-        log.log(Level.FINER, "Full FileNotFound information", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "Unknown document");
-        return;
+        adaptor.getDocContent(request, response);
+      } catch (RuntimeException e) {
+        journal.recordRequestProcessingFailure();
+        throw e;
+      } catch (IOException e) {
+        journal.recordRequestProcessingFailure();
+        throw e;
       }
+      journal.recordRequestProcessingEnd(response.getWrittenContentSize());
 
       response.complete();
     } else {
@@ -316,6 +303,8 @@ class DocumentHandler extends AbstractHandler {
     SETUP,
     /** No content to send, but we do need a different response code. */
     NOT_MODIFIED,
+    /** No content to send, but we do need a different response code. */
+    NOT_FOUND,
     /** Must not respond with content, but otherwise act like normal. */
     HEAD,
     /** No need to buffer contents before sending. */
@@ -358,7 +347,14 @@ class DocumentHandler extends AbstractHandler {
         throw new IllegalStateException("Already responded");
       }
       state = State.NOT_MODIFIED;
-      os = new SinkOutputStream();
+    }
+
+    @Override
+    public void respondNotFound() throws IOException {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      state = State.NOT_FOUND;
     }
 
     @Override
@@ -374,6 +370,8 @@ class DocumentHandler extends AbstractHandler {
           return os;
         case NOT_MODIFIED:
           throw new IllegalStateException("respondNotModified already called");
+        case NOT_FOUND:
+          throw new IllegalStateException("respondNotFound already called");
         default:
           throw new IllegalStateException("Already responded");
       }
@@ -423,6 +421,11 @@ class DocumentHandler extends AbstractHandler {
 
         case NOT_MODIFIED:
           respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
+          break;
+
+        case NOT_FOUND:
+          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
+                        "Unknown document");
           break;
 
         case TRANSFORM:
@@ -480,12 +483,11 @@ class DocumentHandler extends AbstractHandler {
       } catch (TransformException e) {
         throw new IOException(e);
       }
-      Set<MetaItem> metadataSet
-          = new HashSet<MetaItem>(metadataMap.size() * 2);
+      Metadata.Builder builder = new Metadata.Builder();
       for (Map.Entry<String, String> me : metadataMap.entrySet()) {
-        metadataSet.add(MetaItem.raw(me.getKey(), me.getValue()));
+        builder.add(MetaItem.raw(me.getKey(), me.getValue()));
       }
-      metadata = new Metadata(metadataSet);
+      metadata = builder.build();
       contentType = params.get("Content-Type");
       return contentOut;
     }

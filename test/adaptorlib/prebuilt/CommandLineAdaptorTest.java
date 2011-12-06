@@ -14,12 +14,12 @@
 
 package adaptorlib.prebuilt;
 
+import static adaptorlib.TestHelper.getDocIds;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import adaptorlib.*;
-
-import static adaptorlib.TestHelper.getDocIds;
 
 import org.junit.Test;
 
@@ -31,10 +31,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Tests for {@link CommandLineAdaptor}.
@@ -99,13 +97,13 @@ public class CommandLineAdaptorTest {
       ID_TO_LAST_CRAWLED = Collections.unmodifiableMap(idToLastCrawled);
 
       Map<String, Metadata> idToMetadata = new HashMap<String, Metadata>();
-      Set<MetaItem> metadataSet1002 = new HashSet<MetaItem>();
-      metadataSet1002.add(MetaItem.raw("metaname-1002a", "metavalue-1002a"));
-      metadataSet1002.add(MetaItem.raw("metaname-1002b", "metavalue-1002b"));
-      idToMetadata.put("1002", new adaptorlib.Metadata(metadataSet1002));
-      Set<MetaItem> metadataSet1003 = new HashSet<MetaItem>();
-      metadataSet1003.add(MetaItem.raw("metaname-1003", "metavalue-1003"));
-      idToMetadata.put("1003", new adaptorlib.Metadata(metadataSet1003));
+      idToMetadata.put("1002", new Metadata.Builder()
+          .add(MetaItem.raw("metaname-1002a", "metavalue-1002a"))
+          .add(MetaItem.raw("metaname-1002b", "metavalue-1002b"))
+          .build());
+      idToMetadata.put("1003", new Metadata.Builder()
+          .add(MetaItem.raw("metaname-1003", "metavalue-1003"))
+          .build());
       ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
     }
 
@@ -193,11 +191,12 @@ public class CommandLineAdaptorTest {
     }
   }
 
-  public static class ContentsResponseTestMock implements Response {
+  private static class ContentsResponseTestMock implements Response {
     private OutputStream os;
     private String contentType;
     private Metadata metadata;
     private boolean notModified;
+    private boolean notFound;
 
     public ContentsResponseTestMock(OutputStream os) {
       this.os = os;
@@ -207,6 +206,11 @@ public class CommandLineAdaptorTest {
     @Override
     public void respondNotModified() {
       notModified = true;
+    }
+
+    @Override
+    public void respondNotFound() {
+      notFound = true;
     }
 
     @Override
@@ -234,6 +238,10 @@ public class CommandLineAdaptorTest {
 
     public boolean getNotModified() {
       return notModified;
+    }
+
+    public boolean getNotFound() {
+      return notFound;
     }
   }
 
@@ -278,4 +286,3 @@ public class CommandLineAdaptorTest {
 
 
 }
-

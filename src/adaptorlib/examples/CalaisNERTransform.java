@@ -14,7 +14,7 @@
 
 package adaptorlib.examples;
 
-import adaptorlib.DocumentTransform;
+import adaptorlib.AbstractDocumentTransform;
 import adaptorlib.TransformException;
 
 import mx.bigdata.jcalais.CalaisClient;
@@ -34,7 +34,7 @@ import java.util.Map;
  * extracts named entities. We then inject this info as metadata.
  * We currently make the assumption that the incoming content is HTML.
  */
-public class CalaisNERTransform extends DocumentTransform {
+public class CalaisNERTransform extends AbstractDocumentTransform {
 
   interface CalaisClientFactory {
     CalaisClient makeClient(String apiKey);
@@ -43,7 +43,6 @@ public class CalaisNERTransform extends DocumentTransform {
   private final CalaisClientFactory clientFactory;
 
   CalaisNERTransform(CalaisClientFactory factory) {
-    super("CalaisNERTransform");
     this.clientFactory = factory;
   }
 
@@ -116,5 +115,11 @@ public class CalaisNERTransform extends DocumentTransform {
     // </HEAD> element and inserts the metadata right before it.
     content = content.replaceFirst("</(HEAD|head)", "\n" + sb.toString() + "</HEAD");
     contentOut.write(content.getBytes());
+  }
+
+  public static CalaisNERTransform create(Map<String, String> config) {
+    CalaisNERTransform transform = new CalaisNERTransform();
+    transform.configure(config);
+    return transform;
   }
 }

@@ -106,6 +106,11 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
+    public void respondNotFound() throws IOException {
+      response.respondNotFound();
+    }
+
+    @Override
     public OutputStream getOutputStream() throws IOException {
       return response.getOutputStream();
     }
@@ -151,12 +156,14 @@ abstract class WrapperAdaptor implements Adaptor {
 
   /**
    * Counterpart of {@link GetContentsRequest} that allows easy calling of an
-   * {@link Adaptor}. It does not support {@link #respondNotModified}.
+   * {@link Adaptor}. It does not support {@link #respondNotModified}. Be sure
+   * to check {@link #isNotFound()}.
    */
   public static class GetContentsResponse implements Response {
     private OutputStream os;
     private String contentType;
     private Metadata metadata;
+    private boolean notFound;
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -165,6 +172,11 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void respondNotModified() {
       throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void respondNotFound() {
+      notFound = true;
     }
 
     @Override
@@ -188,6 +200,10 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public Metadata getMetadata() {
       return metadata;
+    }
+
+    public boolean isNotFound() {
+      return notFound;
     }
   }
 

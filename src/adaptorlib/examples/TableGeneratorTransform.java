@@ -14,7 +14,7 @@
 
 package adaptorlib.examples;
 
-import adaptorlib.DocumentTransform;
+import adaptorlib.AbstractDocumentTransform;
 import adaptorlib.TransformException;
 
 import au.com.bytecode.opencsv.CSVReader;
@@ -30,7 +30,6 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -39,21 +38,13 @@ import java.util.logging.Logger;
  * In the template HTML file, place <code>&amp;#0;</code> where you'd like the table
  * to be inserted.
  */
-public class TableGeneratorTransform extends DocumentTransform {
+public class TableGeneratorTransform extends AbstractDocumentTransform {
   private static final Logger log = Logger.getLogger(TableGeneratorTransform.class.getName());
 
-  public TableGeneratorTransform() {
-    super("TableGeneratorTransform");
-  }
+  public TableGeneratorTransform() {}
 
-  public TableGeneratorTransform(String templateFile) {
-    super("TableGeneratorTransform");
-    try {
-      loadTemplateFile(templateFile);
-    } catch (IOException e) {
-      log.log(Level.WARNING, "TableGeneratorTransform could not load templateFile: " +
-              templateFile, e);
-    }
+  public TableGeneratorTransform(String templateFile) throws IOException {
+    loadTemplateFile(templateFile);
   }
 
   @Override
@@ -98,4 +89,17 @@ public class TableGeneratorTransform extends DocumentTransform {
    * the escaped null character, because it is explicitly disallowed in HTML.
    */
   private static final String SIGIL = "&#0;";
+
+  public static TableGeneratorTransform create(Map<String, String> config)
+      throws IOException {
+    String templateFile = config.get("templateFile");
+    TableGeneratorTransform transform;
+    if (templateFile == null) {
+      transform = new TableGeneratorTransform();
+    } else {
+      transform = new TableGeneratorTransform(templateFile);
+    }
+    transform.configure(config);
+    return transform;
+  }
 }

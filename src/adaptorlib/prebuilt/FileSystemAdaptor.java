@@ -99,13 +99,20 @@ public class FileSystemAdaptor extends AbstractAdaptor {
     File file = new File(serveDir, id.getUniqueId()).getCanonicalFile();
     if (!file.exists() || !isFileDescendantOfServeDir(file)
         || !isFileAllowed(file)) {
-      throw new FileNotFoundException();
+      resp.respondNotFound();
+      return;
     }
     if (!req.hasChangedSinceLastAccess(new Date(file.lastModified()))) {
       resp.respondNotModified();
       return;
     }
-    InputStream input = new FileInputStream(file);
+    InputStream input;
+    try {
+      input = new FileInputStream(file);
+    } catch (FileNotFoundException ex) {
+      resp.respondNotFound();
+      return;
+    }
     try {
       IOHelper.copyStream(input, resp.getOutputStream());
     } finally {
