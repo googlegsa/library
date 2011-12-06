@@ -19,24 +19,22 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-import java.util.Set;
-import java.util.TreeSet;
-
 /** Tests for {@link MetaItem}. */
 public class MetadataTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
   
-  private Metadata couple = new Metadata(makeCouple());
-  private Metadata coupleB = new Metadata(makeCouple());
-  private Metadata triple = new Metadata(makeTriple());
-  private Metadata tripleB = new Metadata(makeTriple());
+  private Metadata couple = makeCouple();
+  private Metadata coupleB = makeCouple();
+  private Metadata triple = makeTriple();
+  private Metadata tripleB = makeTriple();
 
   @Test
   public void testEquals() {
     assertEquals(couple, coupleB);
+    assertEquals(couple, new Metadata.Builder(couple).build());
     assertEquals(triple, tripleB);
-    assertEquals(Metadata.EMPTY, new Metadata(new TreeSet<MetaItem>()));
+    assertEquals(Metadata.EMPTY, new Metadata.Builder().build());
     assertFalse(couple.equals(triple));
     assertFalse(triple.equals(couple));
     assertFalse(Metadata.EMPTY.equals(new Object()));
@@ -63,91 +61,82 @@ public class MetadataTest {
   }
 
   @Test
-  public void testEachNameUnique() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("a", "barney"));
-    items.add(MetaItem.raw("a", "frank"));
-    thrown.expect(IllegalArgumentException.class);
-    Metadata box = new Metadata(items); 
-  }
-
-  @Test
   public void testWithPublicAndWithAcls() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("google:aclusers", "peter,mathew"));
-    items.add(MetaItem.raw("google:aclgroups", "apostles"));
-    items.add(MetaItem.raw("google:ispublic", "true"));
+    Metadata.Builder builder = new Metadata.Builder()
+        .add(MetaItem.raw("google:aclusers", "peter,mathew"))
+        .add(MetaItem.raw("google:aclgroups", "apostles"))
+        .add(MetaItem.raw("google:ispublic", "true"));
     thrown.expect(IllegalArgumentException.class);
-    Metadata box = new Metadata(items); 
+    Metadata box = builder.build(); 
   }
 
   @Test
   public void testNoPublicNoAcls() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("X", "peter,mathew"));
-    items.add(MetaItem.raw("Y", "apostles"));
-    items.add(MetaItem.raw("Z", "true"));
-    Metadata box = new Metadata(items); 
+    Metadata box = new Metadata.Builder()
+        .add(MetaItem.raw("X", "peter,mathew"))
+        .add(MetaItem.raw("Y", "apostles"))
+        .add(MetaItem.raw("Z", "true"))
+        .build();
   }
 
   @Test
   public void testNoPublicWithAcls() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("google:aclusers", "peter,mathew"));
-    items.add(MetaItem.raw("google:aclgroups", "apostles"));
-    items.add(MetaItem.raw("Z", "true"));
-    Metadata box = new Metadata(items); 
+    Metadata box = new Metadata.Builder()
+        .add(MetaItem.raw("google:aclusers", "peter,mathew"))
+        .add(MetaItem.raw("google:aclgroups", "apostles"))
+        .add(MetaItem.raw("Z", "true"))
+        .build();
   }
 
   @Test
   public void testWithPublicNoAcls() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("X", "peter,mathew"));
-    items.add(MetaItem.raw("Y", "apostles"));
-    items.add(MetaItem.raw("google:ispublic", "true"));
-    Metadata box = new Metadata(items); 
+    Metadata box = new Metadata.Builder()
+        .add(MetaItem.raw("X", "peter,mathew"))
+        .add(MetaItem.raw("Y", "apostles"))
+        .add(MetaItem.raw("google:ispublic", "true"))
+        .build();
   }
 
   @Test
   public void testWithUsersNoGroups() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("google:aclusers", "peter,mathew"));
-    items.add(MetaItem.raw("Y", "apostles"));
-    items.add(MetaItem.raw("Z", "true"));
+    Metadata.Builder builder = new Metadata.Builder()
+        .add(MetaItem.raw("google:aclusers", "peter,mathew"))
+        .add(MetaItem.raw("Y", "apostles"))
+        .add(MetaItem.raw("Z", "true"));
     thrown.expect(IllegalArgumentException.class);
-    Metadata box = new Metadata(items); 
+    Metadata box = builder.build(); 
   }
 
   @Test
   public void testNoUsersWithGroups() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("X", "peter,mathew"));
-    items.add(MetaItem.raw("google:aclgroups", "apostles"));
-    items.add(MetaItem.raw("Z", "true"));
+    Metadata.Builder builder = new Metadata.Builder()
+        .add(MetaItem.raw("X", "peter,mathew"))
+        .add(MetaItem.raw("google:aclgroups", "apostles"))
+        .add(MetaItem.raw("Z", "true"));
     thrown.expect(IllegalArgumentException.class);
-    Metadata box = new Metadata(items); 
+    Metadata box = builder.build(); 
   }
 
   @Test
   public void testPublicCanBeTrue() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("google:ispublic", "true"));
-    Metadata box = new Metadata(items); 
+    Metadata box = new Metadata.Builder()
+        .add(MetaItem.raw("google:ispublic", "true"))
+        .build();
   }
 
   @Test
   public void testPublicCanBeFalse() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("google:ispublic", "false"));
-    Metadata box = new Metadata(items); 
+    Metadata box = new Metadata.Builder()
+        .add(MetaItem.raw("google:ispublic", "false"))
+        .build();
   }
 
   @Test
   public void testPublicMustBeBoolean() {
-    Set<MetaItem> items = new TreeSet<MetaItem>();
-    items.add(MetaItem.raw("google:ispublic", "dog"));
+    Metadata.Builder builder = new Metadata.Builder()
+        .add(MetaItem.raw("google:ispublic", "dog"));
     thrown.expect(IllegalArgumentException.class);
-    Metadata box = new Metadata(items); 
+    Metadata box = builder.build(); 
   }
 
   @Test
@@ -161,18 +150,18 @@ public class MetadataTest {
     assertEquals(true, Metadata.EMPTY.isEmpty());
   }
 
-  private static Set<MetaItem> makeCouple() {
-    Set<MetaItem> coupleItems = new TreeSet<MetaItem>();
-    coupleItems.add(MetaItem.raw("google:ispublic", "true"));
-    coupleItems.add(MetaItem.raw("author", "iceman"));
-    return coupleItems;
+  private static Metadata makeCouple() {
+    return new Metadata.Builder()
+        .add(MetaItem.raw("google:ispublic", "true"))
+        .add(MetaItem.raw("author", "iceman"))
+        .build();
   }
 
-  private static Set<MetaItem> makeTriple() {
-    Set<MetaItem> tripleItems = new TreeSet<MetaItem>();
-    tripleItems.add(MetaItem.raw("google:aclusers", "peter,mathew"));
-    tripleItems.add(MetaItem.raw("google:aclgroups", "apostles"));
-    tripleItems.add(MetaItem.raw("where", "there"));
-    return tripleItems;
+  private static Metadata makeTriple() {
+    return new Metadata.Builder()
+        .add(MetaItem.raw("google:aclusers", "peter,mathew"))
+        .add(MetaItem.raw("google:aclgroups", "apostles"))
+        .add(MetaItem.raw("where", "there"))
+        .build();
   }
 }

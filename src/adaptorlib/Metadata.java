@@ -14,29 +14,22 @@
 
 package adaptorlib;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 /** Represents a fixed set of validated {@link MetaItem}s. */
 public final class Metadata implements Iterable<MetaItem> {
   /** Empty convenience instance. */
-  public static final Metadata EMPTY
-      = new Metadata(Collections.<MetaItem>emptySet());
+  public static final Metadata EMPTY = new Metadata.Builder().build();
 
-  private final Set<MetaItem> items;
+  private final Map<String, MetaItem> items;
  
   /**
    * Validates that each meta name is unique, there is either
    * public-indicator or ACLs and that ACLs values are acceptable.
    */ 
-  public Metadata(Set<MetaItem> allMeta) {
-    items = Collections.unmodifiableSet(new TreeSet<MetaItem>(allMeta));
-    checkConsistency(items, toMap());
+  private Metadata(Map<String, MetaItem> allMeta) {
+    items = Collections.unmodifiableMap(new TreeMap<String, MetaItem>(allMeta));
+    checkConsistency(items);
   }
 
   @Override
@@ -56,12 +49,12 @@ public final class Metadata implements Iterable<MetaItem> {
 
   @Override
   public Iterator<MetaItem> iterator() {
-    return items.iterator();
+    return items.values().iterator();
   }
 
   @Override
   public String toString() {
-    return items.toString();
+    return items.values().toString();
   }
 
   public Map<String, String> toMap() {
@@ -80,33 +73,14 @@ public final class Metadata implements Iterable<MetaItem> {
     return items.size();
   }
 
-  private static void checkConsistency(Set<MetaItem> items,
-                                       Map<String, String> allMeta) {
-    checkEachNameIsUnique(items); 
+  private static void checkConsistency(Map<String, MetaItem> allMeta) {
     checkNandPublicAndAcls(allMeta);
-    checkBothOrNoneAcls(allMeta); 
-    checkPublicIsBoolean(allMeta); 
-  }
-
-  /** Each MetaItem name needs be unique. */
-  private static void checkEachNameIsUnique(Set<MetaItem> m) {
-    HashSet<String> unique = new HashSet<String>();
-    HashSet<String> dup = new HashSet<String>();
-    for (MetaItem item : m) {
-      String name = item.getName();
-      if (unique.contains(name)) {
-        dup.add(name);
-      } else {
-        unique.add(name);
-      }
-    }
-    if (0 < dup.size()) {
-      throw new IllegalArgumentException("duplicate names: " + dup);
-    }
+    checkBothOrNoneAcls(allMeta);
+    checkPublicIsBoolean(allMeta);
   }
 
   /** Either have public indicator or ACLs, but not both. */
-  private static void checkNandPublicAndAcls(Map<String, String> m) {
+  private static void checkNandPublicAndAcls(Map<String, MetaItem> m) {
     boolean hasPublicName = m.containsKey("google:ispublic");
     boolean hasAcls = m.containsKey("google:aclusers")
         || m.containsKey("google:aclgroups");
@@ -116,7 +90,7 @@ public final class Metadata implements Iterable<MetaItem> {
   }
 
   /** Cannot provide users without groups and vice-versa. */
-  private static void checkBothOrNoneAcls(Map<String, String> m) {
+  private static void checkBothOrNoneAcls(Map<String, MetaItem> m) {
     boolean hasUserAcls = m.containsKey("google:aclusers");
     boolean hasGroupAcls = m.containsKey("google:aclgroups");
     if (hasUserAcls && !hasGroupAcls) {
@@ -124,8 +98,8 @@ public final class Metadata implements Iterable<MetaItem> {
     } else if (hasGroupAcls && !hasUserAcls) {
       throw new IllegalArgumentException("has groups, but not users");
     } else if (hasGroupAcls && hasUserAcls) {
-      String userLine = m.get("google:aclusers").trim();
-      String groupLine = m.get("google:aclgroups").trim();
+      String userLine = m.get("google:aclusers").getValue().trim();
+      String groupLine = m.get("google:aclgroups").getValue().trim();
       if (userLine.isEmpty() && groupLine.isEmpty()) {
         throw new IllegalArgumentException("both users and groups empty");
       }
@@ -133,12 +107,52 @@ public final class Metadata implements Iterable<MetaItem> {
   }
 
   /** If has public indicator value is acceptable. */
-  private static void checkPublicIsBoolean(Map<String, String> m) {
-    String value = m.get("google:ispublic");
-    if (null != value) {
+  private static void checkPublicIsBoolean(Map<String, MetaItem> m) {
+    MetaItem item = m.get("google:ispublic");
+    if (null != item) {
+      String value = item.getValue();
       if (!"true".equals(value) && !"false".equals(value)) {
         throw new IllegalArgumentException("ispublic is not true nor false");
       }
+    }
+  }
+
+  /**
+   * Builder for instances of {@link Metadata}.
+   */
+  public static class Builder {
+    private Map<String, MetaItem> items = new TreeMap<String, MetaItem>();
+
+    /**
+     * Create new empty builder.
+     */
+    public Builder() {}
+
+    /**
+     * Initialize builder with {@code MetaItems} from {@code iterable}. Useful
+     * to make tweaked copies of {@link Metadata}.
+     */
+    public Builder(Iterable<MetaItem> iterable) {
+      for (MetaItem item : iterable) {
+        items.put(item.getName(), item);
+      }
+    }
+
+    /**
+     * Add a new {@code MetaItem} to the builder, replacing any previously-added
+     * {@code MetaItem} with the same name.
+     */
+    public Builder add(MetaItem item) {
+      items.put(item.getName(), item);
+      return this;
+    }
+
+    /**
+     * Returns a metadata instance that reflects current builder state. It does
+     * not reset the builder.
+     */
+    public Metadata build() {
+      return new Metadata(items);
     }
   }
 }

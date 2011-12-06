@@ -25,9 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -369,7 +367,7 @@ public class CommandStreamParser {
 
   public RetrieverInfo readFromRetriever() throws IOException {
 
-    Set<MetaItem> metadata = new HashSet<MetaItem>();
+    Metadata.Builder metadata = new Metadata.Builder();
     byte[] content = null;
     boolean upToDate = false;
     boolean notFound = false;
@@ -416,7 +414,7 @@ public class CommandStreamParser {
       command = readCommand();
     }
 
-    return new RetrieverInfo(new DocId(docId), new Metadata(metadata),
+    return new RetrieverInfo(new DocId(docId), metadata.build(),
         content, upToDate, mimeType, notFound);
   }
 

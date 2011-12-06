@@ -483,12 +483,11 @@ class DocumentHandler extends AbstractHandler {
       } catch (TransformException e) {
         throw new IOException(e);
       }
-      Set<MetaItem> metadataSet
-          = new HashSet<MetaItem>(metadataMap.size() * 2);
+      Metadata.Builder builder = new Metadata.Builder();
       for (Map.Entry<String, String> me : metadataMap.entrySet()) {
-        metadataSet.add(MetaItem.raw(me.getKey(), me.getValue()));
+        builder.add(MetaItem.raw(me.getKey(), me.getValue()));
       }
-      metadata = new Metadata(metadataSet);
+      metadata = builder.build();
       contentType = params.get("Content-Type");
       return contentOut;
     }

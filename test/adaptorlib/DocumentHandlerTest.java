@@ -242,9 +242,8 @@ public class DocumentHandlerTest {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException {
-        Set<MetaItem> metaSet = new HashSet<MetaItem>();
-        metaSet.add(MetaItem.raw(key, "testing value"));
-        response.setMetadata(new Metadata(metaSet));
+        response.setMetadata(new Metadata.Builder()
+            .add(MetaItem.raw(key, "testing value")).build());
         super.getDocContent(request, response);
       }
     };
@@ -536,8 +535,8 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(new Metadata(Collections.singleton(
-                MetaItem.raw("test", "ing"))));
+            response.setMetadata(new Metadata.Builder()
+                .add(MetaItem.raw("test", "ing")).build());
             response.getOutputStream();
           }
         };
@@ -560,20 +559,19 @@ public class DocumentHandlerTest {
 
   @Test
   public void testFormMetadataHeader() {
-    Set<MetaItem> items = new HashSet<MetaItem>();
-    items.add(MetaItem.isPublic());
-    items.add(MetaItem.raw("test", "ing"));
-    items.add(MetaItem.raw("another", "item"));
-    items.add(MetaItem.raw("equals=", "=="));
-    String result = DocumentHandler.formMetadataHeader(new Metadata(items));
+    String result = DocumentHandler.formMetadataHeader(new Metadata.Builder()
+        .add(MetaItem.isPublic())
+        .add(MetaItem.raw("test", "ing"))
+        .add(MetaItem.raw("another", "item"))
+        .add(MetaItem.raw("equals=", "=="))
+        .build());
     assertEquals("another=item,equals%3D=%3D%3D,google%3Aispublic=true,"
                  + "test=ing", result);
   }
 
   @Test
   public void testFormMetadataHeaderEmpty() {
-    String header = DocumentHandler.formMetadataHeader(
-        new Metadata(new HashSet<MetaItem>()));
+    String header = DocumentHandler.formMetadataHeader(Metadata.EMPTY);
     assertEquals("", header);
   }
 
