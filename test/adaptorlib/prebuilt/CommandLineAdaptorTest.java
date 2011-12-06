@@ -14,12 +14,12 @@
 
 package adaptorlib.prebuilt;
 
+import static adaptorlib.TestHelper.getDocIds;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import adaptorlib.*;
-
-import static adaptorlib.TestHelper.getDocIds;
 
 import org.junit.Test;
 
@@ -193,11 +193,12 @@ public class CommandLineAdaptorTest {
     }
   }
 
-  public static class ContentsResponseTestMock implements Response {
+  private static class ContentsResponseTestMock implements Response {
     private OutputStream os;
     private String contentType;
     private Metadata metadata;
     private boolean notModified;
+    private boolean notFound;
 
     public ContentsResponseTestMock(OutputStream os) {
       this.os = os;
@@ -207,6 +208,11 @@ public class CommandLineAdaptorTest {
     @Override
     public void respondNotModified() {
       notModified = true;
+    }
+
+    @Override
+    public void respondNotFound() {
+      notFound = true;
     }
 
     @Override
@@ -234,6 +240,10 @@ public class CommandLineAdaptorTest {
 
     public boolean getNotModified() {
       return notModified;
+    }
+
+    public boolean getNotFound() {
+      return notFound;
     }
   }
 
@@ -278,4 +288,3 @@ public class CommandLineAdaptorTest {
 
 
 }
-

@@ -77,9 +77,16 @@ public class FileSystemAdaptor extends AbstractAdaptor {
     // The DocId provided by Request.getDocId() MUST NOT be trusted. Here we
     // try to verify that this file is allowed to be served.
     if (!isFileDescendantOfServeDir(file)) {
-      throw new FileNotFoundException();
+      resp.respondNotFound();
+      return;
     }
-    InputStream input = new FileInputStream(file);
+    InputStream input;
+    try {
+      input = new FileInputStream(file);
+    } catch (FileNotFoundException ex) {
+      resp.respondNotFound();
+      return;
+    }
     try {
       IOHelper.copyStream(input, resp.getOutputStream());
     } finally {

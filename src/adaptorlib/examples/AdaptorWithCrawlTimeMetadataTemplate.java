@@ -74,10 +74,9 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       // Must set metadata before getting OutputStream
       resp.setMetadata(new Metadata(metaItems));
     } else {
-      throw new FileNotFoundException(id.getUniqueId());
+      resp.respondNotFound();
+      return;
     }
-    // Must get the OutputStream after any possibility of throwing a
-    // FileNotFoundException.
     OutputStream os = resp.getOutputStream();
     os.write(str.getBytes(encoding));
   }

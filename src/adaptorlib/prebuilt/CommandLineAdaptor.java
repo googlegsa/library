@@ -22,10 +22,8 @@ import adaptorlib.Request;
 import adaptorlib.Response;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.logging.Logger;
 
@@ -96,9 +94,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
           + "document  " + retrieverInfo.getDocId() + ".");
     }
     if (retrieverInfo.notFound()) {
-      throw new FileNotFoundException("Could not find file '" + retrieverInfo.getDocId());
-    }
-    else if (retrieverInfo.isUpToDate()) {
+      resp.respondNotFound();
+    } else if (retrieverInfo.isUpToDate()) {
       log.finest("Retriever: " + id.getUniqueId() + " is up to date.");
       resp.respondNotModified();
 
@@ -107,12 +104,12 @@ public class CommandLineAdaptor extends AbstractAdaptor {
         log.finest("Retriever: " + id.getUniqueId() + " has mime-type "
             + retrieverInfo.getMimeType());
         resp.setContentType(retrieverInfo.getMimeType());
-      };
+      }
       if (retrieverInfo.getMetadata() != null) {
         log.finest("Retriever: " + id.getUniqueId() + " has metadata "
             + retrieverInfo.getMetadata());
         resp.setMetadata(retrieverInfo.getMetadata());
-      };
+      }
       if (retrieverInfo.getContents() != null) {
         resp.getOutputStream().write(retrieverInfo.getContents());
       } else {

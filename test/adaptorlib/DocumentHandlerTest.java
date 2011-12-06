@@ -349,7 +349,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            throw new FileNotFoundException();
+            response.respondNotFound();
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -494,7 +494,8 @@ public class DocumentHandlerTest {
           public void getDocContent(Request request, Response response)
               throws IOException {
             if (!request.getDocId().equals(new DocId("http://localhost/"))) {
-              throw new FileNotFoundException();
+              response.respondNotFound();
+              return;
             }
             if (!request.hasChangedSinceLastAccess(new Date(1 * 1000))) {
               response.respondNotModified();

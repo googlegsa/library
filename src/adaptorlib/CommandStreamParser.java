@@ -110,7 +110,7 @@ import java.util.regex.Pattern;
  * "up-to-date" -- specifies that the document is up-to-date with respect to its last crawled
  * time.<p>
  *
- * "document-not-found" -- the document does not exists in the repository<p>
+ * "not-found" -- the document does not exists in the repository<p>
  *
  * "mime-type=" -- specifies the document's mime-type. If unspecified then the GSA will
  * automatically assign a type to the document. <p>
@@ -168,7 +168,7 @@ import java.util.regex.Pattern;
 public class CommandStreamParser {
 
 
-  public static enum Operation {
+  private static enum Operation {
     ID,
     LAST_MODIFIED,
     CRAWL_IMMEDIATELY,
@@ -327,7 +327,7 @@ public class CommandStreamParser {
       switch (command.getOperation()) {
         case ID:
           if (docId != null) {
-            // TODO (johnfelton) add lister options when API is available
+            // TODO(johnfelton) add lister options when API is available
             DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
             builder.setDocId(new DocId(docId));
             result.add(builder.build());
@@ -359,7 +359,7 @@ public class CommandStreamParser {
       }
       command = readCommand();
     }
-    // TODO (johnfelton) add lister options when API is available
+    // TODO(johnfelton) add lister options when API is available
     DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
     builder.setDocId(new DocId(docId));
     result.add(builder.build());
@@ -442,7 +442,7 @@ public class CommandStreamParser {
       Operation operation = STRING_TO_OPERATION.get(commandTokens[0]);
       // Skip over unrecognized commands
       if (operation == null) {
-        // TODO (johnfelton) add a warning about an unrecognized command
+        // TODO(johnfelton) add a warning about an unrecognized command
         continue;
       }
 

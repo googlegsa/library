@@ -18,13 +18,12 @@ import java.io.*;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent} for performing the
- * actions needed to satisfy a request. If the {@code DocId} provided by {@link
- * Request#getDocId} does not exist, a {@link java.io.FileNotFoundException}
- * should be thrown.
+ * actions needed to satisfy a request.
  *
  * <p>There are several ways that a request can be processed. In the simplest
  * case an Adaptor always sets different pieces of metadata, calls {@link
- * #getOutputStream}, and writes the document contents.
+ * #getOutputStream}, and writes the document contents. If the document does not
+ * exist, it should call {@link #respondNotFound} instead.
  *
  * <p>For improved efficiency during recrawl by the GSA, an Adaptor should check
  * {@link Request#hasChangedSinceLastAccess} and call {@link
@@ -37,22 +36,31 @@ public interface Response {
    * of a file and its metadata. If you have called other methods on this object
    * to provide various metadata, the effects of those methods will be ignored.
    *
-   * <p>If called, this must be the last call to this interface. If the document
-   * does not exist, you must throw {@link java.io.FileNotFoundException} and
-   * not call this method. Once you call this method, for the rest of the
-   * processing, exceptions may no longer be communicated to clients cleanly.
+   * <p>If called, this must be the last call to this interface. Once you call
+   * this method, for the rest of the processing, exceptions may no longer be
+   * communicated to clients cleanly.
    */
   public void respondNotModified() throws IOException;
+
+  /**
+   * Respond to the GSA or other client that the request document does not
+   * exist. If you have called other methods on this object, the effects of
+   * those methods will be ignored.
+   *
+   * <p>If called, this must be the last call to this interface. Once you call
+   * this method, for the rest of the processing, exceptions may no longer be
+   * communicated to the clients cleanly.
+   */
+  public void respondNotFound() throws IOException;
 
   /**
    * Get stream to write document contents to. There is no need to flush or
    * close the {@code OutputStream} when done.
    *
    * <p>If called, this must be the last call to this interface (although, for
-   * convenience, you may call this method multiple times). If the document
-   * does not exist, you must throw {@link java.io.FileNotFoundException} and
-   * not call this method. Once you call this method, for the rest of the
-   * processing, exceptions may no longer be communicated to clients cleanly.
+   * convenience, you may call this method multiple times). Once you call this
+   * method, for the rest of the processing, exceptions may no longer be
+   * communicated to clients cleanly.
    */
   public OutputStream getOutputStream() throws IOException;
 
