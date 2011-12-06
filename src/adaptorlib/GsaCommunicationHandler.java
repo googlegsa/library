@@ -167,9 +167,25 @@ public class GsaCommunicationHandler {
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-    adaptor.init(new AdaptorContextImpl());
-
     config.addConfigModificationListener(new GsaConfigModListener());
+    TimerTask configWatcher = new ConfigWatcher(config);
+
+    long sleepDurationMillis = 1000;
+    // An hour.
+    long maxSleepDurationMillis = 60 * 60 * 1000;
+    while (true) {
+      try {
+        adaptor.init(new AdaptorContextImpl());
+        break;
+      } catch (Exception ex) {
+        log.log(Level.WARNING, "Failed to initialize adaptor", ex);
+        Thread.sleep(sleepDurationMillis);
+        sleepDurationMillis
+            = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
+        configWatcher.run();
+      }
+    }
+
     // Since we are white-listing particular keys for auto-update, things aren't
     // ready enough to expose to adaptors.
     /*if (adaptor instanceof ConfigModificationListener) {
@@ -189,7 +205,7 @@ public class GsaCommunicationHandler {
         config.getAdaptorFullListingSchedule(), docIdFullPusher);
 
     long period = config.getConfigPollPeriodMillis();
-    configWatcherTimer.schedule(new ConfigWatcher(config), period, period);
+    configWatcherTimer.schedule(configWatcher, period, period);
   }
 
   private TransformPipeline createTransformPipeline() {

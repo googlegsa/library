@@ -68,6 +68,27 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
+  public void testFailingInitAdaptor() throws Exception {
+    class FailFirstAdaptor extends NullAdaptor {
+      private int count = 0;
+      public boolean started = false;
+
+      @Override
+      public void init(AdaptorContext context) {
+        if (count == 0) {
+          count++;
+          throw new RuntimeException();
+        }
+        started = true;
+      }
+    }
+    FailFirstAdaptor adaptor = new FailFirstAdaptor();
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    gsa.start();
+    assertTrue(adaptor.started);
+  }
+
+  @Test
   public void testBasicListen() throws Exception {
     gsa.start();
     assertTrue(adaptor.inited);
