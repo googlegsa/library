@@ -41,6 +41,7 @@ public class GsaCommunicationHandlerTest {
     config.setValue("gsa.hostname", "localhost");
     // Let the OS choose the port
     config.setValue("server.port", "0");
+    config.setValue("server.dashboardPort", "0");
     gsa = new GsaCommunicationHandler(adaptor, config);
   }
 
