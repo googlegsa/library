@@ -54,7 +54,8 @@ public class GsaCommunicationHandler {
    * permits one invocation at a time. If multiple simultaneous invocations
    * occur, all but the first will log a warning and return immediately.
    */
-  private final OneAtATimeRunnable docIdFullPusher;
+  private final OneAtATimeRunnable docIdFullPusher = new OneAtATimeRunnable(
+      new PushRunnable(), new AlreadyRunningRunnable());
   /**
    * Schedule identifier for {@link #sendDocIds}.
    */
@@ -73,13 +74,10 @@ public class GsaCommunicationHandler {
 
     dashboard = new Dashboard(config, this, journal);
     docIdCodec = new DocIdCodec(config);
-    GsaFeedFileSender fileSender = new GsaFeedFileSender(
-        config.getGsaCharacterEncoding(), config.isServerSecure());
+    GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec);
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
-    docIdFullPusher = new OneAtATimeRunnable(
-        new PushRunnable(), new AlreadyRunningRunnable());
   }
 
   /** Starts listening for communications from GSA. */
@@ -378,6 +376,26 @@ public class GsaCommunicationHandler {
           } catch (InvalidPatternException ex) {
             log.log(Level.WARNING, "Invalid schedule pattern", ex);
           }
+        }
+      }
+
+      // List of "safe" keys that can be updated without a restart.
+      List<String> safeKeys = Arrays.asList("adaptor.fullListingSchedule");
+      // Set of "unsafe" keys that have been modified.
+      Set<String> modifiedKeysRequiringRestart
+          = new HashSet<String>(modifiedKeys);
+      modifiedKeysRequiringRestart.removeAll(safeKeys);
+      // If there are modified "unsafe" keys, then we restart things to make
+      // sure all the code is up-to-date with the new values.
+      if (!modifiedKeysRequiringRestart.isEmpty()) {
+        log.warning("Unsafe configuration keys modified. To ensure a sane "
+                    + "state, the adaptor is restarting.");
+        stop(3);
+        try {
+          start();
+        } catch (Exception ex) {
+          log.log(Level.SEVERE, "Automatic restart failed", ex);
+          throw new RuntimeException(ex);
         }
       }
     }

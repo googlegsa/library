@@ -51,11 +51,6 @@ public class Config {
   protected long configFileLastModified;
   protected List<ConfigModificationListener> modificationListeners
       = new CopyOnWriteArrayList<ConfigModificationListener>();
-  /**
-   * Once the configuration has been read, we do not allow massive changes to
-   * the configuration, because too much code does not notice the updates.
-   */
-  protected volatile boolean configRead;
 
   public Config() {
     String hostname = null;
@@ -421,24 +416,6 @@ public class Config {
       // Find differences.
       differentKeys = findDifferences(config, newConfig);
 
-      // Only allow adaptor.fullListingSchedule to be updated at the moment. No
-      // other code can handle updates. Since the Dashboard will show the
-      // current values, we don't want the Dashboard showing new values and the
-      // code using old values.
-      // TODO(ejona): Once more things support modification of configuration,
-      // this should be removed.
-      if (configRead) {
-        for (String name : new ArrayList<String>(differentKeys)) {
-          if (!"adaptor.fullListingSchedule".equals(name)) {
-            differentKeys.remove(name);
-            log.log(Level.INFO,
-                    "Ignoring modified key {0}, since it is not white-listed",
-                    name);
-            newConfigFileProperties.setProperty(name, config.getProperty(name));
-          }
-        }
-      }
-
       if (differentKeys.isEmpty()) {
         log.info("No configuration changes found");
         return;
@@ -559,7 +536,6 @@ public class Config {
    * @throws IllegalStateException if {@code key} has no value
    */
   public String getValue(String key) {
-    configRead = true;
     String value = config.getProperty(key);
     if (value == null) {
       throw new IllegalStateException(MessageFormat.format(

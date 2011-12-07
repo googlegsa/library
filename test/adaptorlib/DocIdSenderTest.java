@@ -240,7 +240,7 @@ public class DocIdSenderTest {
     List<String> xmlStrings = new ArrayList<String>();
 
     public MockGsaFeedFileSender() {
-      super(null, false);
+      super(new Config());
     }
 
     @Override
