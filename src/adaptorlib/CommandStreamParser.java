@@ -326,9 +326,7 @@ public class CommandStreamParser {
         case ID:
           if (docId != null) {
             // TODO(johnfelton) add lister options when API is available
-            DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
-            builder.setDocId(new DocId(docId));
-            result.add(builder.build());
+            result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
           }
           docId = command.getArgument();
           lastModified = null;
@@ -358,9 +356,7 @@ public class CommandStreamParser {
       command = readCommand();
     }
     // TODO(johnfelton) add lister options when API is available
-    DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
-    builder.setDocId(new DocId(docId));
-    result.add(builder.build());
+    result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
 
     return result;
   }

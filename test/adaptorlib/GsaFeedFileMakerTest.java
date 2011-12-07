@@ -75,10 +75,8 @@ public class GsaFeedFileMakerTest {
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    ids.add(new DocIdPusher.Record.Builder()
-        .setDocId(new DocId("E11")).build());
-    ids.add(new DocIdPusher.Record.Builder()
-        .setDocId(new DocId("elefenta")).build());
+    ids.add(new DocIdPusher.Record.Builder(new DocId("E11")).build());
+    ids.add(new DocIdPusher.Record.Builder(new DocId("elefenta")).build());
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     assertEquals(golden, xml);
   }
@@ -109,10 +107,9 @@ public class GsaFeedFileMakerTest {
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    DocIdPusher.Record.Builder attrBuilder = new DocIdPusher.Record.Builder();
+    DocIdPusher.Record.Builder attrBuilder = new DocIdPusher.Record.Builder(new DocId("E11"));
 
     attrBuilder.setResultLink(new URI("http://f000nkey.net"));
-    attrBuilder.setDocId(new DocId("E11"));
     ids.add(attrBuilder.build());
 
     attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    

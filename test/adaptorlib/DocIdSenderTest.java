@@ -50,7 +50,7 @@ public class DocIdSenderTest {
     DocIdPusher.Record[] records = new DocIdPusher.Record[6];
     for (int i = 0; i < records.length; i++) {
       DocId id = new DocId("test" + i);
-      records[i] = new DocIdPusher.Record.Builder().setDocId(id).build();
+      records[i] = new DocIdPusher.Record.Builder(id).build();
     }
     List<DocIdPusher.Record> infos = new ArrayList<DocIdPusher.Record>();
     infos.add(records[0]);

@@ -25,29 +25,24 @@ public class RecordTest {
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  public void testNoDocId() {
-    thrown.expect(NullPointerException.class);
-    new DocIdPusher.Record.Builder().build();
-  }
-
-  @Test
   public void testNullDocId() {
     thrown.expect(NullPointerException.class);
-    new DocIdPusher.Record.Builder().setDocId(null).build();
+    DocId nullId = null;
+    new DocIdPusher.Record.Builder(nullId).build();
   }
 
   @Test
   public void testEquals() {
-    DocIdPusher.Record info1 = new DocIdPusher.Record.Builder()
-       .setDocId(new DocId("test")).build();
-    DocIdPusher.Record info2 = new DocIdPusher.Record.Builder()
-        .setDocId(new DocId("test")).build();
-    DocIdPusher.Record info3 = new DocIdPusher.Record.Builder()
-       .setDocId(new DocId("test2")).build();
-    DocIdPusher.Record info4 = new DocIdPusher.Record.Builder()
-        .setDocId(new DocId("test")).setDeleteFromIndex(true).build();
-    DocIdPusher.Record info5 = new DocIdPusher.Record.Builder()
-        .setDocId(new DocId("test2")).setDeleteFromIndex(true).build();
+    DocIdPusher.Record info1 = new DocIdPusher.Record.Builder(
+        new DocId("test")).build();
+    DocIdPusher.Record info2 = new DocIdPusher.Record.Builder(
+        new DocId("test")).build();
+    DocIdPusher.Record info3 = new DocIdPusher.Record.Builder(
+        new DocId("test2")).build();
+    DocIdPusher.Record info4 = new DocIdPusher.Record.Builder(
+        new DocId("test")).setDeleteFromIndex(true).build();
+    DocIdPusher.Record info5 = new DocIdPusher.Record.Builder(
+        new DocId("test2")).setDeleteFromIndex(true).build();
     assertFalse(info1.equals(null));
     assertFalse(info1.equals(new Object()));
     assertEquals(info1, info2);
@@ -62,6 +57,6 @@ public class RecordTest {
         + ",lastModified=null,resultLink=null,crawlImmediately=false"
         + ",crawlOnce=false,lock=false)";
     assertEquals(golden,
-        "" + new DocIdPusher.Record.Builder().setDocId(new DocId("a")).build());
+        "" + new DocIdPusher.Record.Builder(new DocId("a")).build());
   }
 }
