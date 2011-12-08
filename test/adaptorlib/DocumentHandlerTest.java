@@ -54,7 +54,8 @@ public class DocumentHandlerTest {
         = new AbstractHandler("localhost", Charset.forName("UTF-8")) {
       @Override
       protected void meteredHandle(HttpExchange ex) throws IOException {
-        cannedRespond(ex, 1234, "text/plain", "Testing");
+        // Translation.HTTP_NOT_FOUND was randomly chosen.
+        cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
       }
     };
     DocumentHandler handler = new DocumentHandler("localhost",

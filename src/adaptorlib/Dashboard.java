@@ -141,12 +141,7 @@ class Dashboard {
   private class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
     @Override
     public Object run(List request) {
-      boolean pushStarted
-          = gsaCommHandler.checkAndScheduleImmediatePushOfDocIds();
-      if (!pushStarted) {
-        throw new RuntimeException("A push is already in progress");
-      }
-      return 1;
+      return gsaCommHandler.checkAndScheduleImmediatePushOfDocIds();
     }
   }
 

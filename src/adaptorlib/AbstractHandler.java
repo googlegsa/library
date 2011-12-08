@@ -150,8 +150,27 @@ abstract class AbstractHandler implements HttpHandler {
    * a moderate amount of work to produce, then you should manually call
    * {@link #respond} or {@link #respondToHead} depending on the situation.
    */
-  protected void cannedRespond(HttpExchange ex, int code, String contentType,
-                               String response) throws IOException {
+  protected void cannedRespond(HttpExchange ex, int code, Translation response)
+      throws IOException {
+    // TODO(ejona): use exchange to decide on response language
+    cannedRespond(ex, code, "text/plain", response.toString());
+  }
+
+  /**
+   * Sends cheaply-generated response message to GSA. This is intended for use
+   * with pre-build, canned messages. It automatically handles not sending the
+   * actual content when the request method is HEAD. If the content requires
+   * a moderate amount of work to produce, then you should manually call
+   * {@link #respond} or {@link #respondToHead} depending on the situation.
+   */
+  protected void cannedRespond(HttpExchange ex, int code, Translation response,
+                               Object... params) throws IOException {
+    // TODO(ejona): use exchange to decide on response language
+    cannedRespond(ex, code, "text/plain", response.toString(params));
+  }
+
+  private void cannedRespond(HttpExchange ex, int code, String contentType,
+                             String response) throws IOException {
     if ("HEAD".equals(ex.getRequestMethod())) {
       respondToHead(ex, code, contentType);
     } else {
@@ -287,8 +306,8 @@ abstract class AbstractHandler implements HttpHandler {
         // exception up and allow the server to kill the connection.
         throw new RuntimeException(e);
       } else {
-        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                      "An unexpected error occurred");
+        cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR,
+                      Translation.HTTP_INTERNAL_ERROR);
       }
     } finally {
       log.fine("ending");

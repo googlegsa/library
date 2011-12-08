@@ -224,17 +224,11 @@ function startFeedPush() {
   sending.show();
   rpc('startFeedPush', null, function(result, error) {
     sending.hide();
-    var notificationSpan;
-    if (result !== null) {
-      notificationSpan = $('#gaf-start-feed-push-success');
-      notificationSpan.text('Feed push started');
-    } else {
-      if (error === null) {
-        error = 'Invalid response from server';
-      }
-      notificationSpan = $('#gaf-start-feed-push-error');
-      notificationSpan.text(error);
+    if (result === null) {
+      throw error !== null ? error : "Invalid response from server";
     }
+    var notificationSpan = result ? $('#gaf-start-feed-push-success')
+        : $('#gaf-start-feed-push-already-running');
     notificationSpan.show();
     window.setTimeout(function() {
       notificationSpan.fadeOut();
@@ -248,7 +242,7 @@ function checkConfig() {
   rpc('checkForUpdatedConfig', null, function(result, error) {
     sending.hide();
     if (result === null) {
-      throw "Invalid response from server";
+      throw error !== null ? error : "Invalid response from server";
     }
     var notificationSpan = result ? $('#gaf-check-config-updated')
         : $('#gaf-check-config-not-updated');

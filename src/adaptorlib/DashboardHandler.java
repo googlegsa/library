@@ -63,8 +63,8 @@ class DashboardHandler extends AbstractHandler {
       java.net.URL url = DashboardHandler.class.getResource(
           STATIC_PACKAGE + "/" + path);
       if (url == null) {
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "404: Not found");
+        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                      Translation.HTTP_NOT_FOUND);
         return;
       }
       Date lastModified = new Date(url.openConnection().getLastModified());
@@ -90,8 +90,8 @@ class DashboardHandler extends AbstractHandler {
       enableCompressionIfSupported(ex);
       respond(ex, HttpURLConnection.HTTP_OK, contentType, contents);
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-          "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+          Translation.HTTP_BAD_METHOD);
     }
   }
 

@@ -152,8 +152,8 @@ class DocumentHandler extends AbstractHandler {
 
       response.complete();
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-                    "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+                    Translation.HTTP_BAD_METHOD);
     }
   }
 
@@ -194,8 +194,8 @@ class DocumentHandler extends AbstractHandler {
       }
 
       if (status == AuthzStatus.INDETERMINATE) {
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "Unknown document");
+        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                      Translation.HTTP_NOT_FOUND);
         return false;
       } else if (status == AuthzStatus.DENY) {
         if (principal == null && authnHandler != null) {
@@ -204,8 +204,8 @@ class DocumentHandler extends AbstractHandler {
           authnHandler.handle(ex);
           return false;
         } else {
-          cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
-                        "403: Forbidden");
+          cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+                        Translation.HTTP_FORBIDDEN);
           return false;
         }
       }
@@ -426,8 +426,8 @@ class DocumentHandler extends AbstractHandler {
           break;
 
         case NOT_FOUND:
-          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                        "Unknown document");
+          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                        Translation.HTTP_NOT_FOUND);
           break;
 
         case TRANSFORM:

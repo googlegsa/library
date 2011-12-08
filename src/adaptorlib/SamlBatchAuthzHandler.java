@@ -69,13 +69,13 @@ class SamlBatchAuthzHandler extends AbstractHandler {
   @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
     if (!"POST".equals(ex.getRequestMethod())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-          "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+          Translation.HTTP_BAD_METHOD);
       return;
     }
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                    "Not found");
+      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                    Translation.HTTP_NOT_FOUND);
       return;
     }
     // Setup SAML context.
@@ -93,13 +93,13 @@ class SamlBatchAuthzHandler extends AbstractHandler {
         decoder.decode(context);
       } catch (MessageDecodingException e) {
         log.log(Level.INFO, "Error decoding message", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
-                      "Error decoding message");
+        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+                      Translation.HTTP_BAD_REQUEST_ERROR_DECODING);
         return;
       } catch (SecurityException e) {
         log.log(Level.WARNING, "Security error while decoding message", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
-                      "Security error while decoding message");
+        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+                      Translation.HTTP_BAD_REQUEST_SECURITY_ERROR);
         return;
       } catch (IndexOutOfBoundsException e) {
         // Normal indication that there are no more messages to decode.
@@ -112,10 +112,10 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     List<Response> responses;
     try {
       responses = processQueries(queries, getRequestUri(ex));
-    } catch (IllegalArgumentException e) {
+    } catch (TranslationIllegalArgumentException e) {
       log.log(Level.INFO, "Error processing queries", e);
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
-                    e.getMessage());
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+                    e.getTranslation());
       return;
     }
 
@@ -150,20 +150,23 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     for (AuthzDecisionQuery query : queries) {
       String resource = query.getResource();
       if (resource == null) {
-        throw new IllegalArgumentException("Queries need a resource");
+        throw new TranslationIllegalArgumentException(
+            Translation.AUTHZ_BAD_QUERY_NO_RESOURCE);
       }
       if (query.getSubject() == null
           || query.getSubject().getNameID() == null) {
-        throw new IllegalArgumentException("Queries need a subject");
+        throw new TranslationIllegalArgumentException(
+            Translation.AUTHZ_BAD_QUERY_NO_SUBJECT);
       }
       String subject = query.getSubject().getNameID().getValue();
       if (subject == null) {
-        throw new IllegalArgumentException("Queries need a subject");
+        throw new TranslationIllegalArgumentException(
+            Translation.AUTHZ_BAD_QUERY_NO_SUBJECT);
       }
       if (userIdentifier != null) {
         if (!userIdentifier.equals(subject)) {
-          throw new IllegalArgumentException(
-              "All queries must be for the same subject");
+          throw new TranslationIllegalArgumentException(
+              Translation.AUTHZ_BAD_QUERY_NOT_SAME_USER);
         }
       } else {
         userIdentifier = subject;
@@ -244,6 +247,20 @@ class SamlBatchAuthzHandler extends AbstractHandler {
       case INDETERMINATE:
       default:
         return DecisionTypeEnumeration.INDETERMINATE;
+    }
+  }
+
+  private static class TranslationIllegalArgumentException
+      extends IllegalArgumentException {
+    private final Translation translation;
+
+    public TranslationIllegalArgumentException(Translation translation) {
+      super(translation.toString());
+      this.translation = translation;
+    }
+
+    public Translation getTranslation() {
+      return translation;
     }
   }
 }
