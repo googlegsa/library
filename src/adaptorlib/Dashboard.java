@@ -68,10 +68,12 @@ class Dashboard {
           = new HttpsConfigurator(SSLContext.getDefault());
       ((HttpsServer) dashboardServer).setHttpsConfigurator(httpsConf);
     }
-    // If the port is zero, then the OS chose a port for us. This is mainly
-    // useful during testing.
-    dashboardPort = dashboardServer.getAddress().getPort();
-    config.setValue("server.dashboardPort", "" + dashboardPort);
+    if (dashboardPort == 0) {
+        // If the port is zero, then the OS chose a port for us. This is mainly
+        // useful during testing.
+        dashboardPort = dashboardServer.getAddress().getPort();
+        config.setValue("server.dashboardPort", "" + dashboardPort);
+    }
     // Use separate Executor for Dashboard to allow the administrator to
     // investigate why things are going wrong without waiting on the normal work
     // queue.
@@ -131,6 +133,8 @@ class Dashboard {
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
     rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
     rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
+    rpcHandler.registerRpcMethod("checkForUpdatedConfig",
+        new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
     return rpcHandler;
   }
 
@@ -205,6 +209,19 @@ class Dashboard {
         flatStatuses.add(obj);
       }
       return flatStatuses;
+    }
+  }
+
+  static class CheckForUpdatedConfigRpcMethod implements RpcHandler.RpcMethod {
+    private final GsaCommunicationHandler gsaComm;
+
+    public CheckForUpdatedConfigRpcMethod(GsaCommunicationHandler gsaComm) {
+      this.gsaComm = gsaComm;
+    }
+
+    @Override
+    public Object run(List request) {
+      return gsaComm.ensureLatestConfigLoaded();
     }
   }
 

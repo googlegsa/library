@@ -54,14 +54,14 @@ public class GsaCommunicationHandler {
    * permits one invocation at a time. If multiple simultaneous invocations
    * occur, all but the first will log a warning and return immediately.
    */
-  private final OneAtATimeRunnable docIdFullPusher;
+  private final OneAtATimeRunnable docIdFullPusher = new OneAtATimeRunnable(
+      new PushRunnable(), new AlreadyRunningRunnable());
   /**
    * Schedule identifier for {@link #sendDocIds}.
    */
   private String sendDocIdsSchedId;
   private HttpServer server;
   private Thread shutdownHook;
-  private Timer configWatcherTimer = new Timer("configWatcher", true);
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
   private final DocIdCodec docIdCodec;
   private final DocIdSender docIdSender;
@@ -73,13 +73,10 @@ public class GsaCommunicationHandler {
 
     dashboard = new Dashboard(config, this, journal);
     docIdCodec = new DocIdCodec(config);
-    GsaFeedFileSender fileSender = new GsaFeedFileSender(
-        config.getGsaCharacterEncoding(), config.isServerSecure());
+    GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec);
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
-    docIdFullPusher = new OneAtATimeRunnable(
-        new PushRunnable(), new AlreadyRunningRunnable());
   }
 
   /** Starts listening for communications from GSA. */
@@ -111,10 +108,12 @@ public class GsaCommunicationHandler {
         throw new RuntimeException(ex);
       }
     }
-    // If the port is zero, then the OS chose a port for us. This is mainly
-    // useful during testing.
-    port = server.getAddress().getPort();
-    config.setValue("server.port", "" + port);
+    if (port == 0) {
+        // If the port is zero, then the OS chose a port for us. This is mainly
+        // useful during testing.
+        port = server.getAddress().getPort();
+        config.setValue("server.port", "" + port);
+    }
     int maxThreads = config.getServerMaxWorkerThreads();
     int queueCapacity = config.getServerQueueCapacity();
     BlockingQueue<Runnable> blockingQueue
@@ -168,7 +167,6 @@ public class GsaCommunicationHandler {
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
     config.addConfigModificationListener(new GsaConfigModListener());
-    TimerTask configWatcher = new ConfigWatcher(config);
 
     long sleepDurationMillis = 1000;
     // An hour.
@@ -182,7 +180,7 @@ public class GsaCommunicationHandler {
         Thread.sleep(sleepDurationMillis);
         sleepDurationMillis
             = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
-        configWatcher.run();
+        ensureLatestConfigLoaded();
       }
     }
 
@@ -203,9 +201,6 @@ public class GsaCommunicationHandler {
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(), docIdFullPusher);
-
-    long period = config.getConfigPollPeriodMillis();
-    configWatcherTimer.schedule(configWatcher, period, period);
   }
 
   private TransformPipeline createTransformPipeline() {
@@ -316,6 +311,16 @@ public class GsaCommunicationHandler {
     return docIdFullPusher.runInNewThread() != null;
   }
 
+  boolean ensureLatestConfigLoaded() {
+    try {
+      return config.ensureLatestConfigLoaded();
+    } catch (Exception ex) {
+      log.log(Level.WARNING, "Error while trying to reload configuration",
+              ex);
+      return false;
+    }
+  }
+
   /**
    * Runnable that calls {@link DocIdSender#pushDocIds}.
    */
@@ -378,23 +383,25 @@ public class GsaCommunicationHandler {
           }
         }
       }
-    }
-  }
 
-  private static class ConfigWatcher extends TimerTask {
-    private Config config;
-
-    public ConfigWatcher(Config config) {
-      this.config = config;
-    }
-
-    @Override
-    public void run() {
-      try {
-        config.ensureLatestConfigLoaded();
-      } catch (Exception ex) {
-        log.log(Level.WARNING, "Error while trying to reload configuration",
-                ex);
+      // List of "safe" keys that can be updated without a restart.
+      List<String> safeKeys = Arrays.asList("adaptor.fullListingSchedule");
+      // Set of "unsafe" keys that have been modified.
+      Set<String> modifiedKeysRequiringRestart
+          = new HashSet<String>(modifiedKeys);
+      modifiedKeysRequiringRestart.removeAll(safeKeys);
+      // If there are modified "unsafe" keys, then we restart things to make
+      // sure all the code is up-to-date with the new values.
+      if (!modifiedKeysRequiringRestart.isEmpty()) {
+        log.warning("Unsafe configuration keys modified. To ensure a sane "
+                    + "state, the adaptor is restarting.");
+        stop(3);
+        try {
+          start();
+        } catch (Exception ex) {
+          log.log(Level.SEVERE, "Automatic restart failed", ex);
+          throw new RuntimeException(ex);
+        }
       }
     }
   }
