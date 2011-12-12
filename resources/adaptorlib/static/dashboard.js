@@ -242,6 +242,27 @@ function startFeedPush() {
   });
 }
 
+function checkConfig() {
+  var sending = $('#gaf-check-config-sending');
+  sending.show();
+  rpc('checkForUpdatedConfig', null, function(result, error) {
+    sending.hide();
+    if (result === null) {
+      throw "Invalid response from server";
+    }
+    var notificationSpan = result ? $('#gaf-check-config-updated')
+        : $('#gaf-check-config-not-updated');
+    notificationSpan.show();
+    window.setTimeout(function() {
+      notificationSpan.fadeOut();
+    }, 5000);
+    if (result) {
+      // Config was updated; auto-update displayed config.
+      rpc('getConfig', null, getConfigCallback);
+    }
+  });
+}
+
 function getLogCallback(result, error) {
   if (result === null) {
     throw error;
@@ -257,6 +278,7 @@ function getConfigCallback(result, error) {
     throw error;
   } else {
     var configTable = $('#gaf-config-table');
+    configTable.empty();
     var keys = [];
     var key;
     for (key in result) {
@@ -327,4 +349,5 @@ $(document).ready(function() {
   rpc('getConfig', null, getConfigCallback);
   rpc('getLog', null, getLogCallback);
   $('#gaf-start-feed-push').click(startFeedPush);
+  $('#gaf-check-config').click(checkConfig);
 });

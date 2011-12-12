@@ -427,20 +427,24 @@ public class Config {
         new FileInputStream(configFile)), Charset.forName("UTF-8"));
   }
 
-  public void ensureLatestConfigLoaded() throws IOException {
+  /**
+   * @return {@code true} if configuration file was modified.
+   */
+  public boolean ensureLatestConfigLoaded() throws IOException {
     synchronized (this) {
       if (configFile == null || !configFile.exists() || !configFile.isFile()) {
-        return;
+        return false;
       }
       // Check for modifications.
       long newLastModified = configFile.lastModified();
       if (configFileLastModified == newLastModified || newLastModified == 0) {
-        return;
+        return false;
       }
       log.info("Noticed modified configuration file");
 
       load(configFile);
     }
+    return true;
   }
 
   private Set<String> findDifferences(Properties config, Properties newConfig) {

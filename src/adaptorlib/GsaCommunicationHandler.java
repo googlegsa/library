@@ -311,12 +311,13 @@ public class GsaCommunicationHandler {
     return docIdFullPusher.runInNewThread() != null;
   }
 
-  void ensureLatestConfigLoaded() {
+  boolean ensureLatestConfigLoaded() {
     try {
-      config.ensureLatestConfigLoaded();
+      return config.ensureLatestConfigLoaded();
     } catch (Exception ex) {
       log.log(Level.WARNING, "Error while trying to reload configuration",
               ex);
+      return false;
     }
   }
 

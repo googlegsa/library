@@ -133,6 +133,8 @@ class Dashboard {
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
     rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
     rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
+    rpcHandler.registerRpcMethod("checkForUpdatedConfig",
+        new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
     return rpcHandler;
   }
 
@@ -207,6 +209,19 @@ class Dashboard {
         flatStatuses.add(obj);
       }
       return flatStatuses;
+    }
+  }
+
+  static class CheckForUpdatedConfigRpcMethod implements RpcHandler.RpcMethod {
+    private final GsaCommunicationHandler gsaComm;
+
+    public CheckForUpdatedConfigRpcMethod(GsaCommunicationHandler gsaComm) {
+      this.gsaComm = gsaComm;
+    }
+
+    @Override
+    public Object run(List request) {
+      return gsaComm.ensureLatestConfigLoaded();
     }
   }
 
