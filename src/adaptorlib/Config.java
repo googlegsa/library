@@ -85,8 +85,6 @@ public class Config {
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
     // 15 minutes.
     addKey("adaptor.incrementalPollPeriodSecs", "900");
-    // In seconds.
-    addKey("config.pollPeriodSecs", "30");
     addKey("transform.pipeline", "");
     // 1 MiB.
     addKey("transform.maxDocumentBytes", "1048576");
@@ -305,13 +303,6 @@ public class Config {
 
   public long getAdaptorIncrementalPollPeriodMillis() {
     return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
-  }
-
-  /**
-   * Period in milliseconds between checks for updated configuration.
-   */
-  public long getConfigPollPeriodMillis() {
-    return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
   }
 
   /**

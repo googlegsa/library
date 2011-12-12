@@ -62,7 +62,6 @@ public class GsaCommunicationHandler {
   private String sendDocIdsSchedId;
   private HttpServer server;
   private Thread shutdownHook;
-  private Timer configWatcherTimer = new Timer("configWatcher", true);
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
   private final DocIdCodec docIdCodec;
   private final DocIdSender docIdSender;
@@ -168,7 +167,6 @@ public class GsaCommunicationHandler {
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
     config.addConfigModificationListener(new GsaConfigModListener());
-    TimerTask configWatcher = new ConfigWatcher(config);
 
     long sleepDurationMillis = 1000;
     // An hour.
@@ -182,7 +180,7 @@ public class GsaCommunicationHandler {
         Thread.sleep(sleepDurationMillis);
         sleepDurationMillis
             = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
-        configWatcher.run();
+        ensureLatestConfigLoaded();
       }
     }
 
@@ -203,9 +201,6 @@ public class GsaCommunicationHandler {
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(), docIdFullPusher);
-
-    long period = config.getConfigPollPeriodMillis();
-    configWatcherTimer.schedule(configWatcher, period, period);
   }
 
   private TransformPipeline createTransformPipeline() {
@@ -316,6 +311,15 @@ public class GsaCommunicationHandler {
     return docIdFullPusher.runInNewThread() != null;
   }
 
+  void ensureLatestConfigLoaded() {
+    try {
+      config.ensureLatestConfigLoaded();
+    } catch (Exception ex) {
+      log.log(Level.WARNING, "Error while trying to reload configuration",
+              ex);
+    }
+  }
+
   /**
    * Runnable that calls {@link DocIdSender#pushDocIds}.
    */
@@ -397,24 +401,6 @@ public class GsaCommunicationHandler {
           log.log(Level.SEVERE, "Automatic restart failed", ex);
           throw new RuntimeException(ex);
         }
-      }
-    }
-  }
-
-  private static class ConfigWatcher extends TimerTask {
-    private Config config;
-
-    public ConfigWatcher(Config config) {
-      this.config = config;
-    }
-
-    @Override
-    public void run() {
-      try {
-        config.ensureLatestConfigLoaded();
-      } catch (Exception ex) {
-        log.log(Level.WARNING, "Error while trying to reload configuration",
-                ex);
       }
     }
   }
