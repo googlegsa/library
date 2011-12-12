@@ -50,6 +50,7 @@ class DocumentHandler extends AbstractHandler {
   private final TransformPipeline transform;
   private final int transformMaxBytes;
   private final boolean transformRequired;
+  private final boolean useCompression;
 
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
@@ -62,7 +63,7 @@ class DocumentHandler extends AbstractHandler {
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
-                         boolean transformRequired) {
+                         boolean transformRequired, boolean useCompression) {
     super(defaultHostname, defaultCharset);
     if (docIdDecoder == null || journal == null || adaptor == null
         || sessionManager == null) {
@@ -76,6 +77,7 @@ class DocumentHandler extends AbstractHandler {
     this.transform = transform;
     this.transformMaxBytes = transformMaxBytes;
     this.transformRequired = transformRequired;
+    this.useCompression = useCompression;
 
     if (addResolvedGsaHostnameToGsaIps) {
       try {
@@ -467,8 +469,10 @@ class DocumentHandler extends AbstractHandler {
         ex.getResponseHeaders().set("X-Gsa-External-Metadata",
                                     formMetadataHeader(metadata));
       }
-      // TODO(ejona): decide when to use compression based on mime-type
-      enableCompressionIfSupported(ex);
+      if (useCompression) {
+        // TODO(ejona): decide when to use compression based on mime-type
+        enableCompressionIfSupported(ex);
+      }
       startResponse(ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
     }
 

@@ -179,13 +179,16 @@ class GsaFeedFileSender {
    * Sends XML with provided datasoruce name and feedtype "metadata-and-url".
    * Datasource name is limited to [a-zA-Z0-9_].
    */
-  void sendMetadataAndUrl(String host, String datasource, String xmlString)
+  void sendMetadataAndUrl(String host, String datasource, String xmlString,
+                          boolean useCompression)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
     // TODO(pjo): Check datasource characters for valid name.
     String feedtype = "metadata-and-url";
     byte msg[] = buildMessage(datasource, feedtype, xmlString);
     // GSA only allows request content up to 1 MB to be compressed
-    boolean useCompression = msg.length < 1 * 1024 * 1024;
+    if (msg.length >= 1 * 1024 * 1024) {
+      useCompression = false;
+    }
 
     HttpURLConnection uc;
     OutputStream outputStream;

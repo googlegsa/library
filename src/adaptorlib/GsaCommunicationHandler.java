@@ -158,7 +158,8 @@ public class GsaCommunicationHandler {
                             authnHandler, sessionManager,
                             createTransformPipeline(),
                             config.getTransformMaxDocumentBytes(),
-                            config.isTransformRequired()));
+                            config.isTransformRequired(),
+                            config.isServerToUseCompression()));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);

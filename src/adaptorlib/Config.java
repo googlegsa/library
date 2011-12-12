@@ -65,6 +65,7 @@ public class Config {
     // A queue that takes one second to drain, assuming 16 threads and 100 ms
     // for each request.
     addKey("server.queueCapacity", "160");
+    addKey("server.useCompression", "true");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
@@ -253,6 +254,10 @@ public class Config {
    */
   public int getServerQueueCapacity() {
     return Integer.parseInt(getValue("server.queueCapacity"));
+  }
+
+  public boolean isServerToUseCompression() {
+    return Boolean.parseBoolean(getValue("server.useCompression"));
   }
 
   /**

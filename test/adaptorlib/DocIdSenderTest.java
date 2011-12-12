@@ -142,7 +142,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedToConnect {
+                              String xmlString, boolean useCompression)
+          throws FailedToConnect {
         throw new FailedToConnect(new IOException());
       }
     };
@@ -160,7 +161,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedWriting {
+                              String xmlString, boolean useCompression)
+          throws FailedWriting {
         throw new FailedWriting(new IOException());
       }
     };
@@ -178,7 +180,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedWriting {
+                              String xmlString, boolean useCompression)
+          throws FailedWriting {
         throw new FailedWriting(new IOException());
       }
     };
@@ -202,7 +205,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedReadingReply {
+                              String xmlString, boolean useCompression)
+          throws FailedReadingReply {
         throw new FailedReadingReply(new IOException());
       }
     };
@@ -244,7 +248,8 @@ public class DocIdSenderTest {
     }
 
     @Override
-    void sendMetadataAndUrl(String host, String datasource, String xmlString)
+    void sendMetadataAndUrl(String host, String datasource, String xmlString,
+                            boolean useCompression)
         throws FailedToConnect, FailedWriting, FailedReadingReply {
       hosts.add(host);
       datasources.add(datasource);
