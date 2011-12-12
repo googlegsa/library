@@ -132,7 +132,8 @@ class DocIdSender extends AbstractDocIdPusher {
       try {
         log.info("Sending feed to GSA host name: " + config.getGsaHostname());
         fileSender.sendMetadataAndUrl(config.getGsaHostname(), feedSourceName,
-                                      xmlFeedFile);
+                                      xmlFeedFile,
+                                      config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;
       } catch (GsaFeedFileSender.FailedToConnect ftc) {
