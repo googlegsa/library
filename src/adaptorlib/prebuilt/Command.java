@@ -14,7 +14,8 @@
 
 package adaptorlib.prebuilt;
 
-import adaptorlib.IOHelper;
+import static adaptorlib.prebuilt.StreamingCommand.StreamInputSource;
+import static adaptorlib.prebuilt.StreamingCommand.StreamOutputSink;
 
 import java.io.*;
 
@@ -77,38 +78,16 @@ public class Command {
     stdout = null;
     stderr = null;
 
-    Process proc = Runtime.getRuntime().exec(command, null, workingDir);
-    Thread in, out, err;
-    in = new Thread(new StreamCopyRunnable(new ByteArrayInputStream(stdin),
-                                           proc.getOutputStream(), true));
-    in.setDaemon(true);
-    in.start();
+    StreamInputSource in
+        = new StreamInputSource(new ByteArrayInputStream(stdin));
 
     ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
-    out = new Thread(new StreamCopyRunnable(proc.getInputStream(), outBuffer,
-                                            true));
-    out.setDaemon(true);
-    out.start();
+    StreamOutputSink out = new StreamOutputSink(outBuffer);
 
     ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
-    err = new Thread(new StreamCopyRunnable(proc.getErrorStream(), errBuffer,
-                                            true));
-    err.setDaemon(true);
-    err.start();
+    StreamOutputSink err = new StreamOutputSink(errBuffer);
 
-    try {
-      in.join();
-      out.join();
-      err.join();
-
-      returnCode = proc.waitFor();
-    } catch (InterruptedException ex) {
-      // Our threads should stop once the process closes.
-      // This destroy() is quite rude to the subprocess, but there is not any
-      // way to inform it to abort.
-      proc.destroy();
-      throw ex;
-    }
+    returnCode = StreamingCommand.exec(command, workingDir, in, out, err);
 
     stdout = outBuffer.toByteArray();
     stderr = errBuffer.toByteArray();
@@ -132,39 +111,5 @@ public class Command {
    */
   public byte[] getStderr() {
     return stderr;
-  }
-
-  private static class StreamCopyRunnable implements Runnable {
-    private InputStream is;
-    private OutputStream os;
-    private boolean autoClose;
-
-    public StreamCopyRunnable(InputStream is, OutputStream os,
-                              boolean autoClose) {
-      this.is = is;
-      this.os = os;
-      this.autoClose = autoClose;
-    }
-
-    public void run() {
-      try {
-        IOHelper.copyStream(is, os);
-      } catch (IOException ex) {
-        // Ignore, but stop thread
-      } finally {
-        if (autoClose) {
-          silentClose(is);
-          silentClose(os);
-        }
-      }
-    }
-
-    private static void silentClose(Closeable closeable) {
-      try {
-        closeable.close();
-      } catch (IOException ex) {
-        // ignore
-      }
-    }
   }
 }
