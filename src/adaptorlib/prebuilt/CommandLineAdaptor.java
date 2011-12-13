@@ -43,13 +43,13 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     try {
       log.finest("Command: ./list-doc-ids.sh");
       commandResult = command.exec(new String[] {"./list-doc-ids.sh"});
-    } catch (InterruptedException e) {
-      throw new IOException("Thread interrupted while waiting for external command.", e);
     } catch (IOException e) {
       throw new IOException("External command could not be executed.", e);
     }
     if (commandResult != 0) {
-      throw new IOException("External command error. code = " + commandResult + ".");
+      String errorOutput = new String(command.getStderr(), encoding);
+      throw new IOException("External command error. code = " + commandResult + ". Stderr: "
+                            + errorOutput);
     }
 
     CommandStreamParser parser = new CommandStreamParser(
@@ -81,9 +81,10 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       throw new IOException("External command could not be executed.", e);
     }
     if (commandResult != 0) {
-      throw new IOException("External command error. code=" + commandResult + ".");
+      String errorOutput = new String(command.getStderr(), encoding);
+      throw new IOException("External command error. code=" + commandResult + ". Stderr: "
+                            + errorOutput);
     }
-    // TODO(johnfelton) log any output sent to stderr
 
     CommandStreamParser parser = new CommandStreamParser(
         new ByteArrayInputStream(command.getStdout()));
