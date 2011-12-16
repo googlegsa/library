@@ -43,10 +43,17 @@ public class TestHelper {
 
   public static List<DocId> getDocIds(Adaptor adaptor) throws Exception {
     final AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    final Config config = new Config();
+    adaptor.initConfig(config);
     adaptor.init(new WrapperAdaptor.WrapperAdaptorContext(null) {
       @Override
       public DocIdPusher getDocIdPusher() {
         return pusher;
+      }
+
+      @Override
+      public Config getConfig() {
+        return config;
       }
     });
     adaptor.getDocIds(pusher);

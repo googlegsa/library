@@ -41,7 +41,6 @@ import java.util.logging.Logger;
 public class CommandLineAdaptor extends AbstractAdaptor {
   private static final Logger log = Logger.getLogger(CommandLineAdaptor.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
-  private String cmd;
   private List<String> listerCommand;
   private List<String> retrieverCommand;
 
@@ -51,7 +50,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
 
     // Create a new configuration key for letting the user configure this
     // adaptor.
-    config.addKey("commandlineadaptor.lister.cmd", "./lister.sh");
+    config.addKey("commandline.lister.cmd", "./lister.sh");
+    config.addKey("commandline.retriever.cmd", "./retriever.sh");
     // Change the default to automatically provide unzipped zip contents to the
     // GSA.
     config.overrideKey("adaptor.autoUnzip", "true");
@@ -59,34 +59,45 @@ public class CommandLineAdaptor extends AbstractAdaptor {
 
   @Override
   public void init(AdaptorContext context) throws Exception {
-    // Process configuration.
-    Map<String, String> config = context.getConfig().getValuesWithPrefix(
-        "commandlineadaptor.lister");
+    // Process lister configuration.
+    Map<String, String> listerConfig = context.getConfig().getValuesWithPrefix(
+        "commandline.lister.");
     listerCommand = new ArrayList<String>();
-    
-    for (Map.Entry<String, String> me : config.entrySet()) {
-      String key = me.getKey();
-      String value = me.getValue();
-      if ("cmd".equals(key)) {
-        listerCommand.add(value);
-      } else if ("workingDirectory".equals(key)) {
-        workingDirectory(new File(value));
-      } else if ("errorHaltsPipeline".equals(key)) {
-        errorHaltsPipeline(Boolean.parseBoolean(value));
-      }
+
+    String listerCommandString = listerConfig.get("cmd");
+    if (listerCommandString == null) {
+      throw new RuntimeException("commandline.lister.cmd configuration property"
+          + " must be set");
     }
-    if (cmd.size() == 0) {
-      throw new RuntimeException("cmd configuration property must be set");
-    }
+    listerCommand.add(listerCommandString);
+
     for (int i = 1;; i++) {
-      String value = config.get("arg" + i);
+      String argument = listerConfig.get("arg" + i);
+      if (argument == null) {
+        break;
+      }
+      listerCommand.add(argument);
+    }
+
+    // Process retriever configuration.
+    Map<String, String> retrieverConfig = context.getConfig().getValuesWithPrefix(
+        "commandline.retriever.");
+    retrieverCommand = new ArrayList<String>();
+
+    String retrieverCommandString = retrieverConfig.get("cmd");
+    if (retrieverCommandString == null) {
+      throw new RuntimeException("commandline.retriever.cmd configuration property"
+          + " must be set");
+    }
+    retrieverCommand.add(retrieverCommandString);
+
+    for (int i = 1;; i++) {
+      String value = retrieverConfig.get("arg" + i);
       if (value == null) {
         break;
       }
-      cmd.add(value);
+      retrieverCommand.add(value);
     }
-    transformCommand = cmd;
-
   }
 
   public void setListerCommand(List<String> commandWithArgs) {
@@ -112,8 +123,9 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     Command command = newListerCommand();
 
     try {
-      log.finest("Command: " + cmd);
-      commandResult = command.exec(new String[] {"./list-doc-ids.sh"});
+       String[] commandLine = listerCommand.toArray(new String[0]);
+      log.finest("Command: " + commandLine);
+      commandResult = command.exec(commandLine);
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
     } catch (IOException e) {
@@ -142,10 +154,13 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       if (lastCrawled != null) {
         lastCrawledMillis = lastCrawled.getTime();
       }
-      log.finest("Command: ./get-doc-contents.sh " + id.getUniqueId() +
-          " " + lastCrawledMillis);
-      commandResult = command.exec(new String[] {"./get-doc-contents.sh", id.getUniqueId(),
-              Long.toString(lastCrawledMillis)});
+      String[] commandLine = new String[retrieverCommand.size() + 2];
+      retrieverCommand.toArray(commandLine);
+      commandLine[retrieverCommand.size()] = id.getUniqueId();
+      commandLine[retrieverCommand.size() + 1] = Long.toString(lastCrawledMillis);
+
+      log.finest("Command: " + commandLine);
+      commandResult = command.exec(commandLine);
     } catch (InterruptedException e) {
       throw new IOException("Thread intrupted while waiting for external command.", e);
     } catch (IOException e) {
