@@ -82,9 +82,7 @@ class AdministratorSecurityHandler extends AbstractHandler {
     // Send login page.
     InputStream is = this.getClass().getResourceAsStream(pageToDisplay);
     if (is == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                    "Could not load login page");
-      return;
+      throw new IOException("Could not load login page");
     }
     byte[] page;
     try {

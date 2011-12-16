@@ -149,6 +149,7 @@ public class ConfigTest {
         + "transform.pipeline.trans2.key2=value2\n"
         + "transform.pipeline.trans2.key3=value3\n"
     );
+    config.setValue("gsa.hostname", "notreal");
     config.load(configFile);
     assertEquals(golden, config.getTransformPipelineSpec());
   }
@@ -163,6 +164,7 @@ public class ConfigTest {
   @Test
   public void testGetTransformPipelineSpecInValid() throws Exception {
     configFile.setFileContents("transform.pipeline=name1, ,name3\n");
+    config.setValue("gsa.hostname", "notreal");
     config.load(configFile);
     thrown.expect(RuntimeException.class);
     config.getTransformPipelineSpec();
@@ -170,7 +172,7 @@ public class ConfigTest {
 
   private static class ModifiedConfig extends Config {
     public ModifiedConfig(MockFile file) {
-      this.configFile = file;
+      this.defaultConfigFile = file;
     }
 
     @Override

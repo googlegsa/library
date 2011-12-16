@@ -92,9 +92,6 @@ public interface DocIdPusher {
   
     private Record(DocId docid, boolean delete, Date lastModified,
         URI link, boolean crawlImmediately, boolean crawlOnce, boolean lock) {
-      if (null == docid) {
-        throw new NullPointerException();
-      }
       this.id = docid;
       this.delete = delete;
       this.lastModified = lastModified;
@@ -191,7 +188,12 @@ public interface DocIdPusher {
       private boolean crawlOnce = false;
       private boolean lock = false;
   
-      public Builder() {}
+      public Builder(DocId id) {
+        if (null == id) {
+          throw new NullPointerException();
+        }
+        docid = id;
+      }
 
       /** Makes Builder that can duplicate a record. */
       public Builder(Record startPoint) {
@@ -205,6 +207,9 @@ public interface DocIdPusher {
       }
 
       public Builder setDocId(DocId id) {
+        if (null == id) {
+          throw new NullPointerException();
+        }
         this.docid = id;
         return this;
       }

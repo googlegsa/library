@@ -19,7 +19,6 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -50,6 +49,8 @@ class DocumentHandler extends AbstractHandler {
   private final SessionManager<HttpExchange> sessionManager;
   private final TransformPipeline transform;
   private final int transformMaxBytes;
+  private final boolean transformRequired;
+  private final boolean useCompression;
 
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
@@ -61,7 +62,8 @@ class DocumentHandler extends AbstractHandler {
                          String gsaHostname, String[] gsaIps,
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
-                         TransformPipeline transform, int transformMaxBytes) {
+                         TransformPipeline transform, int transformMaxBytes,
+                         boolean transformRequired, boolean useCompression) {
     super(defaultHostname, defaultCharset);
     if (docIdDecoder == null || journal == null || adaptor == null
         || sessionManager == null) {
@@ -74,6 +76,8 @@ class DocumentHandler extends AbstractHandler {
     this.sessionManager = sessionManager;
     this.transform = transform;
     this.transformMaxBytes = transformMaxBytes;
+    this.transformRequired = transformRequired;
+    this.useCompression = useCompression;
 
     if (addResolvedGsaHostnameToGsaIps) {
       try {
@@ -136,32 +140,20 @@ class DocumentHandler extends AbstractHandler {
       DocumentResponse response = new DocumentResponse(ex, docId);
       journal.recordRequestProcessingStart();
       try {
-        try {
-          adaptor.getDocContent(request, response);
-        } catch (RuntimeException e) {
-          journal.recordRequestProcessingFailure();
-          throw e;
-        } catch (FileNotFoundException e) {
-          journal.recordRequestProcessingEnd(0);
-          throw e;
-        } catch (IOException e) {
-          journal.recordRequestProcessingFailure();
-          throw e;
-        }
-        journal.recordRequestProcessingEnd(response.getWrittenContentSize());
-      } catch (FileNotFoundException e) {
-        log.log(Level.FINE, "FileNotFound during getDocContent. Message: {0}",
-                e.getMessage());
-        log.log(Level.FINER, "Full FileNotFound information", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "Unknown document");
-        return;
+        adaptor.getDocContent(request, response);
+      } catch (RuntimeException e) {
+        journal.recordRequestProcessingFailure();
+        throw e;
+      } catch (IOException e) {
+        journal.recordRequestProcessingFailure();
+        throw e;
       }
+      journal.recordRequestProcessingEnd(response.getWrittenContentSize());
 
       response.complete();
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-                    "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+                    Translation.HTTP_BAD_METHOD);
     }
   }
 
@@ -202,8 +194,8 @@ class DocumentHandler extends AbstractHandler {
       }
 
       if (status == AuthzStatus.INDETERMINATE) {
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                      "Unknown document");
+        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                      Translation.HTTP_NOT_FOUND);
         return false;
       } else if (status == AuthzStatus.DENY) {
         if (principal == null && authnHandler != null) {
@@ -212,8 +204,8 @@ class DocumentHandler extends AbstractHandler {
           authnHandler.handle(ex);
           return false;
         } else {
-          cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
-                        "403: Forbidden");
+          cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+                        Translation.HTTP_FORBIDDEN);
           return false;
         }
       }
@@ -301,8 +293,30 @@ class DocumentHandler extends AbstractHandler {
     }
   }
 
-  /** Special instance of stream that denotes that not modified was sent */
-  private static final OutputStream notModifiedOs = new SinkOutputStream();
+  /**
+   * The state of the response. The state begins in SETUP mode, after which it
+   * should transition to another state and become fixed at that state.
+   */
+  private enum State {
+    /**
+     * The class has not been informed how to respond, so we can still make
+     * changes to what will be provided in headers.
+     */
+    SETUP,
+    /** No content to send, but we do need a different response code. */
+    NOT_MODIFIED,
+    /** No content to send, but we do need a different response code. */
+    NOT_FOUND,
+    /** Must not respond with content, but otherwise act like normal. */
+    HEAD,
+    /** No need to buffer contents before sending. */
+    NO_TRANSFORM,
+    /**
+     * Buffer "small" contents. Large file contents will be written without
+     * transformation or cause an exception (depending on transformRequired).
+     */
+    TRANSFORM,
+  }
 
   /**
    * Handles incoming data from adaptor and sending it to the client. There are
@@ -316,6 +330,7 @@ class DocumentHandler extends AbstractHandler {
    * need to be very aware of all the different possibilities.
    */
   private class DocumentResponse implements Response {
+    private State state = State.SETUP;
     private HttpExchange ex;
     private OutputStream os;
     private CountingOutputStream countingOs;
@@ -330,27 +345,51 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public void respondNotModified() throws IOException {
-      if (os != null) {
-        throw new IllegalStateException("getOutputStream already called");
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
       }
-      os = notModifiedOs;
+      state = State.NOT_MODIFIED;
+    }
+
+    @Override
+    public void respondNotFound() throws IOException {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      state = State.NOT_FOUND;
     }
 
     @Override
     public OutputStream getOutputStream() {
-      if (os == notModifiedOs) {
-        throw new IllegalStateException("respondNotModified already called");
-      }
-      if (os != null) {
-        return os;
+      switch (state) {
+        case SETUP:
+          // We will need to make an OutputStream.
+          break;
+        case HEAD:
+        case NO_TRANSFORM:
+        case TRANSFORM:
+          // Already called before. Provide saved OutputStream.
+          return os;
+        case NOT_MODIFIED:
+          throw new IllegalStateException("respondNotModified already called");
+        case NOT_FOUND:
+          throw new IllegalStateException("respondNotFound already called");
+        default:
+          throw new IllegalStateException("Already responded");
       }
       if ("HEAD".equals(ex.getRequestMethod())) {
+        state = State.HEAD;
         os = new SinkOutputStream();
       } else {
-        countingOs = new CountingOutputStream(new LazyContentOutputStream());
         if (transform != null) {
+          state = State.TRANSFORM;
+          OutputStream innerOs = transformRequired
+              ? new CantUseOutputStream() : new LazyContentOutputStream();
+          countingOs = new CountingOutputStream(innerOs);
           os = new MaxBufferOutputStream(countingOs, transformMaxBytes);
         } else {
+          state = State.NO_TRANSFORM;
+          countingOs = new CountingOutputStream(new LazyContentOutputStream());
           os = countingOs;
         }
       }
@@ -359,16 +398,16 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public void setContentType(String contentType) {
-      if (os != null) {
-        throw new IllegalStateException();
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
       }
       this.contentType = contentType;
     }
 
     @Override
     public void setMetadata(Metadata metadata) {
-      if (os != null) {
-        throw new IllegalStateException();
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
       }
       this.metadata = metadata;
     }
@@ -378,35 +417,49 @@ class DocumentHandler extends AbstractHandler {
     }
 
     private void complete() throws IOException {
-      if (os == null) {
-        throw new IOException("No response sent from adaptor");
-      }
-      if (os == notModifiedOs) {
-        respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
-      } else if (os instanceof MaxBufferOutputStream) {
-        MaxBufferOutputStream mbos = (MaxBufferOutputStream) os;
-        byte[] buffer = mbos.getBufferedContent();
-        if (buffer == null) {
-          log.info("Not transforming document because document is too large");
-        } else {
-          ByteArrayOutputStream baos = transform(buffer);
-          buffer = null;
-          startSending(true);
-          baos.writeTo(ex.getResponseBody());
-        }
-        ex.getResponseBody().flush();
-        ex.getResponseBody().close();
-      } else if (os instanceof CountingOutputStream) {
-        // The adaptor called getOutputStream, but that doesn't mean they wrote
-        // out to it (consider an empty document). Thus, we force a usage of the
-        // output stream now.
-        os.flush();
-        ex.getResponseBody().flush();
-        ex.getResponseBody().close();
-      } else if (os instanceof SinkOutputStream) {
-        startSending(false);
-      } else {
-        throw new IllegalStateException();
+      switch (state) {
+        case SETUP:
+          throw new IOException("No response sent from adaptor");
+
+        case NOT_MODIFIED:
+          respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
+          break;
+
+        case NOT_FOUND:
+          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                        Translation.HTTP_NOT_FOUND);
+          break;
+
+        case TRANSFORM:
+          MaxBufferOutputStream mbos = (MaxBufferOutputStream) os;
+          byte[] buffer = mbos.getBufferedContent();
+          if (buffer == null) {
+            log.info("Not transforming document because document is too large");
+          } else {
+            ByteArrayOutputStream baos = transform(buffer);
+            buffer = null;
+            startSending(true);
+            baos.writeTo(ex.getResponseBody());
+          }
+          ex.getResponseBody().flush();
+          ex.getResponseBody().close();
+          break;
+
+        case NO_TRANSFORM:
+          // The adaptor called getOutputStream, but that doesn't mean they
+          // wrote out to it (consider an empty document). Thus, we force a
+          // usage of the output stream now.
+          os.flush();
+          ex.getResponseBody().flush();
+          ex.getResponseBody().close();
+          break;
+
+        case HEAD:
+          startSending(false);
+          break;
+
+        default:
+          throw new IllegalStateException();
       }
       ex.close();
     }
@@ -416,8 +469,10 @@ class DocumentHandler extends AbstractHandler {
         ex.getResponseHeaders().set("X-Gsa-External-Metadata",
                                     formMetadataHeader(metadata));
       }
-      // TODO(ejona): decide when to use compression based on mime-type
-      enableCompressionIfSupported(ex);
+      if (useCompression) {
+        // TODO(ejona): decide when to use compression based on mime-type
+        enableCompressionIfSupported(ex);
+      }
       startResponse(ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
     }
 
@@ -432,12 +487,11 @@ class DocumentHandler extends AbstractHandler {
       } catch (TransformException e) {
         throw new IOException(e);
       }
-      Set<MetaItem> metadataSet
-          = new HashSet<MetaItem>(metadataMap.size() * 2);
+      Metadata.Builder builder = new Metadata.Builder();
       for (Map.Entry<String, String> me : metadataMap.entrySet()) {
-        metadataSet.add(MetaItem.raw(me.getKey(), me.getValue()));
+        builder.add(MetaItem.raw(me.getKey(), me.getValue()));
       }
-      metadata = new Metadata(metadataSet);
+      metadata = builder.build();
       contentType = params.get("Content-Type");
       return contentOut;
     }
@@ -449,6 +503,17 @@ class DocumentHandler extends AbstractHandler {
       protected OutputStream retrieveOs() throws IOException {
         startSending(true);
         return ex.getResponseBody();
+      }
+    }
+    
+    /**
+     * Used when transform pipeline is circumvented, but the pipeline is
+     * required.
+     */
+    private class CantUseOutputStream extends AbstractLazyOutputStream {
+      protected OutputStream retrieveOs() throws IOException {
+        throw new IOException("Transform pipeline is required, but document is "
+                              + "too large");
       }
     }
   }

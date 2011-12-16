@@ -21,8 +21,15 @@
   <div>
     <button id="gaf-start-feed-push">Start Feed Push</button>
     <span id="gaf-start-feed-push-sending" style="display: none">Sending request...</span>
-    <span id="gaf-start-feed-push-success"></span>
-    <span id="gaf-start-feed-push-error"></span>
+    <span id="gaf-start-feed-push-success" style="display: none">Feed push started</span>
+    <span id="gaf-start-feed-push-already-running" style="display: none">A push is already in progress</span>
+  </div>
+
+  <div>
+    <button id="gaf-check-config">Apply Updated Config</button>
+    <span id="gaf-check-config-sending" style="display: none">Sending request...</span>
+    <span id="gaf-check-config-updated" style="display: none">Configuration updated</span>
+    <span id="gaf-check-config-not-updated" style="display: none">No configuration changes noticed; nothing updated.</span>
   </div>
 
   <h2>Status</h2>

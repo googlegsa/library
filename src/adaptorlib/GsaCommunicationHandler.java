@@ -26,7 +26,7 @@ import it.sauronsoftware.cron4j.Scheduler;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
-import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.util.*;
 import java.util.concurrent.*;
@@ -54,14 +54,14 @@ public class GsaCommunicationHandler {
    * permits one invocation at a time. If multiple simultaneous invocations
    * occur, all but the first will log a warning and return immediately.
    */
-  private final OneAtATimeRunnable docIdFullPusher;
+  private final OneAtATimeRunnable docIdFullPusher = new OneAtATimeRunnable(
+      new PushRunnable(), new AlreadyRunningRunnable());
   /**
    * Schedule identifier for {@link #sendDocIds}.
    */
   private String sendDocIdsSchedId;
   private HttpServer server;
   private Thread shutdownHook;
-  private Timer configWatcherTimer = new Timer("configWatcher", true);
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
   private final DocIdCodec docIdCodec;
   private final DocIdSender docIdSender;
@@ -73,13 +73,10 @@ public class GsaCommunicationHandler {
 
     dashboard = new Dashboard(config, this, journal);
     docIdCodec = new DocIdCodec(config);
-    GsaFeedFileSender fileSender = new GsaFeedFileSender(
-        config.getGsaCharacterEncoding(), config.isServerSecure());
+    GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec);
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
-    docIdFullPusher = new OneAtATimeRunnable(
-        new PushRunnable(), new AlreadyRunningRunnable());
   }
 
   /** Starts listening for communications from GSA. */
@@ -111,10 +108,12 @@ public class GsaCommunicationHandler {
         throw new RuntimeException(ex);
       }
     }
-    // If the port is zero, then the OS chose a port for us. This is mainly
-    // useful during testing.
-    port = server.getAddress().getPort();
-    config.setValue("server.port", "" + port);
+    if (port == 0) {
+        // If the port is zero, then the OS chose a port for us. This is mainly
+        // useful during testing.
+        port = server.getAddress().getPort();
+        config.setValue("server.port", "" + port);
+    }
     int maxThreads = config.getServerMaxWorkerThreads();
     int queueCapacity = config.getServerQueueCapacity();
     BlockingQueue<Runnable> blockingQueue
@@ -157,7 +156,9 @@ public class GsaCommunicationHandler {
                             config.getGsaHostname(), config.getServerGsaIps(),
                             authnHandler, sessionManager,
                             createTransformPipeline(),
-                            config.getTransformMaxDocumentBytes()));
+                            config.getTransformMaxDocumentBytes(),
+                            config.isTransformRequired(),
+                            config.isServerToUseCompression()));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
@@ -166,9 +167,24 @@ public class GsaCommunicationHandler {
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
-    adaptor.init(new AdaptorContextImpl());
-
     config.addConfigModificationListener(new GsaConfigModListener());
+
+    long sleepDurationMillis = 1000;
+    // An hour.
+    long maxSleepDurationMillis = 60 * 60 * 1000;
+    while (true) {
+      try {
+        adaptor.init(new AdaptorContextImpl());
+        break;
+      } catch (Exception ex) {
+        log.log(Level.WARNING, "Failed to initialize adaptor", ex);
+        Thread.sleep(sleepDurationMillis);
+        sleepDurationMillis
+            = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
+        ensureLatestConfigLoaded();
+      }
+    }
+
     // Since we are white-listing particular keys for auto-update, things aren't
     // ready enough to expose to adaptors.
     /*if (adaptor instanceof ConfigModificationListener) {
@@ -186,9 +202,6 @@ public class GsaCommunicationHandler {
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(), docIdFullPusher);
-
-    long period = config.getConfigPollPeriodMillis();
-    configWatcherTimer.schedule(new ConfigWatcher(config), period, period);
   }
 
   private TransformPipeline createTransformPipeline() {
@@ -201,11 +214,20 @@ public class GsaCommunicationHandler {
     for (Map<String, String> element : pipelineConfig) {
       final String name = element.get("name");
       final String confPrefix = "transform.pipeline." + name + ".";
-      String className = element.get("class");
-      if (className == null) {
+      String factoryMethodName = element.get("factoryMethod");
+      if (factoryMethodName == null) {
         throw new RuntimeException(
-            "Missing " + confPrefix + "class configuration setting");
+            "Missing " + confPrefix + "factoryMethod configuration setting");
       }
+      int sepIndex = factoryMethodName.lastIndexOf(".");
+      if (sepIndex == -1) {
+        throw new RuntimeException("Could not separate method name from class "
+            + "name");
+      }
+      String className = factoryMethodName.substring(0, sepIndex);
+      String methodName = factoryMethodName.substring(sepIndex + 1);
+      log.log(Level.FINE, "Split {0} into class {1} and method {2}",
+          new Object[] {factoryMethodName, className, methodName});
       Class<?> klass;
       try {
         klass = Class.forName(className);
@@ -213,26 +235,26 @@ public class GsaCommunicationHandler {
         throw new RuntimeException(
             "Could not load class for transform " + name, ex);
       }
-      Constructor<?> constructor;
+      Method method;
       try {
-        constructor = klass.getConstructor(Map.class);
+        method = klass.getDeclaredMethod(methodName, Map.class);
       } catch (NoSuchMethodException ex) {
-        throw new RuntimeException(
-            "Could not find constructor for " + className + ". It must have a "
-            + "constructor that accepts a Map as the lone parameter.", ex);
+        throw new RuntimeException("Could not find method " + methodName
+            + " on class " + className, ex);
       }
+      log.log(Level.FINE, "Found method {0}", new Object[] {method});
       Object o;
       try {
-        o = constructor.newInstance(Collections.unmodifiableMap(element));
+        o = method.invoke(null, Collections.unmodifiableMap(element));
       } catch (Exception ex) {
-        throw new RuntimeException("Could not instantiate " + className, ex);
+        throw new RuntimeException("Failure while running factory method "
+            + factoryMethodName, ex);
       }
       if (!(o instanceof DocumentTransform)) {
-        throw new RuntimeException(className
+        throw new ClassCastException(o.getClass().getName()
             + " is not an instance of DocumentTransform");
       }
       DocumentTransform transform = (DocumentTransform) o;
-      transform.name(name);
       pipeline.add(transform);
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.
@@ -288,6 +310,16 @@ public class GsaCommunicationHandler {
    */
   public boolean checkAndScheduleImmediatePushOfDocIds() {
     return docIdFullPusher.runInNewThread() != null;
+  }
+
+  boolean ensureLatestConfigLoaded() {
+    try {
+      return config.ensureLatestConfigLoaded();
+    } catch (Exception ex) {
+      log.log(Level.WARNING, "Error while trying to reload configuration",
+              ex);
+      return false;
+    }
   }
 
   /**
@@ -352,23 +384,25 @@ public class GsaCommunicationHandler {
           }
         }
       }
-    }
-  }
 
-  private static class ConfigWatcher extends TimerTask {
-    private Config config;
-
-    public ConfigWatcher(Config config) {
-      this.config = config;
-    }
-
-    @Override
-    public void run() {
-      try {
-        config.ensureLatestConfigLoaded();
-      } catch (Exception ex) {
-        log.log(Level.WARNING, "Error while trying to reload configuration",
-                ex);
+      // List of "safe" keys that can be updated without a restart.
+      List<String> safeKeys = Arrays.asList("adaptor.fullListingSchedule");
+      // Set of "unsafe" keys that have been modified.
+      Set<String> modifiedKeysRequiringRestart
+          = new HashSet<String>(modifiedKeys);
+      modifiedKeysRequiringRestart.removeAll(safeKeys);
+      // If there are modified "unsafe" keys, then we restart things to make
+      // sure all the code is up-to-date with the new values.
+      if (!modifiedKeysRequiringRestart.isEmpty()) {
+        log.warning("Unsafe configuration keys modified. To ensure a sane "
+                    + "state, the adaptor is restarting.");
+        stop(3);
+        try {
+          start();
+        } catch (Exception ex) {
+          log.log(Level.SEVERE, "Automatic restart failed", ex);
+          throw new RuntimeException(ex);
+        }
       }
     }
   }

@@ -88,8 +88,8 @@ class AuthnHandler extends AbstractHandler {
   public void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if (!"GET".equals(requestMethod) && !"HEAD".equals(requestMethod)) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-          "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+          Translation.HTTP_BAD_METHOD);
       return;
     }
 

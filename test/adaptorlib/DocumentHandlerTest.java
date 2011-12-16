@@ -54,13 +54,15 @@ public class DocumentHandlerTest {
         = new AbstractHandler("localhost", Charset.forName("UTF-8")) {
       @Override
       protected void meteredHandle(HttpExchange ex) throws IOException {
-        cannedRespond(ex, 1234, "text/plain", "Testing");
+        // Translation.HTTP_NOT_FOUND was randomly chosen.
+        cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
       }
     };
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(), false,
-        "localhost", new String[0], authnHandler, sessionManager, null, 0);
+        "localhost", new String[0], authnHandler, sessionManager, null, 0,
+        false, false);
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
   }
@@ -145,7 +147,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"127.0.0.3", " "}, null, sessionManager, null, 0);
+        new String[] {"127.0.0.3", " "}, null, sessionManager, null, 0, false,
+        false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -158,7 +161,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "127.0.0.3",
-        new String[0], null, sessionManager, null, 0);
+        new String[0], null, sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -170,7 +173,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "127.0.0.3",
-        new String[0], null, sessionManager, null, 0);
+        new String[0], null, sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -183,7 +186,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"-no-such-host-"}, null, sessionManager, null, 0);
+        new String[] {"-no-such-host-"}, null, sessionManager, null, 0, false,
+        false);
   }
 
   @Test
@@ -193,7 +197,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), true, "-no-such-host-",
-        new String[0], null, sessionManager, null, 0);
+        new String[0], null, sessionManager, null, 0, false, false);
   }
 
   @Test
@@ -225,7 +229,7 @@ public class DocumentHandlerTest {
     final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
     TransformPipeline transform = new TransformPipeline();
-    transform.add(new DocumentTransform("testing") {
+    transform.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -241,9 +245,8 @@ public class DocumentHandlerTest {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException {
-        Set<MetaItem> metaSet = new HashSet<MetaItem>();
-        metaSet.add(MetaItem.raw(key, "testing value"));
-        response.setMetadata(new Metadata(metaSet));
+        response.setMetadata(new Metadata.Builder()
+            .add(MetaItem.raw(key, "testing value")).build());
         super.getDocContent(request, response);
       }
     };
@@ -251,7 +254,8 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
-        new String[] {"127.0.0.3"}, null, sessionManager, transform, 100);
+        new String[] {"127.0.0.3"}, null, sessionManager, transform, 100,
+        false, false);
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -264,7 +268,7 @@ public class DocumentHandlerTest {
   @Test
   public void testTransformDocumentTooLarge() throws Exception {
     TransformPipeline transform = new TransformPipeline();
-    transform.add(new DocumentTransform("testing") {
+    transform.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -292,11 +296,41 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
         new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
-        new String[] {"127.0.0.3"}, null, sessionManager, transform, 3);
+        new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, false,
+        false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
+
+  @Test
+  public void testTransformDocumentTooLargeButRequired() throws Exception {
+    TransformPipeline transform = new TransformPipeline();
+    class CheckFailAdaptor extends MockAdaptor {
+      public boolean failedAtCorrectTime = false;
+
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException {
+        OutputStream os = response.getOutputStream();
+        os.write(new byte[] {-1, 2, -3});
+        failedAtCorrectTime = true;
+        // Write out too much content for the buffer to hold here.
+        os.write(4);
+        failedAtCorrectTime = false;
+      }
+    };
+    CheckFailAdaptor mockAdaptor = new CheckFailAdaptor();
+    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    DocumentHandler handler = new DocumentHandler("localhost",
+        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
+        new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, true,
+        false);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+    assertTrue(mockAdaptor.failedAtCorrectTime);
   }
 
   @Test
@@ -319,7 +353,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            throw new FileNotFoundException();
+            response.respondNotFound();
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -464,7 +498,8 @@ public class DocumentHandlerTest {
           public void getDocContent(Request request, Response response)
               throws IOException {
             if (!request.getDocId().equals(new DocId("http://localhost/"))) {
-              throw new FileNotFoundException();
+              response.respondNotFound();
+              return;
             }
             if (!request.hasChangedSinceLastAccess(new Date(1 * 1000))) {
               response.respondNotModified();
@@ -505,8 +540,8 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(new Metadata(Collections.singleton(
-                MetaItem.raw("test", "ing"))));
+            response.setMetadata(new Metadata.Builder()
+                .add(MetaItem.raw("test", "ing")).build());
             response.getOutputStream();
           }
         };
@@ -514,7 +549,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         adaptor, false, "localhost", new String[0], null,
-        sessionManager, null, 0);
+        sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -524,25 +559,24 @@ public class DocumentHandlerTest {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
         adaptor, false, "localhost", new String[0], null,
-        sessionManager, null, 0);
+        sessionManager, null, 0, false, false);
   }
 
   @Test
   public void testFormMetadataHeader() {
-    Set<MetaItem> items = new HashSet<MetaItem>();
-    items.add(MetaItem.isPublic());
-    items.add(MetaItem.raw("test", "ing"));
-    items.add(MetaItem.raw("another", "item"));
-    items.add(MetaItem.raw("equals=", "=="));
-    String result = DocumentHandler.formMetadataHeader(new Metadata(items));
+    String result = DocumentHandler.formMetadataHeader(new Metadata.Builder()
+        .add(MetaItem.isPublic())
+        .add(MetaItem.raw("test", "ing"))
+        .add(MetaItem.raw("another", "item"))
+        .add(MetaItem.raw("equals=", "=="))
+        .build());
     assertEquals("another=item,equals%3D=%3D%3D,google%3Aispublic=true,"
                  + "test=ing", result);
   }
 
   @Test
   public void testFormMetadataHeaderEmpty() {
-    String header = DocumentHandler.formMetadataHeader(
-        new Metadata(new HashSet<MetaItem>()));
+    String header = DocumentHandler.formMetadataHeader(Metadata.EMPTY);
     assertEquals("", header);
   }
 

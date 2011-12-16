@@ -114,7 +114,8 @@ public class AutoUnzipAdaptorTest {
       public void getDocContent(Request req, Response resp) throws IOException {
         DocId docId = req.getDocId();
         if (!"!test.zip".equals(docId.getUniqueId())) {
-          throw new FileNotFoundException(docId.getUniqueId());
+          resp.respondNotFound();
+          return;
         }
         ZipOutputStream zos = new ZipOutputStream(resp.getOutputStream());
         for (String entry : original) {

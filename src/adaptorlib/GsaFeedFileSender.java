@@ -18,7 +18,6 @@ import java.io.*;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.nio.charset.Charset;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
@@ -50,11 +49,8 @@ class GsaFeedFileSender {
     // TODO(pjo): Add corrective tips.
   }
 
-  // All communications are expected to be tailored to GSA.
-  private final Charset encoding;
-
-  /** Whether to use HTTP or HTTPS to talk to the feedergate. */
-  private final boolean useHttps;
+  /** Configuration for GSA's encoding and whether to use HTTPS. */
+  private final Config config;
 
   // Feed file XML will not contain "<<".
   private static final String BOUNDARY = "<<";
@@ -62,14 +58,13 @@ class GsaFeedFileSender {
   // Another frequently used constant of sent message.
   private static final String CRLF = "\r\n";
 
-  public GsaFeedFileSender(Charset encoding, boolean useHttps) {
-    this.encoding = encoding;
-    this.useHttps = useHttps;
+  public GsaFeedFileSender(Config config) {
+    this.config = config;
   }
 
   // Get bytes of string in communication's encoding.
   private byte[] toEncodedBytes(String s) {
-    return s.getBytes(encoding);
+    return s.getBytes(config.getGsaCharacterEncoding());
   }
 
   /** Helper method for creating a multipart/form-data HTTP post.
@@ -98,7 +93,7 @@ class GsaFeedFileSender {
                                             boolean useCompression)
       throws MalformedURLException, IOException {
     URL feedUrl;
-    if (useHttps) {
+    if (config.isServerSecure()) {
       feedUrl = new URL("https://" + gsaHost + ":19902/xmlfeed");
     } else {
       feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
@@ -136,7 +131,8 @@ class GsaFeedFileSender {
     BufferedReader br = null;
     try {
       InputStream inputStream = uc.getInputStream();
-      br = new BufferedReader(new InputStreamReader(inputStream, encoding));
+      br = new BufferedReader(new InputStreamReader(
+          inputStream, config.getGsaCharacterEncoding()));
       String line;
       while ((line = br.readLine()) != null) {
         buf.append(line);
@@ -179,13 +175,16 @@ class GsaFeedFileSender {
    * Sends XML with provided datasoruce name and feedtype "metadata-and-url".
    * Datasource name is limited to [a-zA-Z0-9_].
    */
-  void sendMetadataAndUrl(String host, String datasource, String xmlString)
+  void sendMetadataAndUrl(String host, String datasource, String xmlString,
+                          boolean useCompression)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
     // TODO(pjo): Check datasource characters for valid name.
     String feedtype = "metadata-and-url";
     byte msg[] = buildMessage(datasource, feedtype, xmlString);
     // GSA only allows request content up to 1 MB to be compressed
-    boolean useCompression = msg.length < 1 * 1024 * 1024;
+    if (msg.length >= 1 * 1024 * 1024) {
+      useCompression = false;
+    }
 
     HttpURLConnection uc;
     OutputStream outputStream;

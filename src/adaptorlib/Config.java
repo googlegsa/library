@@ -21,6 +21,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.*;
 
 /**
@@ -37,14 +38,19 @@ public class Config {
   protected final Set<String> noDefaultConfig = new HashSet<String>();
   /** Default configuration values. */
   protected final Properties defaultConfig = new Properties();
-  /** Overriding configuration values loaded from file. */
-  protected Properties configFileProperties = new Properties(defaultConfig);
   /** Overriding configuration values loaded from command line. */
-  protected Properties config = new Properties(configFileProperties);
-  protected File configFile = new File(DEFAULT_CONFIG_FILE);
+  // Reads require no additional locks, but modifications require lock on 'this'
+  // to prevent lost updates.
+  protected volatile Properties config = new Properties(defaultConfig);
+  /** Default configuration to use in {@link #loadDefaultConfigFile}. */
+  protected File defaultConfigFile = new File(DEFAULT_CONFIG_FILE);
+  /**
+   * The actual config file in use, or {@code null} if none have been loaded.
+   */
+  protected File configFile;
   protected long configFileLastModified;
   protected List<ConfigModificationListener> modificationListeners
-      = new LinkedList<ConfigModificationListener>();
+      = new CopyOnWriteArrayList<ConfigModificationListener>();
 
   public Config() {
     String hostname = null;
@@ -65,6 +71,7 @@ public class Config {
     // A queue that takes one second to drain, assuming 16 threads and 100 ms
     // for each request.
     addKey("server.queueCapacity", "160");
+    addKey("server.useCompression", "true");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
@@ -79,11 +86,10 @@ public class Config {
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
     // 15 minutes.
     addKey("adaptor.incrementalPollPeriodSecs", "900");
-    // In seconds.
-    addKey("config.pollPeriodSecs", "30");
     addKey("transform.pipeline", "");
     // 1 MiB.
     addKey("transform.maxDocumentBytes", "1048576");
+    addKey("transform.required", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -254,6 +260,10 @@ public class Config {
     return Integer.parseInt(getValue("server.queueCapacity"));
   }
 
+  public boolean isServerToUseCompression() {
+    return Boolean.parseBoolean(getValue("server.useCompression"));
+  }
+
   /**
    * Optional (default false): Adds no-recrawl bit with sent records in feed
    * file. If connector handles updates and deletes then GSA does not have to
@@ -301,13 +311,6 @@ public class Config {
   }
 
   /**
-   * Period in milliseconds between checks for updated configuration.
-   */
-  public long getConfigPollPeriodMillis() {
-    return Long.parseLong(getValue("config.pollPeriodSecs")) * 1000;
-  }
-
-  /**
    * Returns a list of maps correspending to each transform in the pipeline.
    * Each map is the configuration entries for that transform. The 'name'
    * configuration entry is added in each map based on the name provided by the
@@ -337,6 +340,10 @@ public class Config {
 
   public int getTransformMaxDocumentBytes() {
     return Integer.parseInt(getValue("transform.maxDocumentBytes"));
+  }
+
+  public boolean isTransformRequired() {
+    return Boolean.parseBoolean(getValue("transform.required"));
   }
 
 // TODO(pjo): Implement on GSA
@@ -386,76 +393,63 @@ public class Config {
   }
 
   /**
-   * Load user-provided configuration file.
+   * Load user-provided configuration file, replacing any previously loaded file
+   * configuration.
    */
   private void load(Reader configFile) throws IOException {
-    configFileProperties.load(configFile);
+    Properties newConfigFileProperties = new Properties(defaultConfig);
+    newConfigFileProperties.load(configFile);
+
+    Config fakeOldConfig;
+    Set<String> differentKeys;
+    synchronized (this) {
+      // Create replacement config.
+      Properties newConfig = new Properties(newConfigFileProperties);
+      for (Object o : config.keySet()) {
+        newConfig.put(o, config.get(o));
+      }
+
+      // Find differences.
+      differentKeys = findDifferences(config, newConfig);
+
+      if (differentKeys.isEmpty()) {
+        log.info("No configuration changes found");
+        return;
+      }
+
+      validate(newConfig);
+
+      fakeOldConfig = new Config();
+      fakeOldConfig.config = config;
+      this.config = newConfig;
+    }
+    log.info("New configuration file loaded");
+    fireConfigModificationEvent(fakeOldConfig, differentKeys);
   }
 
-  Reader createReader(File file) throws IOException {
+  Reader createReader(File configFile) throws IOException {
     return new InputStreamReader(new BufferedInputStream(
         new FileInputStream(configFile)), Charset.forName("UTF-8"));
   }
 
-  public synchronized void ensureLatestConfigLoaded() throws IOException {
-    if (!configFile.exists() || !configFile.isFile()) {
-      return;
-    }
-    // Check for modifications.
-    long newLastModified = configFile.lastModified();
-    if (configFileLastModified == newLastModified || newLastModified == 0) {
-      return;
-    }
-    log.info("Noticed modified configuration file");
-    // Go ahead and update the modification time now, to prevent constantly
-    // trying to load the configuration file, in case of errors.
-    configFileLastModified = newLastModified;
-
-    // Load freshly-modified file.
-    Properties newConfigFileProperties = new Properties(defaultConfig);
-    Properties newConfig = new Properties(newConfigFileProperties);
-    Reader reader = createReader(configFile);
-    try {
-      newConfigFileProperties.load(reader);
-    } finally {
-      reader.close();
-    }
-
-    for (Object o : config.keySet()) {
-      newConfig.put(o, config.get(o));
-    }
-
-    // Find differences.
-    Set<String> differentKeys = findDifferences(config, newConfig);
-
-    // Only allow adaptor.fullListingSchedule to be updated at the moment. No
-    // other code can handle updates. Since the Dashboard will show the current
-    // values, we don't want the Dashboard showing new values and the code using
-    // old values. TODO(ejona): Once more things support modification of
-    // configuration, this should be removed.
-    for (String name : new ArrayList<String>(differentKeys)) {
-      if (!"adaptor.fullListingSchedule".equals(name)) {
-        differentKeys.remove(name);
-        log.log(Level.INFO,
-            "Ignoring modified key {0}, since it is not white-listed", name);
-        newConfigFileProperties.setProperty(name, config.getProperty(name));
+  /**
+   * @return {@code true} if configuration file was modified.
+   */
+  public boolean ensureLatestConfigLoaded() throws IOException {
+    synchronized (this) {
+      if (configFile == null || !configFile.exists() || !configFile.isFile()) {
+        return false;
       }
+      // Check for modifications.
+      long newLastModified = configFile.lastModified();
+      if (configFileLastModified == newLastModified || newLastModified == 0) {
+        return false;
+      }
+      log.info("Noticed modified configuration file");
+
+      load(configFile);
     }
-
-    if (differentKeys.isEmpty()) {
-      log.info("No configuration changes found");
-      return;
-    }
-
-    validate(newConfig);
-
-    Config fakeOldConfig = new Config();
-    fakeOldConfig.configFileProperties = configFileProperties;
-    fakeOldConfig.config = config;
-    this.configFileProperties = newConfigFileProperties;
-    this.config = newConfig;
-    log.info("New configuration file loaded");
-    fireConfigModificationEvent(fakeOldConfig, differentKeys);
+    return true;
   }
 
   private Set<String> findDifferences(Properties config, Properties newConfig) {
@@ -481,6 +475,7 @@ public class Config {
    * error handling, since this is typically non-fatal.
    */
   public void loadDefaultConfigFile() {
+    configFile = defaultConfigFile;
     if (configFile.exists() && configFile.isFile()) {
       try {
         load(configFile);
@@ -514,7 +509,6 @@ public class Config {
    * @throws IllegalStateException when not all configuration keys have values
    */
   public String[] autoConfig(String[] args) {
-    loadDefaultConfigFile();
     int i;
     for (i = 0; i < args.length; i++) {
       if (!args[i].startsWith("-D")) {
@@ -527,6 +521,7 @@ public class Config {
       }
       setValue(parts[0], parts[1]);
     }
+    loadDefaultConfigFile();
     validate();
     if (i == 0) {
       return args;
@@ -540,7 +535,7 @@ public class Config {
    *
    * @throws IllegalStateException if {@code key} has no value
    */
-  public synchronized String getValue(String key) {
+  public String getValue(String key) {
     String value = config.getProperty(key);
     if (value == null) {
       throw new IllegalStateException(MessageFormat.format(
@@ -607,30 +602,24 @@ public class Config {
 
   public void addConfigModificationListener(
       ConfigModificationListener listener) {
-    synchronized (modificationListeners) {
-      modificationListeners.add(listener);
-    }
+    modificationListeners.add(listener);
   }
 
   public void removeConfigModificationListener(
       ConfigModificationListener listener) {
-    synchronized (modificationListeners) {
-      modificationListeners.remove(listener);
-    }
+    modificationListeners.remove(listener);
   }
 
   private void fireConfigModificationEvent(Config oldConfig,
                                            Set<String> modifiedKeys) {
     ConfigModificationEvent ev
         = new ConfigModificationEvent(this, oldConfig, modifiedKeys);
-    synchronized (modificationListeners) {
-      for (ConfigModificationListener listener : modificationListeners) {
-        try {
-          listener.configModified(ev);
-        } catch (Exception ex) {
-          log.log(Level.WARNING,
-                  "Unexpected exception. Consider filing a bug.", ex);
-        }
+    for (ConfigModificationListener listener : modificationListeners) {
+      try {
+        listener.configModified(ev);
+      } catch (Exception ex) {
+        log.log(Level.WARNING,
+                "Unexpected exception. Consider filing a bug.", ex);
       }
     }
   }

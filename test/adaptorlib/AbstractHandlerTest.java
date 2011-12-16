@@ -77,10 +77,11 @@ public class AbstractHandlerTest {
   }
 
   @Test
-  public void testCannedHeadWithNoContentType() throws Exception {
+  public void testCannedHead() throws Exception {
     ex = new MockHttpExchange("http", "HEAD", "/test",
                               new MockHttpContext(null, "/"));
-    handler.cannedRespond(ex, 200, null, "some content");
+    // Translation.HTTP_NOT_FOUND was randomly chosen.
+    handler.cannedRespond(ex, 200, Translation.HTTP_NOT_FOUND);
     assertEquals(0, ex.getResponseBytes().length);
   }
 
@@ -119,7 +120,8 @@ public class AbstractHandlerTest {
     handler = new MockImpl() {
           @Override
           protected void meteredHandle(HttpExchange ex) throws IOException {
-            cannedRespond(ex, 200, "text/plain", "response");
+            // Translation.HTTP_NOT_FOUND was randomly chosen.
+            cannedRespond(ex, 200, Translation.HTTP_NOT_FOUND);
             throw new RuntimeException("testing");
           }
         };

@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
+import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -40,6 +41,7 @@ public class GsaCommunicationHandlerTest {
     config.setValue("gsa.hostname", "localhost");
     // Let the OS choose the port
     config.setValue("server.port", "0");
+    config.setValue("server.dashboardPort", "0");
     gsa = new GsaCommunicationHandler(adaptor, config);
   }
 
@@ -68,6 +70,27 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
+  public void testFailingInitAdaptor() throws Exception {
+    class FailFirstAdaptor extends NullAdaptor {
+      private int count = 0;
+      public boolean started = false;
+
+      @Override
+      public void init(AdaptorContext context) {
+        if (count == 0) {
+          count++;
+          throw new RuntimeException();
+        }
+        started = true;
+      }
+    }
+    FailFirstAdaptor adaptor = new FailFirstAdaptor();
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    gsa.start();
+    assertTrue(adaptor.started);
+  }
+
+  @Test
   public void testBasicListen() throws Exception {
     gsa.start();
     assertTrue(adaptor.inited);
@@ -83,14 +106,14 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", InstantiatableTransform.class.getName());
+      map.put("factoryMethod", getClass().getName() + ".factoryMethod");
       config.add(map);
     }
     TransformPipeline pipeline
         = GsaCommunicationHandler.createTransformPipeline(config);
     assertEquals(1, pipeline.size());
-    assertEquals(InstantiatableTransform.class, pipeline.get(0).getClass());
-    assertEquals("testing", pipeline.get(0).name());
+    assertEquals(IdentityTransform.class, pipeline.get(0).getClass());
+    assertEquals("testing", pipeline.get(0).getName());
   }
 
   @Test
@@ -118,7 +141,7 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", "adaptorlib.NotARealClass");
+      map.put("factoryMethod", "adaptorlib.NotARealClass.fakeMethod");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -132,7 +155,7 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", WrongConstructorTransform.class.getName());
+      map.put("factoryMethod", getClass().getName() + ".wrongFactoryMethod");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -146,7 +169,8 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", CantInstantiateTransform.class.getName());
+      map.put("factoryMethod",
+          getClass().getName() + ".cantInstantiateFactoryMethod");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -160,7 +184,22 @@ public class GsaCommunicationHandlerTest {
     {
       Map<String, String> map = new HashMap<String, String>();
       map.put("name", "testing");
-      map.put("class", WrongTypeTransform.class.getName());
+      map.put("factoryMethod",
+          getClass().getName() + ".wrongTypeFactoryMethod");
+      config.add(map);
+    }
+    thrown.expect(ClassCastException.class);
+    TransformPipeline pipeline
+        = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testCreateTransformPipelineNoMethod() throws Exception {
+    List<Map<String, String>> config = new ArrayList<Map<String, String>>();
+    {
+      Map<String, String> map = new HashMap<String, String>();
+      map.put("name", "testing");
+      map.put("factoryMethod", "noFactoryMethodToBeFound");
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
@@ -192,26 +231,32 @@ public class GsaCommunicationHandlerTest {
     }
   }
 
-  static class InstantiatableTransform extends DocumentTransform {
-    public InstantiatableTransform(Map<String, String> config) {
-      super("Test");
+  static class IdentityTransform extends AbstractDocumentTransform {
+    @Override
+    public void transform(ByteArrayOutputStream contentIn,
+                          OutputStream contentOut,
+                          Map<String, String> metadata,
+                          Map<String, String> params) throws IOException {
+      contentIn.writeTo(contentOut);
     }
   }
 
-  static class WrongConstructorTransform extends DocumentTransform {
-    public WrongConstructorTransform() {
-      super("Test");
-    }
+  public static IdentityTransform factoryMethod(Map<String, String> config) {
+    IdentityTransform transform = new IdentityTransform();
+    transform.configure(config);
+    return transform;
   }
 
-  static class CantInstantiateTransform extends DocumentTransform {
-    public CantInstantiateTransform(Map<String, String> config) {
-      super("Test");
-      throw new RuntimeException("This always seems to happen");
-    }
+  public static IdentityTransform wrongFactoryMethod() {
+    return factoryMethod(Collections.<String, String>emptyMap());
   }
 
-  static class WrongTypeTransform {
-    public WrongTypeTransform(Map<String, String> config) {}
+  public static IdentityTransform cantInstantiateFactoryMethod(
+      Map<String, String> config) {
+    throw new RuntimeException("This always seems to happen");
+  }
+
+  public static Object wrongTypeFactoryMethod(Map<String, String> config) {
+    return new Object();
   }
 }

@@ -128,11 +128,14 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       commandResult = command.exec(commandLine);
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
+
     } catch (IOException e) {
       throw new IOException("External command could not be executed.", e);
     }
     if (commandResult != 0) {
-      throw new IOException("External command error. code = " + commandResult + ".");
+      String errorOutput = new String(command.getStderr(), encoding);
+      throw new IOException("External command error. code = " + commandResult + ". Stderr: "
+                            + errorOutput);
     }
 
     CommandStreamParser parser = new CommandStreamParser(
@@ -167,9 +170,10 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       throw new IOException("External command could not be executed.", e);
     }
     if (commandResult != 0) {
-      throw new IOException("External command error. code=" + commandResult + ".");
+      String errorOutput = new String(command.getStderr(), encoding);
+      throw new IOException("External command error. code=" + commandResult + ". Stderr: "
+                            + errorOutput);
     }
-    // TODO(johnfelton) log any output sent to stderr
 
     CommandStreamParser parser = new CommandStreamParser(
         new ByteArrayInputStream(command.getStdout()));
@@ -180,9 +184,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
           + "document  " + retrieverInfo.getDocId() + ".");
     }
     if (retrieverInfo.notFound()) {
-      throw new FileNotFoundException("Could not find file '" + retrieverInfo.getDocId());
-    }
-    else if (retrieverInfo.isUpToDate()) {
+      resp.respondNotFound();
+    } else if (retrieverInfo.isUpToDate()) {
       log.finest("Retriever: " + id.getUniqueId() + " is up to date.");
       resp.respondNotModified();
 
@@ -191,12 +194,12 @@ public class CommandLineAdaptor extends AbstractAdaptor {
         log.finest("Retriever: " + id.getUniqueId() + " has mime-type "
             + retrieverInfo.getMimeType());
         resp.setContentType(retrieverInfo.getMimeType());
-      };
+      }
       if (retrieverInfo.getMetadata() != null) {
         log.finest("Retriever: " + id.getUniqueId() + " has metadata "
             + retrieverInfo.getMetadata());
         resp.setMetadata(retrieverInfo.getMetadata());
-      };
+      }
       if (retrieverInfo.getContents() != null) {
         resp.getOutputStream().write(retrieverInfo.getContents());
       } else {

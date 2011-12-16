@@ -51,10 +51,9 @@ public class AdaptorTemplate extends AbstractAdaptor {
     } else if ("1002".equals(id.getUniqueId())) {
       str = "Document 1002 says hello and banana strawberry";
     } else {
-      throw new FileNotFoundException(id.getUniqueId());
+      resp.respondNotFound();
+      return;
     }
-    // Must get the OutputStream after any possibility of throwing a
-    // FileNotFoundException.
     OutputStream os = resp.getOutputStream();
     os.write(str.getBytes(encoding));
   }

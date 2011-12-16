@@ -49,8 +49,8 @@ public interface Request {
    * Provides the document ID for the document that is being requested. {@code
    * DocId} was not necessarily provided previously by the Adaptor; <b>it is
    * client-provided and must not be trusted</b>. If the document does not
-   * exist, then {@link Adaptor#getDocContent} must throw {@link java.io.
-   * FileNotFoundException}.
+   * exist, then {@link Adaptor#getDocContent} must call {@link
+   * Response#respondNotFound}.
    */
   public DocId getDocId();
 }

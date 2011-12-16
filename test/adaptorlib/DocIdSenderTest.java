@@ -50,7 +50,7 @@ public class DocIdSenderTest {
     DocIdPusher.Record[] records = new DocIdPusher.Record[6];
     for (int i = 0; i < records.length; i++) {
       DocId id = new DocId("test" + i);
-      records[i] = new DocIdPusher.Record.Builder().setDocId(id).build();
+      records[i] = new DocIdPusher.Record.Builder(id).build();
     }
     List<DocIdPusher.Record> infos = new ArrayList<DocIdPusher.Record>();
     infos.add(records[0]);
@@ -142,7 +142,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedToConnect {
+                              String xmlString, boolean useCompression)
+          throws FailedToConnect {
         throw new FailedToConnect(new IOException());
       }
     };
@@ -160,7 +161,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedWriting {
+                              String xmlString, boolean useCompression)
+          throws FailedWriting {
         throw new FailedWriting(new IOException());
       }
     };
@@ -178,7 +180,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedWriting {
+                              String xmlString, boolean useCompression)
+          throws FailedWriting {
         throw new FailedWriting(new IOException());
       }
     };
@@ -202,7 +205,8 @@ public class DocIdSenderTest {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       void sendMetadataAndUrl(String host, String datasource,
-                              String xmlString) throws FailedReadingReply {
+                              String xmlString, boolean useCompression)
+          throws FailedReadingReply {
         throw new FailedReadingReply(new IOException());
       }
     };
@@ -240,11 +244,12 @@ public class DocIdSenderTest {
     List<String> xmlStrings = new ArrayList<String>();
 
     public MockGsaFeedFileSender() {
-      super(null, false);
+      super(new Config());
     }
 
     @Override
-    void sendMetadataAndUrl(String host, String datasource, String xmlString)
+    void sendMetadataAndUrl(String host, String datasource, String xmlString,
+                            boolean useCompression)
         throws FailedToConnect, FailedWriting, FailedReadingReply {
       hosts.add(host);
       datasources.add(datasource);

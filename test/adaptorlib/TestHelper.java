@@ -16,8 +16,7 @@ package adaptorlib;
 
 import static org.junit.Assume.*;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.List;
 
 /**
@@ -63,8 +62,12 @@ public class TestHelper {
   public static byte[] getDocContent(Adaptor adaptor, DocId docId) throws IOException,
       InterruptedException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId),
-                          new WrapperAdaptor.GetContentsResponse(baos));
+    WrapperAdaptor.GetContentsResponse resp
+        = new WrapperAdaptor.GetContentsResponse(baos);
+    adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId), resp);
+    if (resp.isNotFound()) {
+      throw new FileNotFoundException("Could not find " + docId);
+    }
     return baos.toByteArray();
   }
 

@@ -71,13 +71,13 @@ class RpcHandler extends AbstractHandler {
   @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
     if (!"POST".equals(ex.getRequestMethod())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-                    "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+                    Translation.HTTP_BAD_METHOD);
       return;
     }
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                    "Not found");
+      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                    Translation.HTTP_NOT_FOUND);
       return;
     }
     // Make sure the session has a XSRF token.
@@ -92,9 +92,8 @@ class RpcHandler extends AbstractHandler {
         = ex.getRequestHeaders().getFirst(XSRF_TOKEN_HEADER_NAME);
     if (!xsrfToken.equals(providedXsrfToken)) {
       ex.getResponseHeaders().set(XSRF_TOKEN_HEADER_NAME, xsrfToken);
-      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT, "text/plain",
-          "You must provide a valid " + XSRF_TOKEN_HEADER_NAME
-          + " HTTP header");
+      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
+          Translation.HTTP_CONFLICT_INVALID_HEADER, XSRF_TOKEN_HEADER_NAME);
       return;
     }
     Object requestObj;
@@ -104,8 +103,8 @@ class RpcHandler extends AbstractHandler {
       requestObj = JSONValue.parse(request);
     }
     if (requestObj == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST, "text/plain",
-                    "Could not parse JSON");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+                    Translation.HTTP_BAD_REQUEST_INVALID_JSON);
       return;
     }
     String method;
@@ -122,8 +121,12 @@ class RpcHandler extends AbstractHandler {
       response.put("id", null);
       response.put("result", null);
       response.put("error", "Invalid request format: " + e.getMessage());
-      cannedRespond(ex, HttpURLConnection.HTTP_OK, "application/json",
-                    JSONValue.toJSONString(response));
+      if ("HEAD".equals(ex.getRequestMethod())) {
+        respondToHead(ex, HttpURLConnection.HTTP_OK, "application/json");
+      } else {
+        respond(ex, HttpURLConnection.HTTP_OK, "application/json",
+                JSONValue.toJSONString(response).getBytes(defaultEncoding));
+      }
       return;
     }
 

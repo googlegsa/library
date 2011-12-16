@@ -43,8 +43,8 @@ class RedirectHandler extends AbstractHandler {
   @Override
   public void meteredHandle(HttpExchange ex) throws IOException {
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND, "text/plain",
-                    "Not found");
+      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+                    Translation.HTTP_NOT_FOUND);
       return;
     }
 
@@ -53,9 +53,7 @@ class RedirectHandler extends AbstractHandler {
     try {
       path = new URI(redirectPath);
     } catch (URISyntaxException e) {
-      cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                    "Could not construct URI");
-      return;
+      throw new IOException("Could not construct URI");
     }
     sendRedirect(ex, base.resolve(path));
   }

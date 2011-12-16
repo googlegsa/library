@@ -64,32 +64,29 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
   public void meteredHandle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if (!"GET".equals(requestMethod)) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD, "text/plain",
-          "Unsupported request method");
+      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+          Translation.HTTP_BAD_METHOD);
       return;
     }
     Session session = sessionManager.getSession(ex);
     AuthnState authnState = (AuthnState) session.getAttribute(
         AuthnState.SESSION_ATTR_NAME);
     if (authnState == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT, "text/plain",
-                    "Could not find session; please try again. If the problem "
-                    + "continues, please enable session cookies in your "
-                    + "browser.");
+      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
+                    Translation.AUTHN_UNKNOWN_SESSION);
       return;
     }
     if (authnState.isAuthenticated()) {
       // TODO(ejona): keep track of each request, so that we can redirect here
-      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT, "text/plain",
-                    "You are already authenticated. Retry accessing the "
-                    + "original document.");
+      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
+                    Translation.AUTHN_RETRY);
       return;
     }
     SamlClient client = authnState.getSamlClient();
     URI origUri = authnState.getOriginalUri();
     if (client == null || origUri == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-                    "No authentication attempt started.");
+      cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR,
+                    Translation.AUTHN_NOT_STARTED);
       return;
     }
     boolean authnSuccess;
@@ -104,8 +101,8 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
     if (authnSuccess) {
       sendRedirect(ex, origUri); 
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/plain",
-                    "You were not authenticated.");
+      cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+                    Translation.HTTP_FORBIDDEN_AUTHN_FAILURE);
     }
   }
 

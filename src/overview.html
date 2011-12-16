@@ -41,9 +41,9 @@ feed.name=mydocfeedtogsa</pre>
       like:
       <pre>server.hostname=yourcomputershostname</pre>
     <li>Start the Adaptor Template. For Windows:
-      <pre>java -cp adaptor.jar;adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
+      <pre>java -cp dist\adaptor.jar;dist\adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
       For all other OSes:
-      <pre>java -cp adaptor.jar:adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
+      <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
     <li> Ensure crawling is enabled on your GSA.
       <p>
       Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
@@ -81,7 +81,7 @@ feed.name=mydocfeedtogsa</pre>
     of the form "-Dconfigkey=configvalue". When providing a value on the command
     line, it overrides the default value and the value (if any) in the
     configuration file. For example:
-    <pre>java -cp adaptor.jar:adaptor-examples.jar adaptorlib.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
+    <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar adaptorlib.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
 
   <h3>Enabling Security</h3>
   <p>Security is not enabled by default because it requires a reasonable amount

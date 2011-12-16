@@ -25,9 +25,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -110,7 +108,7 @@ import java.util.regex.Pattern;
  * "up-to-date" -- specifies that the document is up-to-date with respect to its last crawled
  * time.<p>
  *
- * "document-not-found" -- the document does not exists in the repository<p>
+ * "not-found" -- the document does not exists in the repository<p>
  *
  * "mime-type=" -- specifies the document's mime-type. If unspecified then the GSA will
  * automatically assign a type to the document. <p>
@@ -168,7 +166,7 @@ import java.util.regex.Pattern;
 public class CommandStreamParser {
 
 
-  public static enum Operation {
+  private static enum Operation {
     ID,
     LAST_MODIFIED,
     CRAWL_IMMEDIATELY,
@@ -327,10 +325,8 @@ public class CommandStreamParser {
       switch (command.getOperation()) {
         case ID:
           if (docId != null) {
-            // TODO (johnfelton) add lister options when API is available
-            DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
-            builder.setDocId(new DocId(docId));
-            result.add(builder.build());
+            // TODO(johnfelton) add lister options when API is available
+            result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
           }
           docId = command.getArgument();
           lastModified = null;
@@ -359,17 +355,15 @@ public class CommandStreamParser {
       }
       command = readCommand();
     }
-    // TODO (johnfelton) add lister options when API is available
-    DocIdPusher.Record.Builder builder = new DocIdPusher.Record.Builder();
-    builder.setDocId(new DocId(docId));
-    result.add(builder.build());
+    // TODO(johnfelton) add lister options when API is available
+    result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
 
     return result;
   }
 
   public RetrieverInfo readFromRetriever() throws IOException {
 
-    Set<MetaItem> metadata = new HashSet<MetaItem>();
+    Metadata.Builder metadata = new Metadata.Builder();
     byte[] content = null;
     boolean upToDate = false;
     boolean notFound = false;
@@ -416,7 +410,7 @@ public class CommandStreamParser {
       command = readCommand();
     }
 
-    return new RetrieverInfo(new DocId(docId), new Metadata(metadata),
+    return new RetrieverInfo(new DocId(docId), metadata.build(),
         content, upToDate, mimeType, notFound);
   }
 
@@ -442,7 +436,7 @@ public class CommandStreamParser {
       Operation operation = STRING_TO_OPERATION.get(commandTokens[0]);
       // Skip over unrecognized commands
       if (operation == null) {
-        // TODO (johnfelton) add a warning about an unrecognized command
+        // TODO(johnfelton) add a warning about an unrecognized command
         continue;
       }
 
