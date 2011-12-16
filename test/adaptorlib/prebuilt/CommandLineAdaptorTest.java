@@ -50,6 +50,9 @@ public class CommandLineAdaptorTest {
 
     @Override
     public int exec(String[] command, File workingDir, byte[] stdin) {
+      assertEquals(command[0], "./lister_cmd.sh");
+      assertEquals(command[1], "lister_arg1");
+
       return 0;
     }
 
@@ -116,7 +119,11 @@ public class CommandLineAdaptorTest {
 
     @Override
     public int exec(String[] command, File workingDir, byte[] stdin) {
-      docId = command[1];
+      assertEquals(command[0], "./retriever_cmd.sh");
+      assertEquals(command[1], "retriever_arg1");
+      assertEquals(command[2], "retriever_arg2");
+
+      docId = command[3];
       content = ID_TO_CONTENT.get(docId);
       metadata = ID_TO_METADATA.get(docId);
       lastModified = ID_TO_LAST_MODIFIED.get(docId);
@@ -245,13 +252,19 @@ public class CommandLineAdaptorTest {
     }
   }
 
-
   @Test
   public void testListerAndRetriever() throws Exception {
 
     Adaptor adaptor = new CommandLineAdaptorTestMock();
 
-    List<DocId> idList = getDocIds(adaptor);
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("commandline.lister.cmd", "./lister_cmd.sh");
+    config.put("commandline.lister.arg1", "lister_arg1");
+    config.put("commandline.retriever.cmd", "./retriever_cmd.sh");
+    config.put("commandline.retriever.arg1", "retriever_arg1");
+    config.put("commandline.retriever.arg2", "retriever_arg2");
+
+    List<DocId> idList = getDocIds(adaptor, config);
     assertEquals(MockListerCommand.original, idList);
 
     for (DocId docId : idList) {

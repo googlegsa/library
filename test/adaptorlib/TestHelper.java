@@ -18,6 +18,7 @@ import static org.junit.Assume.*;
 
 import java.io.*;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Utility methods for tests.
@@ -40,10 +41,16 @@ public class TestHelper {
     assumeTrue(isRunningOnWindows());
   }
 
-  public static List<DocId> getDocIds(Adaptor adaptor) throws Exception {
+  public static List<DocId> getDocIds(Adaptor adaptor, Map<String, String> configEntries)
+      throws Exception {
     final AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
     final Config config = new Config();
     adaptor.initConfig(config);
+    if (configEntries != null) {
+      for (Map.Entry<String, String> entry : configEntries.entrySet()) {
+        config.setValue(entry.getKey(), entry.getValue());
+      }
+    }
     adaptor.init(new WrapperAdaptor.WrapperAdaptorContext(null) {
       @Override
       public DocIdPusher getDocIdPusher() {
@@ -57,6 +64,11 @@ public class TestHelper {
     });
     adaptor.getDocIds(pusher);
     return pusher.getDocIds();
+  }
+
+  public static List<DocId> getDocIds(Adaptor adaptor)
+      throws Exception {
+    return getDocIds(adaptor, null);
   }
 
   public static byte[] getDocContent(Adaptor adaptor, DocId docId) throws IOException,

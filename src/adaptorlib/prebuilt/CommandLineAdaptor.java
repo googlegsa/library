@@ -50,8 +50,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
 
     // Create a new configuration key for letting the user configure this
     // adaptor.
-    config.addKey("commandline.lister.cmd", "./lister.sh");
-    config.addKey("commandline.retriever.cmd", "./retriever.sh");
+    config.addKey("commandline.lister.cmd", null);
+    config.addKey("commandline.retriever.cmd", null);
     // Change the default to automatically provide unzipped zip contents to the
     // GSA.
     config.overrideKey("adaptor.autoUnzip", "true");
