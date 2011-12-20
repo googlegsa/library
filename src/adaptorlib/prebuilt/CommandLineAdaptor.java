@@ -29,6 +29,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -123,12 +124,11 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     Command command = newListerCommand();
 
     try {
-       String[] commandLine = listerCommand.toArray(new String[0]);
-      log.finest("Command: " + commandLine);
+      log.finest("Command: " + listerCommand);
+      String[] commandLine = listerCommand.toArray(new String[0]);
       commandResult = command.exec(commandLine);
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
-
     } catch (IOException e) {
       throw new IOException("External command could not be executed.", e);
     }
@@ -162,7 +162,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       commandLine[retrieverCommand.size()] = id.getUniqueId();
       commandLine[retrieverCommand.size() + 1] = Long.toString(lastCrawledMillis);
 
-      log.finest("Command: " + commandLine);
+      log.finest("Command: " + Arrays.asList(commandLine));
       commandResult = command.exec(commandLine);
     } catch (InterruptedException e) {
       throw new IOException("Thread intrupted while waiting for external command.", e);
