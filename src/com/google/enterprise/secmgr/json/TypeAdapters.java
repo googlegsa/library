@@ -273,8 +273,8 @@ public final class TypeAdapters {
       ImmutableMap.Builder<K, V> builder = ImmutableMap.builder();
       for (int i = 0; i < ja.size(); i++) {
         JsonArray je = ja.get(i).getAsJsonArray();
-        K key = context.deserialize(je.get(0), typeOfKey);
-        V value = context.deserialize(je.get(1), typeOfValue);
+        K key = (K) context.deserialize(je.get(0), typeOfKey);
+        V value = (V) context.deserialize(je.get(1), typeOfValue);
         builder.put(key, value);
       }
       return builder.build();
@@ -323,7 +323,7 @@ public final class TypeAdapters {
       String typeName = jo.getAsJsonPrimitive(JSON_KEY_CLASS).getAsString();
       for (Class<? extends T> subClass : classes) {
         if (subClass.getSimpleName().equals(typeName)) {
-          return context.deserialize(jo, subClass);
+          return (T) context.deserialize(jo, subClass);
         }
       }
       throw new JsonParseException("Unknown subclass: " + typeName);

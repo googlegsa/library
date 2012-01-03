@@ -26,10 +26,10 @@ import java.util.logging.*;
  * Test cases for {@link Dashboard}.
  */
 public class DashboardTest {
+
   @Test
   public void testLogRpcMethod() {
     String golden = "Testing\n";
-
     Dashboard.CircularLogRpcMethod method
         = new Dashboard.CircularLogRpcMethod();
     try {
@@ -39,6 +39,7 @@ public class DashboardTest {
       Logger.getLogger("").finest("Testing");
       logger.setLevel(origLevel);
       String str = (String) method.run(null);
+      str = str.replaceAll("\r\n", "\n");
       assertTrue(str.endsWith(golden));
     } finally {
       method.close();

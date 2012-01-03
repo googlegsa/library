@@ -51,6 +51,7 @@ public class GsaFeedFileMakerTest {
         + "</gsafeed>\n";
     String xml = meker.makeMetadataAndUrlXml("t3sT",
         new ArrayList<DocIdPusher.Record>());
+    xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 
@@ -78,6 +79,7 @@ public class GsaFeedFileMakerTest {
     ids.add(new DocIdPusher.Record.Builder(new DocId("E11")).build());
     ids.add(new DocIdPusher.Record.Builder(new DocId("elefenta")).build());
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
+    xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 
@@ -125,7 +127,7 @@ public class GsaFeedFileMakerTest {
     ids.add(attrBuilder.build());
 
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
-    //throw new RuntimeException("\n" + xml);
+    xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 }
