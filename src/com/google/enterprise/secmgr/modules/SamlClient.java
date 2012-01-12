@@ -246,6 +246,8 @@ public class SamlClient {
     if (signingCredential != null) {
       authnRequest.setAssertionConsumerServiceURL(
           sp.getDefaultAssertionConsumerService().getLocation());
+      authnRequest.setProtocolBinding(
+          sp.getDefaultAssertionConsumerService().getBinding());
       // Must sign the message in order for ACS URL to be trusted by peer.
       context.setOutboundSAMLMessageSigningCredential(signingCredential);
     }

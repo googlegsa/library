@@ -68,10 +68,10 @@ class SamlMetadata {
 
   private EntityDescriptor createPeerEntity(String gsaHostname) {
     EntityDescriptor ed = makeSamlObject(EntityDescriptor.DEFAULT_ELEMENT_NAME);
-    // TODO(ejona): Prevent the need to manually edit this identifier. This
-    // requires changes to the GSA, so can't be completed at the moment.
+    // This entity-id is in the form of the GSA's real id, but is just a filler,
+    // and should not be used for any verification.
     ed.setEntityID(
-        "http://google.com/enterprise/gsa/S5-H4TBYJT3FUJJA/security-manager");
+        "http://google.com/enterprise/gsa/security-manager");
 
     IDPSSODescriptor idpsso = makeSamlObject(
         IDPSSODescriptor.DEFAULT_ELEMENT_NAME);

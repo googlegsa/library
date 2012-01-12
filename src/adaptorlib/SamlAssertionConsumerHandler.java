@@ -58,6 +58,7 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
                                SessionManager<HttpExchange> sessionManager) {
     super(fallbackHostname, defaultEncoding);
     this.sessionManager = sessionManager;
+    SecurityManagerConfig.load();
   }
 
   @Override

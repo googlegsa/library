@@ -30,6 +30,7 @@
       <include name="guava-pre-pre10.jar"/>
       <include name="jsr305.jar"/>
       <include name="cron4j-2.2.4.jar"/>
+      <include name="gson-2.0.jar"/>
     </fileset>
   </path>
 
@@ -80,11 +81,7 @@
   <path id="secmgr.run.classpath">
     <fileset dir="${lib.dir}">
       <include name="guava-pre-pre10.jar"/>
-      <!-- Haven't seen it used, but it seems to be needed for
-           com.google.enterprise.secmgr.servlets.ResponseParser.getGroups()
-           used from adaptorlib.SamlAssertionConsumerHandler.consumeAssertion().
-           -->
-      <include name="gson-1.7.1.jar"/>
+      <include name="gson-2.0.jar"/>
     </fileset>
   </path>
 

@@ -14,7 +14,14 @@
 
 package com.google.enterprise.secmgr.config;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
+import com.google.enterprise.secmgr.json.TypeAdapters;
+import com.google.gson.GsonBuilder;
+import com.google.gson.reflect.TypeToken;
+
+import java.util.Iterator;
 
 import javax.annotation.concurrent.Immutable;
 
@@ -26,20 +33,28 @@ public enum ParamName {
   ACL_GROUPS_FILENAME(String.class, "../../../../conf/acls/acl_groups.enterprise"),
   ACL_URLS_FILENAME(String.class, "../../../../conf/acls/acl_urls.enterprise"),
   CERTIFICATE_AUTHORITIES_FILENAME(String.class, "../../../../conf/certs/cacerts.jks"),
-  CONNECTOR_MANAGER_URLS(StringSet.class, StringSet.make()),
+  // whether to check the server certificate during serving time
+  CHECK_SERVER_CERTIFICATE(Boolean.class, Boolean.valueOf(true)),
+  CONNECTOR_MANAGER_INFO(ConnMgrInfo.class,
+      ConnMgrInfo.make(ImmutableSet.<ConnMgrInfo.Entry>of())),
   DENY_RULES_FILENAME(String.class, "../../../../conf/deny_rules.enterprise"),
   GLOBAL_BATCH_REQUEST_TIMEOUT(Float.class, Float.valueOf(2.5f)),
   GLOBAL_SINGLE_REQUEST_TIMEOUT(Float.class, Float.valueOf(5.0f)),
+  LATE_BINDING_ACL(Boolean.class, Boolean.valueOf(false)),
   SAML_METADATA_FILENAME(String.class, "../../../../conf/saml-metadata.xml"),
   SERVER_CERTIFICATE_FILENAME(String.class, "../../../../conf/certs/server.jks"),
-  // whether to check the server certificate during serving time
-  CHECK_SERVER_CERTIFICATE(Boolean.class, Boolean.valueOf(true)),
   SIGNING_CERTIFICATE_FILENAME(String.class, "/etc/google/certs/server.crt"),
   SIGNING_KEY_FILENAME(String.class, "/etc/google/certs/server.key"),
+  SLOW_HOST_EMBARGO_PERIOD(Integer.class, Integer.valueOf(600)),
+  SLOW_HOST_NUMBER_OF_TIMEOUTS(Integer.class, Integer.valueOf(100)),
+  SLOW_HOST_SAMPLE_PERIOD(Integer.class, Integer.valueOf(300)),
+  SLOW_HOST_TRACKER_ENABLED(Boolean.class, Boolean.valueOf(false)),
+  SLOW_HOST_TRACKER_SIZE(Integer.class, Integer.valueOf(100)),
   STUNNEL_PORT(Integer.class, Integer.valueOf(7843)),
 
   // deprecated params, for backward compatability when reading config
-  AUTHZ_CONFIG_FILENAME(String.class, "../../../../conf/FlexAuthz.xml");
+  AUTHZ_CONFIG_FILENAME(String.class, "../../../../conf/FlexAuthz.xml"),
+  CONNECTOR_MANAGER_URLS(StringSet.class, new StringSet(ImmutableSet.<String>of()));
 
   private final Class<?> valueClass;
   private final Object defaultValue;
@@ -101,9 +116,59 @@ public enum ParamName {
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException(e);
     }
+    if (this.valueClass == ConnMgrInfo.class) {
+      return valueClass.cast(ConnMgrInfo.valueOf(value));
+    }
     if (this.valueClass == StringSet.class) {
       return valueClass.cast(StringSet.valueOf(value));
     }
     throw new IllegalStateException("Unknown value class: " + valueClass.getName());
+  }
+
+  private static final class StringSet implements Iterable<String> {
+
+    final ImmutableSet<String> contents;
+
+    StringSet(ImmutableSet<String> contents) {
+      this.contents = ImmutableSet.copyOf(contents);
+    }
+
+    @Override
+    public Iterator<String> iterator() {
+      return contents.iterator();
+    }
+
+    /**
+     * Decodes a string-encoded string set.
+     *
+     * @param string The encoded string set.
+     * @return The decoded string set.
+     */
+    public static StringSet valueOf(String string) {
+      return ConfigSingleton.getGson().fromJson(string, StringSet.class);
+    }
+
+    @Override
+    public boolean equals(Object object) {
+      if (this == object) { return true; }
+      if (!(object instanceof StringSet)) { return false; }
+      StringSet other = (StringSet) object;
+      return Objects.equal(contents, other.contents);
+    }
+
+    @Override
+    public int hashCode() {
+      return Objects.hashCode(contents);
+    }
+
+    @Override
+    public String toString() {
+      return ConfigSingleton.getGson().toJson(this);
+    }
+  }
+
+  static void registerTypeAdapters(GsonBuilder builder) {
+    builder.registerTypeAdapter(new TypeToken<ImmutableSet<String>>() {}.getType(),
+        TypeAdapters.immutableSet());
   }
 }
