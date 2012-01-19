@@ -60,7 +60,7 @@ public class DocumentHandlerTest {
     };
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
-        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(), false,
+        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], authnHandler, sessionManager, null, 0,
         false, false);
     handler.handle(ex);
@@ -146,7 +146,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), false, "localhost",
+        new PrivateMockAdaptor(), "localhost",
         new String[] {"127.0.0.3", " "}, null, sessionManager, null, 0, false,
         false);
     handler.handle(ex);
@@ -155,49 +155,16 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testSecurityFromGsaNoWhitelist() throws Exception {
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
-    DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), false, "127.0.0.3",
-        new String[0], null, sessionManager, null, 0, false, false);
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-  }
-
-  @Test
   public void testSecurityFromGsaAutoAddWhitelist() throws Exception {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), true, "127.0.0.3",
+        new PrivateMockAdaptor(), "127.0.0.3",
         new String[0], null, sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
-  }
-
-  @Test
-  public void testNoSuchHost() throws Exception {
-    thrown.expect(RuntimeException.class);
-    DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), false, "localhost",
-        new String[] {"-no-such-host-"}, null, sessionManager, null, 0, false,
-        false);
-  }
-
-  @Test
-  public void testNoSuchGsaHost() throws Exception {
-    thrown.expect(RuntimeException.class);
-    DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), true, "-no-such-host-",
-        new String[0], null, sessionManager, null, 0, false, false);
   }
 
   @Test
@@ -253,7 +220,7 @@ public class DocumentHandlerTest {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
-        new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
+        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {"127.0.0.3"}, null, sessionManager, transform, 100,
         false, false);
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
@@ -295,7 +262,7 @@ public class DocumentHandlerTest {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
-        new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
+        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, false,
         false);
     handler.handle(ex);
@@ -325,7 +292,7 @@ public class DocumentHandlerTest {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), new MockDocIdDecoder(),
-        new Journal(new MockTimeProvider()), mockAdaptor, false, "localhost",
+        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, true,
         false);
     handler.handle(ex);
@@ -548,7 +515,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        adaptor, false, "localhost", new String[0], null,
+        adaptor, "localhost", new String[0], null,
         sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -558,7 +525,7 @@ public class DocumentHandlerTest {
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
-        adaptor, false, "localhost", new String[0], null,
+        adaptor, "localhost", new String[0], null,
         sessionManager, null, 0, false, false);
   }
 

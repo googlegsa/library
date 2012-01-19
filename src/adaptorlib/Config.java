@@ -63,8 +63,7 @@ public class Config {
     addKey("server.port", "5678");
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
-    addKey("server.gsaIps", "");
-    addKey("server.addResolvedGsaHostnameToGsaIps", "true");
+    addKey("server.fullAccessHosts", "");
     addKey("server.secure", "false");
     addKey("server.keyAlias", "adaptor");
     addKey("server.maxWorkerThreads", "16");
@@ -147,22 +146,20 @@ public class Config {
   }
 
   /**
-   * Whether to automatically consider "gsa.hostname" configuration value part
-   * of the "server.gsaIps" list. Defaults to {@code true"}.
+   * Comma-separated list of IPs or hostnames that can retrieve content without
+   * authentication checks. The GSA's hostname is implicitly in this list.
    *
-   * @see #getServerGsaIps
+   * <p>When in secure mode, clients are requested to provide a client
+   * certificate. If the provided client certificate is valid and the Common
+   * Name (CN) of the Subject is in this list (case-insensitively), then it is
+   * given access.
+   *
+   * <p>In non-secure mode, the hostnames in this list are resolved to IPs at
+   * startup and when a request is made from one of those IPs the client is
+   * given access.
    */
-  public boolean getServerAddResolvedGsaHostnameToGsaIps() {
-    return Boolean.parseBoolean(getValue(
-        "server.addResolvedGsaHostnameToGsaIps"));
-  }
-
-  /**
-   * Comma-separated list of IPs or hostnames to consider the GSA and bypass
-   * authentication checks.
-   */
-  public String[] getServerGsaIps() {
-    return getValue("server.gsaIps").split(",");
+  public String[] getServerFullAccessHosts() {
+    return getValue("server.fullAccessHosts").split(",");
   }
 
   /**

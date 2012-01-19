@@ -25,17 +25,17 @@ import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.security.Principal;
 import java.text.DateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.naming.InvalidNameException;
+import javax.naming.ldap.LdapName;
+import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.security.auth.x500.X500Principal;
 
 class DocumentHandler extends AbstractHandler {
   private static final Logger log
@@ -44,7 +44,16 @@ class DocumentHandler extends AbstractHandler {
   private DocIdDecoder docIdDecoder;
   private Journal journal;
   private Adaptor adaptor;
-  private Set<InetAddress> gsaAddresses = new HashSet<InetAddress>();
+  /**
+   * List of Common Names of Subjects that are provided full access when in
+   * secure mode. All entries should be lower case.
+   */
+  private final Set<String> fullAccessCommonNames = new HashSet<String>();
+  /**
+   * List of IPs that are provided full access when not in secure mode.
+   */
+  private final Set<InetAddress> fullAccessAddresses
+      = new HashSet<InetAddress>();
   private final HttpHandler authnHandler;
   private final SessionManager<HttpExchange> sessionManager;
   private final TransformPipeline transform;
@@ -58,8 +67,7 @@ class DocumentHandler extends AbstractHandler {
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
                          DocIdDecoder docIdDecoder, Journal journal,
                          Adaptor adaptor,
-                         boolean addResolvedGsaHostnameToGsaIps,
-                         String gsaHostname, String[] gsaIps,
+                         String gsaHostname, String[] fullAccessHosts,
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
@@ -79,47 +87,87 @@ class DocumentHandler extends AbstractHandler {
     this.transformRequired = transformRequired;
     this.useCompression = useCompression;
 
-    if (addResolvedGsaHostnameToGsaIps) {
-      try {
-        gsaAddresses.add(InetAddress.getByName(gsaHostname));
-      } catch (UnknownHostException ex) {
-        throw new RuntimeException(ex);
-      }
-    }
-    for (String gsaIp : gsaIps) {
-      gsaIp = gsaIp.trim();
-      if ("".equals(gsaIp)) {
-        continue;
-      }
-      try {
-        gsaAddresses.add(InetAddress.getByName(gsaIp));
-      } catch (UnknownHostException ex) {
-        throw new RuntimeException(ex);
-      }
-    }
-    log.log(Level.INFO, "IPs to believe are the GSA: {0}",
-            new Object[] {gsaAddresses});
+    initFullAccess(gsaHostname, fullAccessHosts);
   }
 
-  private boolean requestIsFromGsa(HttpExchange ex) {
+  private void initFullAccess(String gsaHostname, String[] fullAccessHosts) {
+    fullAccessCommonNames.add(gsaHostname.toLowerCase(Locale.ENGLISH));
+    for (String hostname : fullAccessHosts) {
+      hostname = hostname.trim();
+      if ("".equals(hostname)) {
+        continue;
+      }
+      fullAccessCommonNames.add(hostname.toLowerCase(Locale.ENGLISH));
+    }
+    log.log(Level.INFO, "When in secure mode, common names that are given full "
+            + "access to content: {0}", new Object[] {fullAccessCommonNames});
+
+    for (String hostname : fullAccessCommonNames) {
+      try {
+        InetAddress[] ips = InetAddress.getAllByName(hostname);
+        fullAccessAddresses.addAll(Arrays.asList(ips));
+      } catch (UnknownHostException ex) {
+        log.log(Level.WARNING, "Could not resolve hostname. Not adding it to "
+                + "full access list of IPs: " + hostname, ex);
+      }
+    }
+    log.log(Level.INFO, "When not in secure mode, IPs that are given full "
+            + "access to content: {0}", new Object[] {fullAccessAddresses});
+  }
+
+  private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {
     boolean trust;
     if (ex instanceof HttpsExchange) {
+      Principal principal;
       try {
-        ((HttpsExchange) ex).getSSLSession().getPeerPrincipal();
-        trust = true;
+        principal = ((HttpsExchange) ex).getSSLSession().getPeerPrincipal();
       } catch (SSLPeerUnverifiedException e) {
-        trust = false;
+        log.log(Level.FINE, "Client is not trusted. It does not have a verified"
+                + " client certificate", e);
+        return false;
+      }
+      if (!(principal instanceof X500Principal)) {
+        log.fine("Client is not trusted. It does not have a X500 principal");
+        return false;
+      }
+      LdapName dn;
+      try {
+        // getName() provides RFC2253-encoded data.
+        dn = new LdapName(principal.getName());
+      } catch (InvalidNameException e) {
+        // Getting here may represent a bug in the standard libraries.
+        log.log(Level.FINE, "Client is not trusted. The X500 principal could "
+                + "not be parsed", e);
+        return false;
+      }
+      String commonName = null;
+      for (Rdn rdn : dn.getRdns()) {
+        if ("CN".equalsIgnoreCase(rdn.getType())
+            && (rdn.getValue() instanceof String)) {
+          commonName = (String) rdn.getValue();
+          break;
+        }
+      }
+      commonName = commonName.toLowerCase(Locale.ENGLISH);
+      trust = fullAccessCommonNames.contains(commonName);
+      if (trust) {
+        log.log(Level.FINE, "Client is trusted in secure mode: {0}",
+                commonName);
+      } else {
+        log.log(Level.FINE, "Client is not trusted in secure mode: {0}",
+                commonName);
       }
     } else {
       InetAddress addr = ex.getRemoteAddress().getAddress();
-      trust = gsaAddresses.contains(addr);
+      trust = fullAccessAddresses.contains(addr);
+      if (trust) {
+        log.log(Level.FINE, "Client is trusted in non-secure mode: {0}", addr);
+      } else {
+        log.log(Level.FINE, "Client is not trusted in non-secure mode: {0}",
+                addr);
+      }
     }
 
-    if (trust) {
-      log.fine("Client is trusted");
-    } else {
-      log.fine("Client is not trusted");
-    }
     return trust;
   }
 
@@ -164,7 +212,7 @@ class DocumentHandler extends AbstractHandler {
    * @return {@code true} if user authzed
    */
   private boolean authzed(HttpExchange ex, DocId docId) throws IOException {
-    if (requestIsFromGsa(ex)) {
+    if (requestIsFromFullyTrustedClient(ex)) {
       journal.recordGsaContentRequest(docId);
     } else {
       journal.recordNonGsaContentRequest(docId);
@@ -465,7 +513,7 @@ class DocumentHandler extends AbstractHandler {
     }
 
     private void startSending(boolean hasContent) throws IOException {
-      if (!metadata.isEmpty() && requestIsFromGsa(ex)) {
+      if (!metadata.isEmpty() && requestIsFromFullyTrustedClient(ex)) {
         ex.getResponseHeaders().set("X-Gsa-External-Metadata",
                                     formMetadataHeader(metadata));
       }
