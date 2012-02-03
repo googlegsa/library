@@ -148,6 +148,11 @@ class DocumentHandler extends AbstractHandler {
           break;
         }
       }
+      if (commonName == null) {
+        log.log(Level.FINE, "Client is not trusted. Could not find Common "
+                + "Name");
+        return false;
+      }
       commonName = commonName.toLowerCase(Locale.ENGLISH);
       trust = fullAccessCommonNames.contains(commonName);
       if (trust) {
