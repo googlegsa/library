@@ -74,7 +74,7 @@ public class Config {
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("docId.isUrl", "false");
-    addKey("feed.name", "testfeed");
+    addKey("feed.name", "GENERATE");
     addKey("feed.noRecrawlBitEnabled", "false");
     addKey("feed.crawlImmediatelyBitEnabled", "false");
     //addKey("feed.noFollowBitEnabled", "false");
@@ -108,7 +108,13 @@ public class Config {
   /* Preferences suggested you set them: */
 
   public String getFeedName() {
-    return getValue("feed.name");
+    String feedName = getValue("feed.name");
+    if (!"GENERATE".equals(feedName)) {
+      return feedName;
+    } else {
+      return "adaptor_" + getServerHostname().replace('.', '-') + "_"
+          + getServerPort();
+    }
   }
 
   /**
