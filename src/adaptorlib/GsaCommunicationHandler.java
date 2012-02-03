@@ -43,7 +43,7 @@ public class GsaCommunicationHandler {
 
   private final Adaptor adaptor;
   private final Config config;
-  private final Journal journal = new Journal();
+  private final Journal journal;
   /**
    * Generic scheduler. Available for other uses, but necessary for running
    * {@link docIdFullPusher}
@@ -71,6 +71,7 @@ public class GsaCommunicationHandler {
     this.adaptor = adaptor;
     this.config = config;
 
+    journal = new Journal(config.isJournalReducedMem());
     dashboard = new Dashboard(config, this, journal);
     docIdCodec = new DocIdCodec(config);
     GsaFeedFileSender fileSender = new GsaFeedFileSender(config);

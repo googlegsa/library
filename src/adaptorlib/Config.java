@@ -89,6 +89,7 @@ public class Config {
     // 1 MiB.
     addKey("transform.maxDocumentBytes", "1048576");
     addKey("transform.required", "false");
+    addKey("journal.reducedMem", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -341,6 +342,10 @@ public class Config {
 
   public boolean isTransformRequired() {
     return Boolean.parseBoolean(getValue("transform.required"));
+  }
+
+  public boolean isJournalReducedMem() {
+    return Boolean.parseBoolean(getValue("journal.reducedMem"));
   }
 
 // TODO(pjo): Implement on GSA

@@ -20,6 +20,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 /**
  * Tests for {@link Journal}.
@@ -46,6 +47,14 @@ public class JournalTest {
     docs.add(new DocIdPusher.Record.Builder(id4).build());
     journal.recordDocIdPush(docs);
     assertEquals(4, journal.getSnapshot().numUniqueDocIdsPushed);
+  }
+
+  @Test
+  public void testDisabledPushCounts() {
+    Journal journal = new Journal(true, new MockTimeProvider());
+    journal.recordDocIdPush(Collections.singletonList(
+        new DocIdPusher.Record.Builder(new DocId("id")).build()));
+    assertEquals(-1, journal.getSnapshot().numUniqueDocIdsPushed);
   }
 
   @Test
@@ -247,7 +256,7 @@ public class JournalTest {
 
   @Test
   public void testDefaultTimeProvider() {
-    new Journal();
+    new Journal(false);
   }
 
   @Test

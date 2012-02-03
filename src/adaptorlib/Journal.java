@@ -20,16 +20,13 @@ import java.util.*;
  * Contains registers and stats regarding runtime.
  */
 class Journal {
-  private HashMap<DocId, Integer> timesPushed
-      = new HashMap<DocId, Integer>();
+  private Map<DocId, Integer> timesPushed;
   private long totalPushes;
 
-  private HashMap<DocId, Integer> timesGsaRequested
-      = new HashMap<DocId, Integer>();
+  private Map<DocId, Integer> timesGsaRequested;
   private long totalGsaRequests;
 
-  private HashMap<DocId, Integer> timesNonGsaRequested
-      = new HashMap<DocId, Integer>();
+  private Map<DocId, Integer> timesNonGsaRequested;
   private long totalNonGsaRequests;
 
   private final TimeProvider timeProvider;
@@ -66,11 +63,22 @@ class Journal {
     FAILURE,
   }
 
-  public Journal() {
-    this(new SystemTimeProvider());
+  /**
+   * @param reducedMem whether to use a fixed amount of memory, at the expense
+   *     of some statistics being disabled
+   */
+  public Journal(boolean reducedMem) {
+    this(reducedMem, new SystemTimeProvider());
   }
 
+  /**
+   * Same as {@code Journal(false, timeProvider)}.
+   */
   protected Journal(TimeProvider timeProvider) {
+    this(false, timeProvider);
+  }
+
+  protected Journal(boolean reducedMem, TimeProvider timeProvider) {
     this.timeProvider = timeProvider;
     this.startedAt = timeProvider.currentTimeMillis();
     this.timeResolution = determineTimeResolution();
@@ -83,6 +91,15 @@ class Journal {
       new Stats(48, 1000 * 60 * 30, time), /* one day, half-hour granularity */
     };
     this.dayStatsByHalfHour = this.timeStats[this.timeStats.length - 1];
+    if (reducedMem) {
+      timesPushed = new NegSizeFakeMap<DocId, Integer>();
+      timesGsaRequested = new NegSizeFakeMap<DocId, Integer>();
+      timesNonGsaRequested = new NegSizeFakeMap<DocId, Integer>();
+    } else {
+      timesPushed = new HashMap<DocId, Integer>();
+      timesGsaRequested = new HashMap<DocId, Integer>();
+      timesNonGsaRequested = new HashMap<DocId, Integer>();
+    }
   }
 
   synchronized void recordDocIdPush(List<DocIdPusher.Record> pushed) {
@@ -189,11 +206,12 @@ class Journal {
     return time - startTime;
   }
 
-  private static void increment(HashMap<DocId, Integer> counts, DocId id) {
+  private static void increment(Map<DocId, Integer> counts, DocId id) {
     if (!counts.containsKey(id)) {
-      counts.put(id, 0);
+      counts.put(id, 1);
+    } else {
+      counts.put(id, 1 + counts.get(id));
     }
-    counts.put(id, 1 + counts.get(id));
   }
 
   /**
@@ -472,6 +490,13 @@ class Journal {
       } catch (CloneNotSupportedException ex) {
         throw new AssertionError();
       }
+    }
+  }
+
+  private static class NegSizeFakeMap<K, V> extends FakeMap<K, V> {
+    @Override
+    public int size() {
+      return -1;
     }
   }
 }
