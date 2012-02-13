@@ -284,8 +284,8 @@ class DocumentHandler extends AbstractHandler {
    * Percent-encode {@code value} as described in
    * <a href="http://tools.ietf.org/html/rfc3986#section-2">RFC 3986</a> and
    * using UTF-8. This is the most common form of percent encoding. The
-   * characters A-Z, a-z, '-', '_', '.', and '~' are left as-is; the rest are
-   * percent encoded.
+   * characters A-Z, a-z, 0-9, '-', '_', '.', and '~' are left as-is; the rest
+   * are percent encoded.
    */
   static String percentEncode(String value) {
     final Charset encoding = Charset.forName("UTF-8");
@@ -294,6 +294,7 @@ class DocumentHandler extends AbstractHandler {
     for (byte b : bytes) {
       if ((b >= 'a' && b <= 'z')
           || (b >= 'A' && b <= 'Z')
+          || (b >= '0' && b <= '9')
           || b == '-' || b == '_' || b == '.' || b == '~') {
         sb.append((char) b);
       } else {

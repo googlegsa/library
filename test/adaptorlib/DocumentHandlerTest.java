@@ -550,8 +550,8 @@ public class DocumentHandlerTest {
   @Test
   public void testPercentEncoding() {
     String encoded = DocumentHandler.percentEncode(
-        "AaZz-_.~`=/?+';\\/\"!@#$%^&*()[]{}ë\u0001");
-    assertEquals("AaZz-_.~%60%3D%2F%3F%2B%27%3B%5C%2F%22%21%40%23%24%25%5E%26"
+        "AaZz09-_.~`=/?+';\\/\"!@#$%^&*()[]{}ë\u0001");
+    assertEquals("AaZz09-_.~%60%3D%2F%3F%2B%27%3B%5C%2F%22%21%40%23%24%25%5E%26"
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
   }
 
