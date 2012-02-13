@@ -73,7 +73,8 @@ public class Acl {
                                            + "empty string");
       }
     }
-    return Collections.unmodifiableSet(new HashSet<String>(set));
+    // Use TreeSets so that sets have predictable order when serializing.
+    return Collections.unmodifiableSet(new TreeSet<String>(set));
   }
 
   /**

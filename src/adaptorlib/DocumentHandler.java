@@ -41,9 +41,10 @@ class DocumentHandler extends AbstractHandler {
   private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
 
-  private DocIdDecoder docIdDecoder;
-  private Journal journal;
-  private Adaptor adaptor;
+  private final DocIdDecoder docIdDecoder;
+  private final DocIdEncoder docIdEncoder;
+  private final Journal journal;
+  private final Adaptor adaptor;
   /**
    * List of Common Names of Subjects that are provided full access when in
    * secure mode. All entries should be lower case.
@@ -65,19 +66,20 @@ class DocumentHandler extends AbstractHandler {
    * {@code authnHandler} and {@code transform} may be {@code null}.
    */
   public DocumentHandler(String defaultHostname, Charset defaultCharset,
-                         DocIdDecoder docIdDecoder, Journal journal,
-                         Adaptor adaptor,
+                         DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
+                         Journal journal, Adaptor adaptor,
                          String gsaHostname, String[] fullAccessHosts,
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
                          boolean transformRequired, boolean useCompression) {
     super(defaultHostname, defaultCharset);
-    if (docIdDecoder == null || journal == null || adaptor == null
-        || sessionManager == null) {
+    if (docIdDecoder == null || docIdEncoder == null || journal == null
+        || adaptor == null || sessionManager == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
+    this.docIdEncoder = docIdEncoder;
     this.journal = journal;
     this.adaptor = adaptor;
     this.authnHandler = authnHandler;
@@ -272,12 +274,42 @@ class DocumentHandler extends AbstractHandler {
   static String formMetadataHeader(Metadata metadata) {
     StringBuilder sb = new StringBuilder();
     for (MetaItem item : metadata) {
-      sb.append(percentEncode(item.getName()));
-      sb.append("=");
-      sb.append(percentEncode(item.getValue()));
-      sb.append(",");
+      percentEncodeMapEntryPair(sb, item.getName(), item.getValue());
     }
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
+  }
+
+  static String formAclHeader(Acl acl, DocIdEncoder docIdEncoder) {
+    StringBuilder sb = new StringBuilder();
+    for (String permitUser : acl.getPermitUsers()) {
+      percentEncodeMapEntryPair(sb, "google:aclusers", permitUser);
+    }
+    for (String permitGroup : acl.getPermitGroups()) {
+      percentEncodeMapEntryPair(sb, "google:aclgroups", permitGroup);
+    }
+    for (String denyUser : acl.getDenyUsers()) {
+      percentEncodeMapEntryPair(sb, "google:acldenyusers", denyUser);
+    }
+    for (String denyGroup : acl.getDenyGroups()) {
+      percentEncodeMapEntryPair(sb, "google:acldenygroups", denyGroup);
+    }
+    if (acl.getInheritFrom() != null) {
+      percentEncodeMapEntryPair(sb, "google:aclinheritfrom",
+          docIdEncoder.encodeDocId(acl.getInheritFrom()).toString());
+    }
+    if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
+      percentEncodeMapEntryPair(sb, "google:aclinheritancetype",
+          acl.getInheritanceType().getCommonForm());
+    }
+    return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
+  }
+
+  private static void percentEncodeMapEntryPair(StringBuilder sb, String key,
+                                                String value) {
+    sb.append(percentEncode(key));
+    sb.append("=");
+    sb.append(percentEncode(value));
+    sb.append(",");
   }
 
   /**
@@ -390,6 +422,7 @@ class DocumentHandler extends AbstractHandler {
     private CountingOutputStream countingOs;
     private String contentType;
     private Metadata metadata = Metadata.EMPTY;
+    private Acl acl = Acl.EMPTY;
     private final DocId docId;
 
     public DocumentResponse(HttpExchange ex, DocId docId) {
@@ -466,6 +499,14 @@ class DocumentHandler extends AbstractHandler {
       this.metadata = metadata;
     }
 
+    @Override
+    public void setAcl(Acl acl) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.acl = acl;
+    }
+
     private long getWrittenContentSize() {
       return countingOs == null ? 0 : countingOs.getBytesWritten();
     }
@@ -519,9 +560,15 @@ class DocumentHandler extends AbstractHandler {
     }
 
     private void startSending(boolean hasContent) throws IOException {
-      if (!metadata.isEmpty() && requestIsFromFullyTrustedClient(ex)) {
-        ex.getResponseHeaders().set("X-Gsa-External-Metadata",
-                                    formMetadataHeader(metadata));
+      if (requestIsFromFullyTrustedClient(ex)) {
+        if (!metadata.isEmpty()) {
+          ex.getResponseHeaders().add("X-Gsa-External-Metadata",
+                                      formMetadataHeader(metadata));
+        }
+        if (!Acl.EMPTY.equals(acl)) {
+          ex.getResponseHeaders().add("X-Gsa-External-Metadata",
+                                      formAclHeader(acl, docIdEncoder));
+        }
       }
       if (useCompression) {
         // TODO(ejona): decide when to use compression based on mime-type

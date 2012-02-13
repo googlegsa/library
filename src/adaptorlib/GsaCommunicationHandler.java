@@ -152,7 +152,7 @@ public class GsaCommunicationHandler {
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
                             config.getGsaCharacterEncoding(), docIdCodec,
-                            journal, adaptor,
+                            docIdCodec, journal, adaptor,
                             config.getGsaHostname(),
                             config.getServerFullAccessHosts(),
                             authnHandler, sessionManager,

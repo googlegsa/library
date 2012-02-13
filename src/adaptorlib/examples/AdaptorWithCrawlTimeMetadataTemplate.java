@@ -53,21 +53,21 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       // Make metadata object, which checks items for consistency.
       // Must set metadata before getting OutputStream
       resp.setMetadata(new Metadata.Builder()
-          // Add user ACL.
-          .add(MetaItem.permittedUsers(users1001))
-          // Add group ACL.
-          .add(MetaItem.permittedGroups(groups1001))
           // Add custom meta items.
           .add(MetaItem.raw("my-special-key", "my-custom-value"))
           .add(MetaItem.raw("date", "not soon enough"))
+          .build());
+      resp.setAcl(new Acl.Builder()
+          // Add user ACL.
+          .setPermitUsers(users1001)
+          // Add group ACL.
+          .setPermitGroups(groups1001)
           .build());
     } else if ("1002".equals(id.getUniqueId())) {
       str = "Document 1002 says hello and banana strawberry";
       // Make metadata object, which checks items for consistency.
       // Must set metadata before getting OutputStream
       resp.setMetadata(new Metadata.Builder()
-          // A document that's not public and has no ACLs causes head requests.
-          .add(MetaItem.isNotPublic())
           // Add custom meta items.
           .add(MetaItem.raw("date", "better never than late"))
           .build());

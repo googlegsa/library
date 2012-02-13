@@ -124,6 +124,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setMetadata(Metadata m) {
       response.setMetadata(m);
     }
+
+    @Override
+    public void setAcl(Acl acl) {
+      response.setAcl(acl);
+    }
   }
 
   /**
@@ -163,6 +168,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private OutputStream os;
     private String contentType;
     private Metadata metadata;
+    private Acl acl;
     private boolean notFound;
 
     public GetContentsResponse(OutputStream os) {
@@ -194,12 +200,21 @@ abstract class WrapperAdaptor implements Adaptor {
       this.metadata = m;
     }
 
+    @Override
+    public void setAcl(Acl acl) {
+      this.acl = acl;
+    }
+
     public String getContentType() {
       return contentType;
     }
 
     public Metadata getMetadata() {
       return metadata;
+    }
+
+    public Acl getAcl() {
+      return acl;
     }
 
     public boolean isNotFound() {

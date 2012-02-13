@@ -202,6 +202,7 @@ public class CommandLineAdaptorTest {
     private OutputStream os;
     private String contentType;
     private Metadata metadata;
+    private Acl acl;
     private boolean notModified;
     private boolean notFound;
 
@@ -235,12 +236,21 @@ public class CommandLineAdaptorTest {
       this.metadata = m;
     }
 
+    @Override
+    public void setAcl(Acl acl) {
+      this.acl = acl;
+    }
+
     public String getContentType() {
       return contentType;
     }
 
     public Metadata getMetadata() {
       return metadata;
+    }
+
+    public Acl getAcl() {
+      return acl;
     }
 
     public boolean getNotModified() {

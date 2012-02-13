@@ -15,7 +15,6 @@
 package adaptorlib;
 
 import java.util.Arrays;
-import java.util.List;
 
 /** A single meta item consists of a name and value. */
 public final class MetaItem implements Comparable<MetaItem> {
@@ -44,48 +43,9 @@ public final class MetaItem implements Comparable<MetaItem> {
     this.v = value;
   }
 
-  /** Adds google's public indicator. */
-  public static MetaItem isPublic() {
-    return new MetaItem("google:ispublic", "true");
-  }
- 
-  /** Adds google's not-public indicator. */
-  public static MetaItem isNotPublic() {
-    return new MetaItem("google:ispublic", "false");
-  }
- 
-  public static MetaItem permittedUsers(List<String> aclUsers) {
-    for (String user : aclUsers) {
-      throwIfInvalidName(user);
-    }
-    return new MetaItem("google:aclusers", comma(aclUsers));
-  }
-
-  public static MetaItem permittedGroups(List<String> aclGroups) {
-    for (String group : aclGroups) {
-      throwIfInvalidName(group);
-    }
-    return new MetaItem("google:aclgroups", comma(aclGroups));
-  }
-
-  /** Define your own metaname and give it a value. */ 
+  /** Define your own metaname and give it a value. */
   public static MetaItem raw(String name, String value) {
     return new MetaItem(name, value);
-  }
-
-  private static void throwIfInvalidName(String name) { 
-    // TODO(pjo): Figure out complete rules.
-    if (name.contains(",")) {
-      throw new IllegalArgumentException("name " + name + " contains comma");
-    }
-  }
-
-  private static String comma(List<String> names) {
-   StringBuilder sb = new StringBuilder();
-   for (String name : names) {
-     sb.append(",").append(name);
-   }
-   return 0 == sb.length() ? "" : sb.substring(1);
   }
 
   @Override
@@ -107,10 +67,10 @@ public final class MetaItem implements Comparable<MetaItem> {
   /** Primary sort by name, secondary by value. */
   @Override
   public int compareTo(MetaItem o) {
-    if (null == o) { 
+    if (null == o) {
       throw new IllegalArgumentException("null object");
     }
-    if (!getClass().equals(o.getClass())) { 
+    if (!getClass().equals(o.getClass())) {
       throw new ClassCastException("wrong type: " + o.getClass());
     }
     MetaItem other = (MetaItem) o;

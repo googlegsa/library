@@ -15,12 +15,26 @@
 package adaptorlib;
 
 import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Mock of {@link DocIdDecoder}.
  */
-class MockDocIdDecoder implements DocIdDecoder {
+class MockDocIdCodec implements DocIdDecoder, DocIdEncoder {
+  @Override
   public DocId decodeDocId(URI uri) {
-    return new DocId(uri.toString());
+    return new DocId(uri.getPath().substring(1));
+  }
+
+  @Override
+  public URI encodeDocId(DocId docId) {
+    URI base = URI.create("http://localhost/");
+    URI resource;
+    try {
+      resource = new URI(null, null, "/" + docId.getUniqueId(), null);
+    } catch (URISyntaxException ex) {
+      throw new AssertionError();
+    }
+    return base.resolve(resource);
   }
 }

@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.TreeSet;
 
@@ -67,34 +66,6 @@ public class MetaItemTest {
     MetaItem fed2 = it.next();
     assertEquals("f", fed2.getName());
     assertEquals("from F 2", fed2.getValue());
-  }
-
-  @Test
-  public void testComma() {
-    ArrayList<String> users = new ArrayList<String>();
-    assertEquals("", MetaItem.permittedUsers(users).getValue());
-    users.add("adam");
-    assertEquals("adam", MetaItem.permittedUsers(users).getValue());
-    users.add("brandon");
-    assertEquals("adam,brandon", MetaItem.permittedUsers(users).getValue());
-    users.add("zena");
-    assertEquals("adam,brandon,zena", MetaItem.permittedUsers(users).getValue());
-  }
-
-  @Test
-  public void testCommaInUserName() {
-    ArrayList<String> users = new ArrayList<String>();
-    users.add("ad,am");
-    thrown.expect(IllegalArgumentException.class);
-    MetaItem.permittedUsers(users);
-  }
-
-  @Test
-  public void testCommaInGroupName() {
-    ArrayList<String> groups = new ArrayList<String>();
-    groups.add("ad,am12");
-    thrown.expect(IllegalArgumentException.class);
-    MetaItem.permittedGroups(groups);
   }
 
   @Test

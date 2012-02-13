@@ -70,7 +70,12 @@ public interface Response {
   public void setContentType(String contentType);
 
   /**
-   * Provide metadata that apply to the document.
+   * Provide metadata that applies to the document.
    */
   public void setMetadata(Metadata m);
+
+  /**
+   * Provide the document's ACLs for early-binding security on the GSA.
+   */
+  public void setAcl(Acl acl);
 }

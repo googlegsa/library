@@ -36,9 +36,60 @@ public class DocumentHandlerTest {
       = new SessionManager<HttpExchange>(
           new SessionManager.HttpExchangeClientStore(), 1000, 1000);
   private MockAdaptor mockAdaptor = new MockAdaptor();
+  private MockDocIdCodec docIdCodec = new MockDocIdCodec();
   private DocumentHandler handler = createDefaultHandlerForAdaptor(mockAdaptor);
-  private MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
+  private DocId defaultDocId = new DocId("test docId");
+  private String defaultPath
+      = docIdCodec.encodeDocId(defaultDocId).getRawPath();
+  private MockHttpExchange ex = new MockHttpExchange("http", "GET", defaultPath,
       new MockHttpContext(null, "/"));
+
+  @Test
+  public void testNullDocIdDecoder() {
+    thrown.expect(NullPointerException.class);
+    new DocumentHandler("localhost", Charset.forName("UTF-8"), null, docIdCodec,
+        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
+        "localhost", new String[0], handler, sessionManager, null, 0,
+        false, false);
+  }
+
+  @Test
+  public void testNullDocIdEncoder() {
+    thrown.expect(NullPointerException.class);
+    new DocumentHandler("localhost", Charset.forName("UTF-8"), docIdCodec, null,
+        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
+        "localhost", new String[0], handler, sessionManager, null, 0,
+        false, false);
+  }
+
+  @Test
+  public void testNullJournal() {
+    thrown.expect(NullPointerException.class);
+    new DocumentHandler("localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, null, new PrivateMockAdaptor(),
+        "localhost", new String[0], handler, sessionManager, null, 0,
+        false, false);
+  }
+
+  @Test
+  public void testNullAdaptor() {
+    thrown.expect(NullPointerException.class);
+    new DocumentHandler("localhost",
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+        new Journal(new MockTimeProvider()), null,
+        "localhost", new String[0], handler, sessionManager, null, 0,
+        false, false);
+  }
+
+  @Test
+  public void testNullSessionManager() {
+    thrown.expect(NullPointerException.class);
+    new DocumentHandler("localhost",
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
+        "localhost", new String[0], handler, null, null, 0,
+        false, false);
+  }
 
   @Test
   public void testSecurityDeny() throws Exception {
@@ -59,7 +110,7 @@ public class DocumentHandlerTest {
       }
     };
     DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], authnHandler, sessionManager, null, 0,
         false, false);
@@ -145,7 +196,7 @@ public class DocumentHandlerTest {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[] {"127.0.0.3", " "}, null, sessionManager, null, 0, false,
         false);
@@ -159,7 +210,7 @@ public class DocumentHandlerTest {
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "127.0.0.3",
         new String[0], null, sessionManager, null, 0, false, false);
     handler.handle(ex);
@@ -176,7 +227,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testNormalHead() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "HEAD", "/",
+    MockHttpExchange ex = new MockHttpExchange("http", "HEAD", defaultPath,
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -185,7 +236,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testNormalPost() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+    MockHttpExchange ex = new MockHttpExchange("http", "POST", defaultPath,
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
@@ -219,7 +270,7 @@ public class DocumentHandlerTest {
     };
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {"127.0.0.3"}, null, sessionManager, transform, 100,
         false, false);
@@ -227,8 +278,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
-    assertEquals("docid=http%3A%2F%2Flocalhost%2F,"
-                 + "testing%20key=TESTING%20VALUE",
+    assertEquals("docid=test%20docId,testing%20key=TESTING%20VALUE",
                  ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
   }
 
@@ -261,7 +311,7 @@ public class DocumentHandlerTest {
     };
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, false,
         false);
@@ -291,7 +341,7 @@ public class DocumentHandlerTest {
     CheckFailAdaptor mockAdaptor = new CheckFailAdaptor();
     // 127.0.0.3 is the address hard-coded in MockHttpExchange
     DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), new MockDocIdDecoder(),
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, true,
         false);
@@ -459,12 +509,27 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testSetAclLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setAcl(Acl.EMPTY);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
   public void testSmartAdaptor() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            if (!request.getDocId().equals(new DocId("http://localhost/"))) {
+            if (!request.getDocId().equals(defaultDocId)) {
               response.respondNotFound();
               return;
             }
@@ -474,6 +539,7 @@ public class DocumentHandlerTest {
             }
             response.setContentType("text/plain");
             response.setMetadata(Metadata.EMPTY);
+            response.setAcl(Acl.EMPTY);
             response.getOutputStream();
             // It is free to get it multiple times
             response.getOutputStream();
@@ -485,7 +551,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
 
-    MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
+    MockHttpExchange ex = new MockHttpExchange("http", "GET", defaultPath,
         new MockHttpContext(handler, "/"));
     ex.getRequestHeaders().set("If-Modified-Since",
                                "Thu, 1 Jan 1970 00:00:00 GMT");
@@ -494,11 +560,37 @@ public class DocumentHandlerTest {
     assertEquals("text/plain",
                  ex.getResponseHeaders().getFirst("Content-Type"));
 
-    ex = new MockHttpExchange("http", "HEAD", "/",
+    ex = new MockHttpExchange("http", "HEAD", defaultPath,
                               new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
 
+  }
+
+  @Test
+  public void testMetadataGsa() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setMetadata(new Metadata.Builder()
+                .add(MetaItem.raw("test", "ing")).build());
+            response.setAcl(new Acl.Builder()
+                .setInheritFrom(new DocId("testing")).build());
+            response.getOutputStream();
+          }
+        };
+    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        adaptor, "localhost", new String[] {"127.0.0.3"}, null,
+        sessionManager, null, 0, false, false);
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
+          + "http%3A%2F%2Flocalhost%2Ftesting"),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   @Test
@@ -509,12 +601,14 @@ public class DocumentHandlerTest {
               throws IOException {
             response.setMetadata(new Metadata.Builder()
                 .add(MetaItem.raw("test", "ing")).build());
+            response.setAcl(new Acl.Builder()
+                .setInheritFrom(new DocId("testing")).build());
             response.getOutputStream();
           }
         };
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[0], null,
         sessionManager, null, 0, false, false);
     handler.handle(ex);
@@ -524,7 +618,7 @@ public class DocumentHandlerTest {
 
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
-        new MockDocIdDecoder(), new Journal(new MockTimeProvider()),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[0], null,
         sessionManager, null, 0, false, false);
   }
@@ -532,19 +626,47 @@ public class DocumentHandlerTest {
   @Test
   public void testFormMetadataHeader() {
     String result = DocumentHandler.formMetadataHeader(new Metadata.Builder()
-        .add(MetaItem.isPublic())
         .add(MetaItem.raw("test", "ing"))
         .add(MetaItem.raw("another", "item"))
         .add(MetaItem.raw("equals=", "=="))
         .build());
-    assertEquals("another=item,equals%3D=%3D%3D,google%3Aispublic=true,"
-                 + "test=ing", result);
+    assertEquals("another=item,equals%3D=%3D%3D,test=ing", result);
   }
 
   @Test
   public void testFormMetadataHeaderEmpty() {
     String header = DocumentHandler.formMetadataHeader(Metadata.EMPTY);
     assertEquals("", header);
+  }
+
+  @Test
+  public void testFormAclHeader() {
+    final String golden
+        = "google%3Aaclusers=pu1,google%3Aaclusers=uid%3Dpu2%2Cdc%3Dcom,"
+        + "google%3Aaclgroups=gid%3Dpg2%2Cdc%3Dcom,google%3Aaclgroups=pg1,"
+        + "google%3Aacldenyusers=du1,"
+        + "google%3Aacldenyusers=uid%3Ddu2%2Cdc%3Dcom,"
+        + "google%3Aacldenygroups=dg1,"
+        + "google%3Aacldenygroups=gid%3Ddg2%2Cdc%3Dcom,"
+        // The space is encoded as %20 by URI, and then that string is encoded
+        // by percentEncode to give %2520.
+        + "google%3Aaclinheritfrom=http%3A%2F%2Flocalhost%2Fsome%2520docId,"
+        + "google%3Aaclinheritancetype=parent-overrides";
+    String result = DocumentHandler.formAclHeader(new Acl.Builder()
+        .setPermitUsers(Arrays.asList("pu1", "uid=pu2,dc=com"))
+        .setPermitGroups(Arrays.asList("pg1", "gid=pg2,dc=com"))
+        .setDenyUsers(Arrays.asList("du1", "uid=du2,dc=com"))
+        .setDenyGroups(Arrays.asList("dg1", "gid=dg2,dc=com"))
+        .setInheritFrom(new DocId("some docId"))
+        .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+        .build(), new MockDocIdCodec());
+    assertEquals(golden, result);
+  }
+
+  @Test
+  public void testFormAclHeaderEmpty() {
+    assertEquals("",
+        DocumentHandler.formAclHeader(Acl.EMPTY, new MockDocIdCodec()));
   }
 
   @Test
