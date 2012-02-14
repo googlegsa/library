@@ -54,7 +54,8 @@ public interface Adaptor {
    * allows healing previous errors and cache inconsistencies. Re-sending {@code
    * DocIds} is very fast and should be considered free on the GSA. This method
    * should determine a list of {@code DocId}s to push and call {@link
-   * DocIdPusher#pushDocIds} one or more times.
+   * DocIdPusher#pushDocIds} one or more times and {@link
+   * DocIdPusher#pushNamedResources} if using named resources.
    *
    * <p>{@code pusher} is provided as convenience and is the same object
    * provided to {@link #init} previously. This method may take a while and

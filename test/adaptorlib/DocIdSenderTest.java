@@ -219,10 +219,53 @@ public class DocIdSenderTest {
     assertEquals(1, errorHandler.failedReadingReply);
   }
 
+  @Test
+  public void testNamedResources() throws Exception {
+    config.setValue("feed.name", "testing");
+    assertNull(docIdSender.pushNamedResources(
+        Collections.singletonMap(new DocId("test"), Acl.EMPTY),
+        new NeverRetryPushErrorHandler()));
+    assertEquals(1, fileSender.hosts.size());
+  }
+
+  @Test
+  public void testNamedResourcesFailed() throws Exception {
+    fileSender = new MockGsaFeedFileSender() {
+      @Override
+      void sendMetadataAndUrl(String host, String datasource,
+                              String xmlString, boolean useCompression)
+          throws FailedReadingReply {
+        throw new FailedReadingReply(new IOException());
+      }
+    };
+    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
+                                  adaptor);
+
+    Map<DocId, Acl> resources = new TreeMap<DocId, Acl>();
+    resources.put(new DocId("aaa"), Acl.EMPTY);
+    resources.put(new DocId("bbb"), Acl.EMPTY);
+    assertEquals(new DocId("aaa"), docIdSender.pushNamedResources(resources,
+        new NeverRetryPushErrorHandler()));
+  }
+
+  @Test
+  public void testNullNamedResource() throws Exception {
+    thrown.expect(NullPointerException.class);
+    docIdSender.pushNamedResources(
+        Collections.singletonMap(new DocId("test"), (Acl) null));
+  }
+
+  @Test
+  public void testNullNamedResourceAcl() throws Exception {
+    thrown.expect(NullPointerException.class);
+    docIdSender.pushNamedResources(
+        Collections.singletonMap((DocId) null, Acl.EMPTY));
+  }
+
   private static class MockGsaFeedFileMaker extends GsaFeedFileMaker {
     List<String> names = new ArrayList<String>();
-    List<List<DocIdPusher.Record>> recordses
-        = new ArrayList<List<DocIdPusher.Record>>();
+    List<List<? extends DocIdSender.Item>> recordses
+        = new ArrayList<List<? extends DocIdSender.Item>>();
     int i;
 
     public MockGsaFeedFileMaker() {
@@ -231,9 +274,9 @@ public class DocIdSenderTest {
 
     @Override
     public String makeMetadataAndUrlXml(String name,
-        List<DocIdPusher.Record> records) {
+        List<? extends DocIdSender.Item> items) {
       names.add(name);
-      recordses.add(records);
+      recordses.add(items);
       return "" + i++;
     }
   }

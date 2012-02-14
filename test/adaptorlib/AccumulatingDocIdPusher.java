@@ -17,6 +17,7 @@ package adaptorlib;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   private List<DocId> ids = new ArrayList<DocId>();
@@ -37,5 +38,12 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
 
   public void reset() {
     ids.clear();
+  }
+
+  @Override
+  public DocId pushNamedResources(Map<DocId, Acl> resources,
+                                  PushErrorHandler hanlder)
+      throws InterruptedException {
+    throw new UnsupportedOperationException();
   }
 }

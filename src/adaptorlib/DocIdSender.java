@@ -85,30 +85,43 @@ class DocIdSender extends AbstractDocIdPusher {
    * This method blocks until all DocIds are sent or retrying failed.
    */
   @Override
-  public Record pushRecords(Iterable<Record> records,
-                              PushErrorHandler handler)
+  public Record pushRecords(Iterable<Record> items, PushErrorHandler handler)
       throws InterruptedException {
     if (handler == null) {
       handler = defaultErrorHandler;
     }
-    return pushRecords(records.iterator(), handler);
+    return pushItems(items.iterator(), handler);
   }
 
-  private Record pushRecords(Iterator<Record> records,
-                               PushErrorHandler handler)
+  @Override
+  public DocId pushNamedResources(Map<DocId, Acl> resources,
+                                  PushErrorHandler handler)
       throws InterruptedException {
+    if (handler == null) {
+      handler = defaultErrorHandler;
+    }
+    List<AclItem> acls = new ArrayList<AclItem>(resources.size());
+    for (Map.Entry<DocId, Acl> me : resources.entrySet()) {
+      acls.add(new AclItem(me.getKey(), me.getValue()));
+    }
+    AclItem acl = pushItems(acls.iterator(), handler);
+    return acl == null ? null : acl.getDocId();
+  }
+
+  private <T extends Item> T pushItems(Iterator<T> items,
+      PushErrorHandler handler) throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
     final int max = config.getFeedMaxUrls();
-    while (records.hasNext()) {
-      List<Record> batch = new ArrayList<Record>();
+    while (items.hasNext()) {
+      List<T> batch = new ArrayList<T>();
       for (int j = 0; j < max; j++) {
-        if (!records.hasNext()) {
+        if (!items.hasNext()) {
           break;
         }
-        batch.add(records.next());
+        batch.add(items.next());
       }
       log.log(Level.INFO, "Pushing group of {0} DocIds", batch.size());
-      Record failedId = pushSizedBatchOfRecords(batch, handler);
+      T failedId = pushSizedBatchOfRecords(batch, handler);
       if (failedId != null) {
         log.info("Failed to push all ids. Failed on docId: " + failedId);
         return failedId;
@@ -119,15 +132,14 @@ class DocIdSender extends AbstractDocIdPusher {
     return null;
   }
 
-  private Record pushSizedBatchOfRecords(List<Record> records,
-                                           PushErrorHandler handler)
+  private <T extends Item> T pushSizedBatchOfRecords(List<T> items,
+                                         PushErrorHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
-    String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(feedSourceName,
-        records);
+    String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(feedSourceName, items);
     boolean keepGoing = true;
     boolean success = false;
-    log.log(Level.INFO, "Pushing batch of {0} DocIds to GSA", records.size());
+    log.log(Level.INFO, "Pushing batch of {0} DocIds to GSA", items.size());
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("Sending feed to GSA host name: " + config.getGsaHostname());
@@ -156,10 +168,36 @@ class DocIdSender extends AbstractDocIdPusher {
     if (success) {
       log.info("Pushing batch succeeded");
     } else {
-      log.log(Level.WARNING, "Gave up. First item in list: {0}",
-              records.get(0));
+      log.log(Level.WARNING, "Gave up. First item in list: {0}", items.get(0));
     }
     log.info("Finished pushing batch");
-    return success ? null : records.get(0);
+    return success ? null : items.get(0);
+  }
+
+  /** Marker interface for an item that can exist in a feed. */
+  interface Item {}
+
+  /**
+   * Represents the ACL tag sent in feeds.
+   */
+  static final class AclItem implements Item {
+    private DocId id;
+    private Acl acl;
+
+    public AclItem(DocId id, Acl acl) {
+      if (id == null || acl == null) {
+        throw new NullPointerException("DocId and Acl must not be null");
+      }
+      this.id = id;
+      this.acl = acl;
+    }
+
+    public DocId getDocId() {
+      return id;
+    }
+
+    public Acl getAcl() {
+      return acl;
+    }
   }
 }

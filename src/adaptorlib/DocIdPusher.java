@@ -17,6 +17,7 @@ package adaptorlib;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.Map;
 
 /**
  * Interface that allows at-will pushing of {@code DocId}s to the GSA.
@@ -80,8 +81,50 @@ public interface DocIdPusher {
   public Record pushRecords(Iterable<Record> records, PushErrorHandler handler)
       throws InterruptedException;
 
+  /**
+   * Push named resources immediately and block until they are successfully
+   * provided to the GSA or the error handler gives up. This method can take a
+   * while in error conditions, but is not something that generally needs to be
+   * avoided.
+   *
+   * <p>Named resources are {@code DocId}s without any content or metadata, that
+   * only exist for ACL inheritance. These {@code DocId} will never be visible
+   * to the user and have no meaning outside of ACL processing.
+   *
+   * <p>If you plan on using the return code, then the provided map should have
+   * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>Equivalent to {@code pushNamedResources(resources, null)}.
+   *
+   * @return {@code null} on success, otherwise the first DocId to fail
+   * @see #pushNamedResources(Map, PushErrorHandler)
+   */
+  public DocId pushNamedResources(Map<DocId, Acl> resources)
+      throws InterruptedException;
+
+  /**
+   * Push named resources immediately and block until they are successfully
+   * provided to the GSA or the error handler gives up. This method can take a
+   * while in error conditions, but is not something that generally needs to be
+   * avoided.
+   *
+   * <p>Named resources are {@code DocId}s without any content or metadata, that
+   * only exist for ACL inheritance. These {@code DocId} will never be visible
+   * to the user and have no meaning outside of ACL processing.
+   *
+   * <p>If you plan on using the return code, then the provided map should have
+   * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>If handler is {@code null}, then a default error handler is used.
+   *
+   * @return {@code null} on success, otherwise the first DocId to fail
+   */
+  public DocId pushNamedResources(Map<DocId, Acl> resources,
+                                  PushErrorHandler handler)
+      throws InterruptedException;
+
   /** Contains DocId and other feed file record attributes. */
-  public static final class Record {
+  public static final class Record implements DocIdSender.Item {
     private final DocId id; 
     private final boolean delete;
     private final Date lastModified;

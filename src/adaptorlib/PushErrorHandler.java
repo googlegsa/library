@@ -15,32 +15,48 @@
 package adaptorlib;
 
 /**
- * Interface for handling errors encountered during pushing of {@code DocId}s.
+ * Interface for handling errors encountered during pushing of {@code DocId}s
+ * via {@link DocIdPusher}.
  */
 public interface PushErrorHandler {
   /**
-   * {@link DocIdSender#pushDocIds} had a failure connecting with GSA to send a
-   * batch. The thrown exception is provided as well as the number of times that
-   * this batch was attempted to be sent. Return {@code true} to retry, perhaps
-   * after a Thread.sleep() of some time.
+   * Handle a failure that {@link DocIdPusher} had connecting with the GSA to
+   * send a batch. This includes determining if the operation should be retried
+   * or if it should be aborted while also allowing other logic, like running
+   * {@code Thread.sleep()} to permit time for the situation to improve. The
+   * thrown exception is provided as well as the number of times that this batch
+   * was attempted to be sent.
+   *
+   * @return {@code true} to indicate the batch should be resent,
+   *     {@code false} to abort the batch
    */
   public boolean handleFailedToConnect(Exception ex, int ntries)
       throws InterruptedException;
 
   /**
-   * {@link DocIdSender#pushDocIds} had a failure writing to the GSA while
-   * sending a batch.  The thrown exception is provided as well as the number of
-   * times that this batch was attempted to be sent. Return {@code true} to
-   * retry, perhaps after a Thread.sleep() of some time.
+   * Handle a failure that {@link DocIdPusher} had writing to the GSA while
+   * sending a batch. This includes determining if the operation should be
+   * retried or if it should be aborted while also allowing other logic, like
+   * running {@code Thread.sleep()} to permit time for the situation to improve.
+   * The thrown exception is provided as well as the number of times that this
+   * batch was attempted to be sent.
+   *
+   * @return {@code true} to indicate the batch should be resent,
+   *     {@code false} to abort the batch
    */
   public boolean handleFailedWriting(Exception ex, int ntries)
       throws InterruptedException;
 
   /**
-   * {@link DocIdSender#pushDocIds} had a failure reading response from GSA. The
-   * thrown exception is provided as well as the number of times that this batch
-   * was attempted to be sent. Return {@code true} to retry, perhaps after a
-   * Thread.sleep() of some time.
+   * Handle a failure that {@link DocIdPusher} had reading the GSA's response.
+   * This includes determining if the operation should be retried or if it
+   * should be aborted while also allowing other logic, like running {@code
+   * Thread.sleep()} to permit time for the situation to improve. The thrown
+   * exception is provided as well as the number of times that this batch was
+   * attempted to be sent.
+   *
+   * @return {@code true} to indicate the batch should be resent,
+   *     {@code false} to abort the batch
    */
   public boolean handleFailedReadingReply(Exception ex, int ntries)
       throws InterruptedException;

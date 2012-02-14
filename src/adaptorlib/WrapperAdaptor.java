@@ -238,6 +238,12 @@ abstract class WrapperAdaptor implements Adaptor {
         throws InterruptedException {
       return pusher.pushRecords(records, handler);
     }
+
+    @Override
+    public DocId pushNamedResources(Map<DocId, Acl> resources,
+        PushErrorHandler handler) throws InterruptedException {
+      return pusher.pushNamedResources(resources, handler);
+    }
   }
 
   public static class WrapperAdaptorContext implements AdaptorContext {

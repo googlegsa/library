@@ -20,6 +20,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /**
@@ -88,6 +89,12 @@ public class IncrementalAdaptorPollerTest {
     @Override
     public Record pushRecords(Iterable<Record> records,
                                 PushErrorHandler handler) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public DocId pushNamedResources(Map<DocId, Acl> resources,
+                                    PushErrorHandler handler) {
       throw new UnsupportedOperationException();
     }
   }

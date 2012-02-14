@@ -403,6 +403,11 @@ public class Acl {
      * {@code null} value for a DocId's ACLs. If a DocId does not exist, then it
      * should be missing in the returned map.
      *
+     * <p>This method should provide any ACLs for named resources (if any are in
+     * use, which is not the common case) in addition to any normal documents.
+     * For more information about named resources, see {@link
+     * DocIdPusher#pushNamedResources}.
+     *
      * @throws IOException if there was an error contacting the data store
      */
     public Map<DocId, Acl> retrieveAcls(Set<DocId> ids)

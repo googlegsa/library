@@ -102,9 +102,17 @@ class Journal {
     }
   }
 
-  synchronized void recordDocIdPush(List<DocIdPusher.Record> pushed) {
-    for (DocIdPusher.Record record : pushed) {
-      increment(timesPushed, record.getDocId());
+  synchronized void recordDocIdPush(List<? extends DocIdSender.Item> pushed) {
+    for (Object item : pushed) {
+      if (item instanceof DocIdPusher.Record) {
+        DocIdPusher.Record record = (DocIdPusher.Record) item;
+        increment(timesPushed, record.getDocId());
+      } else if (item instanceof DocIdSender.AclItem) {
+        // Don't record any information.
+      } else {
+        throw new IllegalArgumentException("Unsupported class: "
+                                           + item.getClass().getName());
+      }
     }
     totalPushes += pushed.size();
   }

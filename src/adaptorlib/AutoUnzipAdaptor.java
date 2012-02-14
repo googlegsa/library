@@ -424,6 +424,14 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
         throws InterruptedException {
       return AutoUnzipAdaptor.this.pushRecords(records, handler);
     }
+
+    @Override
+    public DocId pushNamedResources(Map<DocId, Acl> resources,
+                                    PushErrorHandler handler)
+        throws InterruptedException {
+      return pusher.pushNamedResources(resources, handler);
+    }
+
   }
 
   private static class InnerAdaptorContext extends WrapperAdaptorContext {

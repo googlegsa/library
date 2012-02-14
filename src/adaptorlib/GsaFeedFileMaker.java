@@ -88,27 +88,78 @@ class GsaFeedFileMaker {
     record.setAttribute("crawl-immediately",
         "" + docRecord.isToBeCrawledImmediately());
     record.setAttribute("crawl-once", "" + docRecord.isToBeCrawledOnce());
-    // TODO: record.setAttribute(no-follow,);
+    // TODO(pjo): record.setAttribute(no-follow,);
+  }
+
+  /**
+   * Adds a single ACL tag to the provided group, communicating the named
+   * resource's information provided in {@code docAcl}.
+   */
+  private void constructSingleMetadataAndUrlFeedFileAcl(
+      Document doc, Element group, DocIdSender.AclItem docAcl) {
+    Element aclElement = doc.createElement("acl");
+    group.appendChild(aclElement);
+    aclElement.setAttribute("url",
+        idEncoder.encodeDocId(docAcl.getDocId()).toString());
+    Acl acl = docAcl.getAcl();
+    if (acl.getInheritFrom() != null) {
+      aclElement.setAttribute("inherit-from",
+          idEncoder.encodeDocId(acl.getInheritFrom()).toString());
+    }
+    if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
+      aclElement.setAttribute("inheritance-type",
+          acl.getInheritanceType().getCommonForm());
+    }
+    for (String permitUser : acl.getPermitUsers()) {
+      constructPrincipal(doc, aclElement, "user", "permit", permitUser);
+    }
+    for (String permitGroup : acl.getPermitGroups()) {
+      constructPrincipal(doc, aclElement, "group", "permit", permitGroup);
+    }
+    for (String denyUser : acl.getDenyUsers()) {
+      constructPrincipal(doc, aclElement, "user", "deny", denyUser);
+    }
+    for (String denyGroup : acl.getDenyGroups()) {
+      constructPrincipal(doc, aclElement, "group", "deny", denyGroup);
+    }
+  }
+
+  private void constructPrincipal(Document doc, Element acl, String scope,
+      String access, String principal) {
+    Element principalElement = doc.createElement("principal");
+    principalElement.setAttribute("scope", scope);
+    principalElement.setAttribute("access", access);
+    principalElement.appendChild(doc.createTextNode(principal));
+    acl.appendChild(principalElement);
   }
 
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<DocIdPusher.Record> records) {
+      Element root, List<? extends DocIdSender.Item> items) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (DocIdPusher.Record docRecord : records) {
-      constructSingleMetadataAndUrlFeedFileRecord(doc, group, docRecord);
+    for (DocIdSender.Item item : items) {
+      if (item instanceof DocIdPusher.Record) {
+        constructSingleMetadataAndUrlFeedFileRecord(doc, group,
+                                                    (DocIdPusher.Record) item);
+      } else if (item instanceof DocIdSender.AclItem) {
+        constructSingleMetadataAndUrlFeedFileAcl(doc, group,
+                                                 (DocIdSender.AclItem) item);
+      } else {
+        throw new IllegalArgumentException("Unable to process class: "
+                                           + item.getClass().getName());
+      }
     }
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<DocIdPusher.Record> records) {
+      String srcName, List<? extends DocIdSender.Item> items) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
-    constructMetadataAndUrlFeedFileBody(doc, root, records);
+    constructMetadataAndUrlFeedFileBody(doc, root, items);
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
@@ -133,12 +184,12 @@ class GsaFeedFileMaker {
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
   public String makeMetadataAndUrlXml(String srcName,
-      List<DocIdPusher.Record> records) {
+                                      List<? extends DocIdSender.Item> items) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
-      constructMetadataAndUrlFeedFile(doc, srcName, records);
+      constructMetadataAndUrlFeedFile(doc, srcName, items);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {

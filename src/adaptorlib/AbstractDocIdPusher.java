@@ -53,4 +53,13 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
       throws InterruptedException {
     return pushRecords(records, null);
   }
+
+  /**
+   * Calls {@code pushNamedResources(resources, null)}.
+   */
+  @Override
+  public DocId pushNamedResources(Map<DocId, Acl> resources)
+      throws InterruptedException {
+    return pushNamedResources(resources, null);
+  }
 }

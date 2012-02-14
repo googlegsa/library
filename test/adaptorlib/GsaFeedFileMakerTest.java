@@ -19,22 +19,12 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.Date;
+import java.util.*;
 
 /** Tests for {@link GsaFeedFileMaker}. */
 public class GsaFeedFileMakerTest {
-  private static final DocIdEncoder ENCODER = new DocIdEncoder() {
-    public URI encodeDocId(DocId docId) {
-      try {
-        return new URI(docId.getUniqueId());
-      } catch (java.net.URISyntaxException e) {
-        throw new IllegalStateException("while testing", e);
-      }
-    }
-  };
-
-  private GsaFeedFileMaker meker = new GsaFeedFileMaker(ENCODER);
+  private DocIdEncoder encoder = new MockDocIdCodec();
+  private GsaFeedFileMaker meker = new GsaFeedFileMaker(encoder);
 
   @Test
   public void testEmpty() {
@@ -69,10 +59,12 @@ public class GsaFeedFileMakerTest {
         + "<group>\n"
         + "<record action=\"add\" crawl-immediately=\"false\""
         + " crawl-once=\"false\""
-        + " lock=\"false\" mimetype=\"text/plain\" url=\"E11\"/>\n"
+        + " lock=\"false\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/E11\"/>\n"
         + "<record action=\"add\" crawl-immediately=\"false\""
         + " crawl-once=\"false\""
-        + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
+        + " lock=\"false\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/elefenta\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
@@ -97,15 +89,18 @@ public class GsaFeedFileMakerTest {
         + "<group>\n"
         + "<record action=\"add\" crawl-immediately=\"false\""
         + " crawl-once=\"false\" displayurl=\"http://f000nkey.net\""
-        + " lock=\"false\" mimetype=\"text/plain\" url=\"E11\"/>\n"
+        + " lock=\"false\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/E11\"/>\n"
         + "<record action=\"add\" crawl-immediately=\"false\""
         + " crawl-once=\"false\" displayurl=\"http://yankee.doodle.com\""
         + " last-modified=\"Thu, 01 Jan 1970 00:00:00 +0000\""
-        + " lock=\"false\" mimetype=\"text/plain\" url=\"elefenta\"/>\n"
+        + " lock=\"false\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/elefenta\"/>\n"
         + "<record action=\"add\" crawl-immediately=\"false\""
         + " crawl-once=\"false\" displayurl=\"http://google.com/news\"" 
         + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
-        + " lock=\"false\" mimetype=\"text/plain\" url=\"gone\"/>\n"
+        + " lock=\"false\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/gone\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
@@ -127,6 +122,54 @@ public class GsaFeedFileMakerTest {
     ids.add(attrBuilder.build());
 
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testNamedResources() {
+    String golden
+        = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<header>\n"
+        + "<datasource>test</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group>\n"
+        + "<acl url=\"http://localhost/docid1\"/>\n"
+        + "<acl inheritance-type=\"and-both-permit\""
+        + " url=\"http://localhost/docid2\">\n"
+        + "<principal access=\"permit\" scope=\"user\">pu1</principal>\n"
+        + "<principal access=\"permit\" scope=\"user\">pu2</principal>\n"
+        + "<principal access=\"permit\" scope=\"group\">pg1</principal>\n"
+        + "<principal access=\"permit\" scope=\"group\">pg2&lt;</principal>\n"
+        + "<principal access=\"deny\" scope=\"user\">du1</principal>\n"
+        + "<principal access=\"deny\" scope=\"user\">du2</principal>\n"
+        + "<principal access=\"deny\" scope=\"group\">dg1</principal>\n"
+        + "<principal access=\"deny\" scope=\"group\">dg2&amp;</principal>\n"
+        + "</acl>\n"
+        + "<acl inherit-from=\"http://localhost/doc%20id4\""
+        + " url=\"http://localhost/doc%20id3%22&amp;%3C\"/>\n"
+        + "</group>\n"
+        + "</gsafeed>\n";
+
+    List<DocIdSender.AclItem> acls = new ArrayList<DocIdSender.AclItem>();
+    acls.add(new DocIdSender.AclItem(new DocId("docid1"), new Acl.Builder()
+        .build()));
+    acls.add(new DocIdSender.AclItem(new DocId("docid2"), new Acl.Builder()
+        .setInheritanceType(Acl.InheritanceType.AND_BOTH_PERMIT)
+        .setPermitUsers(Arrays.asList("pu1", "pu2"))
+        .setDenyUsers(Arrays.asList("du1", "du2"))
+        .setPermitGroups(Arrays.asList("pg1", "pg2<"))
+        .setDenyGroups(Arrays.asList("dg1", "dg2&"))
+        .build()));
+    acls.add(new DocIdSender.AclItem(new DocId("doc id3\"&<"), new Acl.Builder()
+        .setInheritFrom(new DocId("doc id4"))
+        .build()));
+
+    String xml = meker.makeMetadataAndUrlXml("test", acls);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
