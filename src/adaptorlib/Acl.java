@@ -161,10 +161,17 @@ public class Acl {
    *
    * @see #isAuthorizedLocal
    * @see InheritanceType
+   * @throws IllegalArgumentException if the chain is empty, the first element
+   *     of the chain's {@code getInheritFrom() != null}, or if any element but
+   *     the first has {@code getInheritFrom() == null}.
    */
   public static AuthzStatus isAuthorized(String userIdentifier,
                                          Collection<String> groups,
                                          List<Acl> aclChain) {
+    // Check for completely broken chains. Users of the API should be aware
+    // enough to easily prevent these from happening. These also don't directly
+    // relate to a case on the GSA because the GSA is working more on the
+    // isAuthorizedRecurse level.
     if (aclChain.size() < 1) {
       throw new IllegalArgumentException(
           "aclChain must contain at least one ACL");
@@ -180,17 +187,25 @@ public class Acl {
             + "inheritFrom");
       }
     }
-    boolean seenAcls = false;
-    for (Acl acl : aclChain) {
-      seenAcls = acl.getPermitUsers().size() != 0
-          || acl.getPermitGroups().size() != 0 || acl.getDenyUsers().size() != 0
-          || acl.getDenyGroups().size() != 0;
-      if (seenAcls) {
-        break;
+
+    // Check for broken chain constructions. These don't throw an exception to
+    // 1) match the GSA's identical handling of these situations and 2) because
+    // we don't want to throw an exception if the caller can't easily prevent
+    // it from ever occuring.
+    if (aclChain.size() == 1) {
+      Acl acl = aclChain.get(0);
+      if (acl.equals(EMPTY)) {
+        log.log(Level.FINE, "Chain only has one ACL and it is empty. This "
+            + "implies 'no ACLs.'");
+        return AuthzStatus.INDETERMINATE;
       }
     }
-    if (!seenAcls) {
-      return AuthzStatus.INDETERMINATE;
+    for (int i = 0; i < aclChain.size() - 1; i++) {
+      if (aclChain.get(i).getInheritanceType() == InheritanceType.LEAF_NODE) {
+        log.log(Level.WARNING, "Only the last ACL in a chain can have the "
+            + "inheritance type LEAF");
+        return AuthzStatus.INDETERMINATE;
+      }
     }
     AuthzStatus result = isAuthorizedRecurse(userIdentifier, groups, aclChain);
     return (result == AuthzStatus.INDETERMINATE) ? AuthzStatus.DENY : result;
@@ -244,7 +259,7 @@ public class Acl {
       List<Acl> chain = createChain(docId, acls);
       AuthzStatus result;
       if (chain == null) {
-        // There was a cycle.
+        // There was a cycle or other problem generating the chain.
         result = AuthzStatus.INDETERMINATE;
       } else {
         result = isAuthorized(userIdentifier, groups, chain);
@@ -323,10 +338,16 @@ public class Acl {
     while (cur != null) {
       Acl acl = acls.get(cur);
       if (acl == null) {
-        acl = EMPTY;
+        if (chain.isEmpty()) {
+          log.log(Level.FINE, "Document does not seem to use ACLs: {0}", cur);
+        } else {
+          log.log(Level.WARNING, "Missing ACLs for document ''{0}'' inherited "
+              + "from another document", cur);
+        }
+        return null;
       }
       if (used.contains(acl)) {
-        log.log(Level.WARNING, "Detected ACL cycle");
+        log.log(Level.WARNING, "Detected ACL cycle at ''{0}''", cur);
         return null;
       }
       used.add(acl);
