@@ -193,12 +193,12 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecurityFromGsa() throws Exception {
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
-        new String[] {"127.0.0.3", " "}, null, sessionManager, null, 0, false,
+        new String[] {remoteIp, " "}, null, sessionManager, null, 0, false,
         false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -207,11 +207,11 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecurityFromGsaAutoAddWhitelist() throws Exception {
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "127.0.0.3",
+        new PrivateMockAdaptor(), remoteIp,
         new String[0], null, sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -268,11 +268,11 @@ public class DocumentHandlerTest {
         super.getDocContent(request, response);
       }
     };
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[] {"127.0.0.3"}, null, sessionManager, transform, 100,
+        new String[] {remoteIp}, null, sessionManager, transform, 100,
         false, false);
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -309,11 +309,11 @@ public class DocumentHandlerTest {
         os.write(golden, golden.length - 1, 1);
       }
     };
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, false,
+        new String[] {remoteIp}, null, sessionManager, transform, 3, false,
         false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -339,11 +339,11 @@ public class DocumentHandlerTest {
       }
     };
     CheckFailAdaptor mockAdaptor = new CheckFailAdaptor();
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler("localhost",
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[] {"127.0.0.3"}, null, sessionManager, transform, 3, true,
+        new String[] {remoteIp}, null, sessionManager, transform, 3, true,
         false);
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
@@ -580,11 +580,11 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    // 127.0.0.3 is the address hard-coded in MockHttpExchange
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        adaptor, "localhost", new String[] {"127.0.0.3"}, null,
+        adaptor, "localhost", new String[] {remoteIp}, null,
         sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
