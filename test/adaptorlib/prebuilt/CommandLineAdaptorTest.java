@@ -73,7 +73,7 @@ public class CommandLineAdaptorTest {
     private static final Map<String, String> ID_TO_MIME_TYPE;
     private static final Map<String, Date> ID_TO_LAST_MODIFIED;
     private static final Map<String, Date> ID_TO_LAST_CRAWLED;
-    private static final Map<String, Metadata> ID_TO_METADATA;
+    private static final Map<String, Map<String, String>> ID_TO_METADATA;
 
     static {
       Map<String, String> idToContent = new HashMap<String, String>();
@@ -99,20 +99,21 @@ public class CommandLineAdaptorTest {
       idToLastCrawled.put("1003", new Date(5000));
       ID_TO_LAST_CRAWLED = Collections.unmodifiableMap(idToLastCrawled);
 
-      Map<String, Metadata> idToMetadata = new HashMap<String, Metadata>();
-      idToMetadata.put("1002", new Metadata.Builder()
-          .add(MetaItem.raw("metaname-1002a", "metavalue-1002a"))
-          .add(MetaItem.raw("metaname-1002b", "metavalue-1002b"))
-          .build());
-      idToMetadata.put("1003", new Metadata.Builder()
-          .add(MetaItem.raw("metaname-1003", "metavalue-1003"))
-          .build());
+      Map<String, String> id1002Metadata = new HashMap<String, String>();
+      id1002Metadata.put("metaname-1002a", "metavalue-1002a");
+      id1002Metadata.put("metaname-1002b", "metavalue-1002b");
+
+      Map<String, Map<String, String>> idToMetadata
+          = new HashMap<String, Map<String, String>>();
+      idToMetadata.put("1002", id1002Metadata);
+      idToMetadata.put("1003",
+          Collections.singletonMap("metaname-1003", "metavalue-1003"));
       ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
     }
 
     private String docId;
     private String content;
-    private Metadata metadata;
+    private Map<String, String> metadata;
     private Date lastModified;
     private Date lastCrawled;
     private String mimeType;
@@ -144,8 +145,8 @@ public class CommandLineAdaptorTest {
         result.append("mime-type=").append(mimeType).append("\n");
       }
       if (metadata != null) {
-        for (MetaItem item : metadata) {
-          result.append("meta-name=").append(item.getName()).append("\n");
+        for (Map.Entry<String, String> item : metadata.entrySet()) {
+          result.append("meta-name=").append(item.getKey()).append("\n");
           result.append("meta-value=").append(item.getValue()).append("\n");
         }
       }
@@ -201,7 +202,7 @@ public class CommandLineAdaptorTest {
   private static class ContentsResponseTestMock implements Response {
     private OutputStream os;
     private String contentType;
-    private Metadata metadata;
+    private Map<String, String> metadata;
     private Acl acl;
     private boolean notModified;
     private boolean notFound;
@@ -232,8 +233,9 @@ public class CommandLineAdaptorTest {
     }
 
     @Override
-    public void setMetadata(Metadata m) {
-      this.metadata = m;
+    public void setMetadata(Map<String, String> m) {
+      this.metadata
+          = Collections.unmodifiableMap(new HashMap<String, String>(m));
     }
 
     @Override
@@ -245,7 +247,7 @@ public class CommandLineAdaptorTest {
       return contentType;
     }
 
-    public Metadata getMetadata() {
+    public Map<String, String> getMetadata() {
       return metadata;
     }
 

@@ -15,6 +15,7 @@
 package adaptorlib;
 
 import java.io.*;
+import java.util.Map;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent} for performing the
@@ -71,8 +72,11 @@ public interface Response {
 
   /**
    * Provide metadata that applies to the document.
+   *
+   * @throws IllegalArgumentException if metadata contains {@code null} or empty
+   *     keys or {@code null} values
    */
-  public void setMetadata(Metadata m);
+  public void setMetadata(Map<String, String> metadata);
 
   /**
    * Provide the document's ACLs for early-binding security on the GSA.

@@ -16,10 +16,7 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.Collection;
-import java.util.Date;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Wraps all methods of the provided Adaptor to allow modification of behavior
@@ -121,7 +118,7 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setMetadata(Metadata m) {
+    public void setMetadata(Map<String, String> m) {
       response.setMetadata(m);
     }
 
@@ -167,7 +164,7 @@ abstract class WrapperAdaptor implements Adaptor {
   public static class GetContentsResponse implements Response {
     private OutputStream os;
     private String contentType;
-    private Metadata metadata;
+    private Map<String, String> metadata;
     private Acl acl;
     private boolean notFound;
 
@@ -196,8 +193,9 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setMetadata(Metadata m) {
-      this.metadata = m;
+    public void setMetadata(Map<String, String> m) {
+      this.metadata = Collections.unmodifiableMap(
+          new HashMap<String, String>(m));
     }
 
     @Override
@@ -209,7 +207,7 @@ abstract class WrapperAdaptor implements Adaptor {
       return contentType;
     }
 
-    public Metadata getMetadata() {
+    public Map<String, String> getMetadata() {
       return metadata;
     }
 

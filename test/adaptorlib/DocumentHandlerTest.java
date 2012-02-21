@@ -263,8 +263,7 @@ public class DocumentHandlerTest {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException {
-        response.setMetadata(new Metadata.Builder()
-            .add(MetaItem.raw(key, "testing value")).build());
+        response.setMetadata(Collections.singletonMap(key, "testing value"));
         super.getDocContent(request, response);
       }
     };
@@ -500,7 +499,7 @@ public class DocumentHandlerTest {
           public void getDocContent(Request request, Response response)
               throws IOException {
             response.getOutputStream();
-            response.setMetadata(Metadata.EMPTY);
+            response.setMetadata(Collections.<String, String>emptyMap());
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -538,7 +537,7 @@ public class DocumentHandlerTest {
               return;
             }
             response.setContentType("text/plain");
-            response.setMetadata(Metadata.EMPTY);
+            response.setMetadata(Collections.<String, String>emptyMap());
             response.setAcl(Acl.EMPTY);
             response.getOutputStream();
             // It is free to get it multiple times
@@ -573,8 +572,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(new Metadata.Builder()
-                .add(MetaItem.raw("test", "ing")).build());
+            response.setMetadata(Collections.singletonMap("test", "ing"));
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
             response.getOutputStream();
@@ -599,8 +597,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(new Metadata.Builder()
-                .add(MetaItem.raw("test", "ing")).build());
+            response.setMetadata(Collections.singletonMap("test", "ing"));
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
             response.getOutputStream();
@@ -625,17 +622,18 @@ public class DocumentHandlerTest {
 
   @Test
   public void testFormMetadataHeader() {
-    String result = DocumentHandler.formMetadataHeader(new Metadata.Builder()
-        .add(MetaItem.raw("test", "ing"))
-        .add(MetaItem.raw("another", "item"))
-        .add(MetaItem.raw("equals=", "=="))
-        .build());
+    Map<String, String> metadata = new HashMap<String, String>();
+    metadata.put("test", "ing");
+    metadata.put("another", "item");
+    metadata.put("equals=", "==");
+    String result = DocumentHandler.formMetadataHeader(metadata);
     assertEquals("another=item,equals%3D=%3D%3D,test=ing", result);
   }
 
   @Test
   public void testFormMetadataHeaderEmpty() {
-    String header = DocumentHandler.formMetadataHeader(Metadata.EMPTY);
+    String header = DocumentHandler.formMetadataHeader(
+        Collections.<String, String>emptyMap());
     assertEquals("", header);
   }
 

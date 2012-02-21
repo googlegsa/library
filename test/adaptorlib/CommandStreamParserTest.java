@@ -16,7 +16,6 @@ package adaptorlib;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
@@ -29,8 +28,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Map;
-import java.util.Set;
-
 
 /**
  * Tests for {@link CommandStreamParser}.
@@ -163,7 +160,7 @@ public class CommandStreamParserTest {
     assertEquals("123", info.getDocId().getUniqueId());
     assertTrue(info.isUpToDate());
     assertArrayEquals("2468".getBytes(), info.getContents());
-    Map<String, String> metadata = info.getMetadata().toMap();
+    Map<String, String> metadata = info.getMetadata();
     assertEquals(1, metadata.size());
     assertEquals("plexi", metadata.get("project"));
   }

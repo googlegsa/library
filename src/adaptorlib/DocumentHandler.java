@@ -271,10 +271,10 @@ class DocumentHandler extends AbstractHandler {
   /**
    * Format the GSA-specific metadata header value for crawl-time metadata.
    */
-  static String formMetadataHeader(Metadata metadata) {
+  static String formMetadataHeader(Map<String, String> metadata) {
     StringBuilder sb = new StringBuilder();
-    for (MetaItem item : metadata) {
-      percentEncodeMapEntryPair(sb, item.getName(), item.getValue());
+    for (Map.Entry<String, String> item : metadata.entrySet()) {
+      percentEncodeMapEntryPair(sb, item.getKey(), item.getValue());
     }
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
   }
@@ -421,7 +421,7 @@ class DocumentHandler extends AbstractHandler {
     private OutputStream os;
     private CountingOutputStream countingOs;
     private String contentType;
-    private Metadata metadata = Metadata.EMPTY;
+    private Map<String, String> metadata = Collections.emptyMap();
     private Acl acl = Acl.EMPTY;
     private final DocId docId;
 
@@ -492,11 +492,17 @@ class DocumentHandler extends AbstractHandler {
     }
 
     @Override
-    public void setMetadata(Metadata metadata) {
+    public void setMetadata(Map<String, String> metadata) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
       }
-      this.metadata = metadata;
+      setMetadataInternal(metadata);
+    }
+
+    private void setMetadataInternal(Map<String, String> metadata) {
+      // TODO(ejona): check for valid keys and values.
+      this.metadata = Collections.unmodifiableMap(
+          new TreeMap<String, String>(metadata));
     }
 
     @Override
@@ -579,20 +585,16 @@ class DocumentHandler extends AbstractHandler {
 
     private ByteArrayOutputStream transform(byte[] content) throws IOException {
       ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-      Map<String, String> metadataMap = metadata.toMap();
+      Map<String, String> metadataCopy = new HashMap<String, String>(metadata);
       Map<String, String> params = new HashMap<String, String>();
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
       try {
-        transform.transform(content, contentOut, metadataMap, params);
+        transform.transform(content, contentOut, metadataCopy, params);
       } catch (TransformException e) {
         throw new IOException(e);
       }
-      Metadata.Builder builder = new Metadata.Builder();
-      for (Map.Entry<String, String> me : metadataMap.entrySet()) {
-        builder.add(MetaItem.raw(me.getKey(), me.getValue()));
-      }
-      metadata = builder.build();
+      setMetadataInternal(metadataCopy);
       contentType = params.get("Content-Type");
       return contentOut;
     }

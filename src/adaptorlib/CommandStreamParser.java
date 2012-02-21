@@ -227,13 +227,13 @@ public class CommandStreamParser {
     private boolean notFound;
     private DocId docId;
     private String mimeType;
-    private Metadata metadata;
+    private Map<String, String> metadata;
     private byte[] contents;
 
-    RetrieverInfo(DocId docId, Metadata metadata, byte[] contents, boolean upToDate,
+    RetrieverInfo(DocId docId, Map<String, String> metadata, byte[] contents, boolean upToDate,
         String mimeType, boolean notFound) {
       this.docId = docId;
-      this.metadata = metadata;
+      this.metadata = Collections.unmodifiableMap(metadata);
       this.contents = contents;
       this.upToDate = upToDate;
       this.mimeType = mimeType;
@@ -256,7 +256,7 @@ public class CommandStreamParser {
       return docId;
     }
 
-    public Metadata getMetadata() {
+    public Map<String, String> getMetadata() {
       return metadata;
     }
 
@@ -363,7 +363,7 @@ public class CommandStreamParser {
 
   public RetrieverInfo readFromRetriever() throws IOException {
 
-    Metadata.Builder metadata = new Metadata.Builder();
+    Map<String, String> metadata = new HashMap<String, String>();
     byte[] content = null;
     boolean upToDate = false;
     boolean notFound = false;
@@ -392,7 +392,7 @@ public class CommandStreamParser {
           if (command == null || command.getOperation() != Operation.META_VALUE) {
             throw new IOException("meta-name must be immediately followed by meta-value");
           }
-          metadata.add(MetaItem.raw(metaName, command.getArgument()));
+          metadata.put(metaName, command.getArgument());
           break;
         case UP_TO_DATE:
           upToDate = true;
@@ -410,8 +410,7 @@ public class CommandStreamParser {
       command = readCommand();
     }
 
-    return new RetrieverInfo(new DocId(docId), metadata.build(),
-        content, upToDate, mimeType, notFound);
+    return new RetrieverInfo(new DocId(docId), metadata, content, upToDate, mimeType, notFound);
   }
 
   /**
