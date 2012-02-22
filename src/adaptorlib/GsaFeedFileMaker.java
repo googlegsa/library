@@ -78,16 +78,23 @@ class GsaFeedFileMaker {
     if (null != docRecord.getResultLink()) {
       record.setAttribute("displayurl", "" + docRecord.getResultLink());
     }
-    record.setAttribute("action", docRecord.isToBeDeleted() ? "delete" : "add");
+    if (docRecord.isToBeDeleted()) {
+      record.setAttribute("action", "delete");
+    }
     record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
     if (null != docRecord.getLastModified()) {
       String dateStr = rfc822Format.get().format(docRecord.getLastModified());
       record.setAttribute("last-modified", dateStr);
     }
-    record.setAttribute("lock", "" + docRecord.isToBeLocked());
-    record.setAttribute("crawl-immediately",
-        "" + docRecord.isToBeCrawledImmediately());
-    record.setAttribute("crawl-once", "" + docRecord.isToBeCrawledOnce());
+    if (docRecord.isToBeLocked()) {
+      record.setAttribute("lock", "true");
+    }
+    if (docRecord.isToBeCrawledImmediately()) {
+      record.setAttribute("crawl-immediately", "true");
+    }
+    if (docRecord.isToBeCrawledOnce()) {
+      record.setAttribute("crawl-once", "true");
+    }
     // TODO(pjo): record.setAttribute(no-follow,);
   }
 
