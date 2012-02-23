@@ -328,6 +328,10 @@
     </java>
   </target>
 
+  <target name="coverage"
+    depends="instrument,test,coverage-report,clean-instrument"
+    description="Run instrumented tests and generate coverage report"/>
+
   <target name="test" depends="build" description="Run JUnit tests">
     <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true">
       <sysproperty key="net.sourceforge.cobertura.datafile"
