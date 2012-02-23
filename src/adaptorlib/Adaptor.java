@@ -17,7 +17,6 @@ package adaptorlib;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * Interface for user-specific implementation details of an Adaptor.
@@ -88,15 +87,14 @@ public interface Adaptor {
    * document doesn't exist. Highly sensitive repositories may return {@code
    * DENY}.
    *
-   * @param userIdentifier User to authorize, or {@code null} for anonymous
+   * @param userIdentity user to authorize, or {@code null} for anonymous
    *        users
-   * @param groups never-{@code null} set of groups the user belongs to
    * @param ids Collection of {@code DocId}s that need to be checked
    * @return an {@code AuthzStatus} for each {@code DocId} provided in {@code
    *         ids}
    */
-  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-      Set<String> groups, Collection<DocId> ids) throws IOException;
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
+      Collection<DocId> ids) throws IOException;
 
   /**
    * Provides the opportunity for the Adaptor to create new configuration values

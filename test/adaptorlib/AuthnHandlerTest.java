@@ -134,7 +134,8 @@ public class AuthnHandlerTest {
     Session session = sessionManager.getSession(ex, true);
     AuthnState authn = new AuthnState();
     session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    authn.authenticated("test", Collections.<String>emptySet(), Long.MAX_VALUE);
+    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    authn.authenticated(identity, Long.MAX_VALUE);
     handler.handle(ex);
     // Still should cause them to go through authn
     assertEquals(307, ex.getResponseCode());

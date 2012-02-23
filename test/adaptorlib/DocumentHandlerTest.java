@@ -146,7 +146,8 @@ public class DocumentHandlerTest {
     Session session = sessionManager.getSession(ex, true);
     AuthnState authn = new AuthnState();
     session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    authn.authenticated("test", Collections.<String>emptySet(), Long.MAX_VALUE);
+    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    authn.authenticated(identity, Long.MAX_VALUE);
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new UserPrivateMockAdaptor());
     handler.handle(ex);
@@ -157,9 +158,8 @@ public class DocumentHandlerTest {
   public void testSecurityNotFound() throws Exception {
     Adaptor mockAdaptor = new MockAdaptor() {
       @Override
-      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                      Set<String> groups,
-                                                      Collection<DocId> ids) {
+      public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+          Collection<DocId> ids) {
         Map<DocId, AuthzStatus> result
             = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
         for (DocId id : ids) {
@@ -184,7 +184,8 @@ public class DocumentHandlerTest {
     Session session = sessionManager.getSession(ex, true);
     AuthnState authn = new AuthnState();
     session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    authn.authenticated("test", Collections.<String>emptySet(), Long.MAX_VALUE);
+    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    authn.authenticated(identity, Long.MAX_VALUE);
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new PrivateMockAdaptor());
     handler.handle(ex);
@@ -353,8 +354,8 @@ public class DocumentHandlerTest {
   public void testNullAuthzResponse() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
-          public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-              Set<String> groups, Collection<DocId> ids) {
+          public Map<DocId, AuthzStatus> isUserAuthorized(
+              AuthnIdentity identity, Collection<DocId> ids) {
             return null;
           }
         };
@@ -677,14 +678,13 @@ public class DocumentHandlerTest {
 
   private static class UserPrivateMockAdaptor extends MockAdaptor {
       @Override
-      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                      Set<String> groups,
-                                                      Collection<DocId> ids) {
+      public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+          Collection<DocId> ids) {
         Map<DocId, AuthzStatus> result
             = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
         for (DocId id : ids) {
           result.put(id,
-              userIdentifier == null ? AuthzStatus.DENY : AuthzStatus.PERMIT);
+              identity == null ? AuthzStatus.DENY : AuthzStatus.PERMIT);
         }
         return Collections.unmodifiableMap(result);
       }

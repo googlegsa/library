@@ -22,9 +22,8 @@ import java.util.*;
  */
 class PrivateMockAdaptor extends MockAdaptor {
   @Override
-  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                  Set<String> groups,
-                                                  Collection<DocId> ids) {
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+      Collection<DocId> ids) {
     Map<DocId, AuthzStatus> result
         = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
     for (DocId id : ids) {

@@ -17,8 +17,6 @@ package adaptorlib;
 import com.google.enterprise.secmgr.modules.SamlClient;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.Set;
 
 /**
  * Current state of an authentication attempt. It can represent a pending
@@ -31,10 +29,8 @@ class AuthnState {
   private SamlClient client;
   /** Original URL that was accessed that caused this authn attempt. */
   private URI originalUri;
-  /** Successfully authned principal for the user. */
-  private String principal;
-  /** Successfully authned groups for the user. */
-  private Set<String> groups;
+  /** Successfully authned identity for the user. */
+  private AuthnIdentity identity;
   /** Time in milliseconds that authentication information expires */
   private long expirationTimeMillis;
 
@@ -53,14 +49,12 @@ class AuthnState {
     originalUri = null;
   }
 
-  public void authenticated(String principal, Set<String> groups,
-                            long expirationTimeMillis) {
+  public void authenticated(AuthnIdentity identity, long expirationTimeMillis) {
     clearAttempt();
-    this.principal = principal;
-    this.groups = Collections.unmodifiableSet(groups);
+    this.identity = identity;
     this.expirationTimeMillis = expirationTimeMillis;
   }
-  
+
   public boolean isAuthenticated() {
     if (expirationTimeMillis == 0) {
       return false;
@@ -68,8 +62,7 @@ class AuthnState {
 
     if (System.currentTimeMillis() > expirationTimeMillis) {
       expirationTimeMillis = 0;
-      principal = null;
-      groups = null;
+      identity = null;
       return false;
     }
 
@@ -84,11 +77,7 @@ class AuthnState {
     return originalUri;
   }
 
-  public String getPrincipal() {
-    return principal;
-  }
-
-  public Set<String> getGroups() {
-    return groups;
+  public AuthnIdentity getIdentity() {
+    return identity;
   }
 }

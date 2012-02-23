@@ -14,6 +14,7 @@
 
 package adaptorlib;
 
+import com.google.enterprise.secmgr.authncontroller.ExportedState;
 import com.google.enterprise.secmgr.modules.SamlClient;
 import com.google.enterprise.secmgr.servlets.ResponseParser;
 
@@ -28,7 +29,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.Date;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -140,13 +140,24 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
       return false;
     }
     String subjectName = parser.getSubject();
-    Set<String> groups = new HashSet<String>(parser.getGroups());
+    Set<String> groups = null;
+    String password = null;
+
+    ExportedState state = parser.getExportedState();
+    if (state != null) {
+      // Groups is also available via parser.getGroups, but this handles the
+      // state == null case more appropriately for our usage.
+      groups = state.getPviCredentials().getGroups();
+      password = state.getPviCredentials().getPassword();
+    }
     DateTime expirationDateTime = parser.getExpirationTime();
     long expirationTime = (expirationDateTime == null)
         ? Long.MAX_VALUE : expirationDateTime.getMillis();
     log.log(Level.INFO, "SAML subject {0} verified {1}",
             new Object[] {subjectName, new Date(expirationTime)});
-    authnState.authenticated(subjectName, groups, expirationTime);
+    AuthnIdentity identity = new AuthnIdentityImpl.Builder(subjectName)
+        .setGroups(groups).setPassword(password).build();
+    authnState.authenticated(identity, expirationTime);
     return true;
   }
 }

@@ -224,21 +224,19 @@ class DocumentHandler extends AbstractHandler {
     } else {
       journal.recordNonGsaContentRequest(docId);
       // Default to anonymous.
-      String principal = null;
-      Set<String> groups = Collections.emptySet();
+      AuthnIdentity identity = null;
 
       Session session = sessionManager.getSession(ex, false);
       if (session != null) {
         AuthnState authnState
             = (AuthnState) session.getAttribute(AuthnState.SESSION_ATTR_NAME);
         if (authnState != null && authnState.isAuthenticated()) {
-          principal = authnState.getPrincipal();
-          groups = authnState.getGroups();
+          identity = authnState.getIdentity();
         }
       }
 
-      Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(principal,
-          groups, Collections.singletonList(docId));
+      Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(identity,
+          Collections.singletonList(docId));
 
       AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
       if (status == null) {
@@ -253,7 +251,7 @@ class DocumentHandler extends AbstractHandler {
                       Translation.HTTP_NOT_FOUND);
         return false;
       } else if (status == AuthzStatus.DENY) {
-        if (principal == null && authnHandler != null) {
+        if (identity == null && authnHandler != null) {
           // User was anonymous and document is not public, so try to authn
           // user.
           authnHandler.handle(ex);

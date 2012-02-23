@@ -308,13 +308,13 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
   }
 
   @Override
-  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-      Set<String> groups, Collection<DocId> ids) throws IOException {
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
+      Collection<DocId> ids) throws IOException {
     List<DocId> unescapedIds = new ArrayList<DocId>(ids.size());
     for (DocId id : ids) {
       unescapedIds.add(getDocIdParts(id)[0]);
     }
-    return super.isUserAuthorized(userIdentifier, groups,
+    return super.isUserAuthorized(userIdentity,
                                   Collections.unmodifiableList(unescapedIds));
   }
 

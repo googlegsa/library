@@ -184,12 +184,13 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     }
 
     // Ask the Adaptor if the user is allowed.
+    // TODO(ejona): figure out how to get groups and password.
+    AuthnIdentity identity = new AuthnIdentityImpl.Builder(userIdentifier)
+        .build();
     docIds = Collections.unmodifiableMap(docIds);
     Map<DocId, AuthzStatus> statuses;
     try {
-      // TODO(ejona): figure out how to get groups
-      statuses = adaptor.isUserAuthorized(userIdentifier,
-          Collections.<String>emptySet(), docIds.values());
+      statuses = adaptor.isUserAuthorized(identity, docIds.values());
     } catch (Exception e) {
       log.log(Level.WARNING, "Exception while satisfying Authn query", e);
       statuses = null;

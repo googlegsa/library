@@ -14,6 +14,7 @@
 
 package adaptorlib;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -33,9 +34,8 @@ public abstract class AbstractAdaptor implements Adaptor {
    * DocId}s in an unmodifiable map.
    */
   @Override
-  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                  Set<String> groups,
-                                                  Collection<DocId> ids) {
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
+      Collection<DocId> ids) throws IOException {
     Map<DocId, AuthzStatus> result
         = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
     for (DocId id : ids) {

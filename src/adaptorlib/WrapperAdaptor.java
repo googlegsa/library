@@ -56,9 +56,9 @@ abstract class WrapperAdaptor implements Adaptor {
   }
 
   @Override
-  public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-      Set<String> groups, Collection<DocId> ids) throws IOException {
-    return adaptor.isUserAuthorized(userIdentifier, groups, ids);
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
+      Collection<DocId> ids) throws IOException {
+    return adaptor.isUserAuthorized(userIdentity, ids);
   }
 
   /**

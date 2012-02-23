@@ -116,9 +116,8 @@ public class SamlBatchAuthzHandlerTest {
   public void testBrokenAdaptor() throws Exception {
     Adaptor adaptor = new MockAdaptor() {
       @Override
-      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                      Set<String> groups,
-                                                      Collection<DocId> ids) {
+      public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+          Collection<DocId> ids) {
         return null;
       }
     };
@@ -150,9 +149,8 @@ public class SamlBatchAuthzHandlerTest {
   public void testIndeterminateAdaptor() throws Exception {
     Adaptor adaptor = new MockAdaptor() {
       @Override
-      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                      Set<String> groups,
-                                                      Collection<DocId> ids) {
+      public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+          Collection<DocId> ids) {
         assertEquals(1, ids.size());
         DocId docId = (DocId) ids.toArray()[0];
         return Collections.singletonMap(docId, AuthzStatus.INDETERMINATE);
@@ -186,9 +184,8 @@ public class SamlBatchAuthzHandlerTest {
   public void testErroringAdaptor() throws Exception {
     Adaptor adaptor = new MockAdaptor() {
       @Override
-      public Map<DocId, AuthzStatus> isUserAuthorized(String userIdentifier,
-                                                      Set<String> groups,
-                                                      Collection<DocId> ids) {
+      public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+          Collection<DocId> ids) {
         throw new RuntimeException("something happened");
       }
     };

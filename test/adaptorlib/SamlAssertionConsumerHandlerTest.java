@@ -27,7 +27,8 @@ import org.opensaml.common.xml.SAMLConstants;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Test cases for {@link SamlAssertionConsumerHandler}.
@@ -152,6 +153,178 @@ public class SamlAssertionConsumerHandlerTest {
     handler.handle(ex);
     assertEquals(303, ex.getResponseCode());
     assertTrue(isAuthned(sessionManager.getSession(ex)));
+    AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
+        .getAttribute(AuthnState.SESSION_ATTR_NAME);
+    AuthnIdentity identity = authnState.getIdentity();
+    assertEquals("CN=Polly Hedra", identity.getUsername());
+    assertNull(identity.getGroups());
+    assertNull(identity.getPassword());
+  }
+
+  @Test
+  public void testNormalWithExtension() throws Exception {
+    SamlHttpClient httpClient = new SamlHttpClient() {
+      @Override
+      protected void handleExchange(ClientExchange ex) {
+        String body = new String(ex.getRequestBody(), charset);
+        body = massageMessage(body);
+        assertEquals(GOLDEN_ARTIFACT_RESOLVE_REQUEST, body);
+
+        // Generate valid response.
+        String issuer = metadata.getPeerEntity().getEntityID();
+        String recipient = metadata.getLocalEntity()
+            .getSPSSODescriptor(SAMLConstants.SAML20P_NS)
+            .getAssertionConsumerServices().get(0).getLocation();
+        String audience = metadata.getLocalEntity().getEntityID();
+        String response
+            = "<SOAP-ENV:Envelope "
+            +   "xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+            +   "<SOAP-ENV:Body>"
+            +     "<samlp:ArtifactResponse "
+            +       "xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" "
+            +       "xmlns=\"urn:oasis:names:tc:SAML:2.0:assertion\" "
+            +       "ID=\"someid1\" Version=\"2.0\" "
+            +       "InResponseTo=\"" + samlClient.getRequestId() + "\" "
+            +       "IssueInstant=\"2010-01-01T01:01:01Z\">"
+            +       "<Issuer>" + issuer + "</Issuer>"
+            +       "<samlp:Status>"
+            +         "<samlp:StatusCode "
+            +           "Value=\"urn:oasis:names:tc:SAML:2.0:status:Success\"/>"
+            +       "</samlp:Status>"
+            +       "<samlp:Response "
+            +         "ID=\"someid2\" "
+            +         "Version=\"2.0\" "
+            +         "IssueInstant=\"2010-01-01T01:01:01Z\">"
+            +         "<samlp:Status>"
+            +           "<samlp:StatusCode "
+            +             "Value=\"urn:oasis:names:tc:SAML:2.0:status:Success\"/>"
+            +         "</samlp:Status>"
+            +         "<Assertion "
+            +           "Version=\"2.0\" "
+            +           "ID=\"someid3\" "
+            +           "IssueInstant=\"2010-01-01T01:01:01Z\">"
+            +           "<Issuer>" + issuer + "</Issuer>"
+            +           "<Subject>"
+            +             "<NameID>CN=Polly Hedra</NameID>"
+            +             "<SubjectConfirmation "
+            +               "Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">"
+            +               "<SubjectConfirmationData "
+            +                 "InResponseTo=\"" + samlClient.getRequestId() + "\" "
+            +                 "Recipient=\"" + recipient + "\" "
+            +                 "NotOnOrAfter=\"2030-01-01T01:01:01Z\"/>"
+            +             "</SubjectConfirmation>"
+            +           "</Subject>"
+            +           "<Conditions "
+            +             "NotBefore=\"2010-01-01T01:01:01Z\">"
+            +             "<AudienceRestriction>"
+            +               "<Audience>" + audience + "</Audience>"
+            +             "</AudienceRestriction>"
+            +           "</Conditions>"
+            +           "<AuthnStatement "
+            +             "AuthnInstant=\"2010-01-01T01:01:01Z\">"
+            +             "<AuthnContext>"
+            +               "<AuthnContextClassRef>"
+            +                 "urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword"
+            +               "</AuthnContextClassRef>"
+            +             "</AuthnContext>"
+            +           "</AuthnStatement>"
+            +           "<AttributeStatement>"
+            +             "<Attribute Name=\"SecurityManagerState\">"
+            +               "<AttributeValue>"
+            + "{"
+            +   "\"version\": 1,"
+            +   "\"timeStamp\": 1330042321589,"
+            +   "\"sessionState\": {"
+            +     "\"instructions\": ["
+            +       "{"
+            +         "\"operation\": \"ADD_CREDENTIAL\","
+            +         "\"authority\": "
+            + "\"http://google.com/enterprise/gsa/security-manager/Default\","
+            +         "\"operand\": {"
+            +           "\"name\": \"CN=Polly Hedra\","
+            +           "\"typeName\": \"AuthnPrincipal\""
+            +         "}"
+            +       "},"
+            +       "{"
+            +         "\"operation\": \"ADD_CREDENTIAL\","
+            +         "\"authority\": "
+            + "\"http://google.com/enterprise/gsa/security-manager/Default\","
+            +         "\"operand\": {"
+            +           "\"password\": \"p0ck3t\","
+            +           "\"typeName\": \"CredPassword\""
+            +         "}"
+            +       "},"
+            +       "{"
+            +         "\"operation\": \"ADD_VERIFICATION\","
+            +         "\"authority\": "
+            + "\"http://google.com/enterprise/gsa/security-manager/adaptor\","
+            +         "\"operand\": {"
+            +           "\"status\": \"VERIFIED\","
+            +           "\"expirationTime\": 1330043521581,"
+            +           "\"credentials\": ["
+            +             "{"
+            +               "\"name\": \"CN=Polly Hedra\","
+            +               "\"typeName\": \"AuthnPrincipal\""
+            +             "},"
+            +             "{"
+            +               "\"password\": \"p0ck3t\","
+            +               "\"typeName\": \"CredPassword\""
+            +             "}"
+            +           "]"
+            +         "}"
+            +       "}"
+            +     "]"
+            +   "},"
+            +   "\"pviCredentials\": {"
+            +     "\"username\": \"CN=Polly Hedra\","
+            +     "\"password\": \"p0ck3t\","
+            +     "\"groups\": [\"group1\", \"pollysGroup\"]"
+            +   "},"
+            +   "\"basicCredentials\": {"
+            +     "\"username\": \"CN=Polly Hedra\","
+            +     "\"password\": \"p0ck3t\","
+            +     "\"groups\": [\"group1\", \"pollysGroup\"]"
+            +   "},"
+            +   "\"verifiedCredentials\": ["
+            +     "{"
+            +       "\"username\": \"CN=Polly Hedra\","
+            +       "\"password\": \"p0ck3t\","
+            +       "\"groups\": [\"group1\", \"pollysGroup\"]"
+            +     "}"
+            +   "],"
+            +   "\"connectorCredentials\": [],"
+            +   "\"cookies\": []"
+            + "}"
+            +               "</AttributeValue>"
+            +             "</Attribute>"
+            +           "</AttributeStatement>"
+            +         "</Assertion>"
+            +       "</samlp:Response>"
+            +     "</samlp:ArtifactResponse>"
+            +   "</SOAP-ENV:Body>"
+            + "</SOAP-ENV:Envelope>";
+        ex.setStatusCode(200);
+        ex.setResponseStream(response.getBytes(charset));
+      }
+    };
+    SamlClient samlClient = createSamlClient(httpClient);
+    httpClient.setSamlClient(samlClient);
+    issueRequest(ex, initialEx, samlClient);
+
+    handler.handle(ex);
+    assertEquals(303, ex.getResponseCode());
+    assertTrue(isAuthned(sessionManager.getSession(ex)));
+    AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
+        .getAttribute(AuthnState.SESSION_ATTR_NAME);
+    AuthnIdentity identity = authnState.getIdentity();
+    assertEquals("CN=Polly Hedra", identity.getUsername());
+    // Make sure that the information from the extensions was parsed out and
+    // made available for later use.
+    Set<String> groups = new HashSet<String>();
+    groups.add("group1");
+    groups.add("pollysGroup");
+    assertEquals(groups, identity.getGroups());
+    assertEquals("p0ck3t", identity.getPassword());
   }
 
   @Test
@@ -423,7 +596,8 @@ public class SamlAssertionConsumerHandlerTest {
     Session session = sessionManager.getSession(ex, false);
     AuthnState authn = (AuthnState) session
         .getAttribute(AuthnState.SESSION_ATTR_NAME);
-    authn.authenticated("test", Collections.<String>emptySet(), Long.MAX_VALUE);
+    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    authn.authenticated(identity, Long.MAX_VALUE);
 
     handler.handle(ex);
     assertEquals(409, ex.getResponseCode());
