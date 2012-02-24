@@ -16,6 +16,8 @@ package adaptorlib.prebuilt;
 
 import adaptorlib.AbstractAdaptor;
 import adaptorlib.AdaptorContext;
+import adaptorlib.AuthnIdentity;
+import adaptorlib.AuthzStatus;
 import adaptorlib.CommandStreamParser;
 import adaptorlib.Config;
 import adaptorlib.DocId;
@@ -24,12 +26,11 @@ import adaptorlib.Request;
 import adaptorlib.Response;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -44,6 +45,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
   private Charset encoding = Charset.forName("UTF-8");
   private List<String> listerCommand;
   private List<String> retrieverCommand;
+  private List<String> authorizerCommand;
+  private String authzDelimiter;
 
   @Override
   public void initConfig(Config config) {
@@ -58,47 +61,41 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     config.overrideKey("adaptor.autoUnzip", "true");
   }
 
+
+  private List<String> readCommandLineConfig(AdaptorContext context, String prefix) {
+    Map<String, String> config = context.getConfig().getValuesWithPrefix(prefix);
+    String commandString = config.get("cmd");
+    List<String> command = new ArrayList<String>();
+    if (commandString != null) {
+      command.add(commandString);
+      for (int i = 1;; i++) {
+        String argument = config.get("arg" + i);
+        if (argument == null) {
+          break;
+        }
+        command.add(argument);
+      }
+    }
+    return command;
+  }
+
   @Override
   public void init(AdaptorContext context) throws Exception {
-    // Process lister configuration.
-    Map<String, String> listerConfig = context.getConfig().getValuesWithPrefix(
-        "commandline.lister.");
-    listerCommand = new ArrayList<String>();
 
-    String listerCommandString = listerConfig.get("cmd");
-    if (listerCommandString == null) {
-      throw new RuntimeException("commandline.lister.cmd configuration property"
-          + " must be set");
-    }
-    listerCommand.add(listerCommandString);
-
-    for (int i = 1;; i++) {
-      String argument = listerConfig.get("arg" + i);
-      if (argument == null) {
-        break;
-      }
-      listerCommand.add(argument);
+    listerCommand = readCommandLineConfig(context, "commandline.lister.");
+    if (listerCommand.size() == 0) {
+      throw new RuntimeException("commandline.lister.cmd configuration property must be set.");
     }
 
-    // Process retriever configuration.
-    Map<String, String> retrieverConfig = context.getConfig().getValuesWithPrefix(
-        "commandline.retriever.");
-    retrieverCommand = new ArrayList<String>();
-
-    String retrieverCommandString = retrieverConfig.get("cmd");
-    if (retrieverCommandString == null) {
-      throw new RuntimeException("commandline.retriever.cmd configuration property"
-          + " must be set");
+    retrieverCommand = readCommandLineConfig(context, "commandline.retriever.");
+    if (retrieverCommand.size() == 0) {
+      throw new RuntimeException("commandline.retriever.cmd configuration property must be set.");
     }
-    retrieverCommand.add(retrieverCommandString);
 
-    for (int i = 1;; i++) {
-      String value = retrieverConfig.get("arg" + i);
-      if (value == null) {
-        break;
-      }
-      retrieverCommand.add(value);
-    }
+    authorizerCommand = readCommandLineConfig(context, "commandline.authorizer.");
+
+    authzDelimiter = context.getConfig().getValue("commandline.authorizer.delimeter",
+         "\0");
   }
 
   public void setListerCommand(List<String> commandWithArgs) {
@@ -208,11 +205,103 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     }
   }
 
+  /**
+   * {@inheritDoc}
+   *
+   * <p>This implementation provides {@link adaptorlib.AuthzStatus#PERMIT} for all {@code
+   * DocId}s in an unmodifiable map.
+   */
+  @Override
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
+      Collection<DocId> ids) throws IOException {
+
+    if (authorizerCommand.size() == 0) {
+      return super.isUserAuthorized(userIdentity, ids);
+    } else {
+      StringBuilder stdinStringBuilder = new StringBuilder();
+
+      // Write out the user name
+      if (userIdentity.getUsername().contains(authzDelimiter)) {
+        throw new IllegalArgumentException("Error - Group '" + userIdentity.getUsername() +
+            "' contains the delimiter '" + authzDelimiter + "'");
+      }
+      stdinStringBuilder.append("GSA Adaptor Data Version 1 [" + authzDelimiter + "]"
+          + authzDelimiter);
+
+      stdinStringBuilder.append("username=").append(userIdentity.getUsername())
+          .append(authzDelimiter);
+
+      // Write out the user password
+      if (userIdentity.getPassword() != null) {
+        if (userIdentity.getUsername().contains(authzDelimiter)) {
+        throw new IllegalArgumentException("Error - Password contains the delimiter '"
+            + authzDelimiter + "'");
+      }
+      stdinStringBuilder.append("password=").append(userIdentity.getPassword())
+          .append(authzDelimiter);
+
+      // Write out the list of groups that this user belongs to
+      if (userIdentity.getGroups() != null)
+        for (String group : userIdentity.getGroups()) {
+          if (group != null && !group.isEmpty()) {
+            if (group.contains(authzDelimiter)) {
+              throw new IllegalArgumentException("Group cannot contain the delimiter: "
+                  + authzDelimiter);
+            }
+            stdinStringBuilder.append("group=").append(group).append(authzDelimiter);
+          }
+        }
+      }
+
+      // Write out the list of document ids that are to be checked
+      for (DocId id : ids) {
+        if (id != null && !id.getUniqueId().isEmpty()) {
+          if (id.getUniqueId().contains(authzDelimiter)) {
+            throw new IllegalArgumentException("Document ID cannot contain the delimiter: "
+                + authzDelimiter);
+          }
+          stdinStringBuilder.append("id=").append(id.getUniqueId()).append(authzDelimiter);
+        }
+      }
+      String stdin = stdinStringBuilder.toString();
+
+      int commandResult;
+      Command command = newAuthorizerCommand();
+
+      try {
+
+        String[] commandLine = new String[authorizerCommand.size()];
+        authorizerCommand.toArray(commandLine);
+
+        log.finest("Command: " + Arrays.asList(commandLine));
+        commandResult = command.exec(commandLine, stdin.getBytes("UTF-8"));
+      } catch (InterruptedException e) {
+        throw new IOException("Thread interrupted while waiting for external command.", e);
+      } catch (IOException e) {
+        throw new IOException("External command could not be executed.", e);
+      }
+      if (commandResult != 0) {
+        String errorOutput = new String(command.getStderr(), encoding);
+        throw new IOException("External command error. code = " + commandResult + ". Stderr: "
+                              + errorOutput);
+      }
+
+      CommandStreamParser parser = new CommandStreamParser(
+          new ByteArrayInputStream(command.getStdout()));
+      log.finest("Pushing Document IDs.");
+      return parser.readFromAuthorizer();
+    }
+  }
+
   protected Command newListerCommand() {
     return new Command();
   }
 
   protected Command newRetrieverCommand() {
+    return new Command();
+  }
+
+  protected Command newAuthorizerCommand() {
     return new Command();
   }
 

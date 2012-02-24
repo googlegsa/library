@@ -538,6 +538,15 @@ public class Config {
     }
   }
 
+  /**If none exists, return the passed in default.
+   * Get a configuration value.
+   *
+   * @throws IllegalStateException if {@code key} has no value
+   */
+  public String getValue(String key, String defaultValue) {
+    return config.getProperty(key, defaultValue);
+  }
+
   /**
    * Get a configuration value. Never returns {@code null}.
    *

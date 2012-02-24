@@ -26,13 +26,17 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.Array;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tests for {@link CommandLineAdaptor}.
@@ -159,6 +163,48 @@ public class CommandLineAdaptorTest {
     }
   }
 
+  private static class MockAuthorizerCommand extends Command {
+
+    private static final Map<String, String> ID_TO_AUTHZ_STATUS;
+
+    static {
+      Map<String, String> idToAuthzStatus = new HashMap<String, String>();
+      idToAuthzStatus.put("1001", "PERMIT");
+      idToAuthzStatus.put("1002", "DENY");
+      idToAuthzStatus.put("1003", "INDETERMINATE");
+      ID_TO_AUTHZ_STATUS = Collections.unmodifiableMap(idToAuthzStatus);
+    }
+    @Override
+    public int exec(String[] command, File workingDir, byte[] stdin)
+        throws UnsupportedEncodingException{
+      assertEquals(command[0], "./authorizer_cmd.sh");
+      String expectedText = "GSA Adaptor Data Version 1 [\n]\n"
+          + "username=user1\n"
+          + "password=password1\n"
+          + "group=group1\n"
+          + "group=group2\n"
+          + "id=1001\n"
+          + "id=1002\n"
+          + "id=1003\n"
+          + "id=1004\n";
+        assertEquals(expectedText, new String(stdin,"UTF-8"));
+      return 0;
+    }
+
+    @Override
+    public byte[] getStdout() {
+      StringBuffer result = new StringBuffer();
+      result.append("GSA Adaptor Data Version 1 [\n]\n");
+      result.append("id=1001").append("\n");
+      result.append("authz-status=PERMIT").append("\n");
+      result.append("id=1002").append("\n");
+      result.append("authz-status=DENY").append("\n");
+      result.append("id=1003").append("\n");
+      result.append("authz-status=INDETERMINATE").append("\n");
+     return result.toString().getBytes();
+    }
+  }
+
   private static class CommandLineAdaptorTestMock extends CommandLineAdaptor {
     @Override
     protected Command newListerCommand() {
@@ -168,6 +214,11 @@ public class CommandLineAdaptorTest {
     @Override
     protected Command newRetrieverCommand() {
       return new MockRetrieverCommand();
+    }
+
+    @Override
+    protected Command newAuthorizerCommand() {
+      return new MockAuthorizerCommand();
     }
   }
 
@@ -275,10 +326,44 @@ public class CommandLineAdaptorTest {
     config.put("commandline.retriever.cmd", "./retriever_cmd.sh");
     config.put("commandline.retriever.arg1", "retriever_arg1");
     config.put("commandline.retriever.arg2", "retriever_arg2");
+    config.put("commandline.authorizer.cmd", "./authorizer_cmd.sh");
+    config.put("commandline.authorizer.arg1", "authorizer_arg1");
+    config.put("commandline.authorizer.delimeter", "\n");
 
+    // Test lister
     List<DocId> idList = getDocIds(adaptor, config);
     assertEquals(MockListerCommand.original, idList);
 
+    // Test authorizer
+    final String username = "user1";
+    final String password = "password1";
+    final Set<String> groups = new HashSet<String>(Arrays.asList("group1", "group2"));
+    AuthnIdentity authnIdentity = new AuthnIdentity() {
+      @Override
+      public String getUsername() {
+        return username;
+      }
+      @Override
+      public String getPassword() {
+        return password;
+      }
+      @Override
+      public Set<String> getGroups() {
+        return groups;
+      }
+    };
+
+    Map<DocId, AuthzStatus> expectedAuthzResult = new HashMap<DocId, AuthzStatus>();
+    expectedAuthzResult.put(new DocId("1001"), AuthzStatus.PERMIT);
+    expectedAuthzResult.put(new DocId("1002"), AuthzStatus.DENY);
+    expectedAuthzResult.put(new DocId("1003"), AuthzStatus.INDETERMINATE);
+
+    final List<DocId> docIds = Arrays.asList(new DocId("1001"), new DocId("1002"),
+        new DocId("1003"), new DocId("1004"));
+    Map<DocId, AuthzStatus> authzResult = adaptor.isUserAuthorized(authnIdentity, docIds);
+    assertEquals(expectedAuthzResult, authzResult);
+
+    // Test retriever
     for (DocId docId : idList) {
 
       ContentsRequestTestMock request = new ContentsRequestTestMock(docId);
@@ -308,6 +393,4 @@ public class CommandLineAdaptorTest {
       }
     }
   }
-
-
 }

@@ -178,7 +178,8 @@ public class CommandStreamParser {
     MIME_TYPE,
     META_NAME,
     META_VALUE,
-    CONTENT
+    CONTENT,
+    AUTHZ_STATUS
   }
 
   private static final String HEADER_PREFIX = "GSA Adaptor Data Version";
@@ -201,6 +202,7 @@ public class CommandStreamParser {
     stringToOperation.put("meta-name", Operation.META_NAME);
     stringToOperation.put("meta-value", Operation.META_VALUE);
     stringToOperation.put("content", Operation.CONTENT);
+    stringToOperation.put("authz-status", Operation.AUTHZ_STATUS);
 
     // Confirm that every operation is in the map exactly once
     Collection<Operation> opsInMap = stringToOperation.values();
@@ -301,6 +303,103 @@ public class CommandStreamParser {
     return versionNumber;
   }
 
+  public Map<DocId, AuthzStatus> readFromAuthorizer() throws IOException {
+    Map<DocId, AuthzStatus> result = new HashMap<DocId, AuthzStatus>();
+    String docId = null;
+    AuthzStatus authzStatus = null;
+    Command command = readCommand();
+
+    // Starting out at end-of-stream so return an empty list.
+    if (command == null) {
+      return result;
+    }
+
+    // The first operation must be a doc ID.
+    if (command.getOperation() != Operation.ID) {
+      throw new IOException("Authorizer Error: the first operator must be a document ID. "
+          + " Instead encountered '" + command.getOperation() + "'.");
+    }
+    while (command != null) {
+      switch (command.getOperation()) {
+        case ID:
+          if (docId != null) {
+            result.put(new DocId(docId), authzStatus);
+          }
+          docId = command.getArgument();
+          authzStatus = null;
+          break;
+        case AUTHZ_STATUS:
+          String authzStatusString = command.getArgument();
+          if (authzStatusString.equals("PERMIT")) {
+            authzStatus = AuthzStatus.PERMIT;
+          } else if (authzStatusString.equals("DENY")) {
+            authzStatus = AuthzStatus.DENY;
+          } else if (authzStatusString.equals("INDETERMINATE")) {
+            authzStatus = AuthzStatus.INDETERMINATE;
+          }
+          break;
+        default:
+          throw new IOException("Authorizer Error: invalid operation: '" + command.getArgument() + "");
+      }
+      command = readCommand();
+    }
+    result.put(new DocId(docId), authzStatus);
+
+    return Collections.unmodifiableMap(result);
+  }
+
+  public RetrieverInfo readFromRetriever() throws IOException {
+
+    Map<String, String> metadata = new HashMap<String, String>();
+    byte[] content = null;
+    boolean upToDate = false;
+    boolean notFound = false;
+    String mimeType = null;
+    Command command = readCommand();
+
+    if (command == null) {
+      throw new IOException("Invalid or missing retriever data.");
+    } else if (command.getOperation() != Operation.ID) {
+      throw new IOException("Retriever Error: the first operator must be a document ID. "
+          + " Instead encountered '" + command.getOperation() + "'.");
+    }
+
+    String docId = command.getArgument();
+    command = readCommand();
+    while (command != null) {
+      switch (command.getOperation()) {
+        case ID:
+          throw new IOException("Only one document ID can be specified in a retriever message");
+        case CONTENT:
+          content = command.getContents();
+          break;
+        case META_NAME:
+          String metaName = command.getArgument();
+          command = readCommand();
+          if (command == null || command.getOperation() != Operation.META_VALUE) {
+            throw new IOException("meta-name must be immediately followed by meta-value");
+          }
+          metadata.put(metaName, command.getArgument());
+          break;
+        case UP_TO_DATE:
+          upToDate = true;
+          break;
+        case NOT_FOUND:
+          notFound = true;
+          break;
+        case MIME_TYPE:
+          mimeType = command.getArgument();
+          break;
+        default:
+          throw new IOException(
+              "Retriever Error: invalid operation: '" + command.getArgument() + "");
+      }
+      command = readCommand();
+    }
+
+    return new RetrieverInfo(new DocId(docId), metadata, content, upToDate, mimeType, notFound);
+  }
+
   public ArrayList<DocIdPusher.Record> readFromLister() throws IOException {
     ArrayList<DocIdPusher.Record> result = new ArrayList<DocIdPusher.Record>();
     String docId = null;
@@ -359,58 +458,6 @@ public class CommandStreamParser {
     result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
 
     return result;
-  }
-
-  public RetrieverInfo readFromRetriever() throws IOException {
-
-    Map<String, String> metadata = new HashMap<String, String>();
-    byte[] content = null;
-    boolean upToDate = false;
-    boolean notFound = false;
-    String mimeType = null;
-    Command command = readCommand();
-
-    if (command == null) {
-      throw new IOException("Invalid or missing retriever data.");
-    } else if (command.getOperation() != Operation.ID) {
-      throw new IOException("Retriever Error: the first operator must be a document ID. "
-          + " Instead encountered '" + command.getOperation() + "'.");
-    }
-
-    String docId = command.getArgument();
-    command = readCommand();
-    while (command != null) {
-      switch (command.getOperation()) {
-        case ID:
-          throw new IOException("Only one document ID can be specified in a retriever message");
-        case CONTENT:
-          content = command.getContents();
-          break;
-        case META_NAME:
-          String metaName = command.getArgument();
-          command = readCommand();
-          if (command == null || command.getOperation() != Operation.META_VALUE) {
-            throw new IOException("meta-name must be immediately followed by meta-value");
-          }
-          metadata.put(metaName, command.getArgument());
-          break;
-        case UP_TO_DATE:
-          upToDate = true;
-          break;
-        case NOT_FOUND:
-          notFound = true;
-          break;
-        case MIME_TYPE:
-          mimeType = command.getArgument();
-          break;
-        default:
-          throw new IOException(
-              "Retriever Error: invalid operation: '" + command.getArgument() + "");
-      }
-      command = readCommand();
-    }
-
-    return new RetrieverInfo(new DocId(docId), metadata, content, upToDate, mimeType, notFound);
   }
 
   /**
