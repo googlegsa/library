@@ -25,6 +25,9 @@ import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;
 
+import javax.security.auth.kerberos.KerberosPrincipal;
+import javax.security.auth.x500.X500Principal;
+
 /**
  * Tests for {@link DocumentHandler}.
  */
@@ -204,6 +207,77 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
+  }
+
+  @Test
+  public void testSecuritySecureFromGsa() throws Exception {
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost",
+        new String[0], null, sessionManager, null, 0, false, false);
+    MockHttpExchange httpEx = ex;
+    MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
+        new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
+  }
+
+  @Test
+  public void testSecuritySecureNoCertificate() throws Exception {
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost",
+        new String[0], null, sessionManager, null, 0, false, false);
+    MockHttpExchange httpEx = ex;
+    MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
+        null));
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecuritySecureNotX500Principal() throws Exception {
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost",
+        new String[0], null, sessionManager, null, 0, false, false);
+    MockHttpExchange httpEx = ex;
+    MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
+        new KerberosPrincipal("someuser")));
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecuritySecureNoCommonName() throws Exception {
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost",
+        new String[0], null, sessionManager, null, 0, false, false);
+    MockHttpExchange httpEx = ex;
+    MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
+        new X500Principal("OU=Unknown, O=Unknown, C=Unknown")));
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecuritySecureNotWhitelisted() throws Exception {
+    DocumentHandler handler = new DocumentHandler(
+        "localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost",
+        new String[0], null, sessionManager, null, 0, false, false);
+    MockHttpExchange httpEx = ex;
+    MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
+        new X500Principal("CN=nottrusted, OU=Unknown, O=Unknown, C=Unknown")));
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
   }
 
   @Test
@@ -583,8 +657,8 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        adaptor, "localhost", new String[] {remoteIp}, null,
-        sessionManager, null, 0, false, false);
+        adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
+        null, sessionManager, null, 0, false, false);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="

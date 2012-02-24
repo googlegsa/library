@@ -79,7 +79,7 @@ class DashboardHandler extends AbstractHandler {
         setLastModified(ex, lastModified);
       }
       byte contents[] = loadPage(path);
-      String contentType = null;
+      String contentType = "application/octet-stream";
       if (path.endsWith(".html")) {
         contentType = "text/html";
       } else if (path.endsWith(".css")) {

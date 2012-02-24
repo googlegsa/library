@@ -332,7 +332,7 @@ class DocumentHandler extends AbstractHandler {
         int i = b & 0xff;
         String hex = Integer.toHexString(i).toUpperCase();
         if (hex.length() > 2) {
-          throw new IllegalStateException();
+          throw new AssertionError();
         }
         while (hex.length() != 2) {
           hex = "0" + hex;

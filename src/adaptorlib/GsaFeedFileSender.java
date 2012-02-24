@@ -19,6 +19,7 @@ import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
 
 /** Takes an XML feed file for the GSA, sends it to GSA and
@@ -26,6 +27,8 @@ import java.util.zip.GZIPOutputStream;
 class GsaFeedFileSender {
   private static final Logger log
       = Logger.getLogger(GsaFeedFileSender.class.getName());
+  private static final Pattern DATASOURCE_INVALID_CHARS
+      = Pattern.compile("[^a-zA-Z0-9_]");
 
   /** Indicates failure creating connection to GSA. */
   static class FailedToConnect extends Exception {
@@ -89,15 +92,9 @@ class GsaFeedFileSender {
   }
 
   /** Tries to get in touch with our GSA. */
-  private HttpURLConnection setupConnection(String gsaHost, int len,
+  private HttpURLConnection setupConnection(URL feedUrl, int len,
                                             boolean useCompression)
-      throws MalformedURLException, IOException {
-    URL feedUrl;
-    if (config.isServerSecure()) {
-      feedUrl = new URL("https://" + gsaHost + ":19902/xmlfeed");
-    } else {
-      feedUrl = new URL("http://" + gsaHost + ":19900/xmlfeed");
-    }
+      throws IOException {
     HttpURLConnection uc = (HttpURLConnection) feedUrl.openConnection();
     uc.setDoInput(true);
     uc.setDoOutput(true);
@@ -115,10 +112,21 @@ class GsaFeedFileSender {
   }
 
   /** Put bytes onto output stream. */
-  private void writeToGsa(OutputStream outputStream, byte msgbytes[])
+  private void writeToGsa(HttpURLConnection uc, byte msgbytes[],
+                          boolean useCompression)
       throws IOException {
+    OutputStream outputStream = uc.getOutputStream();
     try {
-      outputStream.write(msgbytes);
+      if (useCompression) {
+        // setupConnection set Content-Encoding: gzip
+        outputStream = new GZIPOutputStream(outputStream);
+      }
+      // Use copyStream(), because using a single write() prevents errors from
+      // propagating during writing and causes them to be discovered at read
+      // time. Using copyStream() isn't perfect either though, in that if
+      // buffered data eventually causes an error, then that will still be
+      // discovered at read time.
+      IOHelper.copyStream(new ByteArrayInputStream(msgbytes), outputStream);
       outputStream.flush();
     } finally {
       outputStream.close();
@@ -127,29 +135,15 @@ class GsaFeedFileSender {
 
   /** Get GSA's response. */
   private String readGsaReply(HttpURLConnection uc) throws IOException {
-    StringBuilder buf = new StringBuilder();
-    BufferedReader br = null;
+    InputStream inputStream = uc.getInputStream();
+    String reply;
     try {
-      InputStream inputStream = uc.getInputStream();
-      br = new BufferedReader(new InputStreamReader(
-          inputStream, config.getGsaCharacterEncoding()));
-      String line;
-      while ((line = br.readLine()) != null) {
-        buf.append(line);
-      }
+      reply = IOHelper.readInputStreamToString(inputStream,
+          config.getGsaCharacterEncoding());
     } finally {
-      try {
-        if (null != br) {
-          br.close();
-        }
-      } catch (IOException e) {
-        log.warning("failed to close buffered reader");
-      }
-      if (null != uc) {
-        uc.disconnect();
-      }
+      inputStream.close();
     }
-    return buf.toString();
+    return reply;
   }
 
   private void handleGsaReply(String reply) {
@@ -172,13 +166,36 @@ class GsaFeedFileSender {
   }
 
   /**
-   * Sends XML with provided datasoruce name and feedtype "metadata-and-url".
+   * Sends XML with provided datasource name and feedtype "metadata-and-url".
    * Datasource name is limited to [a-zA-Z0-9_].
    */
-  void sendMetadataAndUrl(String host, String datasource, String xmlString,
-                          boolean useCompression)
+  void sendMetadataAndUrl(String host, String datasource,
+                          String xmlString, boolean useCompression)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
-    // TODO(pjo): Check datasource characters for valid name.
+    URL feedUrl;
+    try {
+      if (config.isServerSecure()) {
+        feedUrl = new URL("https://" + host + ":19902/xmlfeed");
+      } else {
+        feedUrl = new URL("http://" + host + ":19900/xmlfeed");
+      }
+    } catch (MalformedURLException ex) {
+      throw new FailedToConnect(ex);
+    }
+    sendMetadataAndUrl(feedUrl, datasource, xmlString, useCompression);
+  }
+
+  /**
+   * Sends XML with provided datasource name and feedtype "metadata-and-url".
+   * Datasource name is limited to [a-zA-Z0-9_].
+   */
+  void sendMetadataAndUrl(URL feedUrl, String datasource,
+                          String xmlString, boolean useCompression)
+      throws FailedToConnect, FailedWriting, FailedReadingReply {
+    if (DATASOURCE_INVALID_CHARS.matcher(datasource).find()) {
+      throw new IllegalArgumentException("Data source contains illegal "
+          + "characters: " + datasource);
+    }
     String feedtype = "metadata-and-url";
     byte msg[] = buildMessage(datasource, feedtype, xmlString);
     // GSA only allows request content up to 1 MB to be compressed
@@ -187,28 +204,24 @@ class GsaFeedFileSender {
     }
 
     HttpURLConnection uc;
-    OutputStream outputStream;
     try {
-      uc = setupConnection(host, msg.length, useCompression);
-      outputStream = uc.getOutputStream();
+      uc = setupConnection(feedUrl, msg.length, useCompression);
+      uc.connect();
     } catch (IOException ioe) {
       throw new FailedToConnect(ioe);
     }
     try {
-      if (useCompression) {
-        // setupConnection set Content-Encoding: gzip
-        outputStream = new GZIPOutputStream(outputStream);
-      }
-      writeToGsa(outputStream, msg);
+      writeToGsa(uc, msg, useCompression);
     } catch (IOException ioe) {
+      uc.disconnect();
       throw new FailedWriting(ioe);
-    } finally {
-      try {
-        String reply = readGsaReply(uc);
-        handleGsaReply(reply);
-      } catch (IOException ioe) {
-        throw new FailedReadingReply(ioe);
-      }
+    }
+    try {
+      String reply = readGsaReply(uc);
+      handleGsaReply(reply);
+    } catch (IOException ioe) {
+      uc.disconnect();
+      throw new FailedReadingReply(ioe);
     }
   }
 }

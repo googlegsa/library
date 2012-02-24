@@ -60,6 +60,7 @@ public class MockHttpExchange extends HttpExchange {
     this.httpContext = context;
   }
 
+  @Override
   public void close() {
     try {
       requestBody.close();
@@ -75,14 +76,17 @@ public class MockHttpExchange extends HttpExchange {
     }
   }
 
+  @Override
   public Object getAttribute(String name) {
     return attributes.get(name);
   }
 
+  @Override
   public HttpContext getHttpContext() {
     return httpContext;
   }
 
+  @Override
   public InetSocketAddress getLocalAddress() {
     try {
       return new InetSocketAddress(
@@ -92,14 +96,17 @@ public class MockHttpExchange extends HttpExchange {
     }
   }
 
+  @Override
   public HttpPrincipal getPrincipal() {
     return null;
   }
 
+  @Override
   public String getProtocol() {
     return protocol;
   }
 
+  @Override
   public InetSocketAddress getRemoteAddress() {
     try {
       return new InetSocketAddress(
@@ -110,22 +117,27 @@ public class MockHttpExchange extends HttpExchange {
     }
   }
 
+  @Override
   public InputStream getRequestBody() {
     return requestBody;
   }
-  
+
+  @Override
   public Headers getRequestHeaders() {
     return requestHeaders;
   }
 
+  @Override
   public String getRequestMethod() {
     return method;
   }
 
+  @Override
   public URI getRequestURI() {
     return uri;
   }
 
+  @Override
   public OutputStream getResponseBody() {
     if (responseBody == null) {
       throw new IllegalStateException();
@@ -133,14 +145,17 @@ public class MockHttpExchange extends HttpExchange {
     return responseBody;
   }
 
+  @Override
   public int getResponseCode() {
     return responseCode;
   }
 
+  @Override
   public Headers getResponseHeaders() {
     return responseHeaders;
   }
 
+  @Override
   public void sendResponseHeaders(int rCode, long responseLength) {
     if (responseBody != null) {
       throw new IllegalStateException();
@@ -151,10 +166,12 @@ public class MockHttpExchange extends HttpExchange {
     // TODO(ejona): handle responseLengeth
   }
 
+  @Override
   public void setAttribute(String name, Object value) {
     attributes.put(name, value);
   }
 
+  @Override
   public void setStreams(InputStream i, OutputStream o) {
     if (i != null) {
       requestBody = i;
