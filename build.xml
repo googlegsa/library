@@ -126,7 +126,7 @@
     </fileset>
   </path>
 
-  <target name="build" description="Build source">
+  <target name="build" depends="clean-instrument" description="Build source">
     <mkdir dir="${build-src.dir}"/>
 
     <!-- Compile secmgr. -->
@@ -328,8 +328,7 @@
     </java>
   </target>
 
-  <target name="coverage"
-    depends="instrument,test,coverage-report,clean-instrument"
+  <target name="coverage" depends="instrument,test,coverage-report"
     description="Run instrumented tests and generate coverage report"/>
 
   <target name="test" depends="build" description="Run JUnit tests">
@@ -354,8 +353,7 @@
     </junit>
   </target>
 
-  <target name="instrument" depends="build,clean-instrument"
-    description="Instrument classes">
+  <target name="instrument" depends="build" description="Instrument classes">
     <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
     <cobertura-instrument datafile="${build-instrument.dir}/cobertura.ser"
       todir="${build-instrument.dir}">
