@@ -126,7 +126,18 @@
     </fileset>
   </path>
 
-  <target name="build" depends="clean-instrument" description="Build source">
+  <target name="-check-instrument-uptodate">
+    <uptodate property="instrument.uptodate"
+      targetfile="${build-instrument.dir}/cobertura.ser">
+      <srcfiles dir="${build-src.dir}"/>
+    </uptodate>
+  </target>
+
+  <target name="build"
+    depends="-real-build,-check-instrument-uptodate,clean-instrument"
+    description="Build source"/>
+
+  <target name="-real-build" description="Build source">
     <mkdir dir="${build-src.dir}"/>
 
     <!-- Compile secmgr. -->
@@ -363,7 +374,8 @@
     </cobertura-instrument>
   </target>
 
-  <target name="clean-instrument" description="Delete instrumented classes">
+  <target name="clean-instrument" unless="instrument.uptodate"
+    description="Delete instrumented classes">
     <delete dir="${build-instrument.dir}"/>
   </target>
 
