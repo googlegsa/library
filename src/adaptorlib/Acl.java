@@ -47,34 +47,12 @@ public class Acl {
   private Acl(Set<String> permitGroups, Set<String> denyGroups,
               Set<String> permitUsers, Set<String> denyUsers, DocId inheritFrom,
               InheritanceType inheritType) {
-    this.permitGroups = sanitizeSet(permitGroups);
-    this.denyGroups = sanitizeSet(denyGroups);
-    this.permitUsers = sanitizeSet(permitUsers);
-    this.denyUsers = sanitizeSet(denyUsers);
+    this.permitGroups = permitGroups;
+    this.denyGroups = denyGroups;
+    this.permitUsers = permitUsers;
+    this.denyUsers = denyUsers;
     this.inheritFrom = inheritFrom;
     this.inheritType = inheritType;
-  }
-
-  private Set<String> sanitizeSet(Set<String> set) {
-    if (set.isEmpty()) {
-      Collections.emptySet();
-    }
-    // Check all the values to make sure they are valid.
-    for (String item : set) {
-      if (item == null) {
-        throw new NullPointerException("Entries in sets may not be null");
-      }
-      if (!item.equals(item.trim())) {
-        throw new IllegalArgumentException("Entries in sets must not start or "
-                                           + "end with whitespace");
-      }
-      if ("".equals(item)) {
-        throw new IllegalArgumentException("Entries in sets must not be the "
-                                           + "empty string");
-      }
-    }
-    // Use TreeSets so that sets have predictable order when serializing.
-    return Collections.unmodifiableSet(new TreeSet<String>(set));
   }
 
   /**
@@ -418,10 +396,10 @@ public class Acl {
    * Mutable ACL for creating instances of {@link Acl}.
    */
   public static class Builder {
-    private Set<String> permitGroups = new HashSet<String>();
-    private Set<String> denyGroups = new HashSet<String>();
-    private Set<String> permitUsers = new HashSet<String>();
-    private Set<String> denyUsers = new HashSet<String>();
+    private Set<String> permitGroups = Collections.emptySet();
+    private Set<String> denyGroups = Collections.emptySet();
+    private Set<String> permitUsers = Collections.emptySet();
+    private Set<String> denyUsers = Collections.emptySet();
     private DocId inheritFrom;
     private InheritanceType inheritType = InheritanceType.LEAF_NODE;
 
@@ -436,12 +414,34 @@ public class Acl {
      * acl}.
      */
     public Builder(Acl acl) {
-      permitGroups.addAll(acl.getPermitGroups());
-      denyGroups.addAll(acl.getDenyGroups());
-      permitUsers.addAll(acl.getPermitUsers());
-      denyUsers.addAll(acl.getDenyUsers());
+      permitGroups = sanitizeSet(acl.getPermitGroups());
+      denyGroups = sanitizeSet(acl.getDenyGroups());
+      permitUsers = sanitizeSet(acl.getPermitUsers());
+      denyUsers = sanitizeSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
       inheritType = acl.getInheritanceType();
+    }
+
+    private Set<String> sanitizeSet(Collection<String> set) {
+      if (set.isEmpty()) {
+        Collections.emptySet();
+      }
+      // Check all the values to make sure they are valid.
+      for (String item : set) {
+        if (item == null) {
+          throw new NullPointerException("Entries in set may not be null");
+        }
+        if (!item.equals(item.trim())) {
+          throw new IllegalArgumentException("Entries in set must not start or "
+                                             + "end with whitespace");
+        }
+        if ("".equals(item)) {
+          throw new IllegalArgumentException("Entries in set must not be the "
+                                             + "empty string");
+        }
+      }
+      // Use TreeSets so that sets have predictable order when serializing.
+      return Collections.unmodifiableSet(new TreeSet<String>(set));
     }
 
     /**
@@ -454,66 +454,54 @@ public class Acl {
 
     /**
      * Replace existing permit groups.
+     *
+     * @throws NullPointerException if the collection is {@code null} or
+     *     contains {@code null}
+     * @throws IllegalArgumentException if the collection contains {@code ""}
+     *     or a value that has leading or trailing whitespace
      */
     public Builder setPermitGroups(Collection<String> permitGroups) {
-      this.permitGroups.clear();
-      this.permitGroups.addAll(permitGroups);
+      this.permitGroups = sanitizeSet(permitGroups);
       return this;
-    }
-
-    /**
-     * Returns mutable set for modifying permit groups directly.
-     */
-    public Set<String> getPermitGroups() {
-      return permitGroups;
     }
 
     /**
      * Replace existing deny groups.
+     *
+     * @throws NullPointerException if the collection is {@code null} or
+     *     contains {@code null}
+     * @throws IllegalArgumentException if the collection contains {@code ""}
+     *     or a value that has leading or trailing whitespace
      */
     public Builder setDenyGroups(Collection<String> denyGroups) {
-      this.denyGroups.clear();
-      this.denyGroups.addAll(denyGroups);
+      this.denyGroups = sanitizeSet(denyGroups);
       return this;
-    }
-
-    /**
-     * Returns mutable set for modifying deny groups directly.
-     */
-    public Set<String> getDenyGroups() {
-      return denyGroups;
     }
 
     /**
      * Replace existing permit users.
+     *
+     * @throws NullPointerException if the collection is {@code null} or
+     *     contains {@code null}
+     * @throws IllegalArgumentException if the collection contains {@code ""}
+     *     or a value that has leading or trailing whitespace
      */
     public Builder setPermitUsers(Collection<String> permitUsers) {
-      this.permitUsers.clear();
-      this.permitUsers.addAll(permitUsers);
+      this.permitUsers = sanitizeSet(permitUsers);
       return this;
-    }
-
-    /**
-     * Returns mutable set for modifying permit users directly.
-     */
-    public Set<String> getPermitUsers() {
-      return permitUsers;
     }
 
     /**
      * Replace existing deny users.
+     *
+     * @throws NullPointerException if the collection is {@code null} or
+     *     contains {@code null}
+     * @throws IllegalArgumentException if the collection contains {@code ""}
+     *     or a value that has leading or trailing whitespace
      */
     public Builder setDenyUsers(Collection<String> denyUsers) {
-      this.denyUsers.clear();
-      this.denyUsers.addAll(denyUsers);
+      this.denyUsers = sanitizeSet(denyUsers);
       return this;
-    }
-
-    /**
-     * Returns mutable set for modifying deny users directly.
-     */
-    public Set<String> getDenyUsers() {
-      return denyUsers;
     }
 
     /**
@@ -534,6 +522,7 @@ public class Acl {
      * applies to the interaction between this ACL and any <em>children</em> it
      * has.
      *
+     * @throws NullPointerException if {@code inheritType} is {@code null}
      * @see #setInheritFrom
      */
     public Builder setInheritanceType(InheritanceType inheritType) {
