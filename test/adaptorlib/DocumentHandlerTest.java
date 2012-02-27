@@ -26,7 +26,7 @@ import java.nio.charset.Charset;
 import java.util.*;
 
 /**
- * Tests for {@link DocumentHandlerTest}.
+ * Tests for {@link DocumentHandler}.
  */
 public class DocumentHandlerTest {
   @Rule
