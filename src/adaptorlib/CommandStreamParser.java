@@ -14,6 +14,8 @@
 
 package adaptorlib;
 
+import org.apache.tools.zip.UnrecognizedExtraField;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +28,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,7 +36,7 @@ import java.util.regex.Pattern;
  * Parses the adaptor data format into individual commands with associated data.
  *
  * This format is used for communication between the adaptor library and various command line
- * adaptor components (lister, retriever, transformer, authorizor, etc.). It supports responses
+ * adaptor components (lister, retriever, transformer, authorizer, etc.). It supports responses
  * coming back from the command line adaptor implementation. The format supports a mixture of
  * character and binary data. All character data must be encoded in UTF-8.<p>
  *
@@ -119,6 +122,21 @@ import java.util.regex.Pattern;
  * "content" -- signals the beginning of binary content which
  * continues to the end of the file or stream<p>
  *
+ * <h1>Authorizer Commands:</h1>
+ *
+ * "authz-status=" -- specifies whether a document is visible to a
+ *     specified user. Values can be one of the following.
+ *    "PERMIT" - the document can be viewed by the user
+ *    "DENY" - the document cannot be viewed by the user
+ *    "INDETERMINATE" - it cannot be determined whether the
+ *        document can be viewed by the user.
+ *
+ *  "user=" -- specifies the user for whom the authorization check will be made
+ *  "password=" -- specifies the password for the user. (optional)
+ *  "group=" -- specifies a security group to which the user belongs.
+ *
+ * time.<p>
+ *
  *
  * End-of-stream terminates the data transmission. Multiple consecutive delimiters are collapsed
  * into a single delimiter and terminates the current id-list should one exist.<p>
@@ -162,6 +180,35 @@ import java.util.regex.Pattern;
  * id=/home/repository/docs/file5
  * }
  * </pre>
+ *
+ * Data passed to command line authorizer via stdin.
+ * Entries will always occure in the order (user, password, group, id)
+ * password is group is optional.
+ * Any number of group and id entries can exist.
+ * Each of the documents with a listed id should be checked.
+ * <pre>
+ * {@code
+ * GSA Adaptor Data Version 1 [<delimiter>]
+ * user="tim_smith"
+ * password="abc123"
+ * group="managers"
+ * group="research"
+ * id=/home/repository/docs/file1
+ * id=/home/repository/docs/file2
+ * }
+ *
+ * AuthZ response passed from command line authorizer via stdout.
+ * Each doc id must include an authz-status entry.
+ * <pre>
+ * {@code
+ * GSA Adaptor Data Version 1 [<delimiter>]
+ * id=/home/repository/docs/file1
+ * authz-status=PERMIT
+ * id=/home/repository/docs/file2
+ * authz-status=DENY
+ * }
+ * </pre>
+
  */
 public class CommandStreamParser {
 
@@ -182,6 +229,7 @@ public class CommandStreamParser {
     AUTHZ_STATUS
   }
 
+  private static final Logger log = Logger.getLogger(CommandStreamParser.class.getName());
   private static final String HEADER_PREFIX = "GSA Adaptor Data Version";
   private static final String DISALLOWED_DELIMITER_CHARS_REGEX = "[a-zA-Z0-9:/\\-_ =\\+\\[\\]]";
   private static final Charset CHARSET = Charset.forName("UTF-8");
@@ -288,6 +336,10 @@ public class CommandStreamParser {
       return argument;
     }
 
+    public boolean hasArgument() {
+      return argument != null && !argument.isEmpty();
+    }
+
     public byte[] getContents() {
       return contents;
     }
@@ -336,10 +388,14 @@ public class CommandStreamParser {
             authzStatus = AuthzStatus.DENY;
           } else if (authzStatusString.equals("INDETERMINATE")) {
             authzStatus = AuthzStatus.INDETERMINATE;
+          } else {
+            log.warning("Unrecognized authz-status of '" + authzStatusString + "' for document: '" +
+            docId + "'");
           }
           break;
         default:
-          throw new IOException("Authorizer Error: invalid operation: '" + command.getArgument() + "");
+          throw new IOException("Authorizer Error: invalid operation: '" + command.getOperation() +
+              (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
       }
       command = readCommand();
     }
@@ -391,8 +447,8 @@ public class CommandStreamParser {
           mimeType = command.getArgument();
           break;
         default:
-          throw new IOException(
-              "Retriever Error: invalid operation: '" + command.getArgument() + "");
+          throw new IOException("Retriever Error: invalid operation: '" + command.getOperation() +
+              (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
       }
       command = readCommand();
     }
@@ -450,7 +506,9 @@ public class CommandStreamParser {
           deleteDocument = true;
           break;
         default:
-          throw new IOException("Lister Error: invalid operation: '" + command.getArgument() + "");
+          throw new IOException("Lister Error: invalid operation: '" + command.getOperation() +
+              (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
+
       }
       command = readCommand();
     }
