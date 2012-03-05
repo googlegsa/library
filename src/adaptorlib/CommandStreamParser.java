@@ -174,13 +174,13 @@ import java.util.regex.Pattern;
  *
  * Data passed to command line authorizer via stdin for authz check.
  * Entries will always occur in this order: user, password, group, id.
- * password and group information is optional. Any number of groups and
+ * password and group information is optional. Any number of group and
  * id entries can exist. Each of the documents with a listed id should
  * be checked.
  * <pre>
  * {@code
  * GSA Adaptor Data Version 1 [<delimiter>]
- * user="tim_smith"
+ * user=tim_smith
  * password=abc123
  * group=managers
  * group=research
