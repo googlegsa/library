@@ -27,8 +27,8 @@ import java.util.zip.GZIPOutputStream;
 class GsaFeedFileSender {
   private static final Logger log
       = Logger.getLogger(GsaFeedFileSender.class.getName());
-  private static final Pattern DATASOURCE_INVALID_CHARS
-      = Pattern.compile("[^a-zA-Z0-9_]");
+  private static final Pattern DATASOURCE_FORMAT
+      = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
 
   /** Indicates failure creating connection to GSA. */
   static class FailedToConnect extends Exception {
@@ -187,12 +187,12 @@ class GsaFeedFileSender {
 
   /**
    * Sends XML with provided datasource name and feedtype "metadata-and-url".
-   * Datasource name is limited to [a-zA-Z0-9_].
+   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
    */
   void sendMetadataAndUrl(URL feedUrl, String datasource,
                           String xmlString, boolean useCompression)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
-    if (DATASOURCE_INVALID_CHARS.matcher(datasource).find()) {
+    if (!DATASOURCE_FORMAT.matcher(datasource).matches()) {
       throw new IllegalArgumentException("Data source contains illegal "
           + "characters: " + datasource);
     }

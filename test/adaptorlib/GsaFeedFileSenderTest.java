@@ -64,7 +64,7 @@ public class GsaFeedFileSenderTest {
   @Test
   public void testSuccess() throws Exception {
     final String payload = "<someXmlString/>";
-    final String datasource = "testDataSource";
+    final String datasource = "test-DataSource_09AZaz";
     final String goldenResponse
         = "--<<\r\n"
         + "Content-Disposition: form-data; name=\"datasource\"\r\n"
@@ -183,7 +183,13 @@ public class GsaFeedFileSenderTest {
   @Test
   public void testInvalidDataSource() throws Exception {
     thrown.expect(IllegalArgumentException.class);
-    sender.sendMetadataAndUrl("localhost", "bad-source", "<payload/>", false);
+    sender.sendMetadataAndUrl("localhost", "bad#source", "<payload/>", false);
+  }
+
+  @Test
+  public void testInvalidDataSource2() throws Exception {
+    thrown.expect(IllegalArgumentException.class);
+    sender.sendMetadataAndUrl("localhost", "9badsource", "<payload/>", false);
   }
 
   @Test
