@@ -131,9 +131,6 @@ import java.util.regex.Pattern;
  *    
  *  "group=" -- specifies a security group to which the user belongs.<p>
  *
- * time.<p>
- *
- *
  * End-of-stream terminates the data transmission. Multiple consecutive delimiters are collapsed
  * into a single delimiter and terminates the current id-list should one exist.<p>
  *
