@@ -215,6 +215,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
    * {@link adaptorlib.AuthzStatus#PERMIT},
    * {@link adaptorlib.AuthzStatus#DENY},
    * {@link adaptorlib.AuthzStatus#INDETERMINATE}
+   * If an authorizerCommand is not set then AbstractAdaptor.isUserAuthorized
+   * is used.
    */
   @Override
   public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,

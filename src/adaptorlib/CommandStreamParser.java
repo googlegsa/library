@@ -14,8 +14,6 @@
 
 package adaptorlib;
 
-import org.apache.tools.zip.UnrecognizedExtraField;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -125,15 +123,13 @@ import java.util.regex.Pattern;
  * <h1>Authorizer Commands:</h1>
  *
  * "authz-status=" -- specifies whether a document is visible to a
- *     specified user. Values can be one of the following.
- *    "PERMIT" - the document can be viewed by the user
- *    "DENY" - the document cannot be viewed by the user
- *    "INDETERMINATE" - it cannot be determined whether the
- *        document can be viewed by the user.
+ *     specified user. The argument must be PERMIT, DENY or INDETERMINATE<p>
  *
- *  "user=" -- specifies the user for whom the authorization check will be made
- *  "password=" -- specifies the password for the user. (optional)
- *  "group=" -- specifies a security group to which the user belongs.
+ *  "user=" -- specifies the user for whom the authorization check will be made<p>
+ *
+ *  "password=" -- specifies the password for the user. (optional)<p>
+ *    
+ *  "group=" -- specifies a security group to which the user belongs.<p>
  *
  * time.<p>
  *
@@ -156,8 +152,7 @@ import java.util.regex.Pattern;
  * /home/repository/docs/file3
  * /home/repository/docs/file4
  * /home/repository/docs/file5
- * }
- * </pre>
+ * }</pre>
  *
  * Example 2:<p>
  *
@@ -178,24 +173,23 @@ import java.util.regex.Pattern;
  * id=/home/repository/docs/file3
  * id=/home/repository/docs/file4
  * id=/home/repository/docs/file5
- * }
- * </pre>
+ * }</pre>
  *
- * Data passed to command line authorizer via stdin.
- * Entries will always occure in the order (user, password, group, id)
- * password is group is optional.
- * Any number of group and id entries can exist.
- * Each of the documents with a listed id should be checked.
+ * Data passed to command line authorizer via stdin for authz check.
+ * Entries will always occur in this order: user, password, group, id.
+ * password and group information is optional. Any number of groups and
+ * id entries can exist. Each of the documents with a listed id should
+ * be checked.
  * <pre>
  * {@code
  * GSA Adaptor Data Version 1 [<delimiter>]
  * user="tim_smith"
- * password="abc123"
- * group="managers"
- * group="research"
+ * password=abc123
+ * group=managers
+ * group=research
  * id=/home/repository/docs/file1
  * id=/home/repository/docs/file2
- * }
+ * }</pre>
  *
  * AuthZ response passed from command line authorizer via stdout.
  * Each doc id must include an authz-status entry.
@@ -206,9 +200,7 @@ import java.util.regex.Pattern;
  * authz-status=PERMIT
  * id=/home/repository/docs/file2
  * authz-status=DENY
- * }
- * </pre>
-
+ * }</pre>
  */
 public class CommandStreamParser {
 
@@ -337,7 +329,7 @@ public class CommandStreamParser {
     }
 
     public boolean hasArgument() {
-      return argument != null && !argument.isEmpty();
+      return argument != null;
     }
 
     public byte[] getContents() {
