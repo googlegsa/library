@@ -18,10 +18,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -30,10 +30,18 @@ import java.util.logging.Logger;
  * Modify content and metadata using multiple serial transforms. The transforms
  * are arranged into a serial pipeline where the output of one becomes the
  * input for the next in the series.
+ *
+ * <p>This class is thread-safe.
  */
-public class TransformPipeline extends AbstractList<DocumentTransform> {
+public class TransformPipeline {
   private static final Logger log
       = Logger.getLogger(TransformPipeline.class.getName());
+
+  private final List<DocumentTransform> transformList;
+
+  public TransformPipeline(List<? extends DocumentTransform> transforms) {
+    this.transformList = Collections.unmodifiableList(new ArrayList<DocumentTransform>(transforms));
+  }
 
   /**
    * Transform {@code contentIn} and {@code metadata}. {@code ContentIn} is
@@ -103,32 +111,12 @@ public class TransformPipeline extends AbstractList<DocumentTransform> {
     params.putAll(paramsInTransit);
   }
 
-  @Override
-  public void add(int index, DocumentTransform transform) {
-    transformList.add(index, transform);
+  /**
+   * Retrieve transforms in the order they are processed in the pipeline.
+   */
+  public List<DocumentTransform> getDocumentTransforms() {
+    return transformList;
   }
-
-  @Override
-  public DocumentTransform get(int index) {
-    return transformList.get(index);
-  }
-
-  @Override
-  public DocumentTransform set(int index, DocumentTransform transform) {
-    return transformList.set(index, transform);
-  }
-
-  @Override
-  public DocumentTransform remove(int index) {
-    return transformList.remove(index);
-  }
-
-  @Override
-  public int size() {
-    return transformList.size();
-  }
-
-  private ArrayList<DocumentTransform> transformList = new ArrayList<DocumentTransform>();
 
   private static class UnmodifiableWrapperByteArrayOutputStream extends ByteArrayOutputStream {
     private ByteArrayOutputStream os;

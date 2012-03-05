@@ -321,8 +321,8 @@ public class DocumentHandlerTest {
   public void testTransform() throws Exception {
     final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
-    TransformPipeline transform = new TransformPipeline();
-    transform.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -334,6 +334,7 @@ public class DocumentHandlerTest {
         metadata.put("docid", params.get("DocId"));
       }
     });
+    TransformPipeline transform = new TransformPipeline(transforms);
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
@@ -358,8 +359,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testTransformDocumentTooLarge() throws Exception {
-    TransformPipeline transform = new TransformPipeline();
-    transform.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -369,6 +370,7 @@ public class DocumentHandlerTest {
         contentOut.write(new byte[] {2, 3, 4});
       }
     });
+    TransformPipeline transform = new TransformPipeline(transforms);
     final byte[] golden = new byte[] {-1, 2, -3, 4, 5};
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -397,7 +399,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testTransformDocumentTooLargeButRequired() throws Exception {
-    TransformPipeline transform = new TransformPipeline();
+    TransformPipeline transform = new TransformPipeline(Collections.<DocumentTransform>emptyList());
     class CheckFailAdaptor extends MockAdaptor {
       public boolean failedAtCorrectTime = false;
 

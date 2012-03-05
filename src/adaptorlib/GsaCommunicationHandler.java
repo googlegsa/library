@@ -211,7 +211,7 @@ public class GsaCommunicationHandler {
 
   static TransformPipeline createTransformPipeline(
       List<Map<String, String>> pipelineConfig) {
-    TransformPipeline pipeline = new TransformPipeline();
+    List<DocumentTransform> elements = new LinkedList<DocumentTransform>();
     for (Map<String, String> element : pipelineConfig) {
       final String name = element.get("name");
       final String confPrefix = "transform.pipeline." + name + ".";
@@ -256,10 +256,10 @@ public class GsaCommunicationHandler {
             + " is not an instance of DocumentTransform");
       }
       DocumentTransform transform = (DocumentTransform) o;
-      pipeline.add(transform);
+      elements.add(transform);
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.
-    return pipeline.size() > 0 ? pipeline : null;
+    return elements.size() > 0 ? new TransformPipeline(elements) : null;
   }
 
   // Useful as a separate method during testing.
