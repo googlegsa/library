@@ -51,7 +51,8 @@ class RpcHandler extends AbstractHandler {
    */
   public void registerRpcMethod(String name, RpcMethod method) {
     if (methods.containsKey(name)) {
-      throw new IllegalStateException("Method by that name already registered");
+      throw new IllegalStateException(
+          "Method by that name already registered");
     }
     methods.put(name, method);
   }
@@ -59,11 +60,12 @@ class RpcHandler extends AbstractHandler {
   /**
    * Unregister a previously registered RPC method.
    *
-   * @throws RuntimeException if method by that name not previously registered
+   * @throws IllegalStateException if method by that name not previously
+   *     registered
    */
   public void unregisterRpcMethod(String name) {
     if (!methods.containsKey(name)) {
-      throw new RuntimeException("No method by that name registered");
+      throw new IllegalStateException("No method by that name registered");
     }
     methods.remove(name);
   }
@@ -121,12 +123,8 @@ class RpcHandler extends AbstractHandler {
       response.put("id", null);
       response.put("result", null);
       response.put("error", "Invalid request format: " + e.getMessage());
-      if ("HEAD".equals(ex.getRequestMethod())) {
-        respondToHead(ex, HttpURLConnection.HTTP_OK, "application/json");
-      } else {
-        respond(ex, HttpURLConnection.HTTP_OK, "application/json",
-                JSONValue.toJSONString(response).getBytes(defaultEncoding));
-      }
+      respond(ex, HttpURLConnection.HTTP_OK, "application/json",
+              JSONValue.toJSONString(response).getBytes(defaultEncoding));
       return;
     }
 

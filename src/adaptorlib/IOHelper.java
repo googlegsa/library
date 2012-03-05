@@ -78,12 +78,7 @@ public class IOHelper {
 
   public static File writeToTempFile(String string, Charset charset)
       throws IOException {
-    byte[] bytes;
-    try {
-      bytes = string.getBytes(charset.name());
-    } catch (UnsupportedEncodingException ex) {
-      throw new AssertionError(ex);
-    }
+    byte[] bytes = string.getBytes(charset);
     return IOHelper.writeToTempFile(new ByteArrayInputStream(bytes));
   }
 

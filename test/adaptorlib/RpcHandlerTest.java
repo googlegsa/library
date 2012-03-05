@@ -22,14 +22,19 @@ import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
 
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 import java.io.*;
 import java.nio.charset.Charset;
+import java.util.List;
 
 /**
  * Tests for {@link RpcHandler}.
  */
 public class RpcHandlerTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   private static final String SESSION_COOKIE_NAME = "testSess";
   private SessionManager.ClientStore<HttpExchange> clientStore
       = new SessionManager.HttpExchangeClientStore(SESSION_COOKIE_NAME);
@@ -119,6 +124,115 @@ public class RpcHandlerTest {
     assertTrue(obj.get("result") == null);
   }
 
+  @Test
+  public void testValidCallWithResponse() throws Exception {
+    handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
+      @Override
+      public Object run(List request) throws Exception {
+        if (request.size() == 1 && request.get(0).equals("input")) {
+          return "some response";
+        } else {
+          throw new RuntimeException("Wrong input");
+        }
+      }
+    });
+    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    ex.setRequestBody(stringToStream(
+        "{\"id\": null, \"method\": \"someName\", \"params\": [\"input\"]}"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    JSONObject obj = (JSONObject) JSONValue.parse(response);
+    assertNull(obj.get("error"));
+    assertEquals("some response", obj.get("result"));
+
+    // Make sure that the method can be unregistered.
+    handler.unregisterRpcMethod("someName");
+    ex = makeExchange("http", "POST", "/r", "/r");
+    ex.setRequestBody(stringToStream(
+        "{\"id\": null, \"method\": \"someName\", \"params\": [\"input\"]}"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    response = new String(ex.getResponseBytes(), charset);
+    obj = (JSONObject) JSONValue.parse(response);
+    assertNotNull(obj.get("error"));
+    assertNull(obj.get("result"));
+  }
+
+  @Test
+  public void testValidCallWithBrokenResponse() throws Exception {
+    handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
+      @Override
+      public Object run(List request) throws Exception {
+        return null;
+      }
+    });
+    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    ex.setRequestBody(stringToStream(
+        "{\"id\": null, \"method\": \"someName\", \"params\": null}"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    JSONObject obj = (JSONObject) JSONValue.parse(response);
+    assertNotNull(obj.get("error"));
+    assertNull(obj.get("result"));
+  }
+
+  @Test
+  public void testExceptionWithMessage() throws Exception {
+    handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
+      @Override
+      public Object run(List request) throws Exception {
+        throw new RuntimeException("some error");
+      }
+    });
+    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    ex.setRequestBody(stringToStream(
+        "{\"id\": null, \"method\": \"someName\", \"params\": null}"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    JSONObject obj = (JSONObject) JSONValue.parse(response);
+    assertEquals("some error", obj.get("error"));
+    assertNull(obj.get("result"));
+  }
+
+  @Test
+  public void testExceptionWithoutMessage() throws Exception {
+    handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
+      @Override
+      public Object run(List request) throws Exception {
+        throw new RuntimeException();
+      }
+    });
+    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    ex.setRequestBody(stringToStream(
+        "{\"id\": null, \"method\": \"someName\", \"params\": null}"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    JSONObject obj = (JSONObject) JSONValue.parse(response);
+    assertNotNull(obj.get("error"));
+    assertNull(obj.get("result"));
+  }
+
+  @Test
+  public void testDoubleRegisterRpcMethod() {
+    RpcHandler.RpcMethod method = new ErroringRpcMethod();
+    handler.registerRpcMethod("someName", method);
+    thrown.expect(IllegalStateException.class);
+    handler.registerRpcMethod("someName", method);
+  }
+
+  @Test
+  public void testDoubleUnregisterRpcMethod() {
+    RpcHandler.RpcMethod method = new ErroringRpcMethod();
+    handler.registerRpcMethod("someName", method);
+    handler.unregisterRpcMethod("someName");
+    thrown.expect(IllegalStateException.class);
+    handler.unregisterRpcMethod("someName");
+  }
+
   private MockHttpExchange makeExchange(String protocol, String method,
         String path, String contextPath) throws Exception {
     MockHttpExchange ex = new MockHttpExchange(protocol, method, path,
@@ -130,5 +244,12 @@ public class RpcHandlerTest {
 
   private InputStream stringToStream(String str) {
     return new ByteArrayInputStream(str.getBytes(charset));
+  }
+
+  private static class ErroringRpcMethod implements RpcHandler.RpcMethod {
+    @Override
+    public Object run(List request) throws Exception {
+      throw new RuntimeException();
+    }
   }
 }

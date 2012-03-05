@@ -16,13 +16,17 @@ package adaptorlib;
 
 import static org.junit.Assert.*;
 
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 
 import java.net.URI;
 import java.util.*;
 
 /** Tests for {@link GsaFeedFileMaker}. */
 public class GsaFeedFileMakerTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   private DocIdEncoder encoder = new MockDocIdCodec();
   private GsaFeedFileMaker meker = new GsaFeedFileMaker(encoder);
 
@@ -57,13 +61,9 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\""
-        + " crawl-once=\"false\""
-        + " lock=\"false\" mimetype=\"text/plain\""
+        + "<record mimetype=\"text/plain\""
         + " url=\"http://localhost/E11\"/>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\""
-        + " crawl-once=\"false\""
-        + " lock=\"false\" mimetype=\"text/plain\""
+        + "<record mimetype=\"text/plain\""
         + " url=\"http://localhost/elefenta\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
@@ -87,20 +87,19 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\""
-        + " crawl-once=\"false\" displayurl=\"http://f000nkey.net\""
-        + " lock=\"false\" mimetype=\"text/plain\""
+        + "<record displayurl=\"http://f000nkey.net\" mimetype=\"text/plain\""
         + " url=\"http://localhost/E11\"/>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\""
-        + " crawl-once=\"false\" displayurl=\"http://yankee.doodle.com\""
+        + "<record crawl-immediately=\"true\""
+        + " displayurl=\"http://yankee.doodle.com\""
         + " last-modified=\"Thu, 01 Jan 1970 00:00:00 +0000\""
-        + " lock=\"false\" mimetype=\"text/plain\""
-        + " url=\"http://localhost/elefenta\"/>\n"
-        + "<record action=\"add\" crawl-immediately=\"false\""
-        + " crawl-once=\"false\" displayurl=\"http://google.com/news\"" 
+        + " mimetype=\"text/plain\" url=\"http://localhost/elefenta\"/>\n"
+        + "<record displayurl=\"http://google.com/news\""
         + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
-        + " lock=\"false\" mimetype=\"text/plain\""
-        + " url=\"http://localhost/gone\"/>\n"
+        + " mimetype=\"text/plain\" url=\"http://localhost/gone\"/>\n"
+        + "<record crawl-immediately=\"true\" crawl-once=\"true\" lock=\"true\""
+        + " mimetype=\"text/plain\" url=\"http://localhost/flagson\"/>\n"
+        + "<record action=\"delete\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/deleted\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
@@ -120,6 +119,12 @@ public class GsaFeedFileMakerTest {
     attrBuilder.setCrawlImmediately(false);    
     attrBuilder.setDocId(new DocId("gone"));
     ids.add(attrBuilder.build());
+
+    ids.add(new DocIdPusher.Record.Builder(new DocId("flagson"))
+        .setLock(true).setCrawlImmediately(true).setCrawlOnce(true).build());
+
+    ids.add(new DocIdPusher.Record.Builder(new DocId("deleted"))
+        .setDeleteFromIndex(true).build());
 
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     xml = xml.replaceAll("\r\n", "\n");
@@ -172,5 +177,14 @@ public class GsaFeedFileMakerTest {
     String xml = meker.makeMetadataAndUrlXml("test", acls);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testUnsupportedDocIdSenderItem() {
+    class UnsupportedItem implements DocIdSender.Item {};
+    List<UnsupportedItem> items = new ArrayList<UnsupportedItem>();
+    items.add(new UnsupportedItem());
+    thrown.expect(IllegalArgumentException.class);
+    meker.makeMetadataAndUrlXml("test", items);
   }
 }

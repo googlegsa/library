@@ -52,6 +52,33 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
+  public void testAdaptorContext() throws Exception {
+    class PollingIncrNullAdaptor extends NullAdaptor {
+      @Override
+      public void init(AdaptorContext context) {
+        assertSame(config, context.getConfig());
+        assertNotNull(context.getDocIdPusher());
+        assertNotNull(context.getDocIdEncoder());
+        GetDocIdsErrorHandler originalHandler
+            = context.getGetDocIdsErrorHandler();
+        GetDocIdsErrorHandler replacementHandler
+            = new DefaultGetDocIdsErrorHandler();
+        assertNotNull(originalHandler);
+        context.setGetDocIdsErrorHandler(replacementHandler);
+        assertSame(replacementHandler, context.getGetDocIdsErrorHandler());
+
+        StatusSource source = new BasicStatusSource("test",
+            new Status(Status.Code.NORMAL));
+        context.addStatusSource(source);
+        context.removeStatusSource(source);
+      }
+    }
+    PollingIncrNullAdaptor adaptor = new PollingIncrNullAdaptor();
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    gsa.start();
+  }
+
+  @Test
   public void testPollingIncrementalAdaptor() throws Exception {
     class PollingIncrNullAdaptor extends NullAdaptor
         implements PollingIncrementalAdaptor {
@@ -95,6 +122,17 @@ public class GsaCommunicationHandlerTest {
     gsa.start();
     assertTrue(adaptor.inited);
     URL url = new URL("http", "localhost", config.getServerPort(), "/");
+    URLConnection conn = url.openConnection();
+    thrown.expect(java.io.FileNotFoundException.class);
+    conn.getContent();
+  }
+
+  @Test
+  public void testBasicHttpsListen() throws Exception {
+    config.setValue("server.secure", "true");
+    gsa.start();
+    assertTrue(adaptor.inited);
+    URL url = new URL("https", "localhost", config.getServerPort(), "/");
     URLConnection conn = url.openConnection();
     thrown.expect(java.io.FileNotFoundException.class);
     conn.getContent();

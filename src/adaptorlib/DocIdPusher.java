@@ -272,17 +272,17 @@ public interface DocIdPusher {
         return this;
       }
     
-      public Builder setCrawlImmediately(boolean b) {
+      public Builder setCrawlImmediately(boolean crawlImmediately) {
         this.crawlImmediately = crawlImmediately;
         return this;
       }
     
-      public Builder setCrawlOnce(boolean b) {
+      public Builder setCrawlOnce(boolean crawlOnce) {
         this.crawlOnce = crawlOnce;
         return this;
       }
     
-      public Builder setLock(boolean b) {
+      public Builder setLock(boolean lock) {
         this.lock = lock;
         return this;
       }

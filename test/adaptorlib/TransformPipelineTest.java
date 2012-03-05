@@ -108,6 +108,16 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline();
     pipeline.add(new IncrementTransform());
     pipeline.add(new ProductTransform(2));
+
+    {
+      // This set of operations should have no effect.
+      DocumentTransform transform1 = new IncrementTransform();
+      DocumentTransform transform2 = new IncrementTransform();
+      pipeline.add(transform1);
+      assertSame(transform1, pipeline.set(pipeline.size() - 1, transform2));
+      assertSame(transform2, pipeline.remove(pipeline.size() - 1));
+    }
+
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -176,6 +186,74 @@ public class TransformPipelineTest {
       assertEquals(Collections.singletonMap("int", "0"), metadata);
       assertEquals(Collections.singletonMap("int", "1"), params);
     }
+  }
+
+  @Test
+  public void testResetTransform() throws Exception {
+    TransformPipeline pipeline = new TransformPipeline();
+    pipeline.add(new AbstractDocumentTransform() {
+      @Override
+      public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                            Map<String, String> metadata, Map<String, String> p)
+          throws IOException {
+        // Modifying contentIn is not allowed.
+        contentIn.reset();
+      }
+    });
+    thrown.expect(UnsupportedOperationException.class);
+    pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
+        new HashMap<String, String>(), new HashMap<String, String>());
+  }
+
+  @Test
+  public void testWriteTransform1() throws Exception {
+    TransformPipeline pipeline = new TransformPipeline();
+    pipeline.add(new AbstractDocumentTransform() {
+      @Override
+      public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                            Map<String, String> metadata, Map<String, String> p)
+          throws IOException {
+        // Modifying contentIn is not allowed.
+        contentIn.write(new byte[1], 0, 1);
+      }
+    });
+    thrown.expect(UnsupportedOperationException.class);
+    pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
+        new HashMap<String, String>(), new HashMap<String, String>());
+  }
+
+  @Test
+  public void testWriteTransform2() throws Exception {
+    TransformPipeline pipeline = new TransformPipeline();
+    pipeline.add(new AbstractDocumentTransform() {
+      @Override
+      public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                            Map<String, String> metadata, Map<String, String> p)
+          throws IOException {
+        // Modifying contentIn is not allowed.
+        contentIn.write(0);
+      }
+    });
+    thrown.expect(UnsupportedOperationException.class);
+    pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
+        new HashMap<String, String>(), new HashMap<String, String>());
+  }
+
+  @Test
+  public void testWriteTransform3() throws Exception {
+    TransformPipeline pipeline = new TransformPipeline();
+    pipeline.add(new AbstractDocumentTransform() {
+      @Override
+      public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
+                            Map<String, String> metadata, Map<String, String> p)
+          throws IOException {
+        // Modifying contentIn is not allowed.
+        contentIn.write(new byte[1]);
+      }
+    });
+    thrown.expect(UnsupportedOperationException.class);
+    pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
+        new HashMap<String, String>(), new HashMap<String, String>());
   }
 
   private static class IncrementTransform extends AbstractDocumentTransform {

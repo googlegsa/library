@@ -93,102 +93,116 @@ public class AclTest {
 
   @Test
   public void testAccessors() {
-    Set<String> denyGroups = Collections.unmodifiableSet(new HashSet<String>(
-        Arrays.asList("dg1", "dg2", "g3")));
-    Set<String> permitGroups = Collections.unmodifiableSet(new HashSet<String>(
-        Arrays.asList("pg1", "pg2", "g3")));
-    Set<String> denyUsers = Collections.unmodifiableSet(new HashSet<String>(
-        Arrays.asList("du1", "du2", "du3", "u4")));
-    Set<String> permitUsers = Collections.unmodifiableSet(new HashSet<String>(
-        Arrays.asList("pu1", "pu2", "u4", "g3")));
-    DocId inheritFrom = new DocId("something");
-    Acl.InheritanceType inheritType = Acl.InheritanceType.CHILD_OVERRIDES;
+    final Set<String> goldenDenyGroups = Collections.unmodifiableSet(
+        new HashSet<String>(Arrays.asList("dg1", "dg2", "g3")));
+    final Set<String> goldenPermitGroups = Collections.unmodifiableSet(
+        new HashSet<String>(Arrays.asList("pg1", "pg2", "g3")));
+    final Set<String> goldenDenyUsers = Collections.unmodifiableSet(
+        new HashSet<String>(Arrays.asList("du1", "du2", "du3", "u4")));
+    final Set<String> goldenPermitUsers = Collections.unmodifiableSet(
+        new HashSet<String>(Arrays.asList("pu1", "pu2", "u4", "g3")));
+    final DocId goldenInheritFrom = new DocId("something");
+    final Acl.InheritanceType goldenInheritType
+        = Acl.InheritanceType.CHILD_OVERRIDES;
 
+    Set<String> denyGroups = new HashSet<String>(goldenDenyGroups);
+    Set<String> permitGroups = new HashSet<String>(goldenPermitGroups);
+    Set<String> denyUsers = new HashSet<String>(goldenDenyUsers);
+    Set<String> permitUsers = new HashSet<String>(goldenPermitUsers);
     Acl.Builder builder = new Acl.Builder()
         .setDenyGroups(denyGroups).setPermitGroups(permitGroups)
         .setDenyUsers(denyUsers).setPermitUsers(permitUsers)
-        .setInheritFrom(inheritFrom).setInheritanceType(inheritType);
+        .setInheritFrom(goldenInheritFrom)
+        .setInheritanceType(goldenInheritType);
     Acl acl = builder.build();
-    assertEquals(denyGroups, acl.getDenyGroups());
-    assertEquals(permitGroups, acl.getPermitGroups());
-    assertEquals(denyUsers, acl.getDenyUsers());
-    assertEquals(permitUsers, acl.getPermitUsers());
-    assertEquals(inheritFrom, acl.getInheritFrom());
-    assertEquals(inheritType, acl.getInheritanceType());
+    assertEquals(goldenDenyGroups, acl.getDenyGroups());
+    assertEquals(goldenPermitGroups, acl.getPermitGroups());
+    assertEquals(goldenDenyUsers, acl.getDenyUsers());
+    assertEquals(goldenPermitUsers, acl.getPermitUsers());
+    assertEquals(goldenInheritFrom, acl.getInheritFrom());
+    assertEquals(goldenInheritType, acl.getInheritanceType());
 
-    // Verify that Builder doesn't share instances.
-    builder.getDenyGroups().clear();
-    builder.getPermitGroups().clear();
-    builder.getDenyUsers().clear();
-    builder.getPermitUsers().clear();
+    // Verify the builder makes copies of provided data.
+    denyGroups.clear();
+    permitGroups.clear();
+    denyUsers.clear();
+    permitUsers.clear();
+    assertEquals(acl, builder.build());
+
+    // Verify that Acl doesn't mutate due to changes in Builder.
+    builder.setDenyGroups(Collections.<String>emptySet());
+    builder.setPermitGroups(Collections.<String>emptySet());
+    builder.setDenyUsers(Collections.<String>emptySet());
+    builder.setPermitUsers(Collections.<String>emptySet());
     builder.setInheritFrom(null);
     builder.setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES);
 
-    assertEquals(denyGroups, acl.getDenyGroups());
-    assertEquals(permitGroups, acl.getPermitGroups());
-    assertEquals(denyUsers, acl.getDenyUsers());
-    assertEquals(permitUsers, acl.getPermitUsers());
-    assertEquals(inheritFrom, acl.getInheritFrom());
-    assertEquals(inheritType, acl.getInheritanceType());
+    assertEquals(goldenDenyGroups, acl.getDenyGroups());
+    assertEquals(goldenPermitGroups, acl.getPermitGroups());
+    assertEquals(goldenDenyUsers, acl.getDenyUsers());
+    assertEquals(goldenPermitUsers, acl.getPermitUsers());
+    assertEquals(goldenInheritFrom, acl.getInheritFrom());
+    assertEquals(goldenInheritType, acl.getInheritanceType());
   }
 
   @Test
   public void testDenyGroupsImmutability() {
-    Acl acl = Acl.EMPTY;
+    Acl acl = new Acl.Builder().setDenyGroups(
+        new HashSet<String>(Arrays.asList("item"))).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getDenyGroups().clear();
   }
 
   @Test
   public void testPermitGroupsImmutability() {
-    Acl acl = Acl.EMPTY;
+    Acl acl = new Acl.Builder().setPermitGroups(
+        new HashSet<String>(Arrays.asList("item"))).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getPermitGroups().clear();
   }
 
   @Test
   public void testDenyUsersImmutability() {
-    Acl acl = Acl.EMPTY;
+    Acl acl = new Acl.Builder().setDenyUsers(
+        new HashSet<String>(Arrays.asList("item"))).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getDenyUsers().clear();
   }
 
   @Test
   public void testPermitUsersImmutability() {
-    Acl acl = Acl.EMPTY;
+    Acl acl = new Acl.Builder().setPermitUsers(
+        new HashSet<String>(Arrays.asList("item"))).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getPermitUsers().clear();
   }
 
   @Test
   public void testNullUser() {
-    Acl.Builder builder = new Acl.Builder()
-        .setPermitUsers(Arrays.asList((String) null));
+    Acl.Builder builder = new Acl.Builder();
     thrown.expect(NullPointerException.class);
-    builder.build();
+    builder.setPermitUsers(Arrays.asList((String) null));
   }
 
   @Test
   public void testEmptyGroup() {
-    Acl.Builder builder = new Acl.Builder().setDenyGroups(Arrays.asList(""));
+    Acl.Builder builder = new Acl.Builder();
     thrown.expect(IllegalArgumentException.class);
-    builder.build();
+    builder.setDenyGroups(Arrays.asList(""));
   }
 
   @Test
   public void testWhitespaceSurroundingUserBefore() {
-    Acl.Builder builder = new Acl.Builder()
-        .setDenyUsers(Arrays.asList(" test"));
+    Acl.Builder builder = new Acl.Builder();
     thrown.expect(IllegalArgumentException.class);
-    builder.build();
+    builder.setDenyUsers(Arrays.asList(" test"));
   }
 
   @Test
   public void testWhitespaceSurroundingUserAfter() {
-    Acl.Builder builder = new Acl.Builder()
-        .setDenyUsers(Arrays.asList("test\t"));
+    Acl.Builder builder = new Acl.Builder();
     thrown.expect(IllegalArgumentException.class);
-    builder.build();
+    builder.setDenyUsers(Arrays.asList("test\t"));
   }
 
   @Test
@@ -196,21 +210,21 @@ public class AclTest {
     Acl.Builder builder = new Acl.Builder();
     Acl base = builder.build();
 
-    builder.getPermitGroups().add("testing");
+    builder.setPermitGroups(Collections.singleton("testing"));
     Acl permitGroups = builder.build();
-    builder.getPermitGroups().clear();
+    builder.setPermitGroups(Collections.<String>emptySet());
 
-    builder.getDenyGroups().add("testing");
+    builder.setDenyGroups(Collections.singleton("testing"));
     Acl denyGroups = builder.build();
-    builder.getDenyGroups().clear();
+    builder.setDenyGroups(Collections.<String>emptySet());
 
-    builder.getPermitUsers().add("testing");
+    builder.setPermitUsers(Collections.singleton("testing"));
     Acl permitUsers = builder.build();
-    builder.getPermitUsers().clear();
+    builder.setPermitUsers(Collections.<String>emptySet());
 
-    builder.getDenyUsers().add("testing");
+    builder.setDenyUsers(Collections.singleton("testing"));
     Acl denyUsers = builder.build();
-    builder.getDenyUsers().clear();
+    builder.setDenyUsers(Collections.<String>emptySet());
 
     builder.setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES);
     builder.setInheritFrom(new DocId("testing"));
