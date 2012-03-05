@@ -26,6 +26,7 @@ import java.util.logging.*;
  * Test cases for {@link Dashboard}.
  */
 public class DashboardTest {
+  private static final Locale locale = Locale.ENGLISH;
 
   @Test
   public void testLogRpcMethod() {
@@ -72,8 +73,8 @@ public class DashboardTest {
     }
 
     StatusMonitor monitor = new StatusMonitor();
-    Status status = new Status(Status.Code.NORMAL, "fine");
-    BasicStatusSource source = new BasicStatusSource("mock", status);
+    Status status = new MockStatus(Status.Code.NORMAL, "fine");
+    MockStatusSource source = new MockStatusSource("mock", status);
     monitor.addSource(source);
     Dashboard.StatusRpcMethod method = new Dashboard.StatusRpcMethod(monitor);
     List list = (List) method.run(null);
@@ -92,7 +93,7 @@ public class DashboardTest {
       }
     };
     StatusSource source = new Dashboard.LastPushStatusSource(journal);
-    assertNotNull(source.getName());
+    assertNotNull(source.getName(locale));
     Status status;
 
     ref.set(Journal.CompletionStatus.SUCCESS);
@@ -119,23 +120,23 @@ public class DashboardTest {
       }
     };
     StatusSource source = new Dashboard.RetrieverStatusSource(journal);
-    assertNotNull(source.getName());
+    assertNotNull(source.getName(locale));
     Status status;
 
     errorRate.set(0.);
     status = source.retrieveStatus();
     assertEquals(Status.Code.NORMAL, status.getCode());
-    assertNotNull(status.getMessage());
+    assertNotNull(status.getMessage(locale));
 
     errorRate.set(Dashboard.RetrieverStatusSource.WARNING_THRESHOLD);
     status = source.retrieveStatus();
     assertEquals(Status.Code.WARNING, status.getCode());
-    assertNotNull(status.getMessage());
+    assertNotNull(status.getMessage(locale));
 
     errorRate.set(Dashboard.RetrieverStatusSource.ERROR_THRESHOLD);
     status = source.retrieveStatus();
     assertEquals(Status.Code.ERROR, status.getCode());
-    assertNotNull(status.getMessage());
+    assertNotNull(status.getMessage(locale));
   }
 
   @Test
@@ -149,7 +150,7 @@ public class DashboardTest {
       }
     };
     StatusSource source = new Dashboard.GsaCrawlingStatusSource(journal);
-    assertNotNull(source.getName());
+    assertNotNull(source.getName(locale));
     Status status;
 
     gsaCrawled.set(true);

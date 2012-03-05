@@ -14,44 +14,79 @@
 
 package adaptorlib;
 
+import java.util.Locale;
+
 /**
  * Multi-state indicator providing the user with a notification of broken parts
- * of the system.
+ * of the system. A {@code Status} instance should not change its results over
+ * time; instead a {@link StatusSource} should return different instances as the
+ * status changes.
  */
-public class Status {
+public interface Status {
   /**
    * Available statuses for displaying state indicators on the dashboard.
    */
   public enum Code {
-    /** Empty LED. */
+    /**
+     * The status is disabled because it does not apply. Assumably the feature
+     * it monitors is disabled.
+     *
+     * <p>Represented with an empty LED.
+     */
     INACTIVE,
-    /** Empty LED. */
+    /**
+     * The status is enabled but was unable to be resolved. This is not an
+     * error, but simply a "we don't know yet" state. Consider a status that
+     * pings a machine to make sure it is alive and the network is up. While the
+     * very first ping is in progress "unavailable" would be the most
+     * appropriate status.
+     *
+     * <p>Represented with an empty LED.
+     */
     UNAVAILABLE,
-    /** Green LED. */
+    /**
+     * Everything is go; all is right with the world.
+     *
+     * <p>Represented with a green LED.
+     */
     NORMAL,
-    /** Yellow LED. */
+    /**
+     * There may be a problem, but maybe not; user intervention may aid the
+     * situation, but things may fix themselves. Alternatively, a user can't do
+     * anything to improve the situation, but they need to be aware that it is
+     * occuring.
+     *
+     * <p>Represented with a yellow LED.
+     */
     WARNING,
-    /** Red LED. */
+    /**
+     * There is a known problem; user intervention is likely needed to resolve
+     * the problem.
+     *
+     * <p>Represented with a red LED.
+     */
     ERROR,
   }
 
-  private final Code statusCode;
-  private final String message;
+  /**
+   * The code to represent the state of the status. Will not return {@code
+   * null}.
+   *
+   * @return the state of the status, but never {@code null}.
+   */
+  public Code getCode();
 
-  public Status(Code statusCode) {
-    this(statusCode, null);
-  }
-
-  public Status(Code statusCode, String message) {
-    this.statusCode = statusCode;
-    this.message = message;
-  }
-
-  public Code getCode() {
-    return statusCode;
-  }
-
-  public String getMessage() {
-    return message;
-  }
+  /**
+   * A message appropriate for displaying to an end-user concerning the state of
+   * the status. A message is not required and is only encouraged if it provides
+   * helpful information. For example, if {@link #getCode} returns {@link
+   * Code#NORMAL}, then a message is typically discouraged, unless it provides
+   * statistics or additional information not obvious when provided {@link
+   * StatusSource#getName} and {@link #getCode}.
+   *
+   * @param locale non-{@code null} locale for localization.
+   * @return a localized message for the end-user, or {@code null} if one is not
+   *     necessary.
+   */
+  public String getMessage(Locale locale);
 }

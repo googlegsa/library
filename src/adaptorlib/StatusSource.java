@@ -14,6 +14,8 @@
 
 package adaptorlib;
 
+import java.util.Locale;
+
 /**
  * A source of {@link Status} messages.
  */
@@ -29,6 +31,8 @@ public interface StatusSource {
   /**
    * Get the name of this source, for displaying to the user. This method should
    * never return {@code null}.
+   *
+   * @param locale non-{@code null} locale for localization.
    */
-  public String getName();
+  public String getName(Locale locale);
 }

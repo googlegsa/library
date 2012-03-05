@@ -67,8 +67,8 @@ public class GsaCommunicationHandlerTest {
         context.setGetDocIdsErrorHandler(replacementHandler);
         assertSame(replacementHandler, context.getGetDocIdsErrorHandler());
 
-        StatusSource source = new BasicStatusSource("test",
-            new Status(Status.Code.NORMAL));
+        StatusSource source = new MockStatusSource("test",
+            new MockStatus(Status.Code.NORMAL));
         context.addStatusSource(source);
         context.removeStatusSource(source);
       }

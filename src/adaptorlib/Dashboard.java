@@ -196,11 +196,13 @@ class Dashboard {
     public Object run(List request) {
       Map<StatusSource, Status> statuses = monitor.retrieveStatuses();
       List<Object> flatStatuses = new ArrayList<Object>(statuses.size());
+      // TODO(ejona): choose locale based on Accept-Languages.
+      Locale locale = Locale.ENGLISH;
       for (Map.Entry<StatusSource, Status> me : statuses.entrySet()) {
         Map<String, String> obj = new TreeMap<String, String>();
-        obj.put("source", me.getKey().getName());
+        obj.put("source", me.getKey().getName(locale));
         obj.put("code", me.getValue().getCode().name());
-        obj.put("message", me.getValue().getMessage());
+        obj.put("message", me.getValue().getMessage(locale));
         flatStatuses.add(obj);
       }
       return flatStatuses;
@@ -231,18 +233,19 @@ class Dashboard {
     public Status retrieveStatus() {
       switch (journal.getLastPushStatus()) {
         case SUCCESS:
-          return new Status(Status.Code.NORMAL);
+          return new TranslationStatus(Status.Code.NORMAL);
         case INTERRUPTION:
-          return new Status(Status.Code.WARNING, "Push was interrupted");
+          return new TranslationStatus(Status.Code.WARNING,
+              Translation.STATUS_FEED_INTERRUPTED);
         case FAILURE:
         default:
-          return new Status(Status.Code.ERROR);
+          return new TranslationStatus(Status.Code.ERROR);
       }
     }
 
     @Override
-    public String getName() {
-      return "Feed Pushing";
+    public String getName(Locale locale) {
+      return Translation.STATUS_FEED.toString(locale);
     }
   }
 
@@ -268,13 +271,13 @@ class Dashboard {
       } else {
         code = Status.Code.NORMAL;
       }
-      return new Status(code,
-          "Error rate: " + (int) Math.ceil(rate * 100) + "%");
+      return new TranslationStatus(code, Translation.STATUS_ERROR_RATE_RATE,
+          (int) Math.ceil(rate * 100));
     }
 
     @Override
-    public String getName() {
-      return "Retriever Error Rate";
+    public String getName(Locale locale) {
+      return Translation.STATUS_ERROR_RATE.toString(locale);
     }
   }
 
@@ -288,16 +291,16 @@ class Dashboard {
     @Override
     public Status retrieveStatus() {
       if (journal.hasGsaCrawledWithinLastDay()) {
-        return new Status(Status.Code.NORMAL);
+        return new TranslationStatus(Status.Code.NORMAL);
       } else {
-        return new Status(Status.Code.WARNING,
-            "No accesses within the past day");
+        return new TranslationStatus(Status.Code.WARNING,
+            Translation.STATUS_CRAWLING_NO_ACCESSES_IN_PAST_DAY);
       }
     }
 
     @Override
-    public String getName() {
-      return "GSA Crawling";
+    public String getName(Locale locale) {
+      return Translation.STATUS_CRAWLING.toString(locale);
     }
   }
 }
