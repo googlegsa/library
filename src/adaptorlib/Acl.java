@@ -26,10 +26,15 @@ import java.util.logging.*;
  * disallowed to prevent confusion since {@code null} doesn't make sense, {@code
  * ""} would be ignored by the GSA, and surrounding whitespace is automatically
  * trimmed by the GSA.
+ *
+ * <p>It is very important to note that a completely empty ACL (one that has all
+ * defaults) is equivalent to having no ACLs on the GSA, which is typically
+ * treated as "public."
  */
 public class Acl {
   /**
-   * Empty convenience instance with all defaults used.
+   * Empty convenience instance with all defaults used. This is equivalent to
+   * having no ACLs on the GSA, which is typically treated as "public."
    *
    * @see Builder#Acl.Builder()
    */
@@ -109,7 +114,9 @@ public class Acl {
    * Determine if the provided {@code userIdentifier} belonging to {@code
    * groups} is authorized, ignoring inheritance. Deny trumps permit,
    * independent of how specific the rule is. So if a user is in permitUsers and
-   * one of the user's groups is in denyGroups, that user will be denied.
+   * one of the user's groups is in denyGroups, that user will be denied. If a
+   * user and his groups are unspecified in the ACL, then the response is
+   * indeterminate.
    */
   public AuthzStatus isAuthorizedLocal(String userIdentifier,
                                        Collection<String> groups) {
@@ -159,15 +166,35 @@ public class Acl {
    * <p>It should also be noted that the leaf's inheritance type does not matter
    * and is ignored.
    *
-   * @see #isAuthorizedLocal
-   * @see InheritanceType
+   * <p>It is very important to note that a completely empty ACL (one that has
+   * all defaults) is equivalent to having no ACLs. The GSA considers content
+   * from the Adaptor as public unless it provides an ACL. Thus, empty ACLs
+   * cause a document to become public and the GSA does not use ACLs when
+   * considering public documents (and all results are PERMIT). However, for
+   * non-Adaptor situations, you can get a document to be private and have no
+   * ACLs. In these situations the ACLs are checked, but the result is
+   * INDETERMINATE and different authz checks must be made.
+   *
+   * <p>In order to get perceived-equivalent behavior to the GSA, use
+   * {@code true} for {@code emptyImpliesPublic}; in order to get identical ACL
+   * authorization behavior (even though it would most commonly not be
+   * computed), use {@code false} for {@code emptyImpliesPublic}.
+   *
+   * @param userIdentifier the username of the user
+   * @param groups all the groups the user belongs to
+   * @param aclChain ordered list of ACLs from root to leaf
+   * @param emptyImpliesPublic whether an empty ACL implies that the document is
+   *     public (if in question, use {@code true}).
    * @throws IllegalArgumentException if the chain is empty, the first element
    *     of the chain's {@code getInheritFrom() != null}, or if any element but
    *     the first has {@code getInheritFrom() == null}.
+   * @see #isAuthorizedLocal
+   * @see InheritanceType
    */
   public static AuthzStatus isAuthorized(String userIdentifier,
                                          Collection<String> groups,
-                                         List<Acl> aclChain) {
+                                         List<Acl> aclChain,
+                                         boolean emptyImpliesPublic) {
     // Check for completely broken chains. Users of the API should be aware
     // enough to easily prevent these from happening. These also don't directly
     // relate to a case on the GSA because the GSA is working more on the
@@ -197,7 +224,8 @@ public class Acl {
       if (acl.equals(EMPTY)) {
         log.log(Level.FINE, "Chain only has one ACL and it is empty. This "
             + "implies 'no ACLs.'");
-        return AuthzStatus.INDETERMINATE;
+        return emptyImpliesPublic
+            ? AuthzStatus.PERMIT : AuthzStatus.INDETERMINATE;
       }
     }
     for (int i = 0; i < aclChain.size() - 1; i++) {
@@ -237,21 +265,27 @@ public class Acl {
   /**
    * Check authz for many DocIds at once. This will only fetch ACL information
    * for a DocId once, even when considering inheritFrom. It will then create
-   * the appropriate chains and call {@link #isAuthorized isAuthorized()}. If
-   * there is an ACL inheritance cycle, then {@link AuthzStatus#INDETERMINATE}
-   * will be the result for that DocId.
+   * the appropriate chains and call {@link #isAuthorized isAuthorized()}.
    *
-   * <p>If an ACL was unable to be retrieved, it will be replaced with an empty
-   * ACL with no inheritFrom and with an inheritanceType of {@link
-   * InheritanceType#LEAF_NODE}. This will cause the result for the DocId to be
-   * either {@link AuthzStatus#INDETERMINATE} or {@link AuthzStatus#DENY},
-   * depending on where it is in the chain.
+   * <p>For information concerning {@code emptyImpliesPublic}, please see {@link
+   * #isAuthorized isAuthorized} for the reasoning and behavior of the option.
    *
+   * <p>If there is an inheritance cycle, an ACL for a DocId in {@code ids} was
+   * not returned by {@code retriever} when requested, or an inherited ACL was
+   * not returned by {@code retriever} when requested, its response will be
+   * {@link AuthzStatus#INDETERMINATE} for that DocId.
+   *
+   * @param userIdentifier the username of the user
+   * @param groups all the groups the user belongs to
+   * @param ids collection of DocIds that need authz performed
+   * @param retriever object to use to obtain an ACL for a given DocId
+   * @param emptyImpliesPublic whether an empty ACL implies that the document is
+   *     public (if in question, use {@code true}).
    * @throws IOException if the retriever throws an IOException
    */
   public static Map<DocId, AuthzStatus> isAuthorizedBatch(
       String userIdentifier, Collection<String> groups, Collection<DocId> ids,
-      BatchRetriever retriever) throws IOException {
+      BatchRetriever retriever, boolean emptyImpliesPublic) throws IOException {
     Map<DocId, Acl> acls = retrieveNecessaryAcls(ids, retriever);
     Map<DocId, AuthzStatus> results
         = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
@@ -262,7 +296,8 @@ public class Acl {
         // There was a cycle or other problem generating the chain.
         result = AuthzStatus.INDETERMINATE;
       } else {
-        result = isAuthorized(userIdentifier, groups, chain);
+        result = isAuthorized(userIdentifier, groups, chain,
+            emptyImpliesPublic);
       }
       results.put(docId, result);
     }
@@ -339,6 +374,11 @@ public class Acl {
       Acl acl = acls.get(cur);
       if (acl == null) {
         if (chain.isEmpty()) {
+          // The GSA turns this into a chain containing only an empty ACL (which
+          // eventually becomes indeterminate), but we want this to be
+          // indeterminate immediately because we do not have public/private
+          // flags for documents and we don't want to accidentally cause a
+          // document to become public.
           log.log(Level.FINE, "Document does not seem to use ACLs: {0}", cur);
         } else {
           log.log(Level.WARNING, "Missing ACLs for document ''{0}'' inherited "

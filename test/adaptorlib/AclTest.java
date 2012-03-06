@@ -302,15 +302,15 @@ public class AclTest {
     Collection<String> empty
         = Collections.unmodifiableList(Collections.<String>emptyList());
 
-    assertEquals(AuthzStatus.PERMIT,
-        Acl.isAuthorized("user", empty, Arrays.asList(root, middle, leaf)));
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized("user", empty,
+          Arrays.asList(root, middle, leaf), false));
   }
 
   @Test
   public void testEmptyAclChain() {
     thrown.expect(IllegalArgumentException.class);
     Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Collections.<Acl>emptyList());
+                     Collections.<Acl>emptyList(), false);
   }
 
   @Test
@@ -318,7 +318,7 @@ public class AclTest {
     Acl acl = new Acl.Builder().setInheritFrom(new DocId("parent")).build();
     thrown.expect(IllegalArgumentException.class);
     Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Collections.singletonList(acl));
+                     Collections.singletonList(acl), false);
   }
 
   @Test
@@ -330,7 +330,7 @@ public class AclTest {
 
     thrown.expect(IllegalArgumentException.class);
     Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Arrays.asList(root, child, broken));
+                     Arrays.asList(root, child, broken), false);
   }
 
   @Test
@@ -343,7 +343,7 @@ public class AclTest {
     List<String> groups = Arrays.asList("eng");
     thrown.expect(NullPointerException.class);
     Acl.isAuthorizedBatch(user, groups, Arrays.asList(new DocId("1")),
-                          retriever);
+                          retriever, false);
   }
 
   @Test
@@ -358,7 +358,7 @@ public class AclTest {
     String user = "user";
     List<String> groups = Arrays.asList("wrong group");
     assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(id, id2), retriever).get(id));
+        Arrays.asList(id, id2), retriever, true).get(id));
   }
 
   @Test
@@ -386,7 +386,7 @@ public class AclTest {
     String user = "user";
     List<String> groups = Collections.emptyList();
     assertEquals(AuthzStatus.PERMIT, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(file), retriever).get(file));
+        Arrays.asList(file), retriever, false).get(file));
   }
 
   @Test
@@ -443,7 +443,15 @@ public class AclTest {
     String user = "user";
     List<String> groups = Collections.emptyList();
     assertEquals(golden, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(file1, file2), retriever));
+        Arrays.asList(file1, file2), retriever, false));
+  }
+
+  @Test
+  public void testEmptyImpliesPublic() {
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized("user",
+        Collections.<String>emptyList(), Arrays.asList(Acl.EMPTY), true));
+    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorized("user",
+        Collections.<String>emptyList(), Arrays.asList(Acl.EMPTY), false));
   }
 
   @Test
@@ -496,7 +504,7 @@ public class AclTest {
       Collection<String> groups, DocId id, Acl.BatchRetriever retriever)
       throws IOException {
     return Acl.isAuthorizedBatch(userIdentifier, groups, Arrays.asList(id),
-                                 retriever).get(id);
+                                 retriever, false).get(id);
   }
 
   private void testRule(Acl.InheritanceType rule, AuthzStatus child,
