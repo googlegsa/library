@@ -219,8 +219,8 @@ public class GsaFeedFileSenderTest {
         throw new IOException();
       }
     });
-    String longMsg ="Some random really long string\n";
-    int numRepeats = 1024 * 1024;
+    String longMsg = "Some random really long string\n";
+    int numRepeats = 1024 * 256;
     StringBuilder sb = new StringBuilder(longMsg.length() * numRepeats);
     for (int i = 0; i < numRepeats; i++) {
       sb.append(longMsg);
