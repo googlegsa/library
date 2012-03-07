@@ -34,12 +34,22 @@ public class TestHelper {
     return isWindows;
   }
 
+  private static boolean isRunningOnMac() {
+    String osName = System.getProperty("os.name");
+    boolean isMac = osName.toLowerCase().startsWith("mac");
+    return isMac;
+  }
+
   public static void assumeOsIsNotWindows() {
     assumeTrue(!isRunningOnWindows());
   }
 
   public static void assumeOsIsWindows() {
     assumeTrue(isRunningOnWindows());
+  }
+
+  public static void assumeOsIsNotMac() {
+    assumeTrue(!isRunningOnMac());
   }
 
   public static List<DocId> getDocIds(Adaptor adaptor, Map<String, String> configEntries)

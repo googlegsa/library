@@ -247,7 +247,7 @@ public class DocumentHandlerTest {
         new String[0], null, sessionManager, null, 0, false, false);
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
-        new KerberosPrincipal("someuser")));
+        new KerberosPrincipal("someuser@not-domain")));
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }

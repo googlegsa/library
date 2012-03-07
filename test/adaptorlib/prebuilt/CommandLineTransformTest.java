@@ -70,7 +70,7 @@ public class CommandLineTransformTest {
     CommandLineTransform cmd = new CommandLineTransform();
     cmd.setTransformCommand(Arrays.asList(new String[] {"/bin/sh", "-c",
       // Process content.
-      "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(tempfile);"
+      "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(mktemp /tmp/adaptor.test.XXXXXXXX);"
       // Process metadata.
       + "(sed s/1/2/g < \"$META\" > \"$TMPFILE\"; cp \"$TMPFILE\" \"$META\") >&2;"
       // Process params.

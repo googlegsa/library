@@ -219,10 +219,11 @@ public class GsaFeedFileSenderTest {
         throw new IOException();
       }
     });
-
-    StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < 1024 * 1024; i++) {
-      sb.append("Some random really long string\n");
+    String longMsg ="Some random really long string\n";
+    int numRepeats = 1024 * 1024;
+    StringBuilder sb = new StringBuilder(longMsg.length() * numRepeats);
+    for (int i = 0; i < numRepeats; i++) {
+      sb.append(longMsg);
     }
     // This payload has to be enough to exhaust output buffers, otherwise the
     // exception turns into a FailedReading exception.
