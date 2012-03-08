@@ -29,7 +29,6 @@ import org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder;
 import org.opensaml.saml2.binding.encoding.HTTPSOAP11Encoder;
 import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.NameID;
-import org.opensaml.xml.security.credential.Credential;
 
 import java.net.URI;
 import java.nio.charset.Charset;
@@ -39,14 +38,6 @@ import java.util.*;
  * Test cases for {@link AuthnHandler}.
  */
 public class AuthnHandlerTest {
-  /**
-   * Generated with {@code keytool -alias notadaptor -keystore
-   * test/com/google/enterprise/adaptor/AuthnHandlerTest.jks -genkeypair
-   * -keyalg RSA -validity 7300} and a password of {@code notchangeit}.
-   */
-  private static final String KEYSTORE_VALID_FILENAME
-      = "test/com/google/enterprise/adaptor/AuthnHandlerTest.valid.jks";
-
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -161,34 +152,6 @@ public class AuthnHandlerTest {
                                                new MockHttpContext(null, "/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
-  }
-
-  @Test
-  public void testKeyStore() throws Exception {
-    Credential cred = AuthnHandler.getCredential("notadaptor",
-        KEYSTORE_VALID_FILENAME, "JKS", "notchangeit");
-    assertNotNull(cred);
-  }
-
-  @Test
-  public void testKeyStoreInvalidType() throws Exception {
-    thrown.expect(RuntimeException.class);
-    Credential cred = AuthnHandler.getCredential("notadaptor",
-        KEYSTORE_VALID_FILENAME, "WRONG", "notchangeit");
-  }
-
-  @Test
-  public void testKeyStoreMissing() throws Exception {
-    thrown.expect(java.io.FileNotFoundException.class);
-    Credential cred = AuthnHandler.getCredential("notadaptor",
-      "notarealfile.jks", "JKS", "notchangeit");
-  }
-
-  @Test
-  public void testKeyStoreNoAlias() throws Exception {
-    thrown.expect(RuntimeException.class);
-    Credential cred = AuthnHandler.getCredential("notherealalias",
-        KEYSTORE_VALID_FILENAME, "JKS", "notchangeit");
   }
 
   private String massageMessage(String response) {

@@ -70,6 +70,38 @@
   <h2>Adaptor Configuration</h2>
   <table id="gaf-config-table"></table>
 
+  <h2>Sensitive Value Encoding</h2>
+  <p>Passwords and other security-sensitive configuration values are not saved
+    as simple plain-text in the configuration. Instead, they are encoded using
+    one of three methods.
+    <li><strong>Plain text</strong> allows the password or other information to
+      be read by anybody who can read the configuration.
+    <li><strong> Obfuscated</strong> encodes the information in a highly
+      unreadable format, but it is possible for anyone to retrieve the original
+      text.
+    <li><strong>Encrypted</strong> uses your HTTPS encryption key to encrypt the
+      value. An encrypted value is tied to the encryption key, so it cannot be
+      copied between Adaptors.</p>
+  <p><form id="gaf-sec-form">
+    Sensitive Value: <input type="password" name="secvalue" id="#gaf-sec-value">
+    <br>
+    <input type="radio" name="sectype" id="gaf-sec-type-pl" value="PLAIN_TEXT">
+    <label for="gaf-sec-type-pl">Plain Text</label>
+    <input type="radio" name="sectype" id="gaf-sec-type-obf" value="OBFUSCATED"
+      checked="checked">
+    <label for="gaf-sec-type-obf">Obfuscated</label>
+    <input type="radio" name="sectype" id="gaf-sec-type-pkc" value="ENCRYPTED">
+    <label for="gaf-sec-type-pkc">Encrypted
+    <span id="gaf-sec-enc-unavailable" style="display: none">(unavailable
+      because security has not been configured)</span></label><br>
+    <button id="gaf-sec-runenc" type="submit">Encode Sensitive Value</button>
+  </form></p>
+  <p>
+    Encoded Value:
+    <input type="input" disabled="disabled" id="gaf-sec-encoded">
+    <span id="gaf-sec-processing" style="display: none">Encoding...</span>
+  </p>
+
   <h2>Recent Log Messages</h2>
   <pre id="gaf-log"></pre>
 </body>

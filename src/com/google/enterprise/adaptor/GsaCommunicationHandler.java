@@ -26,8 +26,11 @@ import it.sauronsoftware.cron4j.Scheduler;
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
+import java.security.*;
+import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
@@ -65,14 +68,14 @@ public class GsaCommunicationHandler {
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
   private final DocIdCodec docIdCodec;
   private final DocIdSender docIdSender;
-  private final Dashboard dashboard;
+  private Dashboard dashboard;
+  private SensitiveValueCodec secureValueCodec;
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     this.adaptor = adaptor;
     this.config = config;
 
     journal = new Journal(config.isJournalReducedMem());
-    dashboard = new Dashboard(config, this, journal);
     docIdCodec = new DocIdCodec(config);
     GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec);
@@ -86,8 +89,19 @@ public class GsaCommunicationHandler {
       throw new IllegalStateException("Already listening");
     }
 
-    int port = config.getServerPort();
     boolean secure = config.isServerSecure();
+    KeyPair key = null;
+    try {
+      key = getKeyPair(config.getServerKeyAlias());
+    } catch (Exception ex) {
+      // The exception is only fatal if we are in secure mode.
+      if (secure) {
+        throw ex;
+      }
+    }
+    secureValueCodec = new SensitiveValueCodec(key);
+
+    int port = config.getServerPort();
     InetSocketAddress addr = new InetSocketAddress(port);
     if (!secure) {
       server = HttpServer.create(addr, 0);
@@ -142,8 +156,7 @@ public class GsaCommunicationHandler {
           new SamlAssertionConsumerHandler(config.getServerHostname(),
             config.getGsaCharacterEncoding(), sessionManager));
       authnHandler = new AuthnHandler(config.getServerHostname(),
-          config.getGsaCharacterEncoding(), sessionManager,
-          config.getServerKeyAlias(), metadata);
+          config.getGsaCharacterEncoding(), sessionManager, metadata, key);
       server.createContext("/saml-authz", new SamlBatchAuthzHandler(
           config.getServerHostname(), config.getGsaCharacterEncoding(),
           adaptor, docIdCodec, metadata));
@@ -164,7 +177,9 @@ public class GsaCommunicationHandler {
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
 
-    dashboard.start(sessionManager);
+    dashboard = new Dashboard(config, this, journal, sessionManager,
+        secureValueCodec);
+    dashboard.start();
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
@@ -262,6 +277,66 @@ public class GsaCommunicationHandler {
     return elements.size() > 0 ? new TransformPipeline(elements) : null;
   }
 
+  /**
+   * Retrieve our default KeyPair from the default keystore. The key should have
+   * the same password as the keystore.
+   */
+  private static KeyPair getKeyPair(String alias) throws IOException {
+    final String keystoreKey = "javax.net.ssl.keyStore";
+    final String keystorePasswordKey = "javax.net.ssl.keyStorePassword";
+    String keystore = System.getProperty(keystoreKey);
+    String keystoreType = System.getProperty("javax.net.ssl.keyStoreType",
+                                             KeyStore.getDefaultType());
+    String keystorePassword = System.getProperty(keystorePasswordKey);
+
+    if (keystore == null) {
+      throw new NullPointerException("You must set " + keystoreKey);
+    }
+    if (keystorePassword == null) {
+      throw new NullPointerException("You must set " + keystorePasswordKey);
+    }
+
+    return getKeyPair(alias, keystore, keystoreType, keystorePassword);
+  }
+
+  static KeyPair getKeyPair(String alias, String keystoreFile,
+      String keystoreType, String keystorePasswordStr) throws IOException {
+    PrivateKey privateKey;
+    PublicKey publicKey;
+    try {
+      KeyStore ks = KeyStore.getInstance(keystoreType);
+      InputStream ksis = new FileInputStream(keystoreFile);
+      char[] keystorePassword = keystorePasswordStr == null ? null
+          : keystorePasswordStr.toCharArray();
+      try {
+        ks.load(ksis, keystorePassword);
+      } catch (NoSuchAlgorithmException ex) {
+        throw new RuntimeException(ex);
+      } catch (CertificateException ex) {
+        throw new RuntimeException(ex);
+      } finally {
+        ksis.close();
+      }
+      Key key = null;
+      try {
+        key = ks.getKey(alias, keystorePassword);
+      } catch (NoSuchAlgorithmException ex) {
+        throw new RuntimeException(ex);
+      } catch (UnrecoverableKeyException ex) {
+        throw new RuntimeException(ex);
+      }
+      if (key == null) {
+        throw new IllegalStateException("Could not find key for alias '"
+                                        + alias + "'");
+      }
+      privateKey = (PrivateKey) key;
+      publicKey = ks.getCertificate(alias).getPublicKey();
+    } catch (KeyStoreException ex) {
+      throw new RuntimeException(ex);
+    }
+    return new KeyPair(publicKey, privateKey);
+  }
+
   // Useful as a separate method during testing.
   static void bootstrapOpenSaml() {
     try {
@@ -300,7 +375,10 @@ public class GsaCommunicationHandler {
       server.stop(maxDelay);
       server = null;
     }
-    dashboard.stop();
+    if (dashboard != null) {
+      dashboard.stop();
+      dashboard = null;
+    }
     adaptor.destroy();
   }
 
@@ -447,6 +525,11 @@ public class GsaCommunicationHandler {
     public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
       return ((PushRunnable) docIdFullPusher.getRunnable())
           .getGetDocIdsErrorHandler();
+    }
+
+    @Override
+    public SensitiveValueDecoder getSensitiveValueDecoder() {
+      return secureValueCodec;
     }
   }
 

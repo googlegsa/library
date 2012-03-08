@@ -54,4 +54,12 @@ public interface AdaptorContext {
    * Retrieve the current {@link GetDocIdsErrorHandler}.
    */
   public GetDocIdsErrorHandler getGetDocIdsErrorHandler();
+
+  /**
+   * Retrieve decoder for sensitive values, like passwords. To protect sensitive
+   * values, the user should have previously encoded them using the Dashboard.
+   * However, a user is still allowed to choose to keep sensitive values in
+   * plain text.
+   */
+  public SensitiveValueDecoder getSensitiveValueDecoder();
 }

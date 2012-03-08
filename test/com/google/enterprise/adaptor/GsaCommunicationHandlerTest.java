@@ -28,6 +28,16 @@ import java.util.concurrent.*;
  * Tests for {@link GsaCommunicationHandler}.
  */
 public class GsaCommunicationHandlerTest {
+  /**
+   * Generated with {@code keytool -alias notadaptor -keystore
+   * test/com/google/enterprise/adaptor/GsaCommunicationHandlerTest.valid.jks
+   * -storepass notchangeit -genkeypair -keyalg RSA -keypass notchangeit
+   * -validity 7300 -dname "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown,
+   *  ST=Unknown, C=Unknown"}.
+   */
+  private static final String KEYSTORE_VALID_FILENAME
+      = "test/com/google/enterprise/adaptor/GsaCommunicationHandlerTest.valid.jks";
+
   private Config config;
   private GsaCommunicationHandler gsa;
   private NullAdaptor adaptor = new NullAdaptor();
@@ -59,6 +69,7 @@ public class GsaCommunicationHandlerTest {
         assertSame(config, context.getConfig());
         assertNotNull(context.getDocIdPusher());
         assertNotNull(context.getDocIdEncoder());
+        assertNotNull(context.getSensitiveValueDecoder());
         GetDocIdsErrorHandler originalHandler
             = context.getGetDocIdsErrorHandler();
         GetDocIdsErrorHandler replacementHandler
@@ -244,6 +255,33 @@ public class GsaCommunicationHandlerTest {
     thrown.expect(RuntimeException.class);
     TransformPipeline pipeline
         = GsaCommunicationHandler.createTransformPipeline(config);
+  }
+
+  @Test
+  public void testKeyStore() throws Exception {
+    assertNotNull(GsaCommunicationHandler.getKeyPair("notadaptor",
+        KEYSTORE_VALID_FILENAME, "JKS", "notchangeit"));
+  }
+
+  @Test
+  public void testKeyStoreInvalidType() throws Exception {
+    thrown.expect(RuntimeException.class);
+    GsaCommunicationHandler.getKeyPair("notadaptor", KEYSTORE_VALID_FILENAME,
+        "WRONG", "notchangeit");
+  }
+
+  @Test
+  public void testKeyStoreMissing() throws Exception {
+    thrown.expect(java.io.FileNotFoundException.class);
+    GsaCommunicationHandler.getKeyPair("notadaptor", "notarealfile.jks", "JKS",
+        "notchangeit");
+  }
+
+  @Test
+  public void testKeyStoreNoAlias() throws Exception {
+    thrown.expect(RuntimeException.class);
+    GsaCommunicationHandler.getKeyPair("notherealalias",
+        KEYSTORE_VALID_FILENAME, "JKS", "notchangeit");
   }
 
   private static class NullAdaptor extends AbstractAdaptor {

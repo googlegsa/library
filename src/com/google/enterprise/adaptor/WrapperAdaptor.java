@@ -352,5 +352,10 @@ abstract class WrapperAdaptor implements Adaptor {
     public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
       return context.getGetDocIdsErrorHandler();
     }
+
+    @Override
+    public SensitiveValueDecoder getSensitiveValueDecoder() {
+      return context.getSensitiveValueDecoder();
+    }
   }
 }

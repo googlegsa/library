@@ -257,6 +257,29 @@ function checkConfig() {
   });
 }
 
+function encodeSensitiveValue() {
+  var valuesArray = $('#gaf-sec-form').serializeArray();
+  var values = {};
+  for (var i = 0; i < valuesArray.length; i++) {
+    values[valuesArray[i].name] = valuesArray[i].value;
+  }
+  var encvalue = $('#gaf-sec-encoded');
+  encvalue.val("");
+  var processing = $('#gaf-sec-processing');
+  processing.show();
+  rpc('encodeSensitiveValue', [values.secvalue, values.sectype],
+      function(result, error) {
+        processing.hide();
+        if (result === null) {
+          throw error !== null ? error : "Invalid response from server";
+        }
+        encvalue.val(result);
+        encvalue.select();
+      });
+  // Cancel submitting of form.
+  return false;
+}
+
 function getLogCallback(result, error) {
   if (result === null) {
     throw error;
@@ -337,11 +360,20 @@ function getStatusesCallback(result, error) {
   }
 }
 
+function isEncryptionSupportedCallback(result, error) {
+  if (result === null) {
+    $('#gaf-sec-type-pkc').prop('disabled', true);
+    $('#gaf-sec-enc-unavailable').show();
+  }
+}
+
 $(document).ready(function() {
   rpc('getStatuses', null, getStatusesCallback);
   rpc('getStats', null, getStatsCallback);
   rpc('getConfig', null, getConfigCallback);
   rpc('getLog', null, getLogCallback);
+  rpc('encodeSensitiveValue', ["", "ENCRYPTED"], isEncryptionSupportedCallback);
   $('#gaf-start-feed-push').click(startFeedPush);
   $('#gaf-check-config').click(checkConfig);
+  $('#gaf-sec-runenc').click(encodeSensitiveValue);
 });

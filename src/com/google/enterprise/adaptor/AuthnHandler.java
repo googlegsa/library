@@ -22,19 +22,10 @@ import com.sun.net.httpserver.HttpExchange;
 import org.opensaml.xml.security.SecurityHelper;
 import org.opensaml.xml.security.credential.Credential;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
-import java.security.Key;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
+import java.security.KeyPair;
 
 /**
  * A credentials gatherer that implements authentication by communicating with
@@ -64,16 +55,16 @@ class AuthnHandler extends AbstractHandler {
    * @param metadata SAML configuration of endpoints
    */
   AuthnHandler(String fallbackHostname, Charset defaultEncoding,
-               SessionManager<HttpExchange> sessionManager, String keyAlias,
-               SamlMetadata metadata) throws IOException {
+               SessionManager<HttpExchange> sessionManager,
+               SamlMetadata metadata, KeyPair key) {
     this(fallbackHostname, defaultEncoding, sessionManager, metadata,
-         new HttpClientAdapter(), getCredential(keyAlias));
+         new HttpClientAdapter(), key);
   }
 
   AuthnHandler(String fallbackHostname, Charset defaultEncoding,
                SessionManager<HttpExchange> sessionManager,
                SamlMetadata metadata, HttpClientInterface httpClient,
-               Credential cred) {
+               KeyPair key) {
     super(fallbackHostname, defaultEncoding);
     if (sessionManager == null || metadata == null || httpClient == null) {
       throw new NullPointerException();
@@ -81,7 +72,8 @@ class AuthnHandler extends AbstractHandler {
     this.sessionManager = sessionManager;
     this.metadata = metadata;
     this.httpClient = httpClient;
-    this.cred = cred;
+    this.cred = (key == null) ? null
+        : SecurityHelper.getSimpleCredential(key.getPublic(), key.getPrivate());
   }
 
   @Override
@@ -109,65 +101,5 @@ class AuthnHandler extends AbstractHandler {
             httpClient);
     authnState.startAttempt(client, getRequestUri(ex));
     client.sendAuthnRequest(new HttpExchangeOutTransportAdapter(ex, true));
-  }
-
-  /**
-   * Create a {@code Credential} usable by OpenSAML by accessing the default
-   * keystore. The key should have the same password as the keystore.
-   */
-  private static Credential getCredential(String alias) throws IOException {
-    final String keystoreKey = "javax.net.ssl.keyStore";
-    final String keystorePasswordKey = "javax.net.ssl.keyStorePassword";
-    String keystore = System.getProperty(keystoreKey);
-    String keystoreType = System.getProperty("javax.net.ssl.keyStoreType",
-                                             KeyStore.getDefaultType());
-    String keystorePassword = System.getProperty(keystorePasswordKey);
-
-    if (keystore == null) {
-      throw new NullPointerException("You must set " + keystoreKey);
-    }
-    if (keystorePassword == null) {
-      throw new NullPointerException("You must set " + keystorePasswordKey);
-    }
-
-    return getCredential(alias, keystore, keystoreType, keystorePassword);
-  }
-
-  static Credential getCredential(String alias, String keystoreFile,
-      String keystoreType, String keystorePasswordStr) throws IOException {
-    PrivateKey privateKey;
-    PublicKey publicKey;
-    try {
-      KeyStore ks = KeyStore.getInstance(keystoreType);
-      InputStream ksis = new FileInputStream(keystoreFile);
-      char[] keystorePassword = keystorePasswordStr == null ? null
-          : keystorePasswordStr.toCharArray();
-      try {
-        ks.load(ksis, keystorePassword);
-      } catch (NoSuchAlgorithmException ex) {
-        throw new RuntimeException(ex);
-      } catch (CertificateException ex) {
-        throw new RuntimeException(ex);
-      } finally {
-        ksis.close();
-      }
-      Key key = null;
-      try {
-        key = ks.getKey(alias, keystorePassword);
-      } catch (NoSuchAlgorithmException ex) {
-        throw new RuntimeException(ex);
-      } catch (UnrecoverableKeyException ex) {
-        throw new RuntimeException(ex);
-      }
-      if (key == null) {
-        throw new IllegalStateException("Could not find key for alias '"
-                                        + alias + "'");
-      }
-      privateKey = (PrivateKey) key;
-      publicKey = ks.getCertificate(alias).getPublicKey();
-    } catch (KeyStoreException ex) {
-      throw new RuntimeException(ex);
-    }
-    return SecurityHelper.getSimpleCredential(publicKey, privateKey);
   }
 }

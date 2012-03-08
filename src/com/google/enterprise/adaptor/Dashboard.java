@@ -42,12 +42,29 @@ class Dashboard {
   private CircularLogRpcMethod circularLogRpcMethod;
   private final StatusMonitor monitor = new StatusMonitor();
   private final GsaCommunicationHandler gsaCommHandler;
+  private final SessionManager<HttpExchange> sessionManager;
+  private final RpcHandler rpcHandler;
 
   public Dashboard(Config config, GsaCommunicationHandler gsaCommHandler,
-                   Journal journal) {
+                   Journal journal, SessionManager<HttpExchange> sessionManager,
+                   SensitiveValueCodec secureValueCodec) {
     this.config = config;
     this.gsaCommHandler = gsaCommHandler;
     this.journal = journal;
+    this.sessionManager = sessionManager;
+
+    rpcHandler = new RpcHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), sessionManager);
+    rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
+    circularLogRpcMethod = new CircularLogRpcMethod();
+    rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
+    rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
+    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
+    rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
+    rpcHandler.registerRpcMethod("checkForUpdatedConfig",
+        new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
+    rpcHandler.registerRpcMethod("encodeSensitiveValue",
+        new EncodeSensitiveValueMethod(secureValueCodec));
 
     monitor.addSource(new LastPushStatusSource(journal));
     monitor.addSource(new RetrieverStatusSource(journal));
@@ -55,7 +72,7 @@ class Dashboard {
   }
 
   /** Starts listening for connections to the dashboard. */
-  public void start(SessionManager<HttpExchange> sessionManager)
+  public void start()
       throws IOException, NoSuchAlgorithmException {
     int dashboardPort = config.getServerDashboardPort();
     boolean secure = config.isServerSecure();
@@ -87,8 +104,7 @@ class Dashboard {
         createAdminSecurityHandler(dashboardHandler, config, sessionManager,
                                    secure));
     dashboardServer.createContext("/rpc",
-        createAdminSecurityHandler(createRpcHandler(sessionManager, monitor),
-            config, sessionManager, secure));
+        createAdminSecurityHandler(rpcHandler, config, sessionManager, secure));
     dashboardServer.createContext("/",
         new RedirectHandler(config.getServerHostname(),
             config.getGsaCharacterEncoding(), "/dashboard"));
@@ -121,21 +137,6 @@ class Dashboard {
 
   public void removeStatusSource(StatusSource source) {
     monitor.removeSource(source);
-  }
-
-  private synchronized RpcHandler createRpcHandler(
-      SessionManager<HttpExchange> sessionManager, StatusMonitor monitor) {
-    RpcHandler rpcHandler = new RpcHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), sessionManager);
-    rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
-    circularLogRpcMethod = new CircularLogRpcMethod();
-    rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
-    rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
-    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
-    rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
-    rpcHandler.registerRpcMethod("checkForUpdatedConfig",
-        new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
-    return rpcHandler;
   }
 
   private class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
@@ -219,6 +220,40 @@ class Dashboard {
     @Override
     public Object run(List request) {
       return gsaComm.ensureLatestConfigLoaded();
+    }
+  }
+
+  static class EncodeSensitiveValueMethod implements RpcHandler.RpcMethod {
+    private final SensitiveValueCodec secureValueCodec;
+
+    public EncodeSensitiveValueMethod(SensitiveValueCodec secureValueCodec) {
+      this.secureValueCodec = secureValueCodec;
+    }
+
+    /**
+     * Requires two parameters: string to encode and security level.
+     */
+    @Override
+    public Object run(List request) {
+      if (request.size() < 2) {
+        throw new IllegalArgumentException("Required parameters are: string to "
+            + "encode and security level");
+      }
+      String readable = (String) request.get(0);
+      if (readable == null) {
+        throw new NullPointerException("String to encode must not be null");
+      }
+      String securityString = (String) request.get(1);
+      if (securityString == null) {
+        throw new NullPointerException("Security level must not be null");
+      }
+      SensitiveValueCodec.SecurityLevel security;
+      try {
+        security = SensitiveValueCodec.SecurityLevel.valueOf(securityString);
+      } catch (IllegalArgumentException ex) {
+        throw new IllegalArgumentException("Unknown security level", ex);
+      }
+      return secureValueCodec.encodeValue(readable, security);
     }
   }
 

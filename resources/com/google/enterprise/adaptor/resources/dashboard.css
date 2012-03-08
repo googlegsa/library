@@ -90,3 +90,8 @@
 #gaf-start-feed-push-error {
   color: red;
 }
+
+#gaf-sec-encoded {
+  font-family: monospace;
+  width: 30em;
+}
