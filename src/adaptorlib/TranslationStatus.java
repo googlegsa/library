@@ -41,6 +41,6 @@ class TranslationStatus implements Status {
 
   @Override
   public String getMessage(Locale locale) {
-    return message.toString(locale, params);
+    return message == null ? null : message.toString(locale, params);
   }
 }

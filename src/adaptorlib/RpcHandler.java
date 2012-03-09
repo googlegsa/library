@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.logging.*;
 
 /**
  * JSON-RPC handler for communication with the dashboard.
@@ -32,6 +33,9 @@ class RpcHandler extends AbstractHandler {
   private static final String XSRF_TOKEN_ATTR_NAME = "rpc-xsrf-token";
   /** Cookie name used to provide the XSRF token to client. */
   public static final String XSRF_TOKEN_HEADER_NAME = "X-Adaptor-XSRF-Token";
+
+  private static final Logger log
+      = Logger.getLogger(RpcHandler.class.getName());
 
   private final Charset charset = Charset.forName("UTF-8");
   private final Map<String, RpcMethod> methods
@@ -145,6 +149,9 @@ class RpcHandler extends AbstractHandler {
       error = e.getMessage();
       if (error == null) {
         error = "Unknown exception";
+        log.log(Level.WARNING, "Exception during RPC", e);
+      } else {
+        log.log(Level.FINE, "Exception during RPC", e);
       }
     }
     @SuppressWarnings("unchecked")
