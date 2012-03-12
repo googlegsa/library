@@ -16,6 +16,7 @@ package adaptorlib;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.util.*;
 
 /**
@@ -126,6 +127,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setAcl(Acl acl) {
       response.setAcl(acl);
     }
+
+    @Override
+    public void addExternalAnchor(URI uri, String text) {
+      response.addExternalAnchor(uri, text);
+    }
   }
 
   /**
@@ -166,6 +172,8 @@ abstract class WrapperAdaptor implements Adaptor {
     private String contentType;
     private Map<String, String> metadata;
     private Acl acl;
+    private List<URI> anchorUris = new ArrayList<URI>();
+    private List<String> anchorTexts = new ArrayList<String>();
     private boolean notFound;
 
     public GetContentsResponse(OutputStream os) {
@@ -203,6 +211,12 @@ abstract class WrapperAdaptor implements Adaptor {
       this.acl = acl;
     }
 
+    @Override
+    public void addExternalAnchor(URI uri, String text) {
+      anchorUris.add(uri);
+      anchorTexts.add(text);
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -213,6 +227,14 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public Acl getAcl() {
       return acl;
+    }
+
+    public List<URI> getAnchorUris() {
+      return anchorUris;
+    }
+
+    public List<String> getAnchorTexts() {
+      return anchorTexts;
     }
 
     public boolean isNotFound() {

@@ -22,6 +22,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -600,6 +601,21 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testAddAnchorLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.addExternalAnchor(URI.create("http://h/"), null);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
   public void testSmartAdaptor() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -652,6 +668,9 @@ public class DocumentHandlerTest {
             response.setMetadata(Collections.singletonMap("test", "ing"));
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
+            response.addExternalAnchor(URI.create("http://test/"), null);
+            response.addExternalAnchor(URI.create("ftp://host/path?val=1"),
+                "AaZz09,=-%");
             response.getOutputStream();
           }
         };
@@ -666,6 +685,9 @@ public class DocumentHandlerTest {
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
           + "http%3A%2F%2Flocalhost%2Ftesting"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+    assertEquals("http%3A%2F%2Ftest%2F,"
+        + "AaZz09%2C%3D-%25=ftp%3A%2F%2Fhost%2Fpath%3Fval%3D1",
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Anchor"));
   }
 
   @Test
@@ -742,6 +764,12 @@ public class DocumentHandlerTest {
   public void testFormAclHeaderEmpty() {
     assertEquals("",
         DocumentHandler.formAclHeader(Acl.EMPTY, new MockDocIdCodec()));
+  }
+
+  @Test
+  public void testFormExternalAnchorHeaderEmpty() {
+    assertEquals("", DocumentHandler.formExternalAnchorHeader(
+        Collections.<URI>emptyList(), Collections.<String>emptyList()));
   }
 
   @Test

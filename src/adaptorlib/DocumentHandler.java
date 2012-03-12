@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.security.Principal;
@@ -302,6 +303,24 @@ class DocumentHandler extends AbstractHandler {
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
   }
 
+  /**
+   * Format the GSA-specific anchor header value for extra crawl-time anchors.
+   */
+  static String formExternalAnchorHeader(List<URI> uris, List<String> texts) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < uris.size(); i++) {
+      URI uri = uris.get(i);
+      String text = texts.get(i);
+      if (text == null) {
+        sb.append(percentEncode(uri.toString()));
+        sb.append(",");
+      } else {
+        percentEncodeMapEntryPair(sb, text, uri.toString());
+      }
+    }
+    return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
+  }
+
   private static void percentEncodeMapEntryPair(StringBuilder sb, String key,
                                                 String value) {
     sb.append(percentEncode(key));
@@ -421,6 +440,8 @@ class DocumentHandler extends AbstractHandler {
     private String contentType;
     private Map<String, String> metadata = Collections.emptyMap();
     private Acl acl = Acl.EMPTY;
+    private List<URI> anchorUris = new ArrayList<URI>();
+    private List<String> anchorTexts = new ArrayList<String>();
     private final DocId docId;
 
     public DocumentResponse(HttpExchange ex, DocId docId) {
@@ -511,6 +532,15 @@ class DocumentHandler extends AbstractHandler {
       this.acl = acl;
     }
 
+    @Override
+    public void addExternalAnchor(URI uri, String text) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      anchorUris.add(uri);
+      anchorTexts.add(text);
+    }
+
     private long getWrittenContentSize() {
       return countingOs == null ? 0 : countingOs.getBytesWritten();
     }
@@ -572,6 +602,10 @@ class DocumentHandler extends AbstractHandler {
         if (!Acl.EMPTY.equals(acl)) {
           ex.getResponseHeaders().add("X-Gsa-External-Metadata",
                                       formAclHeader(acl, docIdEncoder));
+        }
+        if (!anchorUris.isEmpty()) {
+          ex.getResponseHeaders().add("X-Gsa-External-Anchor",
+              formExternalAnchorHeader(anchorUris, anchorTexts));
         }
       }
       if (useCompression) {
