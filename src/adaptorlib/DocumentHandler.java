@@ -537,6 +537,9 @@ class DocumentHandler extends AbstractHandler {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
       }
+      if (uri == null) {
+        throw new NullPointerException();
+      }
       anchorUris.add(uri);
       anchorTexts.add(text);
     }
