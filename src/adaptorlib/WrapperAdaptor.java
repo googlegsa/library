@@ -129,8 +129,8 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void addExternalAnchor(URI uri, String text) {
-      response.addExternalAnchor(uri, text);
+    public void addAnchor(URI uri, String text) {
+      response.addAnchor(uri, text);
     }
   }
 
@@ -212,7 +212,7 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void addExternalAnchor(URI uri, String text) {
+    public void addAnchor(URI uri, String text) {
       anchorUris.add(uri);
       anchorTexts.add(text);
     }

@@ -95,5 +95,5 @@ public interface Response {
    * @param text the text of the anchor, or {@code null}
    * @throws NullPointerException if {@code uri} is {@code null}
    */
-  public void addExternalAnchor(URI uri, String text);
+  public void addAnchor(URI uri, String text);
 }

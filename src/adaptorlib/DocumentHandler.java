@@ -306,7 +306,7 @@ class DocumentHandler extends AbstractHandler {
   /**
    * Format the GSA-specific anchor header value for extra crawl-time anchors.
    */
-  static String formExternalAnchorHeader(List<URI> uris, List<String> texts) {
+  static String formAnchorHeader(List<URI> uris, List<String> texts) {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < uris.size(); i++) {
       URI uri = uris.get(i);
@@ -533,7 +533,7 @@ class DocumentHandler extends AbstractHandler {
     }
 
     @Override
-    public void addExternalAnchor(URI uri, String text) {
+    public void addAnchor(URI uri, String text) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
       }
@@ -608,7 +608,7 @@ class DocumentHandler extends AbstractHandler {
         }
         if (!anchorUris.isEmpty()) {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
-              formExternalAnchorHeader(anchorUris, anchorTexts));
+              formAnchorHeader(anchorUris, anchorTexts));
         }
       }
       if (useCompression) {

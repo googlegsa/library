@@ -607,7 +607,7 @@ public class DocumentHandlerTest {
           public void getDocContent(Request request, Response response)
               throws IOException {
             response.getOutputStream();
-            response.addExternalAnchor(URI.create("http://h/"), null);
+            response.addAnchor(URI.create("http://h/"), null);
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -668,8 +668,8 @@ public class DocumentHandlerTest {
             response.setMetadata(Collections.singletonMap("test", "ing"));
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
-            response.addExternalAnchor(URI.create("http://test/"), null);
-            response.addExternalAnchor(URI.create("ftp://host/path?val=1"),
+            response.addAnchor(URI.create("http://test/"), null);
+            response.addAnchor(URI.create("ftp://host/path?val=1"),
                 "AaZz09,=-%");
             response.getOutputStream();
           }
@@ -767,8 +767,8 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testFormExternalAnchorHeaderEmpty() {
-    assertEquals("", DocumentHandler.formExternalAnchorHeader(
+  public void testFormAnchorHeaderEmpty() {
+    assertEquals("", DocumentHandler.formAnchorHeader(
         Collections.<URI>emptyList(), Collections.<String>emptyList()));
   }
 
