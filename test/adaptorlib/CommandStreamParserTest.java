@@ -26,7 +26,10 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -187,5 +190,122 @@ public class CommandStreamParserTest {
     CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
     assertArrayEquals(byteSource, info.getContents());
   }
+
+  @Test
+   public void testReadBytes() throws IOException {
+     String commandSource = "GSA Adaptor Data Version 1 [\n]\nid=5\ncontent\n";
+
+     byte[] byteSource = new byte[256];
+
+     byte value = -128;
+     for (int i = 0; i <= 255; i++) {
+       byteSource[i] = value++;
+     }
+
+     ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
+     byteArrayOutputStream.write(commandSource.getBytes("UTF-8"));
+     byteArrayOutputStream.write(byteSource);
+     byte[] source = byteArrayOutputStream.toByteArray();
+
+     InputStream inputStream = new ByteArrayInputStream(source);
+     CommandStreamParser parser = new CommandStreamParser(inputStream);
+
+     CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
+     assertArrayEquals(byteSource, info.getContents());
+   }
+
+  @Test
+  public void testRepositoryUnavailable() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\nrepository-unavailable" ;
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    thrown.expect(IOException.class);
+    Map<DocId, AuthzStatus> result = parser.readFromAuthorizer();
+ }
+
+  @Test
+  public void testAuthorizorNoData() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    Map<DocId, AuthzStatus> result = parser.readFromAuthorizer();
+    assertEquals(0, result.size());
+ }
+
+  @Test
+  public void testAuthorizorDataStartsWithDocId() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\nauthz-status=PERMIT\n" +
+        "id=001\nauthz-status=DENY\n";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    thrown.expect(IOException.class);
+    Map<DocId, AuthzStatus> result = parser.readFromAuthorizer();
+ }
+
+  @Test
+  public void testAuthorizor() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\nid=001\nauthz-status=PERMIT\n" +
+        "id=002\nauthz-status=DENY\nid=003\nauthz-status=INDETERMINATE";
+    Map<DocId, AuthzStatus> expected = new HashMap<DocId, AuthzStatus>();
+
+    expected.put(new DocId("001"), AuthzStatus.PERMIT);
+    expected.put(new DocId("002"), AuthzStatus.DENY);
+    expected.put(new DocId("003"), AuthzStatus.INDETERMINATE);
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    Map<DocId, AuthzStatus> result = parser.readFromAuthorizer();
+    assertEquals(expected, result);
+ }
+
+  @Test
+  public void testListerNoData() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    ArrayList<DocIdPusher.Record> result = parser.readFromLister();
+    assertEquals(0, result.size());
+ }
+
+  @Test
+  public void testListerDataStartsWithDocId() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\nlock\n" +
+        "id=001\n";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    thrown.expect(IOException.class);
+    ArrayList<DocIdPusher.Record> result = parser.readFromLister();
+ }
+
+  @Test
+  public void testLister() throws IOException, URISyntaxException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=001\nlock\ncrawl-once\ndelete\ncrawl-immediately\n" +
+        "last-modified=1292805597\n" +
+        "result-link=http://docs.google.com/myfolder/mydoc.pdf\n" +
+        "lock\ndelete\n";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    DocIdPusher.Record expected = new DocIdPusher.Record.Builder(new DocId("001"))
+        .setCrawlImmediately(true)
+        .setCrawlOnce(true)
+        .setDeleteFromIndex(true)
+        .setLastModified(new java.util.Date(1292805597000L))
+        .setResultLink(new URI("http://docs.google.com/myfolder/mydoc.pdf"))
+        .setLock(true)
+        .build();
+
+    ArrayList<DocIdPusher.Record> result = parser.readFromLister();
+    assertEquals(expected, result.get(0));
+
+ }
+
+
 
 }

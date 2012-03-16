@@ -17,6 +17,8 @@ package adaptorlib;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
@@ -24,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
@@ -85,10 +88,16 @@ import java.util.regex.Pattern;
  *
  * <h1>Lister Commands:</h1>
  *
- * "last-modified=" -- specifies the last time the document or its metadata has changed in
- * milliseconds from epoch. If last-modified is specified and the document has never been crawled
- * before or have been crawled prior to the last-modified time then the document will be marked as
- * "crawl-immediate".<p>
+ * "result-link=" -- specifies an alternative link to be displayed in the search results.
+ * This must be a properly formed URL. A "result link" is sometimes referred to as a "display URL".
+ * If no results-link is specified then the URL used for crawling is also used in the
+ * search results.<p>
+ *
+ * "last-modified=" -- Specifies the last time the document or its metadata has changed.
+ * The argument is a number representing the number of seconds since the standard base
+ * time known as the epoch", namely January 1, 1970, 00:00:00 GMT. If last-modified is specified
+ * and the document has never been crawled before or has been crawled prior to the last-modified
+ * time then the ocument will be marked as "crawl-immediately" by the GSA.<p>
  *
  * "crawl-immediately" -- Increases the crawling priority of the document such
  * that the GSA will retrieve it sooner than normally crawled documents.<p>
@@ -204,6 +213,7 @@ public class CommandStreamParser {
 
   private static enum Operation {
     ID,
+    RESULT_LINK,
     LAST_MODIFIED,
     CRAWL_IMMEDIATELY,
     CRAWL_ONCE,
@@ -228,6 +238,7 @@ public class CommandStreamParser {
   static {
     Map<String, Operation> stringToOperation = new HashMap<String, Operation>();
     stringToOperation.put("id", Operation.ID);
+    stringToOperation.put("result-link", Operation.RESULT_LINK);
     stringToOperation.put("last-modified", Operation.LAST_MODIFIED);
     stringToOperation.put("crawl-immediately", Operation.CRAWL_IMMEDIATELY);
     stringToOperation.put("crawl-once", Operation.CRAWL_ONCE);
@@ -447,12 +458,7 @@ public class CommandStreamParser {
 
   public ArrayList<DocIdPusher.Record> readFromLister() throws IOException {
     ArrayList<DocIdPusher.Record> result = new ArrayList<DocIdPusher.Record>();
-    String docId = null;
-    String lastModified = null;
-    boolean crawlOnce = false;
-    boolean crawlImmediately = false;
-    boolean lock = false;
-    boolean deleteDocument = false;
+    DocIdPusher.Record.Builder builder = null;
     Command command = readCommand();
 
     // Starting out at end-of-stream so return an empty list.
@@ -468,41 +474,43 @@ public class CommandStreamParser {
     while (command != null) {
       switch (command.getOperation()) {
         case ID:
-          if (docId != null) {
-            // TODO(johnfelton) add lister options when API is available
-            result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
+          if (builder != null) {
+            result.add(builder.build());
           }
-          docId = command.getArgument();
-          lastModified = null;
-          crawlOnce = false;
-          crawlImmediately = false;
-          lock = false;
-          deleteDocument = false;
+          builder = new DocIdPusher.Record.Builder(new DocId(command.getArgument()));
           break;
         case LAST_MODIFIED:
-          lastModified = command.getArgument();
+          // Convert seconds to milliseconds for Date constructor.
+          builder.setLastModified(new Date(Long.parseLong(command.getArgument()) * 1000));
+          break;
+        case RESULT_LINK:
+          try {
+            builder.setResultLink(new URI(command.getArgument()));
+          } catch (URISyntaxException e) {
+            throw new IOException("Lister Error: invalid URL: '" + command.getOperation()
+                + (command.hasArgument() ? "' with argument: '"
+                + command.getArgument() + "'" : "'"), e);
+          }
           break;
         case CRAWL_IMMEDIATELY:
-          crawlImmediately = true;
+          builder.setCrawlImmediately(true);
           break;
         case CRAWL_ONCE:
-          crawlOnce = true;
+          builder.setCrawlOnce(true);
           break;
         case LOCK:
-          lock = true;
+          builder.setLock(true);
           break;
         case DELETE:
-          deleteDocument = true;
+          builder.setDeleteFromIndex(true);
           break;
         default:
           throw new IOException("Lister Error: invalid operation: '" + command.getOperation() +
               (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
-
       }
       command = readCommand();
     }
-    // TODO(johnfelton) add lister options when API is available
-    result.add(new DocIdPusher.Record.Builder(new DocId(docId)).build());
+    result.add(builder.build());
 
     return result;
   }
@@ -642,7 +650,6 @@ public class CommandStreamParser {
     } else {
       return result;
     }
-
   }
 
   private String readCharsUntilMarker(String marker) throws IOException {
@@ -656,17 +663,6 @@ public class CommandStreamParser {
 
   private byte[] readBytesUntilEnd() throws IOException {
     return IOHelper.readInputStreamToByteArray(inputStream);
-  }
-
-
-  private byte[] readBytes(int byteCount) throws IOException {
-    byte[] result = new byte[byteCount];
-    int bytesRead = IOHelper.readFully(inputStream, result, 0, byteCount);
-    if (bytesRead != byteCount) {
-      return null;
-    } else {
-      return result;
-    }
   }
 
 }
