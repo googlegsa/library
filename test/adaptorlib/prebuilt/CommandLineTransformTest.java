@@ -34,7 +34,6 @@ public class CommandLineTransformTest {
   public void testSed() throws IOException, TransformException {
     TestHelper.assumeOsIsNotWindows();
 
-    TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     // The newline causes the test to work with both BSD and GNU sed.
     String testStr = "testing\n";
@@ -46,7 +45,7 @@ public class CommandLineTransformTest {
     CommandLineTransform cmd = new CommandLineTransform();
     cmd.setTransformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.setCommandAcceptsParameters(false);
-    pipeline.add(cmd);
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
     pipeline.transform(testStr.getBytes(), contentOut, new HashMap<String, String>(), params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
@@ -60,7 +59,6 @@ public class CommandLineTransformTest {
   public void testSedWithMetadata() throws IOException, TransformException {
     TestHelper.assumeOsIsNotWindows();
 
-    TransformPipeline pipeline = new TransformPipeline();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     // The newline causes the test to work with both BSD and GNU sed.
     String testStr = "testing\n";
@@ -72,7 +70,7 @@ public class CommandLineTransformTest {
     CommandLineTransform cmd = new CommandLineTransform();
     cmd.setTransformCommand(Arrays.asList(new String[] {"/bin/sh", "-c",
       // Process content.
-      "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(tempfile);"
+      "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(mktemp /tmp/adaptor.test.XXXXXXXX);"
       // Process metadata.
       + "(sed s/1/2/g < \"$META\" > \"$TMPFILE\"; cp \"$TMPFILE\" \"$META\") >&2;"
       // Process params.
@@ -81,7 +79,7 @@ public class CommandLineTransformTest {
       + "rm \"$TMPFILE\" >&2;"
     }));
     cmd.setCommandAcceptsParameters(true);
-    pipeline.add(cmd);
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
     pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());

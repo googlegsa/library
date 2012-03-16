@@ -77,6 +77,10 @@ class GsaFeedFileMaker {
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
     if (null != docRecord.getResultLink()) {
       record.setAttribute("displayurl", "" + docRecord.getResultLink());
+    } else {
+      // Explicitly clear the displayurl. Sending no displayurl attribute causes
+      // a previous displayurl to be maintained.
+      record.setAttribute("displayurl", "");
     }
     if (docRecord.isToBeDeleted()) {
       record.setAttribute("action", "delete");

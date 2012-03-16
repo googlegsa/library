@@ -27,7 +27,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
+import java.net.URI;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -186,7 +188,7 @@ public class CommandLineAdaptorTest {
           + "id=1002\n"
           + "id=1003\n"
           + "id=1004\n";
-        assertEquals(expectedText, new String(stdin,"UTF-8"));
+        assertEquals(expectedText, new String(stdin, "UTF-8"));
       return 0;
     }
 
@@ -254,6 +256,8 @@ public class CommandLineAdaptorTest {
     private String contentType;
     private Map<String, String> metadata;
     private Acl acl;
+    private List<URI> anchorUris = new ArrayList<URI>();
+    private List<String> anchorTexts = new ArrayList<String>();
     private boolean notModified;
     private boolean notFound;
 
@@ -291,6 +295,12 @@ public class CommandLineAdaptorTest {
     @Override
     public void setAcl(Acl acl) {
       this.acl = acl;
+    }
+
+    @Override
+    public void addAnchor(URI uri, String text) {
+      anchorUris.add(uri);
+      anchorTexts.add(text);
     }
 
     public String getContentType() {

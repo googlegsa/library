@@ -22,6 +22,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.*;
+import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
 
@@ -247,7 +248,7 @@ public class DocumentHandlerTest {
         new String[0], null, sessionManager, null, 0, false, false);
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
-        new KerberosPrincipal("someuser")));
+        new KerberosPrincipal("someuser@not-domain")));
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -321,8 +322,8 @@ public class DocumentHandlerTest {
   public void testTransform() throws Exception {
     final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
-    TransformPipeline transform = new TransformPipeline();
-    transform.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -334,6 +335,7 @@ public class DocumentHandlerTest {
         metadata.put("docid", params.get("DocId"));
       }
     });
+    TransformPipeline transform = new TransformPipeline(transforms);
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
@@ -358,8 +360,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testTransformDocumentTooLarge() throws Exception {
-    TransformPipeline transform = new TransformPipeline();
-    transform.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
@@ -369,6 +371,7 @@ public class DocumentHandlerTest {
         contentOut.write(new byte[] {2, 3, 4});
       }
     });
+    TransformPipeline transform = new TransformPipeline(transforms);
     final byte[] golden = new byte[] {-1, 2, -3, 4, 5};
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -397,7 +400,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testTransformDocumentTooLargeButRequired() throws Exception {
-    TransformPipeline transform = new TransformPipeline();
+    TransformPipeline transform = new TransformPipeline(Collections.<DocumentTransform>emptyList());
     class CheckFailAdaptor extends MockAdaptor {
       public boolean failedAtCorrectTime = false;
 
@@ -598,6 +601,21 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testAddAnchorLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.addAnchor(URI.create("http://h/"), null);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
   public void testSmartAdaptor() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -650,6 +668,9 @@ public class DocumentHandlerTest {
             response.setMetadata(Collections.singletonMap("test", "ing"));
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
+            response.addAnchor(URI.create("http://test/"), null);
+            response.addAnchor(URI.create("ftp://host/path?val=1"),
+                "AaZz09,=-%");
             response.getOutputStream();
           }
         };
@@ -664,6 +685,9 @@ public class DocumentHandlerTest {
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
           + "http%3A%2F%2Flocalhost%2Ftesting"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+    assertEquals("http%3A%2F%2Ftest%2F,"
+        + "AaZz09%2C%3D-%25=ftp%3A%2F%2Fhost%2Fpath%3Fval%3D1",
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Anchor"));
   }
 
   @Test
@@ -740,6 +764,12 @@ public class DocumentHandlerTest {
   public void testFormAclHeaderEmpty() {
     assertEquals("",
         DocumentHandler.formAclHeader(Acl.EMPTY, new MockDocIdCodec()));
+  }
+
+  @Test
+  public void testFormAnchorHeaderEmpty() {
+    assertEquals("", DocumentHandler.formAnchorHeader(
+        Collections.<URI>emptyList(), Collections.<String>emptyList()));
   }
 
   @Test

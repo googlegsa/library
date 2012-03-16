@@ -15,6 +15,7 @@
 package adaptorlib;
 
 import java.io.*;
+import java.net.URI;
 import java.util.Map;
 
 /**
@@ -82,4 +83,17 @@ public interface Response {
    * Provide the document's ACLs for early-binding security on the GSA.
    */
   public void setAcl(Acl acl);
+
+  /**
+   * Add a hyperlink for the GSA to follow without modifying the document
+   * contents. This is equivalent to the following HTML: {@code
+   * <a href='$uri'>$text</a>}. If you want to link to a {@link DocId}, then you
+   * may use the {@link DocIdEncoder} provided by {@link
+   * AdaptorContext#getDocIdEncoder} to produce an appropriate URI.
+   *
+   * @param uri the URI of the anchor
+   * @param text the text of the anchor, or {@code null}
+   * @throws NullPointerException if {@code uri} is {@code null}
+   */
+  public void addAnchor(URI uri, String text);
 }

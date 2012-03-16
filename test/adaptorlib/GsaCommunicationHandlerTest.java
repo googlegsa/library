@@ -67,8 +67,8 @@ public class GsaCommunicationHandlerTest {
         context.setGetDocIdsErrorHandler(replacementHandler);
         assertSame(replacementHandler, context.getGetDocIdsErrorHandler());
 
-        StatusSource source = new BasicStatusSource("test",
-            new Status(Status.Code.NORMAL));
+        StatusSource source = new MockStatusSource("test",
+            new MockStatus(Status.Code.NORMAL));
         context.addStatusSource(source);
         context.removeStatusSource(source);
       }
@@ -149,9 +149,9 @@ public class GsaCommunicationHandlerTest {
     }
     TransformPipeline pipeline
         = GsaCommunicationHandler.createTransformPipeline(config);
-    assertEquals(1, pipeline.size());
-    assertEquals(IdentityTransform.class, pipeline.get(0).getClass());
-    assertEquals("testing", pipeline.get(0).getName());
+    assertEquals(1, pipeline.getDocumentTransforms().size());
+    assertEquals(IdentityTransform.class, pipeline.getDocumentTransforms().get(0).getClass());
+    assertEquals("testing", pipeline.getDocumentTransforms().get(0).getName());
   }
 
   @Test

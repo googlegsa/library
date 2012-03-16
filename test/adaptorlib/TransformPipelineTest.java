@@ -33,7 +33,7 @@ public class TransformPipelineTest {
 
   @Test
   public void testNoOpEmpty() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
+    TransformPipeline pipeline = new TransformPipeline(Collections.<DocumentTransform>emptyList());
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     Map<String, String> params = new HashMap<String, String>();
@@ -46,7 +46,7 @@ public class TransformPipelineTest {
 
   @Test
   public void testNoOpWithInput() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
+    TransformPipeline pipeline = new TransformPipeline(Collections.<DocumentTransform>emptyList());
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("key1", "value1");
@@ -67,8 +67,8 @@ public class TransformPipelineTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("key2", "value2");
 
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new ArrayList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
         @Override
         public void transform(ByteArrayOutputStream cIn, OutputStream cOut, Map<String, String> m,
                               Map<String, String> p) throws TransformException, IOException {
@@ -76,6 +76,7 @@ public class TransformPipelineTest {
           p.put("newKey", "newValue");
         }
       });
+    TransformPipeline pipeline = new TransformPipeline(transforms);
     pipeline.transform(new byte[0], new ByteArrayOutputStream(), metadata, params);
 
     assertEquals("value1", metadata.get("key1"));
@@ -88,8 +89,7 @@ public class TransformPipelineTest {
 
   @Test
   public void testTransform() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new IncrementTransform());
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(new IncrementTransform()));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -105,18 +105,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testMultipleTransforms() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new IncrementTransform());
-    pipeline.add(new ProductTransform(2));
-
-    {
-      // This set of operations should have no effect.
-      DocumentTransform transform1 = new IncrementTransform();
-      DocumentTransform transform2 = new IncrementTransform();
-      pipeline.add(transform1);
-      assertSame(transform1, pipeline.set(pipeline.size() - 1, transform2));
-      assertSame(transform2, pipeline.remove(pipeline.size() - 1));
-    }
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(
+        new IncrementTransform(), new ProductTransform(2)));
 
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
@@ -133,9 +123,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testNotLastTransformError() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new IncrementTransform());
-    pipeline.add(new ErroringTransform(false));
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(
+        new IncrementTransform(), new ErroringTransform(false)));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -151,9 +140,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testLastTransformError() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new ErroringTransform(false));
-    pipeline.add(new IncrementTransform());
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(
+        new ErroringTransform(false), new IncrementTransform()));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -169,9 +157,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testTransformErrorFatal() throws IOException, TransformException {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new IncrementTransform());
-    pipeline.add(new ErroringTransform(true));
+    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(
+        new IncrementTransform(), new ErroringTransform(true)));
     ByteArrayOutputStream out = new ByteArrayOutputStream();
     Map<String, String> metadata = new HashMap<String, String>();
     metadata.put("int", "0");
@@ -190,8 +177,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testResetTransform() throws Exception {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new ArrayList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                             Map<String, String> metadata, Map<String, String> p)
@@ -200,6 +187,7 @@ public class TransformPipelineTest {
         contentIn.reset();
       }
     });
+    TransformPipeline pipeline = new TransformPipeline(transforms);
     thrown.expect(UnsupportedOperationException.class);
     pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
         new HashMap<String, String>(), new HashMap<String, String>());
@@ -207,8 +195,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testWriteTransform1() throws Exception {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new ArrayList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                             Map<String, String> metadata, Map<String, String> p)
@@ -217,6 +205,7 @@ public class TransformPipelineTest {
         contentIn.write(new byte[1], 0, 1);
       }
     });
+    TransformPipeline pipeline = new TransformPipeline(transforms);
     thrown.expect(UnsupportedOperationException.class);
     pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
         new HashMap<String, String>(), new HashMap<String, String>());
@@ -224,8 +213,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testWriteTransform2() throws Exception {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new ArrayList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                             Map<String, String> metadata, Map<String, String> p)
@@ -234,6 +223,7 @@ public class TransformPipelineTest {
         contentIn.write(0);
       }
     });
+    TransformPipeline pipeline = new TransformPipeline(transforms);
     thrown.expect(UnsupportedOperationException.class);
     pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
         new HashMap<String, String>(), new HashMap<String, String>());
@@ -241,8 +231,8 @@ public class TransformPipelineTest {
 
   @Test
   public void testWriteTransform3() throws Exception {
-    TransformPipeline pipeline = new TransformPipeline();
-    pipeline.add(new AbstractDocumentTransform() {
+    List<DocumentTransform> transforms = new ArrayList<DocumentTransform>();
+    transforms.add(new AbstractDocumentTransform() {
       @Override
       public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
                             Map<String, String> metadata, Map<String, String> p)
@@ -251,6 +241,7 @@ public class TransformPipelineTest {
         contentIn.write(new byte[1]);
       }
     });
+    TransformPipeline pipeline = new TransformPipeline(transforms);
     thrown.expect(UnsupportedOperationException.class);
     pipeline.transform(new byte[] {1, 2, 3}, new ByteArrayOutputStream(),
         new HashMap<String, String>(), new HashMap<String, String>());

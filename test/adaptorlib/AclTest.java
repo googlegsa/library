@@ -302,15 +302,15 @@ public class AclTest {
     Collection<String> empty
         = Collections.unmodifiableList(Collections.<String>emptyList());
 
-    assertEquals(AuthzStatus.PERMIT,
-        Acl.isAuthorized("user", empty, Arrays.asList(root, middle, leaf)));
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized("user", empty,
+          Arrays.asList(root, middle, leaf), false));
   }
 
   @Test
   public void testEmptyAclChain() {
     thrown.expect(IllegalArgumentException.class);
     Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Collections.<Acl>emptyList());
+                     Collections.<Acl>emptyList(), false);
   }
 
   @Test
@@ -318,7 +318,7 @@ public class AclTest {
     Acl acl = new Acl.Builder().setInheritFrom(new DocId("parent")).build();
     thrown.expect(IllegalArgumentException.class);
     Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Collections.singletonList(acl));
+                     Collections.singletonList(acl), false);
   }
 
   @Test
@@ -330,7 +330,7 @@ public class AclTest {
 
     thrown.expect(IllegalArgumentException.class);
     Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Arrays.asList(root, child, broken));
+                     Arrays.asList(root, child, broken), false);
   }
 
   @Test
@@ -343,22 +343,7 @@ public class AclTest {
     List<String> groups = Arrays.asList("eng");
     thrown.expect(NullPointerException.class);
     Acl.isAuthorizedBatch(user, groups, Arrays.asList(new DocId("1")),
-                          retriever);
-  }
-
-  @Test
-  public void testIsAuthorizedBatchMissingNoAcls() throws IOException {
-    // TODO(ejona): Add test to C++.
-    Map<DocId, Acl> acls = new HashMap<DocId, Acl>();
-    DocId id = new DocId("1");
-    acls.put(id, new Acl.Builder().setInheritFrom(new DocId("2")).build());
-    Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
-
-    String user = "user";
-    List<String> groups = Arrays.asList("group");
-    // If DocId("1") had ACL permit/deny values, this would have been DENY.
-    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(id), retriever).get(id));
+                          retriever, false);
   }
 
   @Test
@@ -372,8 +357,8 @@ public class AclTest {
 
     String user = "user";
     List<String> groups = Arrays.asList("wrong group");
-    assertEquals(AuthzStatus.DENY, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(id, id2), retriever).get(id));
+    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorizedBatch(user, groups,
+        Arrays.asList(id, id2), retriever, true).get(id));
   }
 
   @Test
@@ -401,7 +386,7 @@ public class AclTest {
     String user = "user";
     List<String> groups = Collections.emptyList();
     assertEquals(AuthzStatus.PERMIT, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(file), retriever).get(file));
+        Arrays.asList(file), retriever, false).get(file));
   }
 
   @Test
@@ -452,13 +437,21 @@ public class AclTest {
 
     Map<DocId, AuthzStatus> golden = new HashMap<DocId, AuthzStatus>();
     golden.put(file1, AuthzStatus.PERMIT);
-    golden.put(file2, AuthzStatus.DENY);
+    golden.put(file2, AuthzStatus.INDETERMINATE);
     golden = Collections.unmodifiableMap(golden);
 
     String user = "user";
     List<String> groups = Collections.emptyList();
     assertEquals(golden, Acl.isAuthorizedBatch(user, groups,
-        Arrays.asList(file1, file2), retriever));
+        Arrays.asList(file1, file2), retriever, false));
+  }
+
+  @Test
+  public void testEmptyImpliesPublic() {
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized("user",
+        Collections.<String>emptyList(), Arrays.asList(Acl.EMPTY), true));
+    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorized("user",
+        Collections.<String>emptyList(), Arrays.asList(Acl.EMPTY), false));
   }
 
   @Test
@@ -511,7 +504,7 @@ public class AclTest {
       Collection<String> groups, DocId id, Acl.BatchRetriever retriever)
       throws IOException {
     return Acl.isAuthorizedBatch(userIdentifier, groups, Arrays.asList(id),
-                                 retriever).get(id);
+                                 retriever, false).get(id);
   }
 
   private void testRule(Acl.InheritanceType rule, AuthzStatus child,
@@ -709,7 +702,7 @@ public class AclTest {
     assertEquals(AuthzStatus.INDETERMINATE,
         callIsAuthorized(user, groups, new DocId("5"), retriever));
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, new DocId("999"), retriever));
+        callIsAuthorized(user, groups, new DocId("9"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -738,7 +731,6 @@ public class AclTest {
   @Test
   public void testAuthorizeChildInheritsDeny() throws IOException {
     Acl file = buildAcl("", "", "", "", "Folder");
-    // TODO(ejona): Fix C++ version.
     Acl folder = buildAcl("", "", "adam", "",
         Acl.InheritanceType.CHILD_OVERRIDES);
 
@@ -877,7 +869,7 @@ public class AclTest {
 
     String user = "eve";
     List<String> groups = Arrays.asList("qa");
-    assertEquals(AuthzStatus.INDETERMINATE,
+    assertEquals(AuthzStatus.DENY,
         callIsAuthorized(user, groups, new DocId("1"), retriever));
   }
 
@@ -936,6 +928,60 @@ public class AclTest {
     groups = Arrays.asList("qa");
     assertEquals(AuthzStatus.INDETERMINATE,
         callIsAuthorized(user, groups, fid, retriever));
+  }
+
+  // Port of test from GSA with similar name. Should be kept in sync.
+  @Test
+  public void testAuthorizeInheritanceMissingAclNonEmpty() throws IOException {
+    Acl file = buildAcl("", "group", "", "", "Folder");
+
+    Map<DocId, Acl> acls = new HashMap<DocId, Acl>();
+    acls.put(new DocId("1"), file);
+    // No "Folder" ACLs
+    Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
+
+    String user = "user";
+    List<String> groups = Arrays.asList("group");
+    assertEquals(AuthzStatus.INDETERMINATE,
+        callIsAuthorized(user, groups, new DocId("1"), retriever));
+  }
+
+  // Port of test from GSA with similar name. Should be kept in sync.
+  @Test
+  public void testAuthorizeInheritanceMissingAclEmpty() throws IOException {
+    Acl file = buildAcl("", "", "", "", "Folder");
+
+    Map<DocId, Acl> acls = new HashMap<DocId, Acl>();
+    acls.put(new DocId("1"), file);
+    // No "Folder" ACLs
+    Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
+
+    String user = "user";
+    List<String> groups = Arrays.asList("group");
+    assertEquals(AuthzStatus.INDETERMINATE,
+        callIsAuthorized(user, groups, new DocId("1"), retriever));
+  }
+
+  // Port of test from GSA with similar name. Should be kept in sync.
+  // Illegal chain: it contains a LEAF_NODE in the middle
+  @Test
+  public void testAuthorizeIllegalChain() throws IOException {
+    Acl file = buildAcl("", "", "", "", "Folder1");
+    Acl folder1 = buildAcl("adam", "", "", "", Acl.InheritanceType.LEAF_NODE,
+        "Folder2");
+    Acl folder2 = buildAcl("", "", "", "", Acl.InheritanceType.CHILD_OVERRIDES);
+
+    Map<DocId, Acl> acls = new HashMap<DocId, Acl>();
+    acls.put(new DocId("1"), file);
+    acls.put(new DocId("Folder1"), folder1);
+    acls.put(new DocId("Folder2"), folder2);
+    Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
+
+    String user = "adam";
+    List<String> groups = Collections.emptyList();
+    assertEquals(AuthzStatus.INDETERMINATE,
+        callIsAuthorized(user, groups, new DocId("1"), retriever));
+
   }
 
   private static class MockBatchRetriever implements Acl.BatchRetriever {

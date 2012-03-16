@@ -61,6 +61,8 @@ public class Config {
     }
     addKey("server.hostname", hostname);
     addKey("server.port", "5678");
+    addKey("server.reverseProxyPort", "GENERATED");
+    addKey("server.reverseProxyProtocol", "GENERATED");
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
@@ -126,6 +128,28 @@ public class Config {
   }
 
   /**
+   * The port that should be used in feed file and other references to the
+   * adaptor. This does not affect the actual port the adaptor uses.
+   */
+  public int getServerReverseProxyPort() {
+    if (!"GENERATED".equals(getValue("server.reverseProxyPort"))) {
+      return Integer.parseInt(getValue("server.reverseProxyPort"));
+    }
+    return getServerPort();
+  }
+
+  /**
+   * The protocol that should be used in feed files and other references to the
+   * adaptor. This does not affect the actual protocol the adaptor uses.
+   */
+  public String getServerReverseProxyProtocol() {
+    if (!"GENERATED".equals(getValue("server.reverseProxyProtocol"))) {
+      return getValue("server.reverseProxyProtocol");
+    }
+    return isServerSecure() ? "https" : "http";
+  }
+
+  /**
    * Local port, on this computer, from which the dashboard is served.
    */
   public int getServerDashboardPort() {
@@ -181,9 +205,8 @@ public class Config {
    * hostname, and port are retrieved automatically and no path is set.
    */
   public URI getServerBaseUri() {
-    String protocol = isServerSecure() ? "https" : "http";
-    return URI.create(protocol + "://" + getServerHostname() + ":"
-                      + getServerPort());
+    return URI.create(getServerReverseProxyProtocol() + "://"
+        + getServerHostname() + ":" + getServerReverseProxyPort());
   }
 
   /**

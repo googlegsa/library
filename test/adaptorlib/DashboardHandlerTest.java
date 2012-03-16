@@ -18,17 +18,29 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.charset.Charset;
 
 /**
  * Tests for {@link DashboardHandler}.
  */
 public class DashboardHandlerTest {
-  private DashboardHandler handler
-      = new DashboardHandler("localhost", Charset.forName("UTF-8"));
+  private static final Charset UTF_8 = Charset.forName("UTF-8");
+  private DashboardHandler handler = new DashboardHandler("localhost", UTF_8);
   private String pathPrefix = "/dash";
   private MockHttpContext httpContext
       = new MockHttpContext(handler, pathPrefix);
+
+  /** Returns entire static test file's contents. */
+  private static byte[] readLocal(String basename) throws IOException {
+    String filename = "test/adaptorlib/static/" + basename;
+    RandomAccessFile f = new RandomAccessFile(filename, "r");
+    byte b[] = new byte[(int) f.length()];
+    f.readFully(b);
+    f.close();
+    return b;
+  }
 
   @Test
   public void testIndex() throws Exception {
@@ -41,48 +53,44 @@ public class DashboardHandlerTest {
 
   @Test
   public void testGetTestHtmlPage() throws Exception {
-    MockHttpExchange ex = createExchange("/DashboardHandlerTest.test.html");
+    String basename = "DashboardHandlerTest.test.html";
+    MockHttpExchange ex = createExchange("/" + basename);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("text/html", ex.getResponseHeaders().getFirst("Content-Type"));
-    assertArrayEquals(
-        "<html>Test successful.</html>\n".getBytes(Charset.forName("UTF-8")),
-        ex.getResponseBytes());
+    assertArrayEquals(readLocal(basename), ex.getResponseBytes());
   }
 
   @Test
   public void testGetTestJavaScriptPage() throws Exception {
-    MockHttpExchange ex = createExchange("/DashboardHandlerTest.test.js");
+    String basename = "DashboardHandlerTest.test.js";
+    MockHttpExchange ex = createExchange("/" + basename);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("text/javascript",
         ex.getResponseHeaders().getFirst("Content-Type"));
-    assertArrayEquals(
-        "alert('Test successful.');\n".getBytes(Charset.forName("UTF-8")),
-        ex.getResponseBytes());
+    assertArrayEquals(readLocal(basename), ex.getResponseBytes());
   }
 
   @Test
   public void testGetTestCssPage() throws Exception {
-    MockHttpExchange ex = createExchange("/DashboardHandlerTest.test.css");
+    String basename = "DashboardHandlerTest.test.css";
+    MockHttpExchange ex = createExchange("/" + basename);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("text/css", ex.getResponseHeaders().getFirst("Content-Type"));
-    assertArrayEquals(
-        "html {}\n".getBytes(Charset.forName("UTF-8")),
-        ex.getResponseBytes());
+    assertArrayEquals(readLocal(basename), ex.getResponseBytes());
   }
 
   @Test
   public void testGetTestUnknownPage() throws Exception {
-    MockHttpExchange ex = createExchange("/DashboardHandlerTest.test.unknown");
+    String basename = "/DashboardHandlerTest.test.unknown";
+    MockHttpExchange ex = createExchange("/" + basename);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("application/octet-stream",
         ex.getResponseHeaders().getFirst("Content-Type"));
-    assertArrayEquals(
-        "!@#$%^&*\n".getBytes(Charset.forName("UTF-8")),
-        ex.getResponseBytes());
+    assertArrayEquals(readLocal(basename), ex.getResponseBytes());
   }
 
   @Test

@@ -14,6 +14,8 @@
 
 package adaptorlib;
 
+import java.util.Locale;
+
 /**
  * Simplistic implementation of {@link StatusSource} for use with foreign logic
  * calling {@link #setStatus} to update state.
@@ -21,11 +23,11 @@ package adaptorlib;
  * <p>This class is thread-safe and can safely have its status viewed and
  * changed in multiple threads without external synchronization.
  */
-public class BasicStatusSource implements StatusSource {
+class MockStatusSource implements StatusSource {
   private final String name;
   private volatile Status status;
 
-  public BasicStatusSource(String name, Status status) {
+  public MockStatusSource(String name, Status status) {
     if (name == null || status == null) {
       throw new NullPointerException();
     }
@@ -51,7 +53,7 @@ public class BasicStatusSource implements StatusSource {
   }
 
   @Override
-  public String getName() {
+  public String getName(Locale locale) {
     return name;
   }
 }
