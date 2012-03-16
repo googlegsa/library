@@ -166,7 +166,7 @@
 
     <mkdir dir="${build-test.dir}"/>
     <!-- Compile JUnit helper -->
-    <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
+    <javac srcdir="${lib.dir}" destdir="${build-test.dir}" debug="true"
       includeantruntime="true" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath location="${junit.jar}"/>
