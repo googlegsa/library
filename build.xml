@@ -11,7 +11,10 @@
   <property name="resource.dir" location="resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
-  <property name="adaptor.class" value="adaptorlib.examples.AdaptorTemplate"/>
+  <property name="adaptor.pkg.dir" value="adaptorlib"/>
+  <property name="adaptor.pkg.name" value="adaptorlib"/>
+  <property name="adaptor.class" 
+      value="${adaptor.pkg.name}.examples.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
   <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
   <!-- Adaptor suffix for distribution files. Useful for placing version numbers
@@ -144,7 +147,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8">
       <classpath refid="secmgr.build.classpath"/>
-      <exclude name="adaptorlib/**"/>
+      <exclude name="${adaptor.pkg.dir}/**"/>
     </javac>
 
     <!-- Compile adaptorlib. -->
@@ -152,8 +155,8 @@
       includeantruntime="false" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="adaptorlib.build.classpath"/>
-      <exclude name="adaptorlib/examples/**"/>
-      <include name="adaptorlib/**"/>
+      <exclude name="${adaptor.pkg.dir}/examples/**"/>
+      <include name="${adaptor.pkg.dir}/**"/>
     </javac>
 
     <!-- Compile examples. -->
@@ -161,7 +164,7 @@
       includeantruntime="false" encoding="utf-8">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="examples.build.classpath"/>
-      <include name="adaptorlib/examples/**"/>
+      <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
 
     <mkdir dir="${build-test.dir}"/>
@@ -180,7 +183,7 @@
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
-      <exclude name="adaptorlib/examples/**"/>
+      <exclude name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
 
     <!-- Compile tests for examples. -->
@@ -190,7 +193,7 @@
       <classpath refid="examples.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
-      <include name="adaptorlib/examples/**"/>
+      <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
   </target>
 
@@ -211,7 +214,7 @@
       <map from="${lib.dir}/" to=""/>
     </pathconvert>
     <jar destfile="${build.dir}/adaptor.tmp.jar" basedir="${build-src.dir}"
-      excludes="adaptorlib/examples/**,adaptorlib/prebuilt/**">
+      excludes="${adaptor.pkg.dir}/examples/**,${adaptor.pkg.dir}/prebuilt/**">
       <zipgroupfileset dir="${lib.dir}" includes="${tmp.adaptorlib.zipgroup}"/>
       <!-- resource.dir is included in tmp.adaptorlib.zipgroup, but since it
            isn't a zip file, the zipgroupfileset doesn't include the folder's
@@ -225,9 +228,9 @@
         src="${build.dir}/adaptor.tmp.jar"/>
     </zip>
 
-    <!-- adaptor-prebuild.jar -->
+    <!-- adaptor-prebuilt.jar -->
     <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-prebuilt.jar"
-      basedir="${build-src.dir}" includes="adaptorlib/prebuilt/**">
+      basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/prebuilt/**">
     </jar>
 
     <!-- adaptor-examples.jar -->
@@ -236,9 +239,9 @@
       <map from="${lib.dir}/" to=""/>
     </pathconvert>
     <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-examples.jar"
-      basedir="${build-src.dir}" includes="adaptorlib/examples/**">
+      basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/examples/**">
       <zipgroupfileset dir="${lib.dir}" includes="${tmp.examples.zipgroup}"/>
-      <fileset dir="${src.dir}" includes="adaptorlib/examples/**/*.java"/>
+      <fileset dir="${src.dir}" includes="${adaptor.pkg.dir}/examples/**/*.java"/>
     </jar>
 
     <!-- adaptor-docs.zip -->
@@ -293,7 +296,7 @@
 
   <target name="run-db" depends="build" description="Run database adaptor">
     <java classpath="${build-src.dir}:${src.dir}/dbadaptortemplate/mysql.jar"
-      fork="true" classname="adaptorlib.examples.DbAdaptorTemplate">
+      fork="true" classname="${adaptor.pkg.name}.examples.DbAdaptorTemplate">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="${src.dir}/logging.properties"/>
@@ -309,7 +312,7 @@
 
   <target name="run-fs" depends="build" description="Run filesystem adaptor">
     <java classpath="${build-src.dir}" fork="true"
-      classname="adaptorlib.prebuilt.FileSystemAdaptor">
+      classname="${adaptor.pkg.name}.prebuilt.FileSystemAdaptor">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="${src.dir}/logging.properties"/>
@@ -325,7 +328,7 @@
 
   <target name="run-cmd" depends="build" description="Run command line adaptor">
     <java classpath="${build-src.dir}" fork="true"
-      classname="adaptorlib.prebuilt.CommandLineAdaptor">
+      classname="${adaptor.pkg.name}.prebuilt.CommandLineAdaptor">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="${src.dir}/logging.properties"/>
@@ -393,7 +396,7 @@
     <cobertura-instrument datafile="${build-instrument.dir}/cobertura.ser"
       todir="${build-instrument.dir}">
       <fileset dir="${build-src.dir}">
-        <include name="adaptorlib/**"/>
+        <include name="${adaptor.pkg.dir}/**"/>
       </fileset>
     </cobertura-instrument>
   </target>
