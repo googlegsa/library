@@ -11,8 +11,8 @@
   <property name="resource.dir" location="resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
-  <property name="adaptor.pkg.dir" value="adaptorlib"/>
-  <property name="adaptor.pkg.name" value="adaptorlib"/>
+  <property name="adaptor.pkg.dir" value="com/google/enterprise/adaptor"/>
+  <property name="adaptor.pkg.name" value="com.google.enterprise.adaptor"/>
   <property name="adaptor.class" 
       value="${adaptor.pkg.name}.examples.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
@@ -264,7 +264,8 @@
   <target name="javadoc" description="Build JavaDocs"
     depends="-javadoc-test-uptodate" unless="javadoc.uptodate">
     <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}"
-        overview="${src.dir}/overview.html" packagenames="adaptorlib,adaptorlib.**">
+        overview="${src.dir}/overview.html"
+        packagenames="${adaptor.pkg.name},${adaptor.pkg.name}.**">
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath refid="secmgr.build.classpath"/>
       <classpath refid="examples.build.classpath"/>

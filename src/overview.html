@@ -3,7 +3,7 @@
 
   <p> If you'd like to use a language other than Java or if you have command
   line programs that can provide repository access, see if {@link
-  adaptorlib.prebuilt.CommandLineAdaptor} fits your needs.
+  com.google.enterprise.adaptor.prebuilt.CommandLineAdaptor} fits your needs.
   </p>
 
   <h3>Basic GSA Setup</h3>
@@ -43,9 +43,9 @@ feed.name=mydocfeedtogsa</pre>
       like:
       <pre>server.hostname=yourcomputershostname</pre>
     <li>Start the Adaptor Template. For Windows:
-      <pre>java -cp dist\adaptor.jar;dist\adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
+      <pre>java -cp dist\adaptor.jar;dist\adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
       For all other OSes:
-      <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar adaptorlib.examples.AdaptorTemplate</pre>
+      <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
     <li> Ensure crawling is enabled on your GSA.
       <p>
       Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
@@ -64,10 +64,10 @@ feed.name=mydocfeedtogsa</pre>
 
   <h3>Creating your own Adaptor</h3>
   <ol>
-    <li>Review JavaDoc for {@link adaptorlib.Adaptor} and {@link
-      adaptorlib.AbstractAdaptor}.
+    <li>Review JavaDoc for {@link com.google.enterprise.adaptor.Adaptor} and {@link
+      com.google.enterprise.adaptor.AbstractAdaptor}.
     <li>From {@code adaptor-src.zip}, make a copy of {@code
-      src/adaptorlib/examples/AdaptorTemplate.java} to your own package and
+      src/com/google/enterprise/adaptor/examples/AdaptorTemplate.java} to your own package and
       name. You will need to modify the contents appropriately for the new
       package and name.
     <li>Compile, run, and verify the copied adaptor using your favorite IDE. You
@@ -83,7 +83,7 @@ feed.name=mydocfeedtogsa</pre>
     of the form "-Dconfigkey=configvalue". When providing a value on the command
     line, it overrides the default value and the value (if any) in the
     configuration file. For example:
-    <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar adaptorlib.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
+    <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
 
   <h3>Enabling Security</h3>
   <p>Security is not enabled by default because it requires a reasonable amount
