@@ -251,11 +251,14 @@
 
     <!-- adaptor-src.zip -->
     <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-src.zip"
-      basedir="${basedir}"
-      excludes="adaptor-config.properties
-                *.crt *.jks 
-                build/** dist/** 
-                **/.*/**"/>
+      basedir="${basedir}">
+      <exclude name="adaptor-config.properties"/>
+      <exclude name="*.crt"/>
+      <exclude name="*.jks"/>
+      <exclude name="build/**"/>
+      <exclude name="dist/**"/>
+      <exclude name="**/.*/**"/>
+    </zip>
   </target>
 
   <target name="-javadoc-test-uptodate">
