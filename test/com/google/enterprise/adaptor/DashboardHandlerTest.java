@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.DashboardHandler;
 import static org.junit.Assert.*;
 
 import org.junit.Test;
@@ -35,7 +34,8 @@ public class DashboardHandlerTest {
 
   /** Returns entire static test file's contents. */
   private static byte[] readLocal(String basename) throws IOException {
-    String filename = "test/com/google/enterprise/adaptor/resources/" + basename;
+    String dirname = "test/com/google/enterprise/adaptor/resources/";
+    String filename = dirname + basename;
     RandomAccessFile f = new RandomAccessFile(filename, "r");
     byte b[] = new byte[(int) f.length()];
     f.readFully(b);

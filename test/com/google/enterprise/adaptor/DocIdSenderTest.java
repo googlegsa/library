@@ -14,16 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.DocIdSender;
-import com.google.enterprise.adaptor.GetDocIdsErrorHandler;
-import com.google.enterprise.adaptor.GsaFeedFileMaker;
-import com.google.enterprise.adaptor.GsaFeedFileSender;
-import com.google.enterprise.adaptor.Journal;
-import com.google.enterprise.adaptor.PushErrorHandler;
 import static org.junit.Assert.*;
 
 import org.junit.*;

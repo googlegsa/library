@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.GsaFeedFileSender;
-import com.google.enterprise.adaptor.IOHelper;
 import static org.junit.Assert.*;
 
 import com.sun.net.httpserver.Headers;

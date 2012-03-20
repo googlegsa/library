@@ -14,12 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractAdaptor;
-import com.google.enterprise.adaptor.AutoUnzipAdaptor;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Response;
 import static com.google.enterprise.adaptor.TestHelper.getDocContent;
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
 import static org.junit.Assert.*;

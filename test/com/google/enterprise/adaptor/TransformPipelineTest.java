@@ -14,10 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractDocumentTransform;
-import com.google.enterprise.adaptor.DocumentTransform;
-import com.google.enterprise.adaptor.TransformException;
-import com.google.enterprise.adaptor.TransformPipeline;
 import static org.junit.Assert.*;
 
 import org.junit.*;

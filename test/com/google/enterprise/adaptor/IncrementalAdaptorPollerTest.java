@@ -14,13 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractDocIdPusher;
-import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.IncrementalAdaptorPoller;
-import com.google.enterprise.adaptor.PollingIncrementalAdaptor;
-import com.google.enterprise.adaptor.PushErrorHandler;
 import static org.junit.Assert.*;
 
 import org.junit.*;

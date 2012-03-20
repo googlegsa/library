@@ -241,7 +241,8 @@
     <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-examples.jar"
       basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/examples/**">
       <zipgroupfileset dir="${lib.dir}" includes="${tmp.examples.zipgroup}"/>
-      <fileset dir="${src.dir}" includes="${adaptor.pkg.dir}/examples/**/*.java"/>
+      <fileset dir="${src.dir}"
+        includes="${adaptor.pkg.dir}/examples/**/*.java"/>
     </jar>
 
     <!-- adaptor-docs.zip -->
@@ -251,7 +252,10 @@
     <!-- adaptor-src.zip -->
     <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-src.zip"
       basedir="${basedir}"
-      excludes="adaptor-config.properties,*.crt,*.jks,build/**,dist/**,**/.*/**"/>
+      excludes="adaptor-config.properties
+                *.crt *.jks 
+                build/** dist/** 
+                **/.*/**"/>
   </target>
 
   <target name="-javadoc-test-uptodate">

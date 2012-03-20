@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.ConfigModificationEvent;
-import com.google.enterprise.adaptor.ConfigModificationListener;
 import static org.junit.Assert.*;
 
 import org.junit.*;

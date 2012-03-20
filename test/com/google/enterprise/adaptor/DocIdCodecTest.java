@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdCodec;
 import static org.junit.Assert.*;
 
 import org.junit.*;

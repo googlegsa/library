@@ -108,8 +108,7 @@ class AuthnHandler extends AbstractHandler {
             cred,
             httpClient);
     authnState.startAttempt(client, getRequestUri(ex));
-    client.sendAuthnRequest(
-        new com.google.enterprise.adaptor.HttpExchangeOutTransportAdapter(ex, true));
+    client.sendAuthnRequest(new HttpExchangeOutTransportAdapter(ex, true));
   }
 
   /**

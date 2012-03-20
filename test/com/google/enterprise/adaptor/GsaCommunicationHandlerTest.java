@@ -14,20 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractAdaptor;
-import com.google.enterprise.adaptor.AbstractDocumentTransform;
-import com.google.enterprise.adaptor.AdaptorContext;
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.DefaultGetDocIdsErrorHandler;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.GetDocIdsErrorHandler;
-import com.google.enterprise.adaptor.GsaCommunicationHandler;
-import com.google.enterprise.adaptor.PollingIncrementalAdaptor;
-import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Response;
-import com.google.enterprise.adaptor.Status;
-import com.google.enterprise.adaptor.StatusSource;
-import com.google.enterprise.adaptor.TransformPipeline;
 import static org.junit.Assert.*;
 
 import org.junit.*;
@@ -164,7 +150,8 @@ public class GsaCommunicationHandlerTest {
     TransformPipeline pipeline
         = GsaCommunicationHandler.createTransformPipeline(config);
     assertEquals(1, pipeline.getDocumentTransforms().size());
-    assertEquals(IdentityTransform.class, pipeline.getDocumentTransforms().get(0).getClass());
+    Class actualClass = pipeline.getDocumentTransforms().get(0).getClass();
+    assertEquals(IdentityTransform.class, actualClass);
     assertEquals("testing", pipeline.getDocumentTransforms().get(0).getName());
   }
 

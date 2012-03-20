@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdDecoder;
-import com.google.enterprise.adaptor.DocIdEncoder;
 import java.net.URI;
 import java.net.URISyntaxException;
 

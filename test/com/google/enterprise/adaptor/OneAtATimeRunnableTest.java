@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.OneAtATimeRunnable;
 import static org.junit.Assert.*;
 
 import org.junit.Test;

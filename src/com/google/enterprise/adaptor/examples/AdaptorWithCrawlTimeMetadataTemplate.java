@@ -15,11 +15,12 @@
 package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.DocId;
+import com.google.enterprise.adaptor.DocIdPusher;
+import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.util.*;

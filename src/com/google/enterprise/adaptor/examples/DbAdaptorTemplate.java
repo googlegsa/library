@@ -15,11 +15,12 @@
 package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
+import com.google.enterprise.adaptor.AdaptorContext;
+import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.Response;
-import com.google.enterprise.adaptor.AdaptorContext;
+
 import java.io.*;
 import java.nio.charset.Charset;
 import java.sql.*;
@@ -91,7 +92,8 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     Connection conn = null;
     try {
       conn = makeNewConnection();
-      ResultSet rs = getFromDb(conn, "select * from backlog where id = " + id.getUniqueId());
+      String query = "select * from backlog where id = " + id.getUniqueId();
+      ResultSet rs = getFromDb(conn, query);
 
       // First handle cases with no data to return.
       boolean hasResult = rs.next();

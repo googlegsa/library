@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor.examples;
 import static org.junit.Assert.*;
 
 import com.google.enterprise.adaptor.TransformException;
-import com.google.enterprise.adaptor.examples.CalaisNERTransform;
 
 import mx.bigdata.jcalais.CalaisClient;
 import mx.bigdata.jcalais.CalaisConfig;

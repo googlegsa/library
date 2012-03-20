@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.prebuilt.StreamingCommand;
 import static org.junit.Assert.*;
 
 import com.google.enterprise.adaptor.TestHelper;

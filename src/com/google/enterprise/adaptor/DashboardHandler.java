@@ -60,14 +60,12 @@ class DashboardHandler extends AbstractHandler {
       if ("".equals(path)) {
         path = "index.html";
       }
-      java.net.URL url = DashboardHandler.class.getResource(
-          STATIC_PACKAGE + "/" + path);
-      
+      path = STATIC_PACKAGE + "/" + path;
+      java.net.URL url = DashboardHandler.class.getResource(path);
       if (url == null) {
         cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
                       Translation.HTTP_NOT_FOUND );
         return;
-        
       }
       Date lastModified = new Date(url.openConnection().getLastModified());
       if (lastModified.getTime() == 0) {
@@ -95,17 +93,14 @@ class DashboardHandler extends AbstractHandler {
       cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
           Translation.HTTP_BAD_METHOD);
     }
-    
   }
 
   /**
    * Provides static files that are resources.
    */
   private byte[] loadPage(String path) throws IOException {  
-    String pageFile = STATIC_PACKAGE + "/" + path;
-    InputStream in = DashboardHandler.class.getResourceAsStream(pageFile);
+    InputStream in = DashboardHandler.class.getResourceAsStream(path);
     if (null == in) {
-      //throw new RuntimeException(pageFile);
       throw new FileNotFoundException(path);
     } else {
       try {

@@ -59,8 +59,8 @@ enum Translation {
    *   for the provided {@code locale}
    */
   public String toString(Locale locale) {
-    String localClassStr = "com.google.enterprise.adaptor.TranslationStrings";
-    return ResourceBundle.getBundle(localClassStr, locale)
+    String localeClassStr = "com.google.enterprise.adaptor.TranslationStrings";
+    return ResourceBundle.getBundle(localeClassStr, locale)
         .getString(name());
   }
 

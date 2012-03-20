@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.AuthzStatus;
-import com.google.enterprise.adaptor.DocId;
 import static org.junit.Assert.*;
 
 import org.junit.*;

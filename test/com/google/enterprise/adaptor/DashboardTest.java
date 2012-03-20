@@ -14,11 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Dashboard;
-import com.google.enterprise.adaptor.Journal;
-import com.google.enterprise.adaptor.Status;
-import com.google.enterprise.adaptor.StatusMonitor;
-import com.google.enterprise.adaptor.StatusSource;
 import static org.junit.Assert.*;
 
 import org.junit.*;

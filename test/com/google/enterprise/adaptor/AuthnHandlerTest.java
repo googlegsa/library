@@ -14,17 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AuthnHandler;
-import com.google.enterprise.adaptor.AuthnIdentity;
-import com.google.enterprise.adaptor.AuthnIdentityImpl;
-import com.google.enterprise.adaptor.AuthnState;
-import com.google.enterprise.adaptor.GsaCommunicationHandler;
-import com.google.enterprise.adaptor.HttpClientAdapter;
-import com.google.enterprise.adaptor.HttpExchangeInTransportAdapter;
-import com.google.enterprise.adaptor.HttpExchangeOutTransportAdapter;
-import com.google.enterprise.adaptor.SamlMetadata;
-import com.google.enterprise.adaptor.Session;
-import com.google.enterprise.adaptor.SessionManager;
 import static org.junit.Assert.*;
 
 import com.google.enterprise.secmgr.saml.OpenSamlUtil;

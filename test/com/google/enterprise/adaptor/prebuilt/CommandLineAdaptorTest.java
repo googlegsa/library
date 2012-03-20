@@ -26,7 +26,6 @@ import static com.google.enterprise.adaptor.TestHelper.getDocIds;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;

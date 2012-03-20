@@ -37,7 +37,7 @@ class AdministratorSecurityHandler extends AbstractHandler {
   /** Page to display when prompting for user credentials. */
   private static final String LOGIN_PAGE = "resources/login.html";
   /** Page to display when the user credentials are invalid. */
-  private static final String LOGIN_INVALID_PAGE = "resources/login-invalid.html";
+  private static final String LOGIN_FAILED_PAGE = "resources/login-failed.html";
 
   /** Wrapped handler, for when the user is authenticated. */
   private final HttpHandler handler;
@@ -75,7 +75,7 @@ class AdministratorSecurityHandler extends AbstractHandler {
         sendRedirect(ex, getRequestUri(ex));
         return;
       } else if (authn == AuthzStatus.DENY) {
-        pageToDisplay = LOGIN_INVALID_PAGE;
+        pageToDisplay = LOGIN_FAILED_PAGE;
       }
     }
 

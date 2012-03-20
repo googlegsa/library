@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Session;
-import com.google.enterprise.adaptor.SessionManager;
 import static org.junit.Assert.*;
 
 import com.sun.net.httpserver.HttpExchange;

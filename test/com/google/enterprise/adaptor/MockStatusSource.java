@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Status;
-import com.google.enterprise.adaptor.StatusSource;
 import java.util.Locale;
 
 /**

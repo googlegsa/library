@@ -14,10 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.DocIdSender;
-import com.google.enterprise.adaptor.Journal;
 import static org.junit.Assert.*;
 
 import org.junit.*;

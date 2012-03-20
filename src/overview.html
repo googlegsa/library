@@ -64,12 +64,12 @@ feed.name=mydocfeedtogsa</pre>
 
   <h3>Creating your own Adaptor</h3>
   <ol>
-    <li>Review JavaDoc for {@link com.google.enterprise.adaptor.Adaptor} and {@link
-      com.google.enterprise.adaptor.AbstractAdaptor}.
+    <li>Review JavaDoc for {@link com.google.enterprise.adaptor.Adaptor}
+      and {@link com.google.enterprise.adaptor.AbstractAdaptor}.
     <li>From {@code adaptor-src.zip}, make a copy of {@code
-      src/com/google/enterprise/adaptor/examples/AdaptorTemplate.java} to your own package and
-      name. You will need to modify the contents appropriately for the new
-      package and name.
+      src/com/google/enterprise/adaptor/examples/AdaptorTemplate.java}
+      to your own package and name. You will need to modify the contents
+      appropriately for the new package and name.
     <li>Compile, run, and verify the copied adaptor using your favorite IDE. You
       will only need {@code adaptor.jar} in your classpath.
     <li>Modify it further for your own repository.
@@ -142,7 +142,8 @@ feed.name=mydocfeedtogsa</pre>
     CN=yourcomputershostname, OU=... correct?" <br> 
   <p> Then, still in adaptor's directory, you should run:
   <pre>keytool -alias adaptor -keystore keys.jks -exportcert -rfc -file adaptor.crt</pre>
-  <p> Press enter for the key password (to use the same password as the keystore).
+  <p> Press enter for the key password (to use the same password
+    as the keystore).
 
   <h4>Exchanging Certificates</h4>
   <p>To allow the adaptor to trust the GSA, execute:

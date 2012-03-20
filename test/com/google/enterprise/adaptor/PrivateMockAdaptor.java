@@ -14,11 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AuthnIdentity;
-import com.google.enterprise.adaptor.AuthzStatus;
-import com.google.enterprise.adaptor.DocId;
 import java.util.*;
-
 
 /**
  * Mock of {@link Adaptor} that denies all users.

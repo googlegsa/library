@@ -14,11 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Adaptor;
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.WrapperAdaptor;
 import static org.junit.Assume.*;
 
 import java.io.*;
@@ -57,8 +52,8 @@ public class TestHelper {
     assumeTrue(!isRunningOnMac());
   }
 
-  public static List<DocId> getDocIds(Adaptor adaptor, Map<String, String> configEntries)
-      throws Exception {
+  public static List<DocId> getDocIds(Adaptor adaptor,
+      Map<String, String> configEntries) throws Exception {
     final AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
     final Config config = new Config();
     adaptor.initConfig(config);
@@ -85,8 +80,8 @@ public class TestHelper {
     return getDocIds(adaptor, Collections.<String, String>emptyMap());
   }
 
-  public static byte[] getDocContent(Adaptor adaptor, DocId docId) throws IOException,
-      InterruptedException {
+  public static byte[] getDocContent(Adaptor adaptor, DocId docId)
+      throws IOException, InterruptedException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     WrapperAdaptor.GetContentsResponse resp
         = new WrapperAdaptor.GetContentsResponse(baos);
@@ -96,6 +91,4 @@ public class TestHelper {
     }
     return baos.toByteArray();
   }
-
-
 }

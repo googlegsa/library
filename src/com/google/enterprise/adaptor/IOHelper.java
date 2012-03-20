@@ -103,7 +103,8 @@ public class IOHelper {
    *             <code>len</code> is negative, or <code>len</code> is
    *             greater than <code>b.length - off</code>
    */
-  public static int readFully(InputStream is, byte[] bytes, int off, int len) throws IOException {
+  public static int readFully(InputStream is, byte[] bytes, int off, int len)
+      throws IOException {
     int bytesRead = 0;
     int result = 0;
     if (len == 0) {

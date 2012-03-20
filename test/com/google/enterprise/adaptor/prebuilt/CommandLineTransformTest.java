@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 import com.google.enterprise.adaptor.TestHelper;
 import com.google.enterprise.adaptor.TransformException;
 import com.google.enterprise.adaptor.TransformPipeline;
-import com.google.enterprise.adaptor.prebuilt.CommandLineTransform;
 
 import org.junit.Test;
 

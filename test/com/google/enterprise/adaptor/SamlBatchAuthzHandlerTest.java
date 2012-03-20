@@ -14,13 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Adaptor;
-import com.google.enterprise.adaptor.AuthnIdentity;
-import com.google.enterprise.adaptor.AuthzStatus;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.GsaCommunicationHandler;
-import com.google.enterprise.adaptor.SamlBatchAuthzHandler;
-import com.google.enterprise.adaptor.SamlMetadata;
 import static org.junit.Assert.*;
 
 import org.junit.*;

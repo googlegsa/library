@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Config;
 import java.io.*;
 import java.util.*;
 

@@ -14,10 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractAdaptor;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Response;
 import java.io.IOException;
 
 /**

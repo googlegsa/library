@@ -14,10 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdSender;
-import com.google.enterprise.adaptor.Journal;
-import com.google.enterprise.adaptor.TimeProvider;
 import java.util.List;
 
 /**

@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.prebuilt.RecursiveFileIterator;
 import static org.junit.Assert.*;
 
 import org.junit.*;

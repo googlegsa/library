@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AuthnIdentity;
-import com.google.enterprise.adaptor.AuthnIdentityImpl;
 import static org.junit.Assert.*;
 
 import org.junit.*;

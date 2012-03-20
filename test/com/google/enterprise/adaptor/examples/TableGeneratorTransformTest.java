@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor.examples;
 import static org.junit.Assert.*;
 
 import com.google.enterprise.adaptor.TransformException;
-import com.google.enterprise.adaptor.examples.TableGeneratorTransform;
 
 import org.junit.Test;
 
@@ -40,7 +39,8 @@ public class TableGeneratorTransformTest {
     params.put("key1", "value1");
     transform.transform(contentIn, contentOut, metadata, params);
 
-    assertEquals("<HTML><HEAD></HEAD><BODY></BODY></HTML>", contentOut.toString());
+    String actualOutput = contentOut.toString();
+    assertEquals("<HTML><HEAD></HEAD><BODY></BODY></HTML>", actualOutput);
     assertEquals(0, metadata.size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());

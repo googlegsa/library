@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractHandler;
-import com.google.enterprise.adaptor.Translation;
 import static org.junit.Assert.*;
 
 import com.sun.net.httpserver.*;

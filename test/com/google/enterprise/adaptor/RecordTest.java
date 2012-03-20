@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdPusher;
 import static org.junit.Assert.*;
 
 import org.junit.*;

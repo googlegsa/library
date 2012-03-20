@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.prebuilt.Command;
 import com.google.enterprise.adaptor.TestHelper;
 
 import static org.junit.Assert.*;

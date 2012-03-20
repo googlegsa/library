@@ -14,12 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocIdEncoder;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.DocIdSender;
-import com.google.enterprise.adaptor.GsaFeedFileMaker;
 import static org.junit.Assert.*;
 
 import org.junit.*;
@@ -110,7 +104,8 @@ public class GsaFeedFileMakerTest {
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    DocIdPusher.Record.Builder attrBuilder = new DocIdPusher.Record.Builder(new DocId("E11"));
+    DocIdPusher.Record.Builder attrBuilder 
+        = new DocIdPusher.Record.Builder(new DocId("E11"));
 
     attrBuilder.setResultLink(new URI("http://f000nkey.net"));
     ids.add(attrBuilder.build());

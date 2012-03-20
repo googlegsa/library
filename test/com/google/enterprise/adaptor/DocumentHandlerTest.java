@@ -14,24 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractDocumentTransform;
-import com.google.enterprise.adaptor.AbstractHandler;
-import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.Adaptor;
-import com.google.enterprise.adaptor.AuthnIdentity;
-import com.google.enterprise.adaptor.AuthnIdentityImpl;
-import com.google.enterprise.adaptor.AuthnState;
-import com.google.enterprise.adaptor.AuthzStatus;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.DocumentHandler;
-import com.google.enterprise.adaptor.DocumentTransform;
-import com.google.enterprise.adaptor.Journal;
-import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Response;
-import com.google.enterprise.adaptor.Session;
-import com.google.enterprise.adaptor.SessionManager;
-import com.google.enterprise.adaptor.TransformPipeline;
-import com.google.enterprise.adaptor.Translation;
 import static org.junit.Assert.*;
 
 import com.sun.net.httpserver.HttpExchange;
@@ -418,7 +400,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testTransformDocumentTooLargeButRequired() throws Exception {
-    TransformPipeline transform = new TransformPipeline(Collections.<DocumentTransform>emptyList());
+    TransformPipeline transform = new TransformPipeline(
+        Collections.<DocumentTransform>emptyList());
     class CheckFailAdaptor extends MockAdaptor {
       public boolean failedAtCorrectTime = false;
 

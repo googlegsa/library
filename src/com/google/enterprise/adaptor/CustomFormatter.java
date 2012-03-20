@@ -30,7 +30,8 @@ public class CustomFormatter extends Formatter {
   // and background colors, respectively. The ';' isn't required. If you don't
   // provide a foreground or background, it will be set to the default.
   private MessageFormat formatter = new MessageFormat(
-      "\u001b[3{5}m{0,date,HH:mm:ss.SSS} \u001b[3{6}m{1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
+      "\u001b[3{5}m{0,date,HH:mm:ss.SSS}"
+      + " \u001b[3{6}m{1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
   /** Is identical to {@link #formatter} except for colors */
   private MessageFormat noColorFormatter = new MessageFormat(
       "{0,date,HH:mm:ss.SSS} {1} {2} {3}: {4}");
@@ -39,7 +40,8 @@ public class CustomFormatter extends Formatter {
   /**
    * Flag for whether color escapes should be used. Defaults to false on
    * Windows and true on all other platforms. Can be overridden with the
-   * {@code com.google.enterprise.adaptor.CustomFormatter.useColor} logging configuration property.
+   * {@code com.google.enterprise.adaptor.CustomFormatter.useColor} logging
+   * configuration property.
    */
   private boolean useColor = !System.getProperty("os.name").contains("Windows");
   /**

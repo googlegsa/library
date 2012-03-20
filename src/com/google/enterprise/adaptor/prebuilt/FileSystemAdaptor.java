@@ -15,13 +15,13 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
-import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Config;
-import com.google.enterprise.adaptor.IOHelper;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.AdaptorContext;
+import com.google.enterprise.adaptor.Config;
+import com.google.enterprise.adaptor.DocId;
+import com.google.enterprise.adaptor.DocIdPusher;
+import com.google.enterprise.adaptor.IOHelper;
+import com.google.enterprise.adaptor.Request;
+import com.google.enterprise.adaptor.Response;
 
 import java.io.*;
 import java.util.*;

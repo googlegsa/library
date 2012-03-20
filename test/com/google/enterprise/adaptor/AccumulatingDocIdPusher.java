@@ -14,10 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.AbstractDocIdPusher;
-import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.DocId;
-import com.google.enterprise.adaptor.PushErrorHandler;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;

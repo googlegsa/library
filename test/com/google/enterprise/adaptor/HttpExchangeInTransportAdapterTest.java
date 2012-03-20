@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.adaptor.HttpExchangeInTransportAdapter;
 import static org.junit.Assert.*;
 
 import org.junit.*;
