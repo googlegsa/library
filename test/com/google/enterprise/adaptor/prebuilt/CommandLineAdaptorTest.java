@@ -265,6 +265,9 @@ public class CommandLineAdaptorTest {
     private List<String> anchorTexts = new ArrayList<String>();
     private boolean notModified;
     private boolean notFound;
+    private boolean noIndex;
+    private boolean noFollow;
+    private boolean noArchive;
 
     public ContentsResponseTestMock(OutputStream os) {
       this.os = os;
@@ -308,6 +311,21 @@ public class CommandLineAdaptorTest {
       anchorTexts.add(text);
     }
 
+    @Override
+    public void setNoIndex(boolean noIndex) {
+      this.noIndex = noIndex;
+    }
+
+    @Override
+    public void setNoFollow(boolean noFollow) {
+      this.noFollow = noFollow;
+    }
+
+    @Override
+    public void setNoArchive(boolean noArchive) {
+      this.noArchive = noArchive;
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -326,6 +344,18 @@ public class CommandLineAdaptorTest {
 
     public boolean getNotFound() {
       return notFound;
+    }
+
+    public boolean isNoIndex() {
+      return noIndex;
+    }
+
+    public boolean isNoFollow() {
+      return noFollow;
+    }
+
+    public boolean isNoArchive() {
+      return noArchive;
     }
   }
 

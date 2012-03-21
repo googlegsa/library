@@ -96,4 +96,35 @@ public interface Response {
    * @throws NullPointerException if {@code uri} is {@code null}
    */
   public void addAnchor(URI uri, String text);
+
+  /**
+   * Whether the GSA should index the content for searching. When {@code true},
+   * the document will not be visible in search results. This does not change
+   * the GSA's behavior of following links within the document to find other
+   * documents. By default, the GSA will index the document (a value of {@code
+   * false}).
+   *
+   * @param noIndex {@code true} when the GSA shouldn't index this document
+   */
+  public void setNoIndex(boolean noIndex);
+
+  /**
+   * Whether the GSA should follow the links within the document to find other
+   * documents. By default, the GSA will follow links (a value of {@code
+   * false}).
+   *
+   * @param noFollow {@code true} when the GSA shouldn't follow links from this
+   *     document to find other documents
+   */
+  public void setNoFollow(boolean noFollow);
+
+  /**
+   * Whether the GSA should show the "Cached" link in search results for this
+   * document. By default, the GSA will show the "Cached" link (a value of
+   * {@code false}).
+   *
+   * @param noArchive {@code true} when the GSA shouldn't show the "Cached"
+   *     link in search results
+   */
+  public void setNoArchive(boolean noArchive);
 }

@@ -443,6 +443,9 @@ class DocumentHandler extends AbstractHandler {
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
     private final DocId docId;
+    private boolean noIndex;
+    private boolean noFollow;
+    private boolean noArchive;
 
     public DocumentResponse(HttpExchange ex, DocId docId) {
       this.ex = ex;
@@ -544,6 +547,30 @@ class DocumentHandler extends AbstractHandler {
       anchorTexts.add(text);
     }
 
+    @Override
+    public void setNoIndex(boolean noIndex) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.noIndex = noIndex;
+    }
+
+    @Override
+    public void setNoFollow(boolean noFollow) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.noFollow = noFollow;
+    }
+
+    @Override
+    public void setNoArchive(boolean noArchive) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.noArchive = noArchive;
+    }
+
     private long getWrittenContentSize() {
       return countingOs == null ? 0 : countingOs.getBytesWritten();
     }
@@ -609,6 +636,15 @@ class DocumentHandler extends AbstractHandler {
         if (!anchorUris.isEmpty()) {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
               formAnchorHeader(anchorUris, anchorTexts));
+        }
+        if (noIndex) {
+          ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
+        }
+        if (noFollow) {
+          ex.getResponseHeaders().add("X-Robots-Tag", "nofollow");
+        }
+        if (noArchive) {
+          ex.getResponseHeaders().add("X-Robots-Tag", "noarchive");
         }
       }
       if (useCompression) {

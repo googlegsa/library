@@ -299,6 +299,9 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
+    assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-External-Metadata"));
+    assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-External-Anchor"));
+    assertFalse(ex.getResponseHeaders().containsKey("X-Robots-Tag"));
   }
 
   @Test
@@ -617,6 +620,69 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testSetNoIndexLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setNoIndex(true);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSetNoFollowLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setNoFollow(true);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSetNoArchiveLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setNoArchive(true);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSetNoIndexFollowArchiveFalse() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setNoIndex(false);
+            response.setNoFollow(false);
+            response.setNoArchive(false);
+            response.getOutputStream();
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertFalse(ex.getResponseHeaders().containsKey("X-Robots-Tag"));
+  }
+
+  @Test
   public void testSmartAdaptor() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -672,6 +738,9 @@ public class DocumentHandlerTest {
             response.addAnchor(URI.create("http://test/"), null);
             response.addAnchor(URI.create("ftp://host/path?val=1"),
                 "AaZz09,=-%");
+            response.setNoIndex(true);
+            response.setNoFollow(true);
+            response.setNoArchive(true);
             response.getOutputStream();
           }
         };
@@ -689,6 +758,10 @@ public class DocumentHandlerTest {
     assertEquals("http%3A%2F%2Ftest%2F,"
         + "AaZz09%2C%3D-%25=ftp%3A%2F%2Fhost%2Fpath%3Fval%3D1",
         ex.getResponseHeaders().getFirst("X-Gsa-External-Anchor"));
+    List<String> robots = ex.getResponseHeaders().get("X-Robots-Tag");
+    assertTrue(robots.contains("noindex"));
+    assertTrue(robots.contains("nofollow"));
+    assertTrue(robots.contains("noarchive"));
   }
 
   @Test

@@ -132,6 +132,21 @@ abstract class WrapperAdaptor implements Adaptor {
     public void addAnchor(URI uri, String text) {
       response.addAnchor(uri, text);
     }
+
+    @Override
+    public void setNoIndex(boolean noIndex) {
+      response.setNoIndex(noIndex);
+    }
+
+    @Override
+    public void setNoFollow(boolean noFollow) {
+      response.setNoFollow(noFollow);
+    }
+
+    @Override
+    public void setNoArchive(boolean noArchive) {
+      response.setNoArchive(noArchive);
+    }
   }
 
   /**
@@ -175,6 +190,9 @@ abstract class WrapperAdaptor implements Adaptor {
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
     private boolean notFound;
+    private boolean noIndex;
+    private boolean noFollow;
+    private boolean noArchive;
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -217,6 +235,21 @@ abstract class WrapperAdaptor implements Adaptor {
       anchorTexts.add(text);
     }
 
+    @Override
+    public void setNoIndex(boolean noIndex) {
+      this.noIndex = noIndex;
+    }
+
+    @Override
+    public void setNoFollow(boolean noFollow) {
+      this.noFollow = noFollow;
+    }
+
+    @Override
+    public void setNoArchive(boolean noArchive) {
+      this.noArchive = noArchive;
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -239,6 +272,18 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public boolean isNotFound() {
       return notFound;
+    }
+
+    public boolean isNoIndex() {
+      return noIndex;
+    }
+
+    public boolean isNoFollow() {
+      return noFollow;
+    }
+
+    public boolean isNoArchive() {
+      return noArchive;
     }
   }
 
