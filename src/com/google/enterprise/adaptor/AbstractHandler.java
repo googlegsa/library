@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsServer;
@@ -83,10 +84,9 @@ abstract class AbstractHandler implements HttpHandler {
     this.defaultEncoding = defaultEncoding;
   }
 
-  protected String getLoggableRequestHeaders(HttpExchange ex) {
+  String getLoggableHeaders(Headers headers) {
     StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String, List<String>> me
-         : ex.getRequestHeaders().entrySet()) {
+    for (Map.Entry<String, List<String>> me : headers.entrySet()) {
       for (String value : me.getValue()) {
         sb.append(me.getKey());
         sb.append(": ");
@@ -98,11 +98,19 @@ abstract class AbstractHandler implements HttpHandler {
     return sb.substring(0, sb.length() - 2);
   }
 
-  protected void logRequest(HttpExchange ex) {
+  private void logRequest(HttpExchange ex) {
     if (log.isLoggable(Level.FINER)) {
       log.log(Level.FINER, "Received {1} request to {0}. Headers: '{'{2}'}'",
               new Object[] {ex.getRequestURI(), ex.getRequestMethod(),
-                            getLoggableRequestHeaders(ex)});
+                            getLoggableHeaders(ex.getRequestHeaders())});
+    }
+  }
+
+  private void logResponse(HttpExchange ex) {
+    if (log.isLoggable(Level.FINER)) {
+      log.log(Level.FINER, "Responded to {1} request {0}. Headers: '{'{2}'}'",
+              new Object[] {ex.getRequestURI(), ex.getRequestMethod(),
+                            getLoggableHeaders(ex.getResponseHeaders())});
     }
   }
 
@@ -310,6 +318,7 @@ abstract class AbstractHandler implements HttpHandler {
                       Translation.HTTP_INTERNAL_ERROR);
       }
     } finally {
+      logResponse(ex);
       log.fine("ending");
     }
   }

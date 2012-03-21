@@ -40,7 +40,8 @@ public class AbstractHandlerTest {
   public void testLoggableRequestHeaders() {
     ex.getRequestHeaders().set("a", "1");
     ex.getRequestHeaders().set("B", "2");
-    assertEquals("A: 1, B: 2", handler.getLoggableRequestHeaders(ex));
+    assertEquals("A: 1, B: 2",
+        handler.getLoggableHeaders(ex.getRequestHeaders()));
   }
 
   @Test
