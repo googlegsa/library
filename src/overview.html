@@ -28,7 +28,10 @@
       release. Specifically, you will need {@code adaptor.jar} and {@code
       adaptor-examples.jar}.   If instead of working from a release you are
       working from source code you can build the required jars by running:
-      <pre>ant dist</pre>
+      <pre>ant dist
+cd dist</pre>
+      The needed {@code adaptor.jar} and {@code adaptor-examples.jar} will be
+      within the current directory.
     <li>Create an <code>adaptor-config.properties</code> text file in the
       current directory that looks like:
       <pre>gsa.hostname=mygsahostname</pre>
@@ -43,9 +46,9 @@ feed.name=mydocfeedtogsa</pre>
       like:
       <pre>server.hostname=yourcomputershostname</pre>
     <li>Start the Adaptor Template. For Windows:
-      <pre>java -cp dist\adaptor.jar;dist\adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
+      <pre>java -cp adaptor.jar;adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
       For all other OSes:
-      <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
+      <pre>java -cp adaptor.jar:adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
     <li> Ensure crawling is enabled on your GSA.
       <p>
       Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
@@ -55,8 +58,8 @@ feed.name=mydocfeedtogsa</pre>
       <p>
       In the GSA, go to <b>Crawl and Index &gt; Feeds</b>.
       In the <b>Current Feeds</b> section, you should see an entry for a
-      "testfeed" (which can be changed by setting the <code>feed.name</code>
-      configuration variable).
+      "adaptor_HOSTNAME_PORT" (which can be changed by setting the
+      <code>feed.name</code> configuration variable).
       <p>
       In the adaptor log look to see document ids being pushed and
       requests for document contents being served.
@@ -83,7 +86,7 @@ feed.name=mydocfeedtogsa</pre>
     of the form "-Dconfigkey=configvalue". When providing a value on the command
     line, it overrides the default value and the value (if any) in the
     configuration file. For example:
-    <pre>java -cp dist/adaptor.jar:dist/adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
+    <pre>java -cp adaptor.jar:adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
 
   <h3>Enabling Security</h3>
   <p>Security is not enabled by default because it requires a reasonable amount
