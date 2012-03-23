@@ -201,52 +201,72 @@
 
   <target name="package" description="Generate binaries"
     depends="build,javadoc">
-    <mkdir dir="${dist.dir}"/>
+    <property name="dist.staging.dir" value="${build.dir}/dist/staging"/>
+
+    <delete dir="${build.dir}/dist"/>
+    <delete dir="${dist.dir}"/>
+
+    <!-- Produce intermediate distribution files -->
 
     <!-- adaptor.jar -->
+    <jar destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"
+      basedir="${build-src.dir}" excludes="${adaptor.pkg.dir}/examples/**">
+      <fileset dir="${resource.dir}"/>
+    </jar>
+
+    <!-- adaptor-src.jar -->
+    <jar destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}-src.jar"
+      basedir="${src.dir}" excludes="${adaptor.pkg.dir}/examples/**">
+      <fileset dir="${resource.dir}"/>
+    </jar>
+
+    <!-- lib/ -->
     <!-- Concatenate dependent JARs together into a comma-delimited list. -->
     <pathconvert pathsep="," refid="adaptorlib.run.classpath"
-      property="tmp.adaptorlib.zipgroup">
+      property="tmp.adaptorlib.fileset">
       <!-- We remove the lib.dir from the paths to prevent trouble with comma
            and space in lib.dir. It also makes it nicer <echo>ing
-           tmp.adaptorlib.zipgroup. -->
+           tmp.adaptorlib.fileset. -->
       <map from="${lib.dir}/" to=""/>
     </pathconvert>
-    <jar destfile="${build.dir}/adaptor.tmp.jar" basedir="${build-src.dir}"
-      excludes="${adaptor.pkg.dir}/examples/**,${adaptor.pkg.dir}/prebuilt/**">
-      <zipgroupfileset dir="${lib.dir}" includes="${tmp.adaptorlib.zipgroup}"/>
-      <!-- resource.dir is included in tmp.adaptorlib.zipgroup, but since it
-           isn't a zip file, the zipgroupfileset doesn't include the folder's
-           contents. Thus, we explicitly add it again here. -->
-      <fileset dir="${resource.dir}"/>
+    <copy todir="${dist.staging.dir}/lib">
+      <fileset dir="${lib.dir}" includes="${tmp.adaptorlib.fileset}"/>
+    </copy>
+
+    <!-- adaptor-withlib.jar -->
+    <jar destfile="${build.dir}/dist/adaptor-withlib.tmp.jar">
+      <zipfileset src="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"/>
+      <zipgroupfileset dir="${dist.staging.dir}/lib"/>
     </jar>
     <!-- Re-save JAR without signing keys, since keeping them in the JAR causes
          security exceptions. -->
-    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}.jar">
+    <zip destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}-withlib.jar">
       <zipfileset excludes="META-INF/**/*.DSA,META-INF/**/*.SF"
-        src="${build.dir}/adaptor.tmp.jar"/>
+        src="${build.dir}/dist/adaptor-withlib.tmp.jar"/>
     </zip>
-
-    <!-- adaptor-prebuilt.jar -->
-    <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-prebuilt.jar"
-      basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/prebuilt/**">
-    </jar>
 
     <!-- adaptor-examples.jar -->
     <pathconvert pathsep="," refid="examples.run.classpath"
       property="tmp.examples.zipgroup">
       <map from="${lib.dir}/" to=""/>
     </pathconvert>
-    <jar destfile="${dist.dir}/adaptor${adaptorlib.suffix}-examples.jar"
+    <jar destfile="${dist.staging.dir}/examples/adaptor${adaptorlib.suffix}-examples.jar"
       basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/examples/**">
       <zipgroupfileset dir="${lib.dir}" includes="${tmp.examples.zipgroup}"/>
       <fileset dir="${src.dir}"
         includes="${adaptor.pkg.dir}/examples/**/*.java"/>
     </jar>
 
+    <!-- example Command Line Adaptor scripts -->
+    <copy todir="${dist.staging.dir}/examples">
+      <fileset dir="${basedir}" includes="*.sh"/>
+    </copy>
+
     <!-- adaptor-docs.zip -->
-    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-docs.zip"
+    <zip destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}-docs.zip"
       basedir="${javadoc.dir}"/>
+
+    <!-- Produce final distribution files -->
 
     <!-- adaptor-src.zip -->
     <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-src.zip"
@@ -271,6 +291,12 @@
       <!-- NetBeans files -->
       <exclude name="nbproject/**"/>
     </zip>
+
+    <!-- adaptor-bin.zip -->
+    <move file="${dist.staging.dir}"
+      tofile="${build.dir}/dist/adaptor${adaptorlib.suffix}"/>
+    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-bin.zip"
+      basedir="${build.dir}/dist/adaptor${adaptorlib.suffix}"/>
   </target>
 
   <target name="-javadoc-test-uptodate">
