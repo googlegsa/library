@@ -139,7 +139,7 @@
     depends="-real-build,-check-instrument-uptodate,clean-instrument"
     description="Build source"/>
 
-  <target name="-real-build" description="Build source">
+  <target name="-real-build">
     <mkdir dir="${build-src.dir}"/>
 
     <!-- Compile secmgr. -->
