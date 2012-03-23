@@ -251,12 +251,25 @@
     <!-- adaptor-src.zip -->
     <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-src.zip"
       basedir="${basedir}">
-      <exclude name="adaptor-config.properties"/>
-      <exclude name="*.crt"/>
-      <exclude name="*.jks"/>
+      <exclude name="**/.*/**"/>
+
+      <!-- Normal private files -->
       <exclude name="build/**"/>
       <exclude name="dist/**"/>
-      <exclude name="**/.*/**"/>
+      <exclude name="adaptor-config.properties"/>
+      <exclude name="cacerts.jks"/>
+      <exclude name="keys.jks"/>
+      <exclude name="adaptor.crt"/>
+      <exclude name="gsa.crt"/>
+
+      <!-- IntelliJ files -->
+      <exclude name="workspace/**"/>
+      <exclude name="classes/**"/>
+      <exclude name=".idea"/>
+      <exclude name="Plexi.iml"/>
+
+      <!-- NetBeans files -->
+      <exclude name="nbproject/**"/>
     </zip>
   </target>
 

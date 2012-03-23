@@ -1,15 +1,17 @@
+# Normal private files
 build/
 dist/
-src/dbadaptortemplate/mysql.jar
 adaptor-config.properties
-workspace/
-src/commandlineadaptor/.classpath
-src/commandlineadaptor/.project
 cacerts.jks
 keys.jks
 adaptor.crt
 gsa.crt
+
+# IntelliJ files
+workspace/
 classes/
 .idea
 Plexi.iml
+
+# NetBeans files
 nbproject/
