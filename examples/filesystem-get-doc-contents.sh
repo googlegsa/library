@@ -1,5 +1,5 @@
 #!/bin/sh
-# Example gives byts of files on local unix filesystem.
+# Example gives bytes of file on local unix filesystem.
 #
 # TODO: Update to contemporary format.
 
