@@ -312,7 +312,7 @@ public class GsaCommunicationHandlerTest {
     @Override
     public void transform(ByteArrayOutputStream contentIn,
                           OutputStream contentOut,
-                          Map<String, String> metadata,
+                          Metadata metadata,
                           Map<String, String> params) throws IOException {
       contentIn.writeTo(contentOut);
     }

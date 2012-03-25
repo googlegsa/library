@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractDocumentTransform;
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
 
 import au.com.bytecode.opencsv.CSVReader;
@@ -30,6 +31,7 @@ import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 /**
@@ -49,7 +51,7 @@ public class TableGeneratorTransform extends AbstractDocumentTransform {
 
   @Override
   public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadata, Map<String, String> params)
+                        Metadata metadata, Map<String, String> params)
       throws TransformException, IOException {
     String csv = contentIn.toString();
     List<String[]> records = new CSVReader(new StringReader(csv)).readAll();

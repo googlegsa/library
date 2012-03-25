@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.examples;
 
 import static org.junit.Assert.*;
 
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
 
 import mx.bigdata.jcalais.CalaisClient;
@@ -134,7 +135,7 @@ public class CalaisNERTransformTest {
     CalaisNERTransform transform = new CalaisNERTransform(new Factory());
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("OpenCalaisApiKey", "4ydv87zawg7tf29jzex22d9u");
     params.put("UseCalaisEntity:Person", "True");
@@ -167,7 +168,7 @@ public class CalaisNERTransformTest {
     CalaisNERTransform transform = new CalaisNERTransform(new Factory());
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("OpenCalaisApiKey", "4ydv87zawg7tf29jzex22d9u");
     params.put("UseCalaisEntity:All", "True");

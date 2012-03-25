@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.examples;
 
 import static org.junit.Assert.*;
 
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
 
 import org.junit.Test;
@@ -36,7 +37,7 @@ public class MetaTaggerTransformTest {
     MetaTaggerTransform transform = new MetaTaggerTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -46,7 +47,7 @@ public class MetaTaggerTransformTest {
 
     assertEquals(testString, contentIn.toString());
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getAllEntries().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -56,7 +57,7 @@ public class MetaTaggerTransformTest {
     MetaTaggerTransform transform = new MetaTaggerTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -66,7 +67,7 @@ public class MetaTaggerTransformTest {
 
     assertEquals(testString, contentIn.toString());
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getAllEntries().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -76,7 +77,7 @@ public class MetaTaggerTransformTest {
     MetaTaggerTransform transform = new MetaTaggerTransform(TEST_DIR + "testPattern1.txt");
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
     String content =
@@ -100,7 +101,7 @@ public class MetaTaggerTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenContent, contentOut.toString());
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getKeys().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -110,7 +111,7 @@ public class MetaTaggerTransformTest {
     MetaTaggerTransform transform = new MetaTaggerTransform(TEST_DIR + "testPattern1.txt");
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
     String content =
@@ -122,7 +123,7 @@ public class MetaTaggerTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(content, contentOut.toString());
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getAllEntries().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -132,7 +133,7 @@ public class MetaTaggerTransformTest {
     MetaTaggerTransform transform = new MetaTaggerTransform(TEST_DIR + "testPatternDup.txt");
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -157,7 +158,7 @@ public class MetaTaggerTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenContent, contentOut.toString());
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getAllEntries().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }

@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import java.io.*;
 import java.net.URI;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent} for performing the
@@ -77,7 +78,7 @@ public interface Response {
    * @throws IllegalArgumentException if metadata contains {@code null} or empty
    *     keys or {@code null} values
    */
-  public void setMetadata(Map<String, String> metadata);
+  public void setMetadata(Set<Map.Entry<String, String>> metadata);
 
   /**
    * Provide the document's ACLs for early-binding security on the GSA.

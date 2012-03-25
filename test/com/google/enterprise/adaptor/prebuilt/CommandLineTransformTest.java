@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static org.junit.Assert.*;
 
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TestHelper;
 import com.google.enterprise.adaptor.TransformException;
 import com.google.enterprise.adaptor.TransformPipeline;
@@ -46,7 +47,7 @@ public class CommandLineTransformTest {
     cmd.setTransformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.setCommandAcceptsParameters(false);
     TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(testStr.getBytes(), contentOut, new HashMap<String, String>(), params);
+    pipeline.transform(testStr.getBytes(), contentOut, new Metadata(), params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
     assertEquals("metaValue1", metadata.get("metaKey1"));
@@ -62,8 +63,8 @@ public class CommandLineTransformTest {
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     // The newline causes the test to work with both BSD and GNU sed.
     String testStr = "testing\n";
-    Map<String, String> metadata = new HashMap<String, String>();
-    metadata.put("metaKey1", "metaValue1");
+    Metadata metadata = new Metadata();
+    metadata.add("metaKey1", "metaValue1");
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -83,8 +84,8 @@ public class CommandLineTransformTest {
     pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
-    assertEquals("metaValue2", metadata.get("metaKey2"));
-    assertEquals(1, metadata.size());
+    assertEquals("metaValue2", metadata.getFirstValue("metaKey2"));
+    assertEquals(1, metadata.getAllEntries().size());
     assertEquals("value3", params.get("key3"));
     assertEquals(1, params.size());
   }

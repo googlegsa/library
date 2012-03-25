@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Map.Entry;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
@@ -270,9 +272,9 @@ class DocumentHandler extends AbstractHandler {
   /**
    * Format the GSA-specific metadata header value for crawl-time metadata.
    */
-  static String formMetadataHeader(Map<String, String> metadata) {
+  static String formMetadataHeader(Set<Entry<String, String>> metadata) {
     StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String, String> item : metadata.entrySet()) {
+    for (Entry<String, String> item : metadata) {
       percentEncodeMapEntryPair(sb, item.getKey(), item.getValue());
     }
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
@@ -438,7 +440,7 @@ class DocumentHandler extends AbstractHandler {
     private OutputStream os;
     private CountingOutputStream countingOs;
     private String contentType;
-    private Map<String, String> metadata = Collections.emptyMap();
+    private Set<Entry<String, String>> metadata = Collections.emptySet();
     private Acl acl = Acl.EMPTY;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
@@ -514,17 +516,19 @@ class DocumentHandler extends AbstractHandler {
     }
 
     @Override
-    public void setMetadata(Map<String, String> metadata) {
+    public void setMetadata(Set<Entry<String, String>> metadata) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
       }
       setMetadataInternal(metadata);
     }
 
-    private void setMetadataInternal(Map<String, String> metadata) {
+    private void setMetadataInternal(Set<Entry<String, String>> metadata) {
       // TODO(ejona): check for valid keys and values.
-      this.metadata = Collections.unmodifiableMap(
-          new TreeMap<String, String>(metadata));
+      Comparator<Entry<String, String>> cmp = Metadata.ENTRY_COMPARATOR;
+      Set<Entry<String, String>> dup = new TreeSet<Entry<String, String>>(cmp);
+      dup.addAll(metadata);
+      this.metadata = Collections.unmodifiableSet(dup);
     }
 
     @Override
@@ -656,7 +660,8 @@ class DocumentHandler extends AbstractHandler {
 
     private ByteArrayOutputStream transform(byte[] content) throws IOException {
       ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-      Map<String, String> metadataCopy = new HashMap<String, String>(metadata);
+      // Transforms use Metadata class instead of set of entries.
+      Metadata metadataCopy = new Metadata(metadata);
       Map<String, String> params = new HashMap<String, String>();
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
@@ -665,7 +670,7 @@ class DocumentHandler extends AbstractHandler {
       } catch (TransformException e) {
         throw new IOException(e);
       }
-      setMetadataInternal(metadataCopy);
+      setMetadataInternal(metadataCopy.getAllEntries());
       contentType = params.get("Content-Type");
       return contentOut;
     }

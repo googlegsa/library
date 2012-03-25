@@ -14,11 +14,14 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import static java.util.Map.Entry;
+
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Adaptor;
 import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
@@ -37,12 +40,14 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Tests for {@link CommandLineAdaptor}.
@@ -83,7 +88,7 @@ public class CommandLineAdaptorTest {
     private static final Map<String, String> ID_TO_MIME_TYPE;
     private static final Map<String, Date> ID_TO_LAST_MODIFIED;
     private static final Map<String, Date> ID_TO_LAST_CRAWLED;
-    private static final Map<String, Map<String, String>> ID_TO_METADATA;
+    private static final Map<String, Metadata> ID_TO_METADATA;
 
     static {
       Map<String, String> idToContent = new HashMap<String, String>();
@@ -109,21 +114,22 @@ public class CommandLineAdaptorTest {
       idToLastCrawled.put("1003", new Date(5000));
       ID_TO_LAST_CRAWLED = Collections.unmodifiableMap(idToLastCrawled);
 
-      Map<String, String> id1002Metadata = new HashMap<String, String>();
-      id1002Metadata.put("metaname-1002a", "metavalue-1002a");
-      id1002Metadata.put("metaname-1002b", "metavalue-1002b");
+      Metadata id1002Metadata = new Metadata();
+      id1002Metadata.add("metaname-1002a", "metavalue-1002a");
+      id1002Metadata.add("metaname-1002b", "metavalue-1002b");
+      Metadata id1003Metadata = new Metadata();
+      id1003Metadata.add("metaname-1003", "metavalue-1003");
 
-      Map<String, Map<String, String>> idToMetadata
-          = new HashMap<String, Map<String, String>>();
+      Map<String, Metadata> idToMetadata = new HashMap<String, Metadata>();
       idToMetadata.put("1002", id1002Metadata);
-      idToMetadata.put("1003",
-          Collections.singletonMap("metaname-1003", "metavalue-1003"));
+      idToMetadata.put("1003", id1003Metadata);
+
       ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
     }
 
     private String docId;
     private String content;
-    private Map<String, String> metadata;
+    private Metadata metadata;
     private Date lastModified;
     private Date lastCrawled;
     private String mimeType;
@@ -155,7 +161,7 @@ public class CommandLineAdaptorTest {
         result.append("mime-type=").append(mimeType).append("\n");
       }
       if (metadata != null) {
-        for (Map.Entry<String, String> item : metadata.entrySet()) {
+        for (Map.Entry<String, String> item : metadata.getAllEntries()) {
           result.append("meta-name=").append(item.getKey()).append("\n");
           result.append("meta-value=").append(item.getValue()).append("\n");
         }
@@ -259,7 +265,7 @@ public class CommandLineAdaptorTest {
   private static class ContentsResponseTestMock implements Response {
     private OutputStream os;
     private String contentType;
-    private Map<String, String> metadata;
+    private Set<Map.Entry<String, String>> metadata;
     private Acl acl;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
@@ -295,9 +301,11 @@ public class CommandLineAdaptorTest {
     }
 
     @Override
-    public void setMetadata(Map<String, String> m) {
-      this.metadata
-          = Collections.unmodifiableMap(new HashMap<String, String>(m));
+    public void setMetadata(Set<Map.Entry<String, String>> m) {
+      Comparator<Entry<String, String>> cmp = Metadata.ENTRY_COMPARATOR;
+      TreeSet<Entry<String, String>> dup = new TreeSet<Entry<String, String>>(cmp);
+      dup.addAll(m);
+      this.metadata = Collections.unmodifiableSet(dup);
     }
 
     @Override
@@ -330,8 +338,8 @@ public class CommandLineAdaptorTest {
       return contentType;
     }
 
-    public Map<String, String> getMetadata() {
-      return metadata;
+    Metadata getMetadata() {
+      return new Metadata(metadata);
     }
 
     public Acl getAcl() {

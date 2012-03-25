@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Map.Entry;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -119,7 +121,7 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setMetadata(Map<String, String> m) {
+    public void setMetadata(Set<Entry<String, String>> m) {
       response.setMetadata(m);
     }
 
@@ -185,7 +187,7 @@ abstract class WrapperAdaptor implements Adaptor {
   public static class GetContentsResponse implements Response {
     private OutputStream os;
     private String contentType;
-    private Map<String, String> metadata;
+    private Set<Entry<String, String>> metadata;
     private Acl acl;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
@@ -219,9 +221,11 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setMetadata(Map<String, String> m) {
-      this.metadata = Collections.unmodifiableMap(
-          new HashMap<String, String>(m));
+    public void setMetadata(Set<Entry<String, String>> m) {
+      Comparator<Entry<String, String>> cmp = Metadata.ENTRY_COMPARATOR;
+      Set<Entry<String, String>> dup = new TreeSet<Entry<String, String>>(cmp);
+      dup.addAll(m);
+      this.metadata = Collections.unmodifiableSet(dup);
     }
 
     @Override
@@ -254,7 +258,7 @@ abstract class WrapperAdaptor implements Adaptor {
       return contentType;
     }
 
-    public Map<String, String> getMetadata() {
+    public Set<Entry<String, String>> getMetadata() {
       return metadata;
     }
 

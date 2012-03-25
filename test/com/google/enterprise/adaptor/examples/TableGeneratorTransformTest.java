@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.examples;
 
 import static org.junit.Assert.*;
 
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
 
 import org.junit.Test;
@@ -34,14 +35,14 @@ public class TableGeneratorTransformTest {
     TableGeneratorTransform transform = new TableGeneratorTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
     transform.transform(contentIn, contentOut, metadata, params);
 
     String actualOutput = contentOut.toString();
     assertEquals("<HTML><HEAD></HEAD><BODY></BODY></HTML>", actualOutput);
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getAllEntries().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -51,7 +52,7 @@ public class TableGeneratorTransformTest {
     TableGeneratorTransform transform = new TableGeneratorTransform();
     ByteArrayOutputStream contentIn = new ByteArrayOutputStream();
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -80,7 +81,7 @@ public class TableGeneratorTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenOutput, contentOut.toString());
-    assertEquals(0, metadata.size());
+    assertEquals(0, metadata.getKeys().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }

@@ -14,8 +14,11 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import static java.util.AbstractMap.SimpleEntry;
+
 import com.google.enterprise.adaptor.AbstractDocumentTransform;
 import com.google.enterprise.adaptor.IOHelper;
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
 
 import java.io.*;
@@ -80,7 +83,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   @Override
   public void transform(ByteArrayOutputStream contentIn,
                         OutputStream contentOut,
-                        Map<String, String> metadata,
+                        Metadata metadata,
                         Map<String, String> params)
       throws TransformException, IOException {
     if (transformCommand == null) {
@@ -91,7 +94,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
     try {
       String[] commandLine;
       if (commandAcceptsParameters) {
-        metadataFile = writeMapToTempFile(metadata);
+        metadataFile = writeSetToTempFile(metadata.getAllEntries());
         paramsFile = writeMapToTempFile(params);
 
         commandLine = new String[transformCommand.size() + 2];
@@ -125,8 +128,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
       contentOut.write(command.getStdout());
       if (commandAcceptsParameters) {
-        metadata.clear();
-        metadata.putAll(readMapFromFile(metadataFile));
+        metadata.set(readSetFromFile(metadataFile));
         params.clear();
         params.putAll(readMapFromFile(paramsFile));
       }
@@ -142,8 +144,13 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
   private File writeMapToTempFile(Map<String, String> map)
       throws IOException, TransformException {
+    return writeSetToTempFile(map.entrySet());
+  }
+
+  private File writeSetToTempFile(Set<Map.Entry<String, String>> set)
+      throws IOException, TransformException {
     StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String, String> me : map.entrySet()) {
+    for (Map.Entry<String, String> me : set) {
       if (me.getKey().contains("\0")) {
         throw new TransformException("Key cannot contain the null character: "
                                      + me.getKey());
@@ -156,6 +163,23 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       sb.append(me.getValue()).append('\0');
     }
     return IOHelper.writeToTempFile(sb.toString(), charset);
+  }
+
+  private Set<Map.Entry<String, String>> readSetFromFile(File file) throws IOException {
+    InputStream is = new FileInputStream(file);
+    String str;
+    try {
+      str = IOHelper.readInputStreamToString(is, charset);
+    } finally {
+      is.close();
+    }
+
+    String[] list = str.split("\0");
+    Set<Map.Entry<String, String>> set = new HashSet<Map.Entry<String, String>>();
+    for (int i = 0; i + 1 < list.length; i += 2) {
+      set.add(new SimpleEntry<String, String>(list[i], list[i + 1]));
+    }
+    return set;
   }
 
   private Map<String, String> readMapFromFile(File file) throws IOException {

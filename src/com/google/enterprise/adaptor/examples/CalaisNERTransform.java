@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractDocumentTransform;
+import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
 
 import mx.bigdata.jcalais.CalaisClient;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * This transform sends the content to the OpenCalais webservice, which
@@ -82,7 +84,7 @@ public class CalaisNERTransform extends AbstractDocumentTransform {
    */
   @Override
   public void transform(ByteArrayOutputStream contentIn, OutputStream contentOut,
-                        Map<String, String> metadata, Map<String, String> params)
+                        Metadata metadata, Map<String, String> params)
       throws TransformException, IOException {
     String apiKey = params.get("OpenCalaisApiKey");
     if (apiKey == null) {

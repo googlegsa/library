@@ -50,7 +50,7 @@ public class TransformPipeline {
    */
   public void transform(byte[] contentIn,
                         OutputStream contentOut,
-                        Map<String, String> metadata,
+                        Metadata metadata,
                         Map<String, String> params) throws TransformException, IOException {
     if (transformList.isEmpty()) {
       contentOut.write(contentIn);
@@ -59,23 +59,19 @@ public class TransformPipeline {
 
     ByteArrayOutputStream contentInTransit = new ByteArrayOutputStream(contentIn.length);
     ByteArrayOutputStream contentOutTransit = new ByteArrayOutputStream(contentIn.length);
-    Map<String, String> metadataInTransit = Collections.checkedMap(
-        new HashMap<String, String>(metadata.size() * 2), String.class, String.class);
-    Map<String, String> metadataOutTransit = Collections.checkedMap(
-        new HashMap<String, String>(metadata.size() * 2), String.class, String.class);
+    Metadata metadataInTransit = new Metadata(metadata);
     Map<String, String> paramsInTransit = Collections.checkedMap(
         new HashMap<String, String>(params.size() * 2), String.class, String.class);
     Map<String, String> paramsOutTransit = Collections.checkedMap(
         new HashMap<String, String>(params.size() * 2), String.class, String.class);
 
     contentInTransit.write(contentIn);
-    metadataInTransit.putAll(metadata);
     paramsInTransit.putAll(params);
 
     for (DocumentTransform transform : transformList) {
       contentOutTransit.reset();
-      metadataOutTransit.clear();
-      metadataOutTransit.putAll(metadataInTransit);
+      // Invariant: metadataInTransit changes after good transform only.
+      Metadata metadataOutTransit = new Metadata(metadataInTransit);
       paramsOutTransit.clear();
       paramsOutTransit.putAll(paramsInTransit);
 
@@ -93,20 +89,19 @@ public class TransformPipeline {
           continue;
         }
       }
+      metadataInTransit = metadataOutTransit;
+      metadataOutTransit = null;
       // Swap input and output. The input is reused as the output for effeciency.
       ByteArrayOutputStream tmp = contentInTransit;
       contentInTransit = contentOutTransit;
       contentOutTransit = tmp;
-      Map<String, String> tmpMap = metadataInTransit;
-      metadataInTransit = metadataOutTransit;
-      metadataOutTransit = tmpMap;
-      tmpMap = paramsInTransit;
+      Map<String, String> tmpMap = paramsInTransit;
       paramsInTransit = paramsOutTransit;
       paramsOutTransit = tmpMap;
     }
     contentInTransit.writeTo(contentOut);
-    metadata.clear();
-    metadata.putAll(metadataInTransit);
+    // Invariant: metadataInTransit completed all required transforms.
+    metadata.set(metadataInTransit);
     params.clear();
     params.putAll(paramsInTransit);
   }

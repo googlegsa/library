@@ -330,12 +330,12 @@ public class DocumentHandlerTest {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
-                            Map<String, String> metadata,
+                            Metadata metadata,
                             Map<String, String> params) throws IOException {
         assertArrayEquals(mockAdaptor.documentBytes, contentIn.toByteArray());
         contentOut.write(golden);
-        metadata.put(key, metadata.get(key).toUpperCase());
-        metadata.put("docid", params.get("DocId"));
+        metadata.set(key, metadata.getFirstValue(key).toUpperCase());
+        metadata.set("docid", params.get("DocId"));
       }
     });
     TransformPipeline transform = new TransformPipeline(transforms);
@@ -343,7 +343,8 @@ public class DocumentHandlerTest {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException {
-        response.setMetadata(Collections.singletonMap(key, "testing value"));
+        response.setMetadata(
+            Collections.singletonMap(key, "testing value").entrySet());
         super.getDocContent(request, response);
       }
     };
@@ -368,7 +369,7 @@ public class DocumentHandlerTest {
       @Override
       public void transform(ByteArrayOutputStream contentIn,
                             OutputStream contentOut,
-                            Map<String, String> metadata,
+                            Metadata metadata,
                             Map<String, String> params) throws IOException {
         // This is not the content we are looking for.
         contentOut.write(new byte[] {2, 3, 4});
@@ -581,7 +582,8 @@ public class DocumentHandlerTest {
           public void getDocContent(Request request, Response response)
               throws IOException {
             response.getOutputStream();
-            response.setMetadata(Collections.<String, String>emptyMap());
+            response.setMetadata(
+                Collections.<String, String>emptyMap().entrySet());
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -697,7 +699,8 @@ public class DocumentHandlerTest {
               return;
             }
             response.setContentType("text/plain");
-            response.setMetadata(Collections.<String, String>emptyMap());
+            response.setMetadata(
+                Collections.<String, String>emptyMap().entrySet());
             response.setAcl(Acl.EMPTY);
             response.getOutputStream();
             // It is free to get it multiple times
@@ -732,7 +735,8 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(Collections.singletonMap("test", "ing"));
+            response.setMetadata(
+                Collections.singletonMap("test", "ing").entrySet());
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
             response.addAnchor(URI.create("http://test/"), null);
@@ -770,7 +774,8 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(Collections.singletonMap("test", "ing"));
+            response.setMetadata(
+                Collections.singletonMap("test", "ing").entrySet());
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
             response.getOutputStream();
@@ -799,14 +804,14 @@ public class DocumentHandlerTest {
     metadata.put("test", "ing");
     metadata.put("another", "item");
     metadata.put("equals=", "==");
-    String result = DocumentHandler.formMetadataHeader(metadata);
+    String result = DocumentHandler.formMetadataHeader(metadata.entrySet());
     assertEquals("another=item,equals%3D=%3D%3D,test=ing", result);
   }
 
   @Test
   public void testFormMetadataHeaderEmpty() {
     String header = DocumentHandler.formMetadataHeader(
-        Collections.<String, String>emptyMap());
+        Collections.<String, String>emptyMap().entrySet());
     assertEquals("", header);
   }
 

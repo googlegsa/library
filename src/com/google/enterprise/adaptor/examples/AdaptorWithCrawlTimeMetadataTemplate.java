@@ -61,7 +61,7 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       metadata.put("my-special-key", "my-custom-value");
       metadata.put("date", "not soon enough");
       // Must set metadata before getting OutputStream
-      resp.setMetadata(metadata);
+      resp.setMetadata(metadata.entrySet());
       resp.setAcl(new Acl.Builder()
           // Add user ACL.
           .setPermitUsers(users1001)
@@ -72,7 +72,7 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       str = "Document 1002 says hello and banana strawberry";
       // Must set metadata before getting OutputStream
       resp.setMetadata(
-          Collections.singletonMap("date", "better never than late"));
+          Collections.singletonMap("date", "never than late").entrySet());
     } else {
       resp.respondNotFound();
       return;

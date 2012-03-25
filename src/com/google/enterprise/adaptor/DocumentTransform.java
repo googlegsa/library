@@ -18,6 +18,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents an individual transform in the transform pipeline.
@@ -38,7 +39,7 @@ public interface DocumentTransform {
    */
   public void transform(ByteArrayOutputStream contentIn,
                         OutputStream contentOut,
-                        Map<String, String> metadata,
+                        Metadata metadata,
                         Map<String, String> params)
       throws TransformException, IOException;
 
