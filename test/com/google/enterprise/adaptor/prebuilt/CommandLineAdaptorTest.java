@@ -14,6 +14,11 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import static com.google.enterprise.adaptor.TestHelper.getDocIds;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+
 import static java.util.Map.Entry;
 
 import com.google.enterprise.adaptor.Acl;
@@ -24,10 +29,6 @@ import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
-import static com.google.enterprise.adaptor.TestHelper.getDocIds;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
 

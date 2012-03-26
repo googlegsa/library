@@ -29,7 +29,6 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.text.MessageFormat;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * This transform sends the content to the OpenCalais webservice, which

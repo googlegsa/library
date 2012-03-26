@@ -61,7 +61,7 @@ public class Metadata {
   /** Duplicate. */
   public Metadata(Metadata m) {
     this(m.getAllEntries());
-    // TODO: Implement with one less copy.
+    // TODO(ejona): Implement with one less copy.
   }
 
   /** Eliminates all elements equal to null. */
@@ -116,7 +116,7 @@ public class Metadata {
 
   public void set(Set<Entry<String, String>> s) {
     set(new Metadata(s));
-    // TODO: Careful not too copy to many times.
+    // TODO(ejona): Careful not to copy too many times.
   }
 
   /** Increases values mapped to k with v. */
@@ -177,7 +177,7 @@ public class Metadata {
     }
   }
 
-  public final static EntryComparator ENTRY_COMPARATOR = new EntryComparator();
+  public static final EntryComparator ENTRY_COMPARATOR = new EntryComparator();
 
   /** Copy of all mappings given in alphabetical order, by key first. */
   public Set<Entry<String, String>> getAllEntries() {
