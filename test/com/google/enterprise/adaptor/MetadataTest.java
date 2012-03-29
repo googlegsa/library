@@ -262,34 +262,6 @@ public class MetadataTest {
   }
 
   @Test
-  public void testSourcedConstructor() {
-    HashMap<String, String> map = new HashMap<String, String>();
-    map.put("a", "b");
-    map.put("c", "d");
-    map.put("e", "f");
-    map.put("g", "h");
-    Metadata m = new Metadata(map.entrySet()); 
-    assertEquals(4, m.getKeys().size());
-    assertEquals(4, m.getAllEntries().size());
-  }
-
-  @Test
-  public void testSourcedConstructorMultipleValues() {
-    HashMap<String, String> map = new HashMap<String, String>();
-    map.put("a", "b");
-    map.put("c", "d");
-    map.put("e", "f");
-    map.put("g", "h");
-    Set<Entry<String, String>> e = new HashSet<Entry<String, String>>();
-    e.addAll(map.entrySet());
-    e.add(new SimpleEntry<String, String>("a", "z"));
-    e.add(new SimpleEntry<String, String>("g", "y"));
-    Metadata m = new Metadata(e); 
-    assertEquals(4, m.getKeys().size());
-    assertEquals(6, m.getAllEntries().size());
-  }
-
-  @Test
   public void testNullKeysNotAllowedInAdd() {
     Metadata m = new Metadata();
     thrown.expect(NullPointerException.class);

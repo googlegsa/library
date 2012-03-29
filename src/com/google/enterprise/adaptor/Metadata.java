@@ -34,24 +34,18 @@ import java.util.TreeSet;
  * This class is mutable and not thread-safe.
  */
 public class Metadata {
-  private TreeMap<String, List<String>> mappings;
+  private TreeMap<String, List<String>> mappings
+      = new TreeMap<String, List<String>>();
 
   /** Create empty instance. */
   public Metadata() {
-    mappings = new TreeMap<String, List<String>>();
-  }
-
-  /** Create instance with all entries.  Drops null values. */
-  public Metadata(Set<Entry<String, String>> src) {
-    this();
-    for (Entry<String, String> e : src) {
-      add(e.getKey(), e.getValue());
-    }    
   }
 
   /** Duplicate. */
   public Metadata(Metadata m) {
-    this(m.getAllEntries());
+    for (Entry<String, String> e : m.getAllEntries()) {
+      add(e.getKey(), e.getValue());
+    }    
   }
 
   /** Eliminates all elements equal to null. */
@@ -105,8 +99,10 @@ public class Metadata {
   }
 
   public void set(Set<Entry<String, String>> s) {
-    set(new Metadata(s));
-    // TODO(ejona): Careful not to copy too many times.
+    mappings.clear();
+    for (Entry<String, String> e : s) {
+      add(e.getKey(), e.getValue());
+    }    
   }
 
   /** Increases values mapped to k with v. */
