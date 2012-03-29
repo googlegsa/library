@@ -121,8 +121,8 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setMetadata(Set<Entry<String, String>> m) {
-      response.setMetadata(m);
+    public void addMetadata(String key, String value) {
+      response.addMetadata(key, value);
     }
 
     @Override
@@ -187,7 +187,7 @@ abstract class WrapperAdaptor implements Adaptor {
   public static class GetContentsResponse implements Response {
     private OutputStream os;
     private String contentType;
-    private Set<Entry<String, String>> metadata;
+    private Metadata metadata = new Metadata();
     private Acl acl;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
@@ -221,11 +221,8 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setMetadata(Set<Entry<String, String>> m) {
-      Comparator<Entry<String, String>> cmp = Metadata.ENTRY_COMPARATOR;
-      Set<Entry<String, String>> dup = new TreeSet<Entry<String, String>>(cmp);
-      dup.addAll(m);
-      this.metadata = Collections.unmodifiableSet(dup);
+    public void addMetadata(String key, String value) {
+      this.metadata.add(key, value);
     }
 
     @Override
@@ -259,7 +256,7 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     public Set<Entry<String, String>> getMetadata() {
-      return metadata;
+      return Collections.unmodifiableSet(metadata.getAllEntries());
     }
 
     public Acl getAcl() {

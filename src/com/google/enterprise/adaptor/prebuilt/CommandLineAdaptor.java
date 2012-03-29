@@ -196,7 +196,9 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       if (retrieverInfo.getMetadata() != null) {
         log.finest("Retriever: " + id.getUniqueId() + " has metadata "
             + retrieverInfo.getMetadata());
-        resp.setMetadata(retrieverInfo.getMetadata().entrySet());
+        for (Map.Entry<String, String> e : retrieverInfo.getMetadata().entrySet()) {
+          resp.addMetadata(e.getKey(), e.getValue());
+        }
       }
       if (retrieverInfo.getContents() != null) {
         resp.getOutputStream().write(retrieverInfo.getContents());

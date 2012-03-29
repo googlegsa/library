@@ -28,17 +28,8 @@ import java.util.TreeSet;
 /**
  * Allows storing multiple metadata values to a single key.
  * <p>
- * A key mapped to null values exclusively is the same
- * as if the key didn't exist.
- * <p>
- * Null keys are invalid as arguments.
- * <p>
- * If you know you have at most one value for a key, you
- * can use any Java Map class instead of this class to
- * populate com.google.enterprise.adaptor.Response.setMetadata.
- * That method expects Set<Map.Entry<String, String>> which
- * this class gives via getAllEntries() and Java Map classes'
- * give via entrySet().
+ * Null keys are invalid as arguments.  Null values are
+ * invalid as arguments.
  * <p>
  * This class is mutable and not thread-safe.
  */
@@ -61,7 +52,6 @@ public class Metadata {
   /** Duplicate. */
   public Metadata(Metadata m) {
     this(m.getAllEntries());
-    // TODO(ejona): Implement with one less copy.
   }
 
   /** Eliminates all elements equal to null. */
@@ -177,7 +167,7 @@ public class Metadata {
     }
   }
 
-  public static final EntryComparator ENTRY_COMPARATOR = new EntryComparator();
+  private static final EntryComparator ENTRY_COMPARATOR = new EntryComparator();
 
   /** Copy of all mappings given in alphabetical order, by key first. */
   public Set<Entry<String, String>> getAllEntries() {
@@ -200,5 +190,9 @@ public class Metadata {
     }
     Metadata other = (Metadata) o;
     return getAllEntries().equals(other.getAllEntries());
+  }
+
+  public boolean isEmpty() {
+    return mappings.isEmpty();
   }
 }

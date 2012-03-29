@@ -266,7 +266,7 @@ public class CommandLineAdaptorTest {
   private static class ContentsResponseTestMock implements Response {
     private OutputStream os;
     private String contentType;
-    private Set<Map.Entry<String, String>> metadata;
+    private Metadata metadata = new Metadata();
     private Acl acl;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
@@ -302,11 +302,8 @@ public class CommandLineAdaptorTest {
     }
 
     @Override
-    public void setMetadata(Set<Map.Entry<String, String>> m) {
-      Comparator<Entry<String, String>> cmp = Metadata.ENTRY_COMPARATOR;
-      TreeSet<Entry<String, String>> dup = new TreeSet<Entry<String, String>>(cmp);
-      dup.addAll(m);
-      this.metadata = Collections.unmodifiableSet(dup);
+    public void addMetadata(String key, String value) {
+      this.metadata.add(key, value);
     }
 
     @Override

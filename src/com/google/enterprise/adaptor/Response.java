@@ -73,12 +73,14 @@ public interface Response {
   public void setContentType(String contentType);
 
   /**
-   * Provide metadata that applies to the document.
+   * Add metadata element that applies to the document.
    *
-   * @throws IllegalArgumentException if metadata contains {@code null} or empty
-   *     keys or {@code null} values
+   * @param key the key of metadata element
+   * @param value the value of metadata element
+   * @throws NullPointerException if {@code key} or {@code value}
+   *     is {@code null}
    */
-  public void setMetadata(Set<Map.Entry<String, String>> metadata);
+  public void addMetadata(String key, String value);
 
   /**
    * Provide the document's ACLs for early-binding security on the GSA.

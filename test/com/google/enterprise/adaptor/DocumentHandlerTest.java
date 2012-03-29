@@ -343,8 +343,7 @@ public class DocumentHandlerTest {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException {
-        response.setMetadata(
-            Collections.singletonMap(key, "testing value").entrySet());
+        response.addMetadata(key, "testing value");
         super.getDocContent(request, response);
       }
     };
@@ -582,8 +581,7 @@ public class DocumentHandlerTest {
           public void getDocContent(Request request, Response response)
               throws IOException {
             response.getOutputStream();
-            response.setMetadata(
-                Collections.<String, String>emptyMap().entrySet());
+            response.addMetadata("not", "important");
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -699,8 +697,7 @@ public class DocumentHandlerTest {
               return;
             }
             response.setContentType("text/plain");
-            response.setMetadata(
-                Collections.<String, String>emptyMap().entrySet());
+            response.addMetadata("not", "important");
             response.setAcl(Acl.EMPTY);
             response.getOutputStream();
             // It is free to get it multiple times
@@ -735,8 +732,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(
-                Collections.singletonMap("test", "ing").entrySet());
+            response.addMetadata("test", "ing");
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
             response.addAnchor(URI.create("http://test/"), null);
@@ -774,8 +770,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.setMetadata(
-                Collections.singletonMap("test", "ing").entrySet());
+            response.addMetadata("test", "ing");
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
             response.getOutputStream();
@@ -800,18 +795,17 @@ public class DocumentHandlerTest {
 
   @Test
   public void testFormMetadataHeader() {
-    Map<String, String> metadata = new HashMap<String, String>();
-    metadata.put("test", "ing");
-    metadata.put("another", "item");
-    metadata.put("equals=", "==");
-    String result = DocumentHandler.formMetadataHeader(metadata.entrySet());
+    Metadata metadata = new Metadata();
+    metadata.add("test", "ing");
+    metadata.add("another", "item");
+    metadata.add("equals=", "==");
+    String result = DocumentHandler.formMetadataHeader(metadata);
     assertEquals("another=item,equals%3D=%3D%3D,test=ing", result);
   }
 
   @Test
   public void testFormMetadataHeaderEmpty() {
-    String header = DocumentHandler.formMetadataHeader(
-        Collections.<String, String>emptyMap().entrySet());
+    String header = DocumentHandler.formMetadataHeader(new Metadata());
     assertEquals("", header);
   }
 

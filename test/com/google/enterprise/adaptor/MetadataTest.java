@@ -280,8 +280,7 @@ public class MetadataTest {
     map.put("c", "d");
     map.put("e", "f");
     map.put("g", "h");
-    TreeSet<Entry<String, String>> e
-        = new TreeSet<Entry<String, String>>(Metadata.ENTRY_COMPARATOR);
+    Set<Entry<String, String>> e = new HashSet<Entry<String, String>>();
     e.addAll(map.entrySet());
     e.add(new SimpleEntry<String, String>("a", "z"));
     e.add(new SimpleEntry<String, String>("g", "y"));

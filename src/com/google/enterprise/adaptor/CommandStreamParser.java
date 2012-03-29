@@ -277,6 +277,7 @@ public class CommandStreamParser {
     private boolean notFound;
     private DocId docId;
     private String mimeType;
+    // TODO: Consider supporting multiple values per key.
     private Map<String, String> metadata;
     private byte[] contents;
 

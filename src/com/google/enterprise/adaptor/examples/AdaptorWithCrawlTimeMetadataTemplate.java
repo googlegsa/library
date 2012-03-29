@@ -56,12 +56,10 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       str = "Document 1001 says hello and apple orange";
       List<String> users1001 = Arrays.asList("peter", "bart", "simon");
       List<String> groups1001 = Arrays.asList("support", "sales");
-      Map<String, String> metadata = new HashMap<String, String>();
       // Add custom meta items.
-      metadata.put("my-special-key", "my-custom-value");
-      metadata.put("date", "not soon enough");
+      resp.addMetadata("my-special-key", "my-custom-value");
+      resp.addMetadata("date", "not soon enough");
       // Must set metadata before getting OutputStream
-      resp.setMetadata(metadata.entrySet());
       resp.setAcl(new Acl.Builder()
           // Add user ACL.
           .setPermitUsers(users1001)
@@ -71,8 +69,7 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
     } else if ("1002".equals(id.getUniqueId())) {
       str = "Document 1002 says hello and banana strawberry";
       // Must set metadata before getting OutputStream
-      resp.setMetadata(
-          Collections.singletonMap("date", "never than late").entrySet());
+      resp.addMetadata("date", "never than late");
     } else {
       resp.respondNotFound();
       return;
