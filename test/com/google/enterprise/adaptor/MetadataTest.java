@@ -40,6 +40,21 @@ public class MetadataTest {
   }
 
   @Test
+  public void testDupConstructor() {
+    Metadata m1 = new Metadata();
+    m1.add("foo", "home");
+    m1.add("bar", "far");
+    Metadata m2 = new Metadata(m1);
+    assertEquals(m1, m2);
+    m1.set("shoes", makeSet("bing", "bongo"));
+    m2 = new Metadata(m1);
+    assertEquals(m1, m2);
+    // New values.
+    m1.set("shoes", makeSet("bongo", "bing"));
+    assertEquals(m1, m2);
+  }
+
+  @Test
   public void testSingleSetAndGet() {
     Metadata m = new Metadata();
     assertEquals(null, m.getOneValue("foo"));
@@ -98,6 +113,21 @@ public class MetadataTest {
   }
 
   @Test
+  public void testMultipleGetNoKey() {
+    Metadata m = new Metadata();
+    assertEquals(makeSet(), m.getAllValues("foo"));
+  }
+
+  @Test
+  public void testMultipleSetEmptySetRemoves() {
+    Metadata m = new Metadata();
+    m.set("foo", makeSet("bar", "home"));
+    assertFalse(m.isEmpty());
+    m.set("foo", makeSet());
+    assertTrue(m.isEmpty());
+  }
+
+  @Test
   public void testMultipleSetNullValue() {
     Metadata m = new Metadata();
     assertTrue(m.isEmpty());
@@ -119,6 +149,41 @@ public class MetadataTest {
     assertEquals(1, m.getKeys().size());
     m.set("bar", emptySet);
     assertTrue(m.isEmpty());
+  }
+
+  @Test
+  public void testSetEntries() {
+    HashSet<Entry<String, String>> e1 = new HashSet<Entry<String, String>>();
+    HashSet<Entry<String, String>> e2 = new HashSet<Entry<String, String>>();
+    e1.add(new SimpleEntry<String, String>("a", "b"));
+    e1.add(new SimpleEntry<String, String>("b", "q"));
+    e2.add(new SimpleEntry<String, String>("a", "b"));
+    e2.add(new SimpleEntry<String, String>("b", "q"));
+    Metadata m1 = new Metadata();
+    m1.set(e1);
+    Metadata m2 = new Metadata();
+    m2.set(e2);
+    assertEquals(m1, m2);
+  }
+
+  @Test
+  public void testSetMetadata() {
+    Metadata m1 = new Metadata();
+    Metadata m2 = new Metadata();
+    m1.set("foo", makeSet("home", "floor"));
+    m2.set(m1);
+    assertEquals(m1, m2);
+    m1.set("foo", makeSet("home", "floor"));
+    assertEquals(m1, m2);
+    Set<String> vals = new HashSet<String>();
+    vals.add("pigeon");
+    vals.add("eagle");
+    m1.set("foo", vals);
+    m2.set(m1);
+    assertTrue(m1.equals(m2));
+    // Should not change m2.
+    m1.add("foo", "bird");
+    assertFalse(m1.equals(m2));
   }
 
   @Test
@@ -261,58 +326,5 @@ public class MetadataTest {
     assertFalse(m1.equals(m2));
     m2.set("bar", makeSet("near", "far"));
     assertEquals(m1, m2);
-  }
-
-  @Test
-  public void testDupConstructor() {
-    Metadata m1 = new Metadata();
-    m1.add("foo", "home");
-    m1.add("bar", "far");
-
-    Metadata m2 = new Metadata(m1);
-    assertEquals(m1, m2);
-
-    m1.set("shoes", makeSet("bing", "bongo"));
-    m2 = new Metadata(m1);
-    assertEquals(m1, m2);
-
-    // New array.
-    m1.set("shoes", makeSet("bongo", "bing"));
-    assertEquals(m1, m2);
-  }
-
-  @Test
-  public void testSetEntries() {
-    HashSet<Entry<String, String>> e1 = new HashSet<Entry<String, String>>();
-    HashSet<Entry<String, String>> e2 = new HashSet<Entry<String, String>>();
-    e1.add(new SimpleEntry<String, String>("a", "b"));
-    e1.add(new SimpleEntry<String, String>("b", "q"));
-    e2.add(new SimpleEntry<String, String>("a", "b"));
-    e2.add(new SimpleEntry<String, String>("b", "q"));
-    Metadata m1 = new Metadata();
-    m1.set(e1);
-    Metadata m2 = new Metadata();
-    m2.set(e2);
-    assertEquals(m1, m2);
-  }
-
-  @Test
-  public void testSetMetadata() {
-    Metadata m1 = new Metadata();
-    Metadata m2 = new Metadata();
-    m1.set("foo", makeSet("home", "floor"));
-    m2.set(m1);
-    assertEquals(m1, m2);
-    m1.set("foo", makeSet("home", "floor"));
-    assertEquals(m1, m2);
-    Set<String> vals = new HashSet<String>();
-    vals.add("pigeon");
-    vals.add("eagle");
-    m1.set("foo", vals);
-    m2.set(m1);
-    assertTrue(m1.equals(m2));
-    // Should not change m2.
-    m1.add("foo", "bird");
-    assertFalse(m1.equals(m2));
   }
 }
