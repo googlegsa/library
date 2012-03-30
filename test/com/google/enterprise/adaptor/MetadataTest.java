@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.AbstractMap.SimpleEntry;
 import static java.util.Map.Entry;
 
 import static org.junit.Assert.*;
@@ -41,13 +42,13 @@ public class MetadataTest {
   @Test
   public void testSingleSetAndGet() {
     Metadata m = new Metadata();
-    assertEquals(m.getOneValue("foo"), null);
+    assertEquals(null, m.getOneValue("foo"));
     m.set("foo", "bar");
-    assertEquals(m.getOneValue("foo"), "bar");
+    assertEquals("bar", m.getOneValue("foo"));
     m.set("foo", "foo");
-    assertEquals(m.getOneValue("foo"), "foo");
+    assertEquals("foo", m.getOneValue("foo"));
     m.set("foo", "bar");
-    assertEquals(m.getOneValue("foo"), "bar");
+    assertEquals("bar", m.getOneValue("foo"));
   }
 
   @Test
@@ -83,17 +84,17 @@ public class MetadataTest {
   @Test
   public void testMultipleSetAndGet() {
     Metadata m = new Metadata();
-    assertEquals(m.getOneValue("foo"), null);
+    assertEquals(null, m.getOneValue("foo"));
     m.set("foo", makeSet("bar", "home"));
     assertTrue(makeSet("bar", "home").contains(m.getOneValue("foo")));
-    assertEquals(m.getAllValues("foo"), makeSet("bar", "home"));
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    assertEquals(makeSet("bar", "home"), m.getAllValues("foo"));
+    assertEquals(makeSet("home", "bar"), m.getAllValues("foo"));
     m.set("foo", makeSet("foo"));
-    assertEquals(m.getOneValue("foo"), "foo");
-    assertEquals(m.getAllValues("foo"), makeSet("foo"));
+    assertEquals("foo", m.getOneValue("foo"));
+    assertEquals(makeSet("foo"), m.getAllValues("foo"));
     m.set("foo", makeSet("barf", "floor"));
     assertTrue(makeSet("barf", "floor").contains(m.getOneValue("foo")));
-    assertEquals(m.getAllValues("foo"), makeSet("barf", "floor"));
+    assertEquals(makeSet("barf", "floor"), m.getAllValues("foo"));
   }
 
   @Test
@@ -106,17 +107,17 @@ public class MetadataTest {
   }
 
   @Test
-  public void testMultipleSetEmptyList() {
+  public void testMultipleSetEmptySet() {
     Metadata m = new Metadata();
     assertTrue(m.isEmpty());
-    Set<String> emptyList = makeSet();
-    m.set("foo", emptyList);
+    Set<String> emptySet = makeSet();
+    m.set("foo", emptySet);
     assertTrue(m.isEmpty());
     m.set("bar", makeSet("bar"));
     assertEquals(1, m.getKeys().size());
-    m.set("foo", emptyList);
+    m.set("foo", emptySet);
     assertEquals(1, m.getKeys().size());
-    m.set("bar", emptyList);
+    m.set("bar", emptySet);
     assertTrue(m.isEmpty());
   }
 
@@ -150,7 +151,7 @@ public class MetadataTest {
     }
     m.set("foo", dest);
     // Double check function.
-    assertEquals(m.getAllValues("foo"), makeSet("BAR", "HOME", "VILLA"));
+    assertEquals(makeSet("BAR", "HOME", "VILLA"), m.getAllValues("foo"));
   }
 
   @Test
@@ -172,7 +173,7 @@ public class MetadataTest {
       e.setValue(e.getValue().toUpperCase());
       assertTrue("BAR".equals(e.getValue()) || "HOME".equals(e.getValue()));
     }
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    assertEquals(makeSet("home", "bar"), m.getAllValues("foo"));
     assertEquals(1, m.getKeys().size()); 
   }
 
@@ -196,32 +197,34 @@ public class MetadataTest {
     assertEquals("home", m.getOneValue("foo"));
     m.add("foo", "bar");
     assertTrue(makeSet("bar", "home").contains(m.getOneValue("foo")));
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    assertEquals(makeSet("home", "bar"), m.getAllValues("foo"));
     assertEquals(1, m.getKeys().size());
+    m.add("foo", "few");
+    assertEquals(1, m.getKeys().size());
+    m.add("bar", "mor");
+    assertEquals(makeSet("mor"), m.getAllValues("bar"));
+    m.add("bar", "far");
+    assertEquals(2, m.getKeys().size());
+    assertEquals(makeSet("far", "mor"), m.getAllValues("bar"));
+    m.add("bar", "far");
+    assertEquals(makeSet("far", "mor"), m.getAllValues("bar"));
+    m.add("bar", "mor");
+    assertEquals(makeSet("far", "mor"), m.getAllValues("bar"));
   }
 
-/*
   @Test
-  public void testNullAdd() {
+  public void testNullAddA() {
     Metadata m = new Metadata();
-    m.add("foo", "home");
+    thrown.expect(NullPointerException.class);
+    m.add("foo", null);
+  }
+
+  @Test
+  public void testNullAddB() {
+    Metadata m = new Metadata();
     m.add("foo", "bar");
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    thrown.expect(NullPointerException.class);
     m.add("foo", null);
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
-    m.add("foo", null);
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
-    m.add("foo", "home");
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar", "home"));
-    m.add("foo", null);
-    assertEquals(m.getAllValues("foo"), makeSet("home", "bar", "home"));
-  }
-
-  @Test
-  public void testEmptyConstructor() {
-    Metadata m = new Metadata();
-    assertEquals(0, m.getKeys().size());
-    assertEquals(0, m.getAllEntries().size());
   }
 
   @Test
@@ -250,13 +253,13 @@ public class MetadataTest {
     m2.set("foo", "high");
     assertEquals(m1, m2);
 
-    m1.set("bar", Arrays.asList("floor", "door"));
-    m2.set("bar", Arrays.asList("floor", "door"));
+    m1.set("bar", makeSet("floor", "door"));
+    m2.set("bar", makeSet("floor", "door"));
     assertEquals(m1, m2);
 
-    m1.set("bar", Arrays.asList("near", "far"));
+    m1.set("bar", makeSet("near", "far"));
     assertFalse(m1.equals(m2));
-    m2.set("bar", Arrays.asList("near", "far"));
+    m2.set("bar", makeSet("near", "far"));
     assertEquals(m1, m2);
   }
 
@@ -269,12 +272,12 @@ public class MetadataTest {
     Metadata m2 = new Metadata(m1);
     assertEquals(m1, m2);
 
-    m1.set("shoes", Arrays.asList("bing", "bongo"));
+    m1.set("shoes", makeSet("bing", "bongo"));
     m2 = new Metadata(m1);
     assertEquals(m1, m2);
 
     // New array.
-    m1.set("shoes", Arrays.asList("bing", "bongo"));
+    m1.set("shoes", makeSet("bongo", "bing"));
     assertEquals(m1, m2);
   }
 
@@ -297,12 +300,12 @@ public class MetadataTest {
   public void testSetMetadata() {
     Metadata m1 = new Metadata();
     Metadata m2 = new Metadata();
-    m1.set("foo", Arrays.asList("home", "floor"));
+    m1.set("foo", makeSet("home", "floor"));
     m2.set(m1);
     assertEquals(m1, m2);
-    m1.set("foo", Arrays.asList("home", "floor"));
+    m1.set("foo", makeSet("home", "floor"));
     assertEquals(m1, m2);
-    List<String> vals = new ArrayList<String>();
+    Set<String> vals = new HashSet<String>();
     vals.add("pigeon");
     vals.add("eagle");
     m1.set("foo", vals);
@@ -312,5 +315,4 @@ public class MetadataTest {
     m1.add("foo", "bird");
     assertFalse(m1.equals(m2));
   }
-*/
 }
