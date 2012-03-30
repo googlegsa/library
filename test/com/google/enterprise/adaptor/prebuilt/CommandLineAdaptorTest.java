@@ -120,10 +120,10 @@ public class CommandLineAdaptorTest {
       id1003Metadata.add("metaname-1003", "metavalue-1003");
 
       Map<String, Metadata> idToMetadata = new HashMap<String, Metadata>();
-      idToMetadata.put("1002", id1002Metadata);
-      idToMetadata.put("1003", id1003Metadata);
+      idToMetadata.put("1002", id1002Metadata.unmodifiableView());
+      idToMetadata.put("1003", id1003Metadata.unmodifiableView());
 
-      ID_TO_METADATA = idToMetadata;
+      ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
     }
 
     private String docId;
@@ -334,9 +334,9 @@ public class CommandLineAdaptorTest {
       return contentType;
     }
 
-    /** Returns copy of metadata. */
+    /** Returns unmodifibale view of metadata. */
     Metadata getMetadata() {
-      return new Metadata(metadata);
+      return metadata.unmodifiableView();
     }
 
     public Acl getAcl() {

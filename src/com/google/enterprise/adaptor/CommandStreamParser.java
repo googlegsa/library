@@ -283,7 +283,7 @@ public class CommandStreamParser {
     RetrieverInfo(DocId docId, Metadata metadata, byte[] contents, boolean upToDate,
         String mimeType, boolean notFound) {
       this.docId = docId;
-      this.metadata = metadata;
+      this.metadata = metadata.unmodifiableView();
       this.contents = contents;
       this.upToDate = upToDate;
       this.mimeType = mimeType;
@@ -306,9 +306,9 @@ public class CommandStreamParser {
       return docId;
     }
 
-    /** Returns copy of Metadata. */
+    /** Returns unmodifiable view of Metadata. */
     public Metadata getMetadata() {
-      return new Metadata(metadata);
+      return metadata;
     }
 
     public byte[] getContents() {

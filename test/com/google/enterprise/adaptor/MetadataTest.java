@@ -167,6 +167,13 @@ public class MetadataTest {
   }
 
   @Test
+  public void testSetEntriesNull() {
+    Metadata m = new Metadata();
+    thrown.expect(NullPointerException.class);
+    m.set(null);
+  }
+
+  @Test
   public void testSetMetadata() {
     Metadata m1 = new Metadata();
     Metadata m2 = new Metadata();
@@ -332,5 +339,60 @@ public class MetadataTest {
     assertFalse(m1.equals(m2));
     m2.set("bar", makeSet("near", "far"));
     assertEquals(m1, m2);
+  }
+
+  @Test
+  public void testUnmodifiableSetSingle() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.set("foo", "bar");
+  }
+
+  @Test
+  public void testUnmodifiableSetMultiple() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.set("foo", makeSet("bar", "home"));
+  }
+
+  @Test
+  public void testUnmodifiableAdd() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.add("foo", "bar");
+  }
+
+  @Test
+  public void testUnmodifiableSetIterable() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.set(new Metadata());
+  }
+  @Test
+  public void testUnmodifiableSetSingleB() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.set("foo", (String) null);
+  }
+
+  @Test
+  public void testUnmodifiableSetMultipleB() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.set("foo", (Set<String>) null);
+  }
+
+  @Test
+  public void testUnmodifiableAddB() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.add("foo", null);
+  }
+
+  @Test
+  public void testUnmodifiableSetIterableB() {
+    Metadata m = new Metadata().unmodifiableView();
+    thrown.expect(UnsupportedOperationException.class);
+    m.set(null);
   }
 }

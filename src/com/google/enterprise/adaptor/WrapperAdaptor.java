@@ -253,9 +253,9 @@ abstract class WrapperAdaptor implements Adaptor {
       return contentType;
     }
 
-    /** Provides reference to mutable accumulated metadata. */
+    /** Returns reference to unmodifiable accumulated metadata. */
     public Metadata getMetadata() {
-      return metadata;
+      return metadata.unmodifiableView();
     }
 
     public Acl getAcl() {

@@ -19,6 +19,7 @@ import static java.util.Map.Entry;
 
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.SortedMap;
@@ -34,7 +35,7 @@ import java.util.TreeSet;
  * This class is mutable and not thread-safe.
  */
 public class Metadata implements Iterable<Entry<String, String>> {
-  private SortedMap<String, Set<String>> mappings
+  private Map<String, Set<String>> mappings 
       = new TreeMap<String, Set<String>>();
 
   /** Create empty instance. */
@@ -209,5 +210,26 @@ public class Metadata implements Iterable<Entry<String, String>> {
       body = builder.substring(sep.length());
     }
     return "[" + body + "]";
+  }
+
+  /** Get a reference to an unmodifiable view of this object. */
+  public Metadata unmodifiableView() {
+    Metadata unmodifiable = new Metadata() {
+      public void set(String k, String v) {
+        throw new UnsupportedOperationException();
+      }
+      public void set(String k, Set<String> v) {
+        throw new UnsupportedOperationException();
+      }
+      public void add(String k, String v) {
+        throw new UnsupportedOperationException();
+      }
+      public void set(Iterable<Entry<String, String>> it) {
+        throw new UnsupportedOperationException();
+      }
+    };
+    // In case new modifiers are provided and not repeated.
+    unmodifiable.mappings = Collections.unmodifiableMap(this.mappings); 
+    return unmodifiable;
   }
 }
