@@ -277,14 +277,13 @@ public class CommandStreamParser {
     private boolean notFound;
     private DocId docId;
     private String mimeType;
-    // TODO: Consider supporting multiple values per key.
-    private Map<String, String> metadata;
+    private Metadata metadata;
     private byte[] contents;
 
-    RetrieverInfo(DocId docId, Map<String, String> metadata, byte[] contents, boolean upToDate,
+    RetrieverInfo(DocId docId, Metadata metadata, byte[] contents, boolean upToDate,
         String mimeType, boolean notFound) {
       this.docId = docId;
-      this.metadata = Collections.unmodifiableMap(metadata);
+      this.metadata = metadata;
       this.contents = contents;
       this.upToDate = upToDate;
       this.mimeType = mimeType;
@@ -307,8 +306,9 @@ public class CommandStreamParser {
       return docId;
     }
 
-    public Map<String, String> getMetadata() {
-      return metadata;
+    /** Returns copy of Metadata. */
+    public Metadata getMetadata() {
+      return new Metadata(metadata);
     }
 
     public byte[] getContents() {
@@ -407,7 +407,7 @@ public class CommandStreamParser {
 
   public RetrieverInfo readFromRetriever() throws IOException {
 
-    Map<String, String> metadata = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
     byte[] content = null;
     boolean upToDate = false;
     boolean notFound = false;
@@ -436,7 +436,7 @@ public class CommandStreamParser {
           if (command == null || command.getOperation() != Operation.META_VALUE) {
             throw new IOException("meta-name must be immediately followed by meta-value");
           }
-          metadata.put(metaName, command.getArgument());
+          metadata.add(metaName, command.getArgument());
           break;
         case UP_TO_DATE:
           upToDate = true;

@@ -123,7 +123,7 @@ public class CommandLineAdaptorTest {
       idToMetadata.put("1002", id1002Metadata);
       idToMetadata.put("1003", id1003Metadata);
 
-      ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
+      ID_TO_METADATA = idToMetadata;
     }
 
     private String docId;
@@ -334,6 +334,7 @@ public class CommandLineAdaptorTest {
       return contentType;
     }
 
+    /** Returns copy of metadata. */
     Metadata getMetadata() {
       return new Metadata(metadata);
     }

@@ -30,7 +30,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Tests for {@link CommandStreamParser}.
@@ -163,9 +165,35 @@ public class CommandStreamParserTest {
     assertEquals("123", info.getDocId().getUniqueId());
     assertTrue(info.isUpToDate());
     assertArrayEquals("2468".getBytes(), info.getContents());
-    Map<String, String> metadata = info.getMetadata();
-    assertEquals(1, metadata.size());
-    assertEquals("plexi", metadata.get("project"));
+    Metadata metadata = info.getMetadata();
+    assertEquals(1, metadata.getKeys().size());
+    assertEquals("plexi", metadata.getOneValue("project"));
+  }
+
+  @Test
+  public void testRetrieverMultipleMetadataValuesSameKey() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=123\n" +
+        "up-to-date\n" +
+        "UNKNOWN_COMMAND=abcdefghi\n" +
+        "meta-name=project\nmeta-value=plexi\n" +
+        "meta-name=project\nmeta-value=klexa\ncontent\n2468";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
+    assertEquals("123", info.getDocId().getUniqueId());
+    assertTrue(info.isUpToDate());
+    assertArrayEquals("2468".getBytes(), info.getContents());
+    Metadata metadata = info.getMetadata();
+    assertEquals(1, metadata.getKeys().size());
+    Set<String> projectNames = new HashSet<String>();
+    projectNames.add("plexi");
+    projectNames.add("klexa");
+    assertEquals(projectNames, metadata.getAllValues("project"));
   }
 
   @Test

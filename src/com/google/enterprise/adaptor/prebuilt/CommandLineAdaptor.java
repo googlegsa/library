@@ -35,6 +35,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -194,9 +195,9 @@ public class CommandLineAdaptor extends AbstractAdaptor {
         resp.setContentType(retrieverInfo.getMimeType());
       }
       if (retrieverInfo.getMetadata() != null) {
-        log.finest("Retriever: " + id.getUniqueId() + " has metadata "
-            + retrieverInfo.getMetadata());
-        for (Map.Entry<String, String> e : retrieverInfo.getMetadata().entrySet()) {
+        log.log(Level.FINEST, "Retriever: {0} has metadata {1}",
+            new Object[] {id.getUniqueId(), retrieverInfo.getMetadata()});
+        for (Map.Entry<String, String> e : retrieverInfo.getMetadata()) {
           resp.addMetadata(e.getKey(), e.getValue());
         }
       }

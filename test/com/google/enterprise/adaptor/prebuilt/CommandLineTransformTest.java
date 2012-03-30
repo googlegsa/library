@@ -38,8 +38,8 @@ public class CommandLineTransformTest {
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
     // The newline causes the test to work with both BSD and GNU sed.
     String testStr = "testing\n";
-    Map<String, String> metadata = new HashMap<String, String>();
-    metadata.put("metaKey1", "metaValue1");
+    Metadata metadata = new Metadata();
+    metadata.add("metaKey1", "metaValue1");
     Map<String, String> params = new HashMap<String, String>();
     params.put("key1", "value1");
 
@@ -47,11 +47,11 @@ public class CommandLineTransformTest {
     cmd.setTransformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.setCommandAcceptsParameters(false);
     TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(testStr.getBytes(), contentOut, new Metadata(), params);
+    pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
-    assertEquals("metaValue1", metadata.get("metaKey1"));
-    assertEquals(1, metadata.size());
+    assertEquals("metaValue1", metadata.getOneValue("metaKey1"));
+    assertEquals(1, metadata.getKeys().size());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
