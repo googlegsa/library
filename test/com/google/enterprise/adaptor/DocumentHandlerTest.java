@@ -334,7 +334,7 @@ public class DocumentHandlerTest {
                             Map<String, String> params) throws IOException {
         assertArrayEquals(mockAdaptor.documentBytes, contentIn.toByteArray());
         contentOut.write(golden);
-        metadata.set(key, metadata.getFirstValue(key).toUpperCase());
+        metadata.set(key, metadata.getOneValue(key).toUpperCase());
         metadata.set("docid", params.get("DocId"));
       }
     });

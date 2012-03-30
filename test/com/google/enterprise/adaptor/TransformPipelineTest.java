@@ -81,9 +81,9 @@ public class TransformPipelineTest {
     TransformPipeline pipeline = new TransformPipeline(transforms);
     pipeline.transform(new byte[0], new ByteArrayOutputStream(), metadata, params);
 
-    assertEquals("value1", metadata.getFirstValue("key1"));
-    assertEquals("metaValue", metadata.getFirstValue("newMeta"));
-    assertEquals(2, metadata.getAllEntries().size());
+    assertEquals("value1", metadata.getOneValue("key1"));
+    assertEquals("metaValue", metadata.getOneValue("newMeta"));
+    assertEquals(2, metadata.getKeys().size());
     assertEquals("value2", params.get("key2"));
     assertEquals("newValue", params.get("newKey"));
     assertEquals(2, params.size());
@@ -99,7 +99,7 @@ public class TransformPipelineTest {
         content[i]++;
       }
       contentOut.write(content);
-      metadata.set("int", "" + (Integer.parseInt(metadata.getFirstValue("int")) + 1));
+      metadata.set("int", "" + (Integer.parseInt(metadata.getOneValue("int")) + 1));
       p.put("int", "" + (Integer.parseInt(p.get("int")) + 1));
     }
   }
@@ -120,7 +120,7 @@ public class TransformPipelineTest {
         content[i] *= factor;
       }
       contentOut.write(content);
-      metadata.set("int", "" + (Integer.parseInt(metadata.getFirstValue("int")) * factor));
+      metadata.set("int", "" + (Integer.parseInt(metadata.getOneValue("int")) * factor));
       p.put("int", "" + (Integer.parseInt(p.get("int")) * factor));
     }
   }

@@ -274,7 +274,7 @@ class DocumentHandler extends AbstractHandler {
    */
   static String formMetadataHeader(Metadata metadata) {
     StringBuilder sb = new StringBuilder();
-    for (Entry<String, String> item : metadata.getAllEntries()) {
+    for (Entry<String, String> item : metadata) {
       percentEncodeMapEntryPair(sb, item.getKey(), item.getValue());
     }
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);

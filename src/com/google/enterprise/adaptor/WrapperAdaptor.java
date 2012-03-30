@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import static java.util.Map.Entry;
-
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -255,8 +253,9 @@ abstract class WrapperAdaptor implements Adaptor {
       return contentType;
     }
 
-    public Set<Entry<String, String>> getMetadata() {
-      return Collections.unmodifiableSet(metadata.getAllEntries());
+    /** Provides reference to mutable accumulated metadata. */
+    public Metadata getMetadata() {
+      return metadata;
     }
 
     public Acl getAcl() {

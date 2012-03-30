@@ -47,7 +47,7 @@ public class MetaTaggerTransformTest {
 
     assertEquals(testString, contentIn.toString());
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadata.getAllEntries().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -67,7 +67,7 @@ public class MetaTaggerTransformTest {
 
     assertEquals(testString, contentIn.toString());
     assertEquals(testString, contentOut.toString());
-    assertEquals(0, metadata.getAllEntries().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -101,7 +101,7 @@ public class MetaTaggerTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenContent, contentOut.toString());
-    assertEquals(0, metadata.getKeys().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -123,7 +123,7 @@ public class MetaTaggerTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(content, contentOut.toString());
-    assertEquals(0, metadata.getAllEntries().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -158,7 +158,7 @@ public class MetaTaggerTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenContent, contentOut.toString());
-    assertEquals(0, metadata.getAllEntries().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }

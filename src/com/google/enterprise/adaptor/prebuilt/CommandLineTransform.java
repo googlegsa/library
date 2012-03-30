@@ -94,7 +94,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
     try {
       String[] commandLine;
       if (commandAcceptsParameters) {
-        metadataFile = writeSetToTempFile(metadata.getAllEntries());
+        metadataFile = writeIterableToTempFile(metadata);
         paramsFile = writeMapToTempFile(params);
 
         commandLine = new String[transformCommand.size() + 2];
@@ -144,13 +144,13 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
   private File writeMapToTempFile(Map<String, String> map)
       throws IOException, TransformException {
-    return writeSetToTempFile(map.entrySet());
+    return writeIterableToTempFile(map.entrySet());
   }
 
-  private File writeSetToTempFile(Set<Map.Entry<String, String>> set)
+  private File writeIterableToTempFile(Iterable<Map.Entry<String, String>> it)
       throws IOException, TransformException {
     StringBuilder sb = new StringBuilder();
-    for (Map.Entry<String, String> me : set) {
+    for (Map.Entry<String, String> me : it) {
       if (me.getKey().contains("\0")) {
         throw new TransformException("Key cannot contain the null character: "
                                      + me.getKey());

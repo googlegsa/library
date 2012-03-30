@@ -16,8 +16,6 @@ package com.google.enterprise.adaptor;
 
 import java.io.*;
 import java.net.URI;
-import java.util.Map;
-import java.util.Set;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent} for performing the

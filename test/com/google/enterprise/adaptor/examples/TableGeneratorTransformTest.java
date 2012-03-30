@@ -42,7 +42,7 @@ public class TableGeneratorTransformTest {
 
     String actualOutput = contentOut.toString();
     assertEquals("<HTML><HEAD></HEAD><BODY></BODY></HTML>", actualOutput);
-    assertEquals(0, metadata.getAllEntries().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }
@@ -81,7 +81,7 @@ public class TableGeneratorTransformTest {
     transform.transform(contentIn, contentOut, metadata, params);
 
     assertEquals(goldenOutput, contentOut.toString());
-    assertEquals(0, metadata.getKeys().size());
+    assertTrue(metadata.isEmpty());
     assertEquals("value1", params.get("key1"));
     assertEquals(1, params.keySet().size());
   }

@@ -84,8 +84,8 @@ public class CommandLineTransformTest {
     pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
 
     assertEquals(testStr.replace("i", "1"), contentOut.toString());
-    assertEquals("metaValue2", metadata.getFirstValue("metaKey2"));
-    assertEquals(1, metadata.getAllEntries().size());
+    assertEquals(1, metadata.getKeys().size());
+    assertEquals("metaValue2", metadata.getOneValue("metaKey2"));
     assertEquals("value3", params.get("key3"));
     assertEquals(1, params.size());
   }

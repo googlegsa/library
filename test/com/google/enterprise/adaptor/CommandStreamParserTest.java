@@ -216,7 +216,7 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRepositoryUnavailable() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\nrepository-unavailable" ;
+    String source = "GSA Adaptor Data Version 1 [\n]\nrepository-unavailable";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);

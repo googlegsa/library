@@ -17,10 +17,9 @@ package com.google.enterprise.adaptor;
 import static java.util.AbstractMap.SimpleEntry;
 import static java.util.Map.Entry;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -33,9 +32,9 @@ import java.util.TreeSet;
  * <p>
  * This class is mutable and not thread-safe.
  */
-public class Metadata {
-  private TreeMap<String, List<String>> mappings
-      = new TreeMap<String, List<String>>();
+public class Metadata implements Iterable<Entry<String, String>> {
+  private TreeMap<String, Set<String>> mappings
+      = new TreeMap<String, Set<String>>();
 
   /** Create empty instance. */
   public Metadata() {
@@ -43,35 +42,17 @@ public class Metadata {
 
   /** Duplicate. */
   public Metadata(Metadata m) {
-    for (Entry<String, String> e : m.getAllEntries()) {
+    for (Entry<String, String> e : m) {
       add(e.getKey(), e.getValue());
     }    
   }
 
-  /** Eliminates all elements equal to null. */
-  private static void removeNulls(List<String> list) {
-    for (Iterator<String> it = list.iterator(); it.hasNext(); ) {
-      if (null == it.next()) {
-        it.remove();
+  /** Throws NullPointerException if a null is found. */
+  private static void assureNoNulls(Iterable<String> items) {
+    for (String it : items) {
+      if (null == it) {
+        throw new NullPointerException();
       }
-    }
-  }
-
-  /** Make copy of v be the values associated with key. */
-  public void set(String k, List<String> v) {
-    if (null == k) {
-      throw new NullPointerException();
-    }
-    if (null == v) {
-      mappings.remove(k);
-      return;
-    }
-    v = new ArrayList<String>(v);
-    removeNulls(v);
-    if (v.isEmpty()) {
-      mappings.remove(k);
-    } else {
-      mappings.put(k, v);
     }
   }
 
@@ -81,28 +62,28 @@ public class Metadata {
       throw new NullPointerException();
     }
     if (null == v) {
+      throw new NullPointerException();
+    }
+    TreeSet<String> single = new TreeSet<String>();
+    single.add(v);
+    mappings.put(k, single);
+  }
+
+  /** Make copy of v be the values associated with key. */
+  public void set(String k, Set<String> v) {
+    if (null == k) {
+      throw new NullPointerException();
+    }
+    if (null == v) {
+      throw new NullPointerException();
+    }
+    assureNoNulls(v);
+    if (v.isEmpty()) {
       mappings.remove(k);
     } else {
-      List<String> vals = new ArrayList<String>(1);
-      vals.add(v);
-      mappings.put(k, vals);
+      v = new TreeSet<String>(v);
+      mappings.put(k, v);
     }
-  }
-
-  /** Make this metadata a deep copy of parameter. */
-  public void set(Metadata src) {
-    mappings.clear();
-    for (Entry<String, List<String>> e : src.mappings.entrySet()) {
-      // set, instead of mappings.put, assures deep copy of value.
-      set(e.getKey(), e.getValue());
-    }
-  }
-
-  public void set(Set<Entry<String, String>> s) {
-    mappings.clear();
-    for (Entry<String, String> e : s) {
-      add(e.getKey(), e.getValue());
-    }    
   }
 
   /** Increases values mapped to k with v. */
@@ -111,9 +92,9 @@ public class Metadata {
       throw new NullPointerException();
     }
     if (null == v) {
-      return;
+      throw new NullPointerException();
     }
-    List<String> found = mappings.get(k);
+    Set<String> found = mappings.get(k);
     if (null == found) {
       set(k, v);
     } else {
@@ -121,60 +102,76 @@ public class Metadata {
     }
   }
 
-  /** Copy of inserted values for key, potentially null. */
-  public List<String> getAllValues(String key) {
-    List<String> found = mappings.get(key);
+  public void set(Iterable<Entry<String, String>> s) {
+    mappings.clear();
+    for (Entry<String, String> e : s) {
+      add(e.getKey(), e.getValue());
+    }    
+  }
+
+  /** Gives unmodifiable reference to inserted values for key, potentially null. */
+  public Set<String> getAllValues(String key) {
+    Set<String> found = mappings.get(key);
     if (null != found) {
-      found = new ArrayList<String>(found);
+      found = Collections.unmodifiableSet(found);
     }
     return found;
   }
 
-  /** Earliest inserted value for key still in map, or null if none. */
-  public String getFirstValue(String key) {
-    List<String> all = getAllValues(key);
+  /** One of the inserted values, or null if none. */
+  public String getOneValue(String key) {
+    Set<String> all = getAllValues(key);
     String first = null;
     if (null != all) {
       if (all.isEmpty()) {
         throw new AssertionError();
       }
-      first = all.get(0); 
+      first = all.iterator().next(); 
     }
     return first;
   }
 
   /** Get all keys with at least one value. */
   public Set<String> getKeys() {
-    return new TreeSet<String>(mappings.keySet());
+    return mappings.keySet();
   }
 
-  private static class EntryComparator
-      implements Comparator<Entry<String, String>> {
-    public int compare(Entry<String, String> a, Entry<String, String> b) {
-      if (a.getKey().equals(b.getKey())) {
-        return a.getValue().compareTo(b.getValue());
-      } else {
-        return a.getKey().compareTo(b.getKey());
-      }
-    }
-
-    public boolean equals(Object o) {
-      return o instanceof EntryComparator;
-    }
+  public Iterator<Entry<String, String>> iterator() {
+    return new EntriesIterator();
   }
 
-  private static final EntryComparator ENTRY_COMPARATOR = new EntryComparator();
+  /** Loops through keys and values, with keys being outer loop. */
+  private class EntriesIterator implements Iterator<Entry<String, String>> {
+    private String currentKey;
+    private Iterator<Entry<String, Set<String>>> outer = mappings.entrySet().iterator();
+    private Iterator<String> inner = Collections.<String>emptyList().iterator();
 
-  /** Copy of all mappings given in alphabetical order, by key first. */
-  public Set<Entry<String, String>> getAllEntries() {
-    Comparator<Entry<String, String>> cmp = ENTRY_COMPARATOR;
-    Set<Entry<String, String>> accum = new TreeSet<Entry<String, String>>(cmp);
-    for (String k : mappings.keySet()) {
-      for (String v : mappings.get(k)) {
-        accum.add(new SimpleEntry<String, String>(k, v));
+    @Override
+    public boolean hasNext() {
+      if (inner.hasNext()) {
+        return true;
       }
+      if (!outer.hasNext()) {
+        return false;
+      }
+      Entry<String, Set<String>> currentEntry = outer.next();
+      currentKey = currentEntry.getKey();
+      inner = currentEntry.getValue().iterator();
+      return hasNext();
     }
-    return accum;
+
+    @Override
+    public Entry<String, String> next() {
+      if (!hasNext()) {
+        throw new NoSuchElementException();
+      }
+      return new SimpleEntry<String, String>(currentKey, inner.next());
+    }
+
+    @Override
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
   }
 
   public boolean equals(Object o) {
@@ -185,7 +182,15 @@ public class Metadata {
       return false;
     }
     Metadata other = (Metadata) o;
-    return getAllEntries().equals(other.getAllEntries());
+    if (!this.getKeys().equals(other.getKeys())) {
+      return false;
+    }
+    for (String k : this.getKeys()) {
+      if (!this.getAllValues(k).equals(other.getAllValues(k))) {
+        return false;
+      }
+    }
+    return true;
   }
 
   public boolean isEmpty() {

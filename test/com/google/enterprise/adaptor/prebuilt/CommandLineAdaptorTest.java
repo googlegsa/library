@@ -41,14 +41,12 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 /**
  * Tests for {@link CommandLineAdaptor}.
@@ -162,7 +160,7 @@ public class CommandLineAdaptorTest {
         result.append("mime-type=").append(mimeType).append("\n");
       }
       if (metadata != null) {
-        for (Map.Entry<String, String> item : metadata.getAllEntries()) {
+        for (Map.Entry<String, String> item : metadata) {
           result.append("meta-name=").append(item.getKey()).append("\n");
           result.append("meta-value=").append(item.getValue()).append("\n");
         }
