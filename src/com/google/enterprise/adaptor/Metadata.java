@@ -47,15 +47,6 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }    
   }
 
-  /** Throws NullPointerException if a null is found. */
-  private static void assureNoNulls(Iterable<String> items) {
-    for (String it : items) {
-      if (null == it) {
-        throw new NullPointerException();
-      }
-    }
-  }
-
   /** Make v be only value associated with key. */
   public void set(String k, String v) {
     if (null == k) {
@@ -67,6 +58,13 @@ public class Metadata implements Iterable<Entry<String, String>> {
     TreeSet<String> single = new TreeSet<String>();
     single.add(v);
     mappings.put(k, single);
+  }
+
+  /** Throws NullPointerException if a null is found. */
+  private static void assureNoNulls(Set<String> items) {
+    if (items.contains(null)) {
+      throw new NullPointerException();
+    }
   }
 
   /** Make copy of v be the values associated with key. */
@@ -102,20 +100,21 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   }
 
-  public void set(Iterable<Entry<String, String>> s) {
+  /** Replaces represented entries with provided ones. */
+  public void set(Iterable<Entry<String, String>> it) {
     mappings.clear();
-    for (Entry<String, String> e : s) {
+    for (Entry<String, String> e : it) {
       add(e.getKey(), e.getValue());
     }    
   }
 
-  /** Gives unmodifiable reference to inserted values for key, potentially null. */
+  /** Gives unmodifiable reference to inserted values for key, empty if none. */
   public Set<String> getAllValues(String key) {
     Set<String> found = mappings.get(key);
-    if (null != found) {
-      found = Collections.unmodifiableSet(found);
+    if (null == found) {
+      found = Collections.emptySet(); 
     }
-    return found;
+    return Collections.unmodifiableSet(found);
   }
 
   /** One of the inserted values, or null if none. */
@@ -131,7 +130,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return first;
   }
 
-  /** Get all keys with at least one value. */
+  /** Get modifiable set of all keys with at least one value. */
   public Set<String> getKeys() {
     return mappings.keySet();
   }
@@ -168,6 +167,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
       return new SimpleEntry<String, String>(currentKey, inner.next());
     }
 
+    /** Not supported. */
     @Override
     public void remove() {
       throw new UnsupportedOperationException();
@@ -175,9 +175,6 @@ public class Metadata implements Iterable<Entry<String, String>> {
   }
 
   public boolean equals(Object o) {
-    if (null == o) {
-      return false;
-    }
     if (!(o instanceof Metadata)) {
       return false;
     }
