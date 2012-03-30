@@ -21,6 +21,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -33,7 +34,7 @@ import java.util.TreeSet;
  * This class is mutable and not thread-safe.
  */
 public class Metadata implements Iterable<Entry<String, String>> {
-  private TreeMap<String, Set<String>> mappings
+  private SortedMap<String, Set<String>> mappings
       = new TreeMap<String, Set<String>>();
 
   /** Create empty instance. */
@@ -139,23 +140,25 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return new EntriesIterator();
   }
 
-  /** Loops through keys and values, with keys being outer loop. */
+  /** Loops through keys and for each key all values. */
   private class EntriesIterator implements Iterator<Entry<String, String>> {
+    private Iterator<Entry<String, Set<String>>> byKey
+        = mappings.entrySet().iterator();
     private String currentKey;
-    private Iterator<Entry<String, Set<String>>> outer = mappings.entrySet().iterator();
-    private Iterator<String> inner = Collections.<String>emptyList().iterator();
+    private Iterator<String> currentValues
+        = Collections.<String>emptyList().iterator();
 
     @Override
     public boolean hasNext() {
-      if (inner.hasNext()) {
+      if (currentValues.hasNext()) {
         return true;
       }
-      if (!outer.hasNext()) {
+      if (!byKey.hasNext()) {
         return false;
       }
-      Entry<String, Set<String>> currentEntry = outer.next();
+      Entry<String, Set<String>> currentEntry = byKey.next();
       currentKey = currentEntry.getKey();
-      inner = currentEntry.getValue().iterator();
+      currentValues = currentEntry.getValue().iterator();
       return hasNext();
     }
 
@@ -164,7 +167,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return new SimpleEntry<String, String>(currentKey, inner.next());
+      return new SimpleEntry<String, String>(currentKey, currentValues.next());
     }
 
     /** Not supported. */

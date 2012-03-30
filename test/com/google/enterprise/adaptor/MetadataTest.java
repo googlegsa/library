@@ -256,6 +256,12 @@ public class MetadataTest {
   }
 
   @Test
+  public void testEmptyIterator() {
+    Metadata m = new Metadata();
+    assertEquals("[]", "" + m);
+  }
+
+  @Test
   public void testNormalAdd() {
     Metadata m = new Metadata();
     m.add("foo", "home");
