@@ -14,23 +14,30 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Map.Entry;
+
 import static org.junit.Assert.*;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-/**
- * Test cases for {@link Metadata}.
- */
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
+/** Test cases for {@link Metadata}. */
 public class MetadataTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  public void testJunitIsAMoron() {
+  public void testInitiallyEmpty() {
+    Metadata m = new Metadata();
+    assertTrue(m.isEmpty());
+    assertTrue(m.getKeys().isEmpty());
+    assertFalse(m.iterator().hasNext());
   }
 
-/*
   @Test
   public void testSingleSetAndGet() {
     Metadata m = new Metadata();
@@ -44,7 +51,21 @@ public class MetadataTest {
   }
 
   @Test
-  public void testSingleSetAffectOnKeys() {
+  public void testSingleSetNullValue() {
+    Metadata m = new Metadata();
+    thrown.expect(NullPointerException.class);
+    m.set("foo", (String) null);
+  }
+
+  @Test
+  public void testSingleSetNullKey() {
+    Metadata m = new Metadata();
+    thrown.expect(NullPointerException.class);
+    m.set(null, "bar");
+  }
+
+  @Test
+  public void testSingleSetEffectOnKeys() {
     Metadata m = new Metadata();
     assertEquals(0, m.getKeys().size());
     m.set("foo", "bar");
@@ -53,21 +74,6 @@ public class MetadataTest {
     assertEquals(1, m.getKeys().size());
     m.set("bar", "foo");
     assertEquals(2, m.getKeys().size());
-  }
-
-  @Test
-  public void testSingleSetNull() {
-    Metadata m = new Metadata();
-    assertEquals(0, m.getKeys().size());
-    String nullStr = null;
-    m.set("foo", nullStr);
-    assertEquals(0, m.getKeys().size());
-    m.set("bar", nullStr);
-    assertEquals(0, m.getKeys().size());
-    m.set("bar", "foo");
-    assertEquals(1, m.getKeys().size());
-    m.set("bar", nullStr);
-    assertEquals(0, m.getKeys().size());
   }
 
   private static Set<String> makeSet(String ... s) {
@@ -75,168 +81,126 @@ public class MetadataTest {
   }
 
   @Test
-  public void testSetWithList() {
+  public void testMultipleSetAndGet() {
     Metadata m = new Metadata();
     assertEquals(m.getOneValue("foo"), null);
-    m.set("foo", Arrays.asList("bar", "home"));
-    assertEquals(m.getOneValue("foo"), "bar");
+    m.set("foo", makeSet("bar", "home"));
+    assertTrue(makeSet("bar", "home").contains(m.getOneValue("foo")));
     assertEquals(m.getAllValues("foo"), makeSet("bar", "home"));
-    m.set("foo", Arrays.asList("foo"));
+    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    m.set("foo", makeSet("foo"));
     assertEquals(m.getOneValue("foo"), "foo");
     assertEquals(m.getAllValues("foo"), makeSet("foo"));
-    m.set("foo", Arrays.asList("barf", "floor"));
-    assertEquals(m.getOneValue("foo"), "barf");
+    m.set("foo", makeSet("barf", "floor"));
+    assertTrue(makeSet("barf", "floor").contains(m.getOneValue("foo")));
     assertEquals(m.getAllValues("foo"), makeSet("barf", "floor"));
   }
 
   @Test
-  public void testSetWithNullList() {
+  public void testMultipleSetNullValue() {
     Metadata m = new Metadata();
-    assertEquals(0, m.getKeys().size());
-    List<String> nullList = null;
-    m.set("foo", nullList);
-    assertEquals(0, m.getKeys().size());
-    m.set("bar", Arrays.asList("bar"));
-    assertEquals(1, m.getKeys().size());
-    m.set("foo", nullList);
-    assertEquals(1, m.getKeys().size());
-    m.set("bar", nullList);
-    assertEquals(0, m.getKeys().size());
+    assertTrue(m.isEmpty());
+    Set<String> nullSet = null;
+    thrown.expect(NullPointerException.class);
+    m.set("foo", nullSet);
   }
 
   @Test
-  public void testSetWithEmptyList() {
+  public void testMultipleSetEmptyList() {
     Metadata m = new Metadata();
-    assertEquals(0, m.getKeys().size());
-    List<String> emptyList = new ArrayList<String>();;
+    assertTrue(m.isEmpty());
+    Set<String> emptyList = makeSet();
     m.set("foo", emptyList);
-    assertEquals(0, m.getKeys().size());
-    m.set("bar", Arrays.asList("bar"));
+    assertTrue(m.isEmpty());
+    m.set("bar", makeSet("bar"));
     assertEquals(1, m.getKeys().size());
     m.set("foo", emptyList);
     assertEquals(1, m.getKeys().size());
     m.set("bar", emptyList);
-    assertEquals(0, m.getKeys().size());
+    assertTrue(m.isEmpty());
   }
 
   @Test
-  public void testSetWithListHavingAllNulls() {
-    Metadata m = new Metadata();
-    assertEquals(0, m.getKeys().size());
-    List<String> listWithOneNull = new ArrayList<String>();;
-    listWithOneNull.add(null);
-    List<String> listWithTwoNulls = new ArrayList<String>();;
-    listWithTwoNulls.add(null);
-    listWithTwoNulls.add(null);
-    assertEquals(1, listWithOneNull.size());
-    assertEquals(2, listWithTwoNulls.size());
-    m.set("foo", listWithOneNull);
-    assertEquals(0, m.getKeys().size());
-    m.set("bar", listWithTwoNulls);
-    assertEquals(0, m.getKeys().size());
-  }
-
-  @Test
-  public void testSetWithListHavingSomeNulls() {
-    Metadata m = new Metadata();
-    assertEquals(0, m.getKeys().size());
-    List<String> listWith2Nulls = new ArrayList<String>();;
-    listWith2Nulls.add(null);
-    listWith2Nulls.add("aaa");
-    listWith2Nulls.add(null);
-    listWith2Nulls.add("bbbb");
-    List<String> listWith3Nulls = new ArrayList<String>();;
-    listWith3Nulls.add("cc");
-    listWith3Nulls.add(null);
-    listWith3Nulls.add(null);
-    listWith3Nulls.add("DDD");
-    assertEquals(4, listWith2Nulls.size());
-    assertEquals(4, listWith3Nulls.size());
-    m.set("foo", listWith2Nulls);
-    assertEquals(1, m.getKeys().size());
-    m.set("bar", listWith3Nulls);
-    assertEquals(2, m.getKeys().size());
-    assertEquals(m.getAllValues("foo"), makeSet("aaa", "bbbb"));
-    assertEquals(m.getAllValues("bar"), makeSet("cc", "DDD"));
-  }
-
-  @Test
-  public void testNotReturningBackingLists() {
+  public void testReturningUnmodifiableSetsA() {
     Metadata m = new Metadata();
     m.set("foo", makeSet("bar", "home", "villa"));
     Set<String> all = m.getAllValues("foo");
+    thrown.expect(UnsupportedOperationException.class);
+    all.add("newnew");
+  }
+
+  @Test
+  public void testReturningUnmodifiableSetsB() {
+    Metadata m = new Metadata();
+    m.set("foo", makeSet("bar", "home", "villa"));
+    Set<String> all = m.getAllValues("foo");
+    thrown.expect(UnsupportedOperationException.class);
+    all.remove("bar");
+  }
+
+  @Test
+  public void testEasyToWriteModificationLoopOverValues() {
+    Metadata m = new Metadata();
+    m.set("foo", makeSet("bar", "home", "villa"));
+    // End setup.
+    // Loop should be idiomatic to write.
     Set<String> dest = new HashSet<String>();
-    for (String v : all); i++) {
+    for (String v : m.getAllValues("foo")) {
       dest.add(v.toUpperCase());
     }
-    assertEquals(dest, makeSet("BAR", "HOME", "VILLA"));
-    assertEquals(m.getAllValues("foo"), makeSet("bar", "home", "villa"));
     m.set("foo", dest);
+    // Double check function.
     assertEquals(m.getAllValues("foo"), makeSet("BAR", "HOME", "VILLA"));
   }
 
   @Test
-  public void testNotReturningBackingKeys() {
+  public void testReturningUnmodifiableKeys() {
     Metadata m = new Metadata();
-    m.set("foo", Arrays.asList("bar", "home"));
-    m.set("sna", Arrays.asList("fu"));
+    m.set("foo", makeSet("bar", "home"));
+    m.set("sna", makeSet("fu"));
     Set<String> keys = m.getKeys();
     assertEquals(2, keys.size());
+    thrown.expect(UnsupportedOperationException.class);
     keys.add("another-key");
-    assertEquals(3, keys.size());
-    assertEquals(2, m.getKeys().size());
   }
 
   @Test
-  public void testNotReturningBackingMapEntries() {
+  public void testNotIteratingOverBackingEntries() {
     Metadata m = new Metadata();
-    m.set("foo", Arrays.asList("bar", "home"));
-    m.set("sna", Arrays.asList("fu"));
-    Set<Entry<String, String>> entries = m.getAllEntries();
-    assertEquals(3, entries.size());
-    entries.add(new SimpleEntry<String, String>("another-key", "v"));
-    assertEquals(4, entries.size());
-    assertEquals(3, m.getAllEntries().size());
+    m.set("foo", makeSet("bar", "home"));
+    for (Entry<String, String> e : m) {
+      e.setValue(e.getValue().toUpperCase());
+      assertTrue("BAR".equals(e.getValue()) || "HOME".equals(e.getValue()));
+    }
+    assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    assertEquals(1, m.getKeys().size()); 
   }
 
   @Test
   public void testEntriesGivenSorted() {
     Metadata m = new Metadata();
-    m.set("foo", Arrays.asList("home", "bar"));
-    m.set("early", Arrays.asList("bird"));
-    m.set("cleary", Arrays.asList("obfuscated"));
-    m.set("dearly", Arrays.asList("beloved"));
-    m.set("badly", Arrays.asList("traversed", "implied"));
-    Set<Entry<String, String>> entries = m.getAllEntries();
+    m.set("foo", makeSet("home", "bar"));
+    m.set("early", makeSet("bird"));
+    m.set("cleary", makeSet("obfuscated"));
+    m.set("dearly", makeSet("beloved"));
+    m.set("badly", makeSet("traversed", "implied"));
     String golden = "[badly=implied, badly=traversed, "
         + "cleary=obfuscated, dearly=beloved, early=bird, foo=bar, foo=home]";
-    assertEquals(golden, "" + entries);
-  }
-
-  @Test
-  public void testNullKeysNotAllowedSingleSet() {
-    Metadata m = new Metadata();
-    thrown.expect(NullPointerException.class);
-    m.set(null, "no so fast");
-  }
-
-  @Test
-  public void testNullKeysNotAllowedListSet() {
-    Metadata m = new Metadata();
-    thrown.expect(NullPointerException.class);
-    m.set(null, Arrays.asList("fooee", "eee-ah-ah-o-o"));
+    assertEquals(golden, "" + m);
   }
 
   @Test
   public void testNormalAdd() {
     Metadata m = new Metadata();
     m.add("foo", "home");
-    assertEquals(m.getOneValue("foo"), "home");
+    assertEquals("home", m.getOneValue("foo"));
     m.add("foo", "bar");
-    assertEquals(m.getOneValue("foo"), "home");
+    assertTrue(makeSet("bar", "home").contains(m.getOneValue("foo")));
     assertEquals(m.getAllValues("foo"), makeSet("home", "bar"));
+    assertEquals(1, m.getKeys().size());
   }
 
+/*
   @Test
   public void testNullAdd() {
     Metadata m = new Metadata();

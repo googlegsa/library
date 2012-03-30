@@ -119,13 +119,13 @@ public class Metadata implements Iterable<Entry<String, String>> {
 
   /** One of the inserted values, or null if none. */
   public String getOneValue(String key) {
-    Set<String> all = getAllValues(key);
+    Set<String> found = mappings.get(key);
     String first = null;
-    if (null != all) {
-      if (all.isEmpty()) {
+    if (null != found) {
+      if (found.isEmpty()) {
         throw new AssertionError();
       }
-      first = all.iterator().next(); 
+      first = found.iterator().next(); 
     }
     return first;
   }
@@ -192,5 +192,19 @@ public class Metadata implements Iterable<Entry<String, String>> {
 
   public boolean isEmpty() {
     return mappings.isEmpty();
+  }
+
+  public String toString() {
+    String sep = ", ";
+    StringBuilder builder = new StringBuilder();
+    for (Entry<String, String> e : this) {
+      builder.append(sep);
+      builder.append(e.getKey()).append("=").append(e.getValue());
+    }
+    String body = "";
+    if (0 != builder.length()) {
+      body = builder.substring(sep.length());
+    }
+    return "[" + body + "]";
   }
 }
