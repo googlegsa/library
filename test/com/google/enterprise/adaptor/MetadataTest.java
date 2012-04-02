@@ -23,6 +23,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -240,15 +241,15 @@ public class MetadataTest {
   }
 
   @Test
-  public void testNotIteratingOverBackingEntries() {
+  public void testIteratingOverImmutableEntries() {
     Metadata m = new Metadata();
     m.set("foo", makeSet("bar", "home"));
-    for (Entry<String, String> e : m) {
-      e.setValue(e.getValue().toUpperCase());
-      assertTrue("BAR".equals(e.getValue()) || "HOME".equals(e.getValue()));
-    }
-    assertEquals(makeSet("home", "bar"), m.getAllValues("foo"));
-    assertEquals(1, m.getKeys().size()); 
+    thrown.expect(UnsupportedOperationException.class);
+    m.iterator().next().setValue("HOME");
+  }
+
+  private static Entry<String, String> ne(String k, String v) {
+    return new SimpleEntry<String, String>(k, v);
   }
 
   @Test
@@ -259,15 +260,21 @@ public class MetadataTest {
     m.set("cleary", makeSet("obfuscated"));
     m.set("dearly", makeSet("beloved"));
     m.set("badly", makeSet("traversed", "implied"));
-    String golden = "[badly=implied, badly=traversed, "
-        + "cleary=obfuscated, dearly=beloved, early=bird, foo=bar, foo=home]";
-    assertEquals(golden, "" + m);
+    Iterator<Entry<String, String>> it = m.iterator();
+    assertEquals(ne("badly", "implied"), it.next());
+    assertEquals(ne("badly", "traversed"), it.next());
+    assertEquals(ne("cleary", "obfuscated"), it.next());
+    assertEquals(ne("dearly", "beloved"), it.next());
+    assertEquals(ne("early", "bird"), it.next());
+    assertEquals(ne("foo", "bar"), it.next());
+    assertEquals(ne("foo", "home"), it.next());
+    assertFalse(it.hasNext());
   }
 
   @Test
   public void testEmptyIterator() {
     Metadata m = new Metadata();
-    assertEquals("[]", "" + m);
+    assertFalse(m.iterator().hasNext());
   }
 
   @Test

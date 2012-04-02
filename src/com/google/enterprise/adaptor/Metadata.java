@@ -14,7 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
-import static java.util.AbstractMap.SimpleEntry;
+import static java.util.AbstractMap.SimpleImmutableEntry;
 import static java.util.Map.Entry;
 
 import java.util.Collections;
@@ -137,6 +137,15 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return mappings.keySet();
   }
 
+  /**
+   * Provides every key and value in immutable entries sorted
+   * alphabetically, first by key, and secondly by value.
+   * <p>
+   * Behaviour is undefined if backing Metadata instance is modified
+   * during iteration.
+   * <p>
+   * remove() is unsupported on returned iterator.
+   */
   public Iterator<Entry<String, String>> iterator() {
     return new EntriesIterator();
   }
@@ -168,7 +177,8 @@ public class Metadata implements Iterable<Entry<String, String>> {
       if (!hasNext()) {
         throw new NoSuchElementException();
       }
-      return new SimpleEntry<String, String>(currentKey, currentValues.next());
+      String k = currentKey, v = currentValues.next();
+      return new SimpleImmutableEntry<String, String>(k, v);
     }
 
     /** Not supported. */
@@ -178,6 +188,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   }
 
+  /** True if exactly the same key-values are represented. */
   public boolean equals(Object o) {
     if (!(o instanceof Metadata)) {
       return false;
@@ -189,10 +200,12 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return mappings.equals(other.mappings);
   }
 
+  /** True with 0 entries. */
   public boolean isEmpty() {
     return mappings.isEmpty();
   }
 
+  /** Contains every key and value pair; useful for debugging. */
   public String toString() {
     String sep = ", ";
     StringBuilder builder = new StringBuilder();
