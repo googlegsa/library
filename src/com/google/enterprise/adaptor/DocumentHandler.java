@@ -222,6 +222,14 @@ class DocumentHandler extends AbstractHandler {
    * @return {@code true} if user authzed
    */
   private boolean authzed(HttpExchange ex, DocId docId) throws IOException {
+    if ("SecMgr".equals(ex.getRequestHeaders().getFirst("User-Agent"))) {
+      // Assume that the SecMgr is performing a "HEAD" request to check authz.
+      // We don't support this, so we always issue deny.
+      cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+                    Translation.HTTP_FORBIDDEN_SECMGR);
+      return false;
+    }
+
     if (requestIsFromFullyTrustedClient(ex)) {
       journal.recordGsaContentRequest(docId);
     } else {

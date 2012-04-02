@@ -96,6 +96,13 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testDenyForSecMgr() throws Exception {
+    ex.getRequestHeaders().add("User-Agent", "SecMgr");
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
   public void testSecurityDeny() throws Exception {
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new PrivateMockAdaptor());
