@@ -43,7 +43,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
   }
 
   /** Duplicate. */
-  public Metadata(Metadata m) {
+  public Metadata(Iterable<Entry<String, String>> m) {
     for (Entry<String, String> e : m) {
       add(e.getKey(), e.getValue());
     }    
@@ -102,7 +102,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   }
 
-  /** Replaces represented entries with provided ones. */
+  /** Replaces entries inside of this metadata with provided ones. */
   public void set(Iterable<Entry<String, String>> it) {
     mappings.clear();
     for (Entry<String, String> e : it) {
@@ -182,16 +182,11 @@ public class Metadata implements Iterable<Entry<String, String>> {
     if (!(o instanceof Metadata)) {
       return false;
     }
+    if (this == o) {
+      return true;
+    }
     Metadata other = (Metadata) o;
-    if (!this.getKeys().equals(other.getKeys())) {
-      return false;
-    }
-    for (String k : this.getKeys()) {
-      if (!this.getAllValues(k).equals(other.getAllValues(k))) {
-        return false;
-      }
-    }
-    return true;
+    return mappings.equals(other.mappings);
   }
 
   public boolean isEmpty() {
@@ -212,23 +207,39 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return "[" + body + "]";
   }
 
+  /** Does not allow any mutating operations. */
+  private static class ReadableMetadata extends Metadata {
+    @Override
+    public void set(String k, String v) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void set(String k, Set<String> v) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void add(String k, String v) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void set(Iterable<Entry<String, String>> it) {
+      throw new UnsupportedOperationException();
+    }
+    
+    @Override
+    public Set<String> getKeys() {
+      return Collections.unmodifiableSet(super.getKeys());
+    }
+  };
+
   /** Get a reference to an unmodifiable view of this object. */
   public Metadata unmodifiableView() {
-    Metadata unmodifiable = new Metadata() {
-      public void set(String k, String v) {
-        throw new UnsupportedOperationException();
-      }
-      public void set(String k, Set<String> v) {
-        throw new UnsupportedOperationException();
-      }
-      public void add(String k, String v) {
-        throw new UnsupportedOperationException();
-      }
-      public void set(Iterable<Entry<String, String>> it) {
-        throw new UnsupportedOperationException();
-      }
-    };
-    // In case new modifiers are provided and not repeated.
+    Metadata unmodifiable = new ReadableMetadata();
+    // Extra precaution against mappings use, but not against moding
+    // sets that are values inside it.
     unmodifiable.mappings = Collections.unmodifiableMap(this.mappings); 
     return unmodifiable;
   }

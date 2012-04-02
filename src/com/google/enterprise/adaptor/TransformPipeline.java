@@ -100,7 +100,6 @@ public class TransformPipeline {
       paramsOutTransit = tmpMap;
     }
     contentInTransit.writeTo(contentOut);
-    // Invariant: metadataInTransit completed all required transforms.
     metadata.set(metadataInTransit);
     params.clear();
     params.putAll(paramsInTransit);

@@ -152,7 +152,7 @@ public class MetadataTest {
   }
 
   @Test
-  public void testSetEntries() {
+  public void testSetEntriesIterable() {
     HashSet<Entry<String, String>> e1 = new HashSet<Entry<String, String>>();
     HashSet<Entry<String, String>> e2 = new HashSet<Entry<String, String>>();
     e1.add(new SimpleEntry<String, String>("a", "b"));
@@ -227,14 +227,16 @@ public class MetadataTest {
   }
 
   @Test
-  public void testReturningUnmodifiableKeys() {
+  public void testReturningRemovalKeys() {
     Metadata m = new Metadata();
     m.set("foo", makeSet("bar", "home"));
     m.set("sna", makeSet("fu"));
     Set<String> keys = m.getKeys();
     assertEquals(2, keys.size());
-    thrown.expect(UnsupportedOperationException.class);
-    keys.add("another-key");
+    keys.remove("sna");
+    assertEquals(1, keys.size());
+    assertEquals(1, m.getKeys().size());
+    assertEquals(keys, m.getKeys());
   }
 
   @Test
@@ -394,5 +396,17 @@ public class MetadataTest {
     Metadata m = new Metadata().unmodifiableView();
     thrown.expect(UnsupportedOperationException.class);
     m.set(null);
+  }
+
+  @Test
+  public void testUnmodifiableDoesNotAllowKeyRemoval() {
+    Metadata m = new Metadata();
+    m.set("foo", makeSet("bar", "home"));
+    m.set("sna", makeSet("fu"));
+    m = m.unmodifiableView();
+    Set<String> keys = m.getKeys();
+    assertEquals(2, keys.size());
+    thrown.expect(UnsupportedOperationException.class);
+    keys.remove("sna");
   }
 }

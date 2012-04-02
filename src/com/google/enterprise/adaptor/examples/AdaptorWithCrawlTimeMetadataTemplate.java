@@ -68,7 +68,7 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
           .build());
     } else if ("1002".equals(id.getUniqueId())) {
       str = "Document 1002 says hello and banana strawberry";
-      // Must set metadata before getting OutputStream
+      // Must add metadata before getting OutputStream
       resp.addMetadata("date", "never than late");
     } else {
       resp.respondNotFound();

@@ -165,7 +165,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
     return IOHelper.writeToTempFile(sb.toString(), charset);
   }
 
-  private Set<Map.Entry<String, String>> readSetFromFile(File file) throws IOException {
+  private List<Map.Entry<String, String>> readListFromFile(File file) throws IOException {
     InputStream is = new FileInputStream(file);
     String str;
     try {
@@ -175,26 +175,23 @@ public class CommandLineTransform extends AbstractDocumentTransform {
     }
 
     String[] list = str.split("\0");
-    Set<Map.Entry<String, String>> set = new HashSet<Map.Entry<String, String>>();
+    List<Map.Entry<String, String>> all = new ArrayList<Map.Entry<String, String>>();
     for (int i = 0; i + 1 < list.length; i += 2) {
-      set.add(new SimpleEntry<String, String>(list[i], list[i + 1]));
+      all.add(new SimpleEntry<String, String>(list[i], list[i + 1]));
     }
+    return all;
+  }
+
+  private Set<Map.Entry<String, String>> readSetFromFile(File file) throws IOException {
+    List<Map.Entry<String, String>> all = readListFromFile(file);
+    Set<Map.Entry<String, String>> set = new HashSet<Map.Entry<String, String>>(all);
     return set;
   }
 
   private Map<String, String> readMapFromFile(File file) throws IOException {
-    InputStream is = new FileInputStream(file);
-    String str;
-    try {
-      str = IOHelper.readInputStreamToString(is, charset);
-    } finally {
-      is.close();
-    }
-
-    String[] list = str.split("\0");
-    Map<String, String> map = new HashMap<String, String>(list.length);
-    for (int i = 0; i + 1 < list.length; i += 2) {
-      map.put(list[i], list[i + 1]);
+    Map<String, String> map = new HashMap<String, String>();
+    for (Map.Entry<String, String> e : readListFromFile(file)) {
+      map.put(e.getKey(), e.getValue());
     }
     return map;
   }
