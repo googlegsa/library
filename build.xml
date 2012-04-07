@@ -258,8 +258,8 @@
     </jar>
 
     <!-- example Command Line Adaptor scripts -->
-    <copy todir="${dist.staging.dir}/examples">
-      <fileset dir="${basedir}" includes="*.sh"/>
+    <copy todir="${dist.staging.dir}">
+      <fileset dir="${basedir}" includes="examples/*"/>
     </copy>
 
     <!-- adaptor-docs.zip -->
