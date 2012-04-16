@@ -232,6 +232,8 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
+    assertEquals("public",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
   }
 
   @Test
@@ -311,6 +313,7 @@ public class DocumentHandlerTest {
     assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-External-Metadata"));
     assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-External-Anchor"));
     assertFalse(ex.getResponseHeaders().containsKey("X-Robots-Tag"));
+    assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-Serve-Security"));
   }
 
   @Test
@@ -615,6 +618,21 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testSetSecureLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setSecure(true);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
   public void testAddAnchorLate() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -748,6 +766,7 @@ public class DocumentHandlerTest {
             response.addMetadata("test", "ing");
             response.setAcl(new Acl.Builder()
                 .setInheritFrom(new DocId("testing")).build());
+            response.setSecure(true);
             response.addAnchor(URI.create("http://test/"), null);
             response.addAnchor(URI.create("ftp://host/path?val=1"),
                 "AaZz09,=-%");
@@ -768,6 +787,8 @@ public class DocumentHandlerTest {
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
           + "http%3A%2F%2Flocalhost%2Ftesting"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+    assertEquals("secure",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
     assertEquals("http%3A%2F%2Ftest%2F,"
         + "AaZz09%2C%3D-%25=ftp%3A%2F%2Fhost%2Fpath%3Fval%3D1",
         ex.getResponseHeaders().getFirst("X-Gsa-External-Anchor"));

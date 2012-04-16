@@ -89,6 +89,15 @@ public interface Response {
   public void setAcl(Acl acl);
 
   /**
+   * Mark the document as secure, for use with late-binding security. By
+   * default, the secure setting will be {@code false}, which means the document
+   * is public if there are no ACLs. ACLs should be used, if possible, instead
+   * of setting this option to {@code true}. When {@code true}, the GSA needs to
+   * be correctly configured to issue a SAML request to the Adaptor.
+   */
+  public void setSecure(boolean secure);
+
+  /**
    * Add a hyperlink for the GSA to follow without modifying the document
    * contents. This is equivalent to the following HTML: {@code
    * <a href='$uri'>$text</a>}. If you want to link to a {@link DocId}, then you

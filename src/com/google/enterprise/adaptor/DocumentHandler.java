@@ -456,6 +456,7 @@ class DocumentHandler extends AbstractHandler {
     private String contentType;
     private Metadata metadata = new Metadata();
     private Acl acl = Acl.EMPTY;
+    private boolean secure;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
     private final DocId docId;
@@ -543,6 +544,14 @@ class DocumentHandler extends AbstractHandler {
         throw new IllegalStateException("Already responded");
       }
       this.acl = acl;
+    }
+
+    @Override
+    public void setSecure(boolean secure) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.secure = secure;
     }
 
     @Override
@@ -645,6 +654,12 @@ class DocumentHandler extends AbstractHandler {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
               formAnchorHeader(anchorUris, anchorTexts));
         }
+        // Specify the security, even if public, because the default varies.
+        // For instance, requesting the client certificate of the GSA can mark
+        // documents secure, but it can also leave them as public, depending on
+        // a GSA configuration setting.
+        ex.getResponseHeaders().add("X-Gsa-Serve-Security",
+            secure ? "secure" : "public");
         if (noIndex) {
           ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
         }

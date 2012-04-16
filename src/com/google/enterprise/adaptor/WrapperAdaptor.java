@@ -129,6 +129,11 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
+    public void setSecure(boolean secure) {
+      response.setSecure(secure);
+    }
+
+    @Override
     public void addAnchor(URI uri, String text) {
       response.addAnchor(uri, text);
     }
@@ -187,6 +192,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private String contentType;
     private Metadata metadata = new Metadata();
     private Acl acl;
+    private boolean secure;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
     private boolean notFound;
@@ -226,6 +232,11 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void setAcl(Acl acl) {
       this.acl = acl;
+    }
+
+    @Override
+    public void setSecure(boolean secure) {
+      this.secure = secure;
     }
 
     @Override

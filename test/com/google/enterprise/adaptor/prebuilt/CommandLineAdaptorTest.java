@@ -266,6 +266,7 @@ public class CommandLineAdaptorTest {
     private String contentType;
     private Metadata metadata = new Metadata();
     private Acl acl;
+    private boolean secure;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
     private boolean notModified;
@@ -307,6 +308,11 @@ public class CommandLineAdaptorTest {
     @Override
     public void setAcl(Acl acl) {
       this.acl = acl;
+    }
+
+    @Override
+    public void setSecure(boolean secure) {
+      this.secure = secure;
     }
 
     @Override
