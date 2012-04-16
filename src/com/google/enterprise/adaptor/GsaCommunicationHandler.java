@@ -67,7 +67,7 @@ public class GsaCommunicationHandler {
   private Thread shutdownHook;
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
   private final DocIdCodec docIdCodec;
-  private final DocIdSender docIdSender;
+  private DocIdSender docIdSender;
   private Dashboard dashboard;
   private SensitiveValueCodec secureValueCodec;
 
@@ -77,10 +77,6 @@ public class GsaCommunicationHandler {
 
     journal = new Journal(config.isJournalReducedMem());
     docIdCodec = new DocIdCodec(config);
-    GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
-    GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec);
-    docIdSender
-        = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
   }
 
   /** Starts listening for communications from GSA. */
@@ -184,6 +180,12 @@ public class GsaCommunicationHandler {
     Runtime.getRuntime().addShutdownHook(shutdownHook);
 
     config.addConfigModificationListener(new GsaConfigModListener());
+
+    GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
+    GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec,
+        config.isGsa614FeedWorkaroundEnabled());
+    docIdSender
+        = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
 
     long sleepDurationMillis = 1000;
     // An hour.

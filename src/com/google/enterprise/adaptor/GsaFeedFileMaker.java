@@ -43,10 +43,18 @@ class GsaFeedFileMaker {
         }
       };
 
-  private DocIdEncoder idEncoder;
+  private final DocIdEncoder idEncoder;
+  private final boolean separateClosingRecordTagWorkaround;
 
   public GsaFeedFileMaker(DocIdEncoder encoder) {
+    this(encoder, false);
+  }
+
+  public GsaFeedFileMaker(DocIdEncoder encoder,
+      boolean separateClosingRecordTagWorkaround) {
     this.idEncoder = encoder;
+    this.separateClosingRecordTagWorkaround
+        = separateClosingRecordTagWorkaround;
   }
 
   /** Adds header to document's root.
@@ -100,6 +108,13 @@ class GsaFeedFileMaker {
       record.setAttribute("crawl-once", "true");
     }
     // TODO(pjo): record.setAttribute(no-follow,);
+
+    if (separateClosingRecordTagWorkaround) {
+      // GSA 6.14 has a feed parsing bug (fixed in patch 2) that fails to parse
+      // self-closing record tags. Thus, here we force record to have a separate
+      // close tag.
+      record.appendChild(doc.createTextNode(" "));
+    }
   }
 
   /**

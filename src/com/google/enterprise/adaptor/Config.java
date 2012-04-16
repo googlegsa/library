@@ -78,6 +78,7 @@ public class Config {
     addKey("server.useCompression", "true");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
+    addKey("gsa.614FeedWorkaroundEnabled", "false");
     addKey("docId.isUrl", "false");
     addKey("feed.name", "GENERATE");
     addKey("feed.noRecrawlBitEnabled", "false");
@@ -395,6 +396,10 @@ public class Config {
   /** Provides the character encoding the GSA prefers. */
   public Charset getGsaCharacterEncoding() {
     return Charset.forName(getValue("gsa.characterEncoding"));
+  }
+
+  public boolean isGsa614FeedWorkaroundEnabled() {
+    return Boolean.parseBoolean(getValue("gsa.614FeedWorkaroundEnabled"));
   }
 
   /**
