@@ -816,7 +816,7 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public void flush() throws IOException {
-      out.close();
+      out.flush();
     }
 
     @Override
