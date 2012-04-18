@@ -215,6 +215,8 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
+    assertEquals(Arrays.asList("", ""),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   @Test
@@ -405,7 +407,8 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
-    assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertEquals(Arrays.asList("", ""),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   @Test

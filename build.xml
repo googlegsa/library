@@ -2,6 +2,7 @@
   <description>GSA Adaptor library</description>
   <property name="src.dir" location="src"/>
   <property name="test.dir" location="test"/>
+  <property name="test.class" value="*Test"/>
   <property name="build.dir" location="build"/>
   <property name="build-src.dir" location="${build.dir}/src"/>
   <property name="build-test.dir" location="${build.dir}/test"/>
@@ -207,6 +208,9 @@
     <delete dir="${dist.dir}"/>
 
     <!-- Produce intermediate distribution files -->
+
+    <copy file="LICENSE.txt" todir="${dist.staging.dir}"/>
+    <copy file="THIRDPARTYLICENSE.txt" todir="${dist.staging.dir}"/>
 
     <!-- adaptor.jar -->
     <jar destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"
@@ -432,7 +436,7 @@
       <formatter classname="JUnitLogFixFormatter" usefile="false"/>
       <batchtest>
         <fileset dir="${test.dir}">
-          <include name="**/*Test.java"/>
+          <include name="**/${test.class}.java"/>
         </fileset>
       </batchtest>
     </junit>

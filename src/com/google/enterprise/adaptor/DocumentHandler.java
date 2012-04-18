@@ -629,14 +629,12 @@ class DocumentHandler extends AbstractHandler {
 
     private void startSending(boolean hasContent) throws IOException {
       if (requestIsFromFullyTrustedClient(ex)) {
-        if (!metadata.isEmpty()) {
-          ex.getResponseHeaders().add("X-Gsa-External-Metadata",
-                                      formMetadataHeader(metadata));
-        }
-        if (!Acl.EMPTY.equals(acl)) {
-          ex.getResponseHeaders().add("X-Gsa-External-Metadata",
-                                      formAclHeader(acl, docIdEncoder));
-        }
+        // Always specify metadata and ACLs, even when empty, to replace
+        // previous values.
+        ex.getResponseHeaders().add("X-Gsa-External-Metadata",
+                                    formMetadataHeader(metadata));
+        ex.getResponseHeaders().add("X-Gsa-External-Metadata",
+                                    formAclHeader(acl, docIdEncoder));
         if (!anchorUris.isEmpty()) {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
               formAnchorHeader(anchorUris, anchorTexts));

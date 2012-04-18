@@ -61,8 +61,8 @@ public class Config {
     }
     addKey("server.hostname", hostname);
     addKey("server.port", "5678");
-    addKey("server.reverseProxyPort", "GENERATED");
-    addKey("server.reverseProxyProtocol", "GENERATED");
+    addKey("server.reverseProxyPort", "GENERATE");
+    addKey("server.reverseProxyProtocol", "GENERATE");
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
@@ -132,7 +132,7 @@ public class Config {
    * adaptor. This does not affect the actual port the adaptor uses.
    */
   public int getServerReverseProxyPort() {
-    if (!"GENERATED".equals(getValue("server.reverseProxyPort"))) {
+    if (!"GENERATE".equals(getValue("server.reverseProxyPort"))) {
       return Integer.parseInt(getValue("server.reverseProxyPort"));
     }
     return getServerPort();
@@ -143,7 +143,7 @@ public class Config {
    * adaptor. This does not affect the actual protocol the adaptor uses.
    */
   public String getServerReverseProxyProtocol() {
-    if (!"GENERATED".equals(getValue("server.reverseProxyProtocol"))) {
+    if (!"GENERATE".equals(getValue("server.reverseProxyProtocol"))) {
       return getValue("server.reverseProxyProtocol");
     }
     return isServerSecure() ? "https" : "http";
