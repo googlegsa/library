@@ -15,18 +15,26 @@
 package com.google.enterprise.adaptor;
 
 /**
- * DocId refers to a unique document in repository.
- * You give the adaptorlib a DocId to have it insert your
- * document for crawl and index.
- * The adaptorlib provides the DocId when it asks your code
- * for some information about a particular document in
- * repository.  For example when the adaptorlib wants the bytes
- * of a particular document or when it wants to find
- * out if a particular user has read permissions for it.
+ * Refers to a unique document in repository. It is a thin wrapper of {@link
+ * String} that adds meaning to the String and prevents the string from being
+ * confused with others that do not refer to documents.
+ *
+ * <p>You provide a {@code DocId} to methods like {@link DocIdPusher#pushDocIds}
+ * to inform the GSA about the document's existance, so that it can crawl and
+ * index it. When the GSA requests that document's contents, {@link
+ * Request#getDocId} will have the same unique id as {@code DocId} you provided.
+ * However, just because a {@code DocId} is provided, does not mean the value it
+ * represents exists or ever existed. The GSA can query for documents that have
+ * been deleted and users can query for documents that never existed.
  */
 public class DocId implements Comparable<DocId> {
   private final String uniqId;  // Not null.
 
+  /**
+   * Construct an identifier based on {@code id}.
+   *
+   * @param id non-{@code null} document identifier
+   */
   public DocId(String id) {
     if (id == null) {
       throw new NullPointerException();
@@ -34,16 +42,22 @@ public class DocId implements Comparable<DocId> {
     this.uniqId = id;
   }
 
+  /**
+   * Returns the string identifier provided to the constructor.
+   */
   public String getUniqueId() {
     return uniqId;
   }
 
-  /** "DocId(" + uniqId + ")" */
+  /** Generates a string useful for debugging that contains the unique id. */
   @Override
   public String toString() {
     return "DocId(" + uniqId + ")";
   }
 
+  /**
+   * Determines equality based on the unique id string.
+   */
   @Override
   public boolean equals(Object o) {
     if (null == o || !getClass().equals(o.getClass())) {
@@ -53,11 +67,17 @@ public class DocId implements Comparable<DocId> {
     return this.uniqId.equals(d.uniqId);
   }
 
+  /**
+   * Generates a hash code based on the unique id string.
+   */
   @Override
   public int hashCode() {
     return this.uniqId.hashCode();
   }
 
+  /**
+   * Provides comparison for ids based on the unique id string.
+   */
   @Override
   public int compareTo(DocId docId) {
     return uniqId.compareTo(docId.uniqId);

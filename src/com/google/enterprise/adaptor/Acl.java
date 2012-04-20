@@ -516,6 +516,7 @@ public class Acl {
     /**
      * Replace existing permit groups.
      *
+     * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
      * @throws IllegalArgumentException if the collection contains {@code ""}
@@ -529,6 +530,7 @@ public class Acl {
     /**
      * Replace existing deny groups.
      *
+     * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
      * @throws IllegalArgumentException if the collection contains {@code ""}
@@ -542,6 +544,7 @@ public class Acl {
     /**
      * Replace existing permit users.
      *
+     * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
      * @throws IllegalArgumentException if the collection contains {@code ""}
@@ -555,6 +558,7 @@ public class Acl {
     /**
      * Replace existing deny users.
      *
+     * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
      * @throws IllegalArgumentException if the collection contains {@code ""}
@@ -570,6 +574,7 @@ public class Acl {
      * "parent's" ACLs. Note that the parent's {@code InheritanceType}
      * determines how to combine results with this ACL.
      *
+     * @return the same instance of the builder, for chaining calls
      * @see #setInheritanceType
      */
     public Builder setInheritFrom(DocId inheritFrom) {
@@ -583,6 +588,7 @@ public class Acl {
      * applies to the interaction between this ACL and any <em>children</em> it
      * has.
      *
+     * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if {@code inheritType} is {@code null}
      * @see #setInheritFrom
      */

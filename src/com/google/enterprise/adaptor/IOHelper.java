@@ -76,6 +76,10 @@ public class IOHelper {
     return tmpFile;
   }
 
+  /**
+   * Write contents of {@code string} to a temporary file, encoded using {@code
+   * charset}. Caller is responsible for deleting the temporary file after use.
+   */
   public static File writeToTempFile(String string, Charset charset)
       throws IOException {
     byte[] bytes = string.getBytes(charset);

@@ -30,7 +30,7 @@ public interface DocIdPusher {
    * avoided.
    *
    * <p>Equivalent to {@code pushDocIds(docIds, null)} and {@link
-   * #pushRecords(Iterable)} with empty metadata for each {@code Record}.
+   * #pushRecords(Iterable)} with default values for each {@code Record}.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
    * @see #pushDocIds(Iterable, PushErrorHandler)
@@ -47,7 +47,7 @@ public interface DocIdPusher {
    * <p>If handler is {@code null}, then a default error handler is used.
    *
    * <p>Equivalent to {@link #pushRecords(Iterable, PushErrorHandler)}
-   * with empty metadata for each {@code Record}.
+   * with default values for each {@code Record}.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
    */
@@ -123,16 +123,18 @@ public interface DocIdPusher {
                                   PushErrorHandler handler)
       throws InterruptedException;
 
-  /** Contains DocId and other feed file record attributes. */
+  /**
+   * Immutable feed attributes for a document identified by its {@code DocId}.
+   */
   public static final class Record implements DocIdSender.Item {
-    private final DocId id; 
+    private final DocId id;
     private final boolean delete;
     private final Date lastModified;
     private final URI link;
     private final boolean crawlImmediately;
     private final boolean crawlOnce;
     private final boolean lock;
-  
+
     private Record(DocId docid, boolean delete, Date lastModified,
         URI link, boolean crawlImmediately, boolean crawlOnce, boolean lock) {
       this.id = docid;
@@ -143,35 +145,70 @@ public interface DocIdPusher {
       this.crawlOnce = crawlOnce;
       this.lock = lock;
     }
-    
+
+    /**
+     * The identifier for the document this record is providing information for.
+     *
+     * @return non-{@code null} identifier for the document
+     */
     public DocId getDocId() {
       return id;
     }
-  
+
+    /**
+     * Whether the GSA is being informed the document has been deleted.
+     */
     public boolean isToBeDeleted() {
       return delete;
     }
-  
+
+    /**
+     * The last modified date of the document. This is used for determining that
+     * the GSA's version is older and that the GSA should recrawl soon (instead
+     * of natually discovering the modification). If {@code null}, then natural
+     * crawling is the primary method of detecting modifications.
+     */
     public Date getLastModified() {
       return lastModified;
     }
-  
+
+    /**
+     * The URI that should be displayed to the user in search results. If {@code
+     * null}, then the crawl URI representing the {@code DocId} is used.
+     */
     public URI getResultLink() {
       return link;
     }
-  
+
+    /**
+     * Informs the GSA that the document has been modified, and the GSA should
+     * give high priority to recrawling the document.
+     */
     public boolean isToBeCrawledImmediately() {
       return crawlImmediately;
     }
-  
+
+    /**
+     * Informs the GSA that it should only crawl the document once. This
+     * disables automatic detection of modifications by the GSA for this
+     * document.
+     */
     public boolean isToBeCrawledOnce() {
       return crawlOnce;
     }
-  
+
+    /**
+     * Locks the document into the GSA's index. This informs the GSA that it
+     * should choose to evict other documents from its index when the document
+     * license limit is reached.
+     */
     public boolean isToBeLocked() {
       return lock;
     }
-  
+
+    /**
+     * Checks for equality based on all visible fields.
+     */
     @Override
     public boolean equals(Object o) {
       boolean same = false;
@@ -184,17 +221,24 @@ public interface DocIdPusher {
             && (this.lock == other.lock)
             && equalsNullSafe(lastModified, other.lastModified)
             && equalsNullSafe(link, other.link);
-      } 
+      }
       return same;
     }
-  
+
+    /**
+     * Generates hash code based on all visible fields.
+     */
     @Override
     public int hashCode() {
       Object members[] = new Object[] { id, delete, lastModified, link,
           crawlImmediately, crawlOnce, lock };
       return Arrays.hashCode(members);
     }
-  
+
+    /**
+     * Generates a string representation of this instance useful for debugging
+     * that contains all visible fields.
+     */
     @Override
     public String toString() {
       return "Record(docid=" + id.getUniqueId()
@@ -205,7 +249,7 @@ public interface DocIdPusher {
           + ",crawlOnce=" + crawlOnce
           + ",lock=" + lock + ")";
     }
-  
+
     private static boolean equalsNullSafe(Object a, Object b) {
       boolean same;
       if (null == a && null == b) {
@@ -219,8 +263,7 @@ public interface DocIdPusher {
     }
 
     /**
-     * Used to create instances of Record, which are immutable.
-     * DocId is required.
+     * Builder to create instances of Record.
      */
     public static class Builder {
       private DocId docid = null;
@@ -230,7 +273,12 @@ public interface DocIdPusher {
       private boolean crawlImmediately = false;
       private boolean crawlOnce = false;
       private boolean lock = false;
-  
+
+      /**
+       * Create mutable builder for building {@link Record} instances.
+       *
+       * @param id non-{@code null} identifier for the document being described
+       */
       public Builder(DocId id) {
         if (null == id) {
           throw new NullPointerException();
@@ -238,7 +286,11 @@ public interface DocIdPusher {
         docid = id;
       }
 
-      /** Makes Builder that can duplicate a record. */
+      /**
+       * Create mutable builder initialized to values provided by {@code
+       * startPoint}. This is useful for making changes to an existing {@code
+       * Record}.
+       */
       public Builder(Record startPoint) {
         this.docid = startPoint.id;
         this.delete = startPoint.delete;
@@ -249,6 +301,13 @@ public interface DocIdPusher {
         this.lock = startPoint.lock;
       }
 
+      /**
+       * Set the identifier for the document this record is providing
+       * information for. This replaces the value provided to the constructor.
+       *
+       * @param id non-{@code null} identifier for the document
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setDocId(DocId id) {
         if (null == id) {
           throw new NullPointerException();
@@ -256,37 +315,80 @@ public interface DocIdPusher {
         this.docid = id;
         return this;
       }
-    
+
+      /**
+       * Set whether the GSA is being informed the document has been deleted.
+       * When {@code false}, the GSA is being informed the document exists. The
+       * default is {@code false}.
+       *
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setDeleteFromIndex(boolean b) {
         this.delete = b;
         return this;
       }
-    
+
+      /**
+       * Provides the last-modified date of the document. This is used by the
+       * GSA to learn that the document has been modified since the GSA last
+       * retrieved the document's contents. When {@code null}, the GSA must use
+       * its natural crawling of content to discover changes. The default is
+       * {@code null}.
+       *
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setLastModified(Date lastModified) {
         this.lastModified = lastModified;
         return this;
       }
-    
+
+      /**
+       * Set the URI to be displayed to the user in search results. If {@code
+       * null}, then the crawl URI representing the {@code DocId} is used. The
+       * default is {@code null}.
+       *
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setResultLink(URI link) {
         this.link = link;
         return this;
       }
-    
+
+      /**
+       * Inform the GSA that the document has been modified, and that the GSA
+       * should give high priority to recrawling the document. The default is
+       * {@code false}.
+       *
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setCrawlImmediately(boolean crawlImmediately) {
         this.crawlImmediately = crawlImmediately;
         return this;
       }
-    
+
+      /**
+       * Instruct the GSA to not recrawl the document after the initial
+       * retrieval. The default is {@code false}.
+       *
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setCrawlOnce(boolean crawlOnce) {
         this.crawlOnce = crawlOnce;
         return this;
       }
-    
+
+      /**
+       * Instruct the GSA to "lock" the document into its index. This causes
+       * other documents to be evicted from the index when the document license
+       * limit is reached. The default is {@code false}.
+       *
+       * @return the same instance of the builder, for chaining calls
+       */
       public Builder setLock(boolean lock) {
         this.lock = lock;
         return this;
       }
-  
+
       /** Creates single instance of Record.  Does not reset builder. */
       public Record build() {
         return new Record(docid, delete, lastModified,

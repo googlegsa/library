@@ -15,7 +15,8 @@
 package com.google.enterprise.adaptor;
 
 /**
- * Default handler of errors during {@link Adaptor#getDocIds}.
+ * Default handler of errors during {@link Adaptor#getDocIds
+ * Adaptor.getDocIds(DocIdPusher)}.
  */
 public class DefaultGetDocIdsErrorHandler implements GetDocIdsErrorHandler {
   private int maximumTries;

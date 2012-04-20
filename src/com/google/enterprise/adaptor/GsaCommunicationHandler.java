@@ -387,7 +387,7 @@ public class GsaCommunicationHandler {
   /**
    * Ensure there is a push running right now. This schedules a new push if one
    * is not already running. Returns {@code true} if it starts a new push, and
-   * false otherwise.
+   * {@code false} otherwise.
    */
   public boolean checkAndScheduleImmediatePushOfDocIds() {
     return docIdFullPusher.runInNewThread() != null;

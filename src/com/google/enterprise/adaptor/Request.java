@@ -17,8 +17,9 @@ package com.google.enterprise.adaptor;
 import java.util.Date;
 
 /**
- * Interface provided to {@link Adaptor#getDocContent} for describing the action
- * that should be taken.
+ * Interface provided to {@link Adaptor#getDocContent
+ * Adaptor.getDocContent(Request, Response)} for describing the action that
+ * should be taken.
  */
 public interface Request {
   /**

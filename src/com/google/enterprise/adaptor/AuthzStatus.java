@@ -15,18 +15,18 @@
 package com.google.enterprise.adaptor;
 
 /**
- * Authorization Status codes.
- * <ul>
- * <li>{@code PERMIT} means that authorization is granted.</li>
- * <li>{@code DENY} means that authorization is explicitly denied.</li>
- * <li>{@code INDETERMINATE} means that permission is neither granted nor
- * denied. If a consumer receives this code, it may decide to try other means
- * to get an explicit decision (i.e. {@code PERMIT} or {@code DENY}).</li>
- * </ul>
+ * Authorization status codes.
  */
 public enum AuthzStatus {
+  /** The authorization is granted. */
   PERMIT("Access PERMITTED"),
+  /** The authorization is explicitly forbidden. */
   DENY("Access DENIED"),
+  /**
+   * Permission is neither granted nor forbidden. If a consumer recieves this
+   * code it may decide to try other means to get an explicit decision (i.e.,
+   * {@code PERMIT} or {@code DENY}.
+   */
   INDETERMINATE("No access decision");
 
   private final String description;
@@ -35,6 +35,7 @@ public enum AuthzStatus {
     this.description = description;
   }
 
+  /** Get a short description of the status. */
   public String getDescription() {
     return description;
   }

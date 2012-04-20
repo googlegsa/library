@@ -18,8 +18,9 @@ import java.io.*;
 import java.net.URI;
 
 /**
- * Interface provided to {@link Adaptor#getDocContent} for performing the
- * actions needed to satisfy a request.
+ * Interface provided to {@link Adaptor#getDocContent
+ * Adaptor.getDocContent(Request, Response)} for performing the actions needed
+ * to satisfy a request.
  *
  * <p>There are several ways that a request can be processed. In the simplest
  * case an Adaptor always sets different pieces of metadata, calls {@link
@@ -71,7 +72,9 @@ public interface Response {
   public void setContentType(String contentType);
 
   /**
-   * Add metadata element that applies to the document.
+   * Add metadata element that applies to the document. Providing multiple
+   * values for the same key is supported; simply repeat the call once for each
+   * value.
    *
    * @param key the key of metadata element
    * @param value the value of metadata element

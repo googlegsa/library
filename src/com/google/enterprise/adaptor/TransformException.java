@@ -14,12 +14,32 @@
 
 package com.google.enterprise.adaptor;
 
-/** */
+/**
+ * Exception produced by {@link DocumentTransform}s and {@link
+ * DocumentTransform} in the case of a fatal error.
+ */
 public class TransformException extends Exception {
-  public TransformException(Exception e) {
-    super(e);
+  /**
+   * Constructs a new exception with a detailed message. The exception's cause
+   * is left uninitialized.
+   */
+  public TransformException(String message) {
+    super(message);
   }
-  public TransformException(String s) {
-    super(s);
+
+  /**
+   * Constructs a new exception with a detailed message and a cause initialized
+   * to {@code cause}.
+   */
+  public TransformException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  /**
+   * Constructs a new exception with a {@code null} message and a cause
+   * initalized to {@code cause}.
+   */
+  public TransformException(Throwable cause) {
+    super(cause);
   }
 }

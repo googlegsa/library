@@ -43,6 +43,10 @@ public interface Adaptor {
    * to three concurrent calls may be average during initial GSA crawling, but
    * twenty or more concurrent calls is typical when the GSA is recrawling
    * unmodified content.
+   *
+   * <p>If you experience a fatal error, feel free to throw an {@link
+   * IOException} or {@link RuntimeException}. In the case of an error, the GSA
+   * will determine if and when to retry.
    */
   public void getDocContent(Request request, Response response)
       throws IOException;
@@ -60,6 +64,11 @@ public interface Adaptor {
    * provided to {@link #init} previously. This method may take a while and
    * implementations are free to call {@link Thread#sleep} occasionally to
    * reduce load.
+   *
+   * <p>If you experience a fatal error, feel free to throw an {@link
+   * IOException} or {@link RuntimeException}. In the case of an error, the
+   * {@link GetDocIdsErrorHandler} in use in {@link AdaptorContext} will
+   * determine if and when to retry.
    */
   public void getDocIds(DocIdPusher pusher) throws IOException,
       InterruptedException;
@@ -86,6 +95,10 @@ public interface Adaptor {
    * cached copy will be provided to the user but the user may be informed the
    * document doesn't exist. Highly sensitive repositories may return {@code
    * DENY}.
+   *
+   * <p>If you experience a fatal error, feel free to throw an {@link
+   * IOException} or {@link RuntimeException}. In the case of an error, the
+   * users will be denied access to the resources.
    *
    * @param userIdentity user to authorize, or {@code null} for anonymous
    *        users
@@ -116,6 +129,9 @@ public interface Adaptor {
    *
    * <p>The method is called at the end of {@link
    * GsaCommunicationHandler#start}.
+   *
+   * <p>If you experience a fatal error during initialization, feel free to
+   * throw an {@link Exception} to cancel the startup process.
    */
   public void init(AdaptorContext context) throws Exception;
 

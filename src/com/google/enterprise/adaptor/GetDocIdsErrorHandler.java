@@ -15,15 +15,17 @@
 package com.google.enterprise.adaptor;
 
 /**
- * Interface for handling error encountered during scheduled pushing of {@code
+ * Interface for handling errors encountered during scheduled pushing of {@code
  * DocId}s.
  */
 public interface GetDocIdsErrorHandler {
   /**
-   * {@link DocIdSender#pushDocIds} had a failure reading from this Adaptor's
-   * {@link Adaptor#getDocIds}. The thrown exception is provided as well as the
-   * number of times that this batch was attempted to be sent. Return {@code
-   * true} to retry, perhaps after a Thread.sleep() of some time.
+   * There was a failure running {@link Adaptor#getDocIds}. The thrown exception
+   * is provided as well as the number of times the call has been attempted. It
+   * is fine to call {@code Thread.sleep()} before returning.
+   *
+   * @return {@code true} for immediate retry, {@code false} to abort this
+   *   scheduled execution
    */
   public boolean handleFailedToGetDocIds(Exception ex, int ntries)
       throws InterruptedException;
