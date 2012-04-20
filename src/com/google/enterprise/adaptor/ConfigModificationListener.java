@@ -17,6 +17,6 @@ package com.google.enterprise.adaptor;
 /**
  * Listener for configuration modification events.
  */
-public interface ConfigModificationListener {
+interface ConfigModificationListener {
   public void configModified(ConfigModificationEvent ev);
 }

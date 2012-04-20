@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.URI;
@@ -29,27 +31,28 @@ import java.util.logging.*;
  * knobs, or controls, for changing the behavior of the program.
  */
 public class Config {
-  protected static final String DEFAULT_CONFIG_FILE
+  private static final String DEFAULT_CONFIG_FILE
       = "adaptor-config.properties";
 
   private static final Logger log = Logger.getLogger(Config.class.getName());
 
   /** Configuration keys whose default value is {@code null}. */
-  protected final Set<String> noDefaultConfig = new HashSet<String>();
+  private final Set<String> noDefaultConfig = new HashSet<String>();
   /** Default configuration values. */
-  protected final Properties defaultConfig = new Properties();
+  private final Properties defaultConfig = new Properties();
   /** Overriding configuration values loaded from command line. */
   // Reads require no additional locks, but modifications require lock on 'this'
   // to prevent lost updates.
-  protected volatile Properties config = new Properties(defaultConfig);
+  private volatile Properties config = new Properties(defaultConfig);
   /** Default configuration to use in {@link #loadDefaultConfigFile}. */
-  protected File defaultConfigFile = new File(DEFAULT_CONFIG_FILE);
+  @VisibleForTesting
+  File defaultConfigFile = new File(DEFAULT_CONFIG_FILE);
   /**
    * The actual config file in use, or {@code null} if none have been loaded.
    */
-  protected File configFile;
-  protected long configFileLastModified;
-  protected List<ConfigModificationListener> modificationListeners
+  private File configFile;
+  private long configFileLastModified;
+  private List<ConfigModificationListener> modificationListeners
       = new CopyOnWriteArrayList<ConfigModificationListener>();
 
   public Config() {
@@ -631,12 +634,12 @@ public class Config {
     config.setProperty(key, value);
   }
 
-  public void addConfigModificationListener(
+  void addConfigModificationListener(
       ConfigModificationListener listener) {
     modificationListeners.add(listener);
   }
 
-  public void removeConfigModificationListener(
+  void removeConfigModificationListener(
       ConfigModificationListener listener) {
     modificationListeners.remove(listener);
   }

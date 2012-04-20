@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Represents configuration modification event information.
  */
-public class ConfigModificationEvent extends EventObject {
+class ConfigModificationEvent extends EventObject {
   protected Config oldConfig;
   protected Set<String> modifiedKeys;
 
