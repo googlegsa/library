@@ -3,8 +3,7 @@
 #
 # Shell equivalent of
 # com.google.enterprise.adaptor.examples.AdaptorTemplate.getDocIds
-#
-# TODO: Update to contemporary format.
 
-echo "1001"
-echo "1002"
+echo -e "GSA Adaptor Data Version 1 [\n]"
+echo "id=5555"
+echo "id=9999"

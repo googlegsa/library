@@ -1,6 +1,10 @@
 #!/bin/sh
-# Example gives list of document ids on local unix filesystem.
-#
-# TODO: Update to contemporary format.
+# Example gives list of document ids in a directory.
 
-find /usr/local/mqt -type f
+dir="/tmp/foo-bar/"
+cd "$dir"
+
+echo -e "GSA Adaptor Data Version 1 [\n]"
+echo id-list
+# Note: \n delimiter requires no file names contain it.
+find . -type f
