@@ -92,7 +92,14 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     Connection conn = null;
     try {
       conn = makeNewConnection();
-      String query = "select * from backlog where id = " + id.getUniqueId();
+      int primaryKey;
+      try {
+        primaryKey = Integer.parseInt(id.getUniqueId());
+      } catch (NumberFormatException nfe) {
+        resp.respondNotFound();
+        return;
+      }
+      String query = "select * from backlog where id = " + primaryKey;
       ResultSet rs = getFromDb(conn, query);
 
       // First handle cases with no data to return.
