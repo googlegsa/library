@@ -58,7 +58,7 @@ public class FileSystemAdaptor extends AbstractAdaptor {
 
   @Override
   public void getDocIds(DocIdPusher pusher) throws IOException,
-         InterruptedException {
+      InterruptedException {
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     String parent = serveDir.toString();
     try {
