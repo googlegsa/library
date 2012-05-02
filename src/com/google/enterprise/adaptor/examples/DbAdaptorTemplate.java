@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.AdaptorContext;
+import com.google.enterprise.adaptor.Config;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.Request;
@@ -36,15 +37,27 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       = Logger.getLogger(DbAdaptorTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
+  private int maxIdsPerFeedFile;
+  private String dbname, tablename;
+ 
+  @Override
+  public void initConfig(Config config) {
+    config.addKey("db.name", null);
+    config.addKey("db.tablename", null);
+  }
+
   @Override
   public void init(AdaptorContext context) throws Exception {
     Class.forName("org.gjt.mm.mysql.Driver");
     log.info("loaded driver");
+    maxIdsPerFeedFile = context.getConfig().getFeedMaxUrls();
+    dbname = context.getConfig().getValue("db.name");
+    tablename = context.getConfig().getValue("db.tablename");
   }
 
-  private static Connection makeNewConnection() throws SQLException {
+  private Connection makeNewConnection() throws SQLException {
     // TODO(pjo): DB connection pooling.
-    String url = "jdbc:mysql://127.0.0.1/adaptor1";
+    String url = "jdbc:mysql://127.0.0.1/" + dbname;
     log.fine("about to connect");
     Connection conn = DriverManager.getConnection(url, "root", "test");
     log.fine("connected");
@@ -60,18 +73,29 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     return rs;
   }
 
+  private static ResultSet getStreamFromDb(Connection conn, String query)
+      throws SQLException {
+    Statement st = conn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY,
+        java.sql.ResultSet.CONCUR_READ_ONLY);
+    st.setFetchSize(Integer.MIN_VALUE);
+    log.fine("about to query for stream: " + query);
+    ResultSet rs = st.executeQuery(query);
+    log.fine("queried for stream");
+    return rs;
+  }
+
   /** Get all doc ids from database. */
   @Override
   public void getDocIds(DocIdPusher pusher) throws IOException,
          InterruptedException {
-    ArrayList<DocId> primaryKeys = new ArrayList<DocId>();
+    BufferingPusher outstream = new BufferingPusher(pusher);
     Connection conn = null;
     try {
       conn = makeNewConnection();
-      ResultSet rs = getFromDb(conn, "select id from backlog");
+      ResultSet rs = getStreamFromDb(conn, "select id from " + tablename);
       while (rs.next()) {
         DocId id = new DocId("" + rs.getInt("id"));
-        primaryKeys.add(id);
+        outstream.add(id);
       }
     } catch (SQLException problem) {
       log.log(Level.SEVERE, "failed getting ids", problem);
@@ -79,10 +103,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     } finally {
       tryClosingConnection(conn);
     }
-    if (log.isLoggable(Level.FINEST)) {
-      log.finest("primary keys: " + primaryKeys);
-    }
-    pusher.pushDocIds(primaryKeys);
+    outstream.forcePush();
   }
 
   /** Gives the bytes of a document referenced with id. */
@@ -99,7 +120,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
         resp.respondNotFound();
         return;
       }
-      String query = "select * from backlog where id = " + primaryKey;
+      String query = "select * from " + tablename + " where id = " + primaryKey;
       ResultSet rs = getFromDb(conn, query);
 
       // First handle cases with no data to return.
@@ -174,5 +195,35 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       s = doubleQuote + s + doubleQuote;
     }
     return s;
+  }
+
+  /**
+   * Mechanism that accepts stream of DocId instances, bufferes them,
+   * and sends them when it has accumulated maximum allowed amount per
+   * feed file.
+   */
+  private class BufferingPusher {
+    DocIdPusher wrapped;
+    ArrayList<DocId> saved;
+    BufferingPusher(DocIdPusher underlying) {
+      wrapped = underlying;
+      saved = new ArrayList<DocId>(maxIdsPerFeedFile);
+    }
+    void add(DocId id) throws InterruptedException {
+      saved.add(id);
+      if (saved.size() >= maxIdsPerFeedFile) {
+        forcePush();
+      }
+    }
+    void forcePush() throws InterruptedException {
+      wrapped.pushDocIds(saved);
+      log.fine("sent " + saved.size() + " doc ids to pusher");
+      saved.clear();
+    }
+    protected void finalize() throws Throwable {
+      if (0 != saved.size()) {
+        log.severe("still have saved ids that weren't sent");
+      }
+    }
   }
 }
