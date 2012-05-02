@@ -61,9 +61,11 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
          InterruptedException {
     BufferingPusher outstream = new BufferingPusher(pusher);
     Connection conn = null;
+    StatementAndResult statementAndResult = null;
     try {
       conn = makeNewConnection();
-      ResultSet rs = getStreamFromDb(conn, "select id from " + tablename);
+      statementAndResult = getStreamFromDb(conn, "select id from " + tablename);
+      ResultSet rs = statementAndResult.resultSet;
       while (rs.next()) {
         DocId id = new DocId("" + rs.getInt("id"));
         outstream.add(id);
@@ -72,8 +74,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       log.log(Level.SEVERE, "failed getting ids", problem);
       throw new IOException(problem);
     } finally {
-      //tryClosingResultSet();
-      //tryClosingStatement();
+      tryClosingStatementAndResult(statementAndResult);
       tryClosingConnection(conn);
     }
     outstream.forcePush();
@@ -84,6 +85,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
   public void getDocContent(Request req, Response resp) throws IOException {
     DocId id = req.getDocId();
     Connection conn = null;
+    StatementAndResult statementAndResult = null;
     try {
       conn = makeNewConnection();
       int primaryKey;
@@ -94,7 +96,8 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
         return;
       }
       String query = "select * from " + tablename + " where id = " + primaryKey;
-      ResultSet rs = getFromDb(conn, query);
+      statementAndResult = getCollectionFromDb(conn, query);
+      ResultSet rs = statementAndResult.resultSet;
 
       // First handle cases with no data to return.
       boolean hasResult = rs.next();
@@ -134,8 +137,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       log.log(Level.SEVERE, "failed getting content", problem);
       throw new IOException("retrieval error", problem);
     } finally {
-      //tryClosingResultSet();
-      //tryClosingStatement();
+      tryClosingStatementAndResult(statementAndResult);
       tryClosingConnection(conn);
     }
   }
@@ -144,6 +146,20 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     AbstractAdaptor.main(new DbAdaptorTemplate(), args);
   }
 
+  private static class StatementAndResult {
+    Statement statement;
+    ResultSet resultSet;
+    StatementAndResult(Statement st, ResultSet rs) { 
+      if (null == st) {
+        throw new NullPointerException();
+      }
+      if (null == rs) {
+        throw new NullPointerException();
+      }
+      statement = st;
+      resultSet = rs;
+    }
+  }
 
   private Connection makeNewConnection() throws SQLException {
     // TODO(pjo): DB connection pooling.
@@ -154,24 +170,39 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     return conn;
   }
 
-  private static ResultSet getFromDb(Connection conn, String query)
-      throws SQLException {
+  private static StatementAndResult getCollectionFromDb(Connection conn,
+      String query) throws SQLException {
     Statement st = conn.createStatement();
     log.fine("about to query: " + query);
     ResultSet rs = st.executeQuery(query);
     log.fine("queried");
-    return rs;
+    return new StatementAndResult(st, rs); 
   }
 
-  private static ResultSet getStreamFromDb(Connection conn, String query)
-      throws SQLException {
+  private static StatementAndResult getStreamFromDb(Connection conn,
+      String query) throws SQLException {
     Statement st = conn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY,
         java.sql.ResultSet.CONCUR_READ_ONLY);
     st.setFetchSize(Integer.MIN_VALUE);
     log.fine("about to query for stream: " + query);
     ResultSet rs = st.executeQuery(query);
     log.fine("queried for stream");
-    return rs;
+    return new StatementAndResult(st, rs); 
+  }
+
+  private static void tryClosingStatementAndResult(StatementAndResult strs) {
+    if (null != strs) {
+      try {
+        strs.resultSet.close();
+      } catch (SQLException e) {
+        log.log(Level.WARNING, "result set close failed", e);
+      }
+      try {
+        strs.statement.close();
+      } catch (SQLException e) {
+        log.log(Level.WARNING, "statement close failed", e);
+      }
+    }
   }
 
   private static void tryClosingConnection(Connection conn) {
@@ -179,7 +210,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       try {
         conn.close();
       } catch (SQLException e) {
-        log.log(Level.WARNING, "close failed", e);
+        log.log(Level.WARNING, "connection close failed", e);
       }
     }
   }
