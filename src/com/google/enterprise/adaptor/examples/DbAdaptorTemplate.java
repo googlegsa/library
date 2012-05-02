@@ -55,35 +55,6 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     tablename = context.getConfig().getValue("db.tablename");
   }
 
-  private Connection makeNewConnection() throws SQLException {
-    // TODO(pjo): DB connection pooling.
-    String url = "jdbc:mysql://127.0.0.1/" + dbname;
-    log.fine("about to connect");
-    Connection conn = DriverManager.getConnection(url, "root", "test");
-    log.fine("connected");
-    return conn;
-  }
-
-  private static ResultSet getFromDb(Connection conn, String query)
-      throws SQLException {
-    Statement st = conn.createStatement();
-    log.fine("about to query: " + query);
-    ResultSet rs = st.executeQuery(query);
-    log.fine("queried");
-    return rs;
-  }
-
-  private static ResultSet getStreamFromDb(Connection conn, String query)
-      throws SQLException {
-    Statement st = conn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY,
-        java.sql.ResultSet.CONCUR_READ_ONLY);
-    st.setFetchSize(Integer.MIN_VALUE);
-    log.fine("about to query for stream: " + query);
-    ResultSet rs = st.executeQuery(query);
-    log.fine("queried for stream");
-    return rs;
-  }
-
   /** Get all doc ids from database. */
   @Override
   public void getDocIds(DocIdPusher pusher) throws IOException,
@@ -101,6 +72,8 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       log.log(Level.SEVERE, "failed getting ids", problem);
       throw new IOException(problem);
     } finally {
+      //tryClosingResultSet();
+      //tryClosingStatement();
       tryClosingConnection(conn);
     }
     outstream.forcePush();
@@ -161,13 +134,44 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       log.log(Level.SEVERE, "failed getting content", problem);
       throw new IOException("retrieval error", problem);
     } finally {
+      //tryClosingResultSet();
+      //tryClosingStatement();
       tryClosingConnection(conn);
     }
   }
 
-  /** Call default main for adaptors. */
   public static void main(String[] args) {
     AbstractAdaptor.main(new DbAdaptorTemplate(), args);
+  }
+
+
+  private Connection makeNewConnection() throws SQLException {
+    // TODO(pjo): DB connection pooling.
+    String url = "jdbc:mysql://127.0.0.1/" + dbname;
+    log.fine("about to connect");
+    Connection conn = DriverManager.getConnection(url, "root", "test");
+    log.fine("connected");
+    return conn;
+  }
+
+  private static ResultSet getFromDb(Connection conn, String query)
+      throws SQLException {
+    Statement st = conn.createStatement();
+    log.fine("about to query: " + query);
+    ResultSet rs = st.executeQuery(query);
+    log.fine("queried");
+    return rs;
+  }
+
+  private static ResultSet getStreamFromDb(Connection conn, String query)
+      throws SQLException {
+    Statement st = conn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY,
+        java.sql.ResultSet.CONCUR_READ_ONLY);
+    st.setFetchSize(Integer.MIN_VALUE);
+    log.fine("about to query for stream: " + query);
+    ResultSet rs = st.executeQuery(query);
+    log.fine("queried for stream");
+    return rs;
   }
 
   private static void tryClosingConnection(Connection conn) {
