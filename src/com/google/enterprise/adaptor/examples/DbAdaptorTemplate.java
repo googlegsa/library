@@ -31,6 +31,15 @@ import java.util.logging.*;
 /**
  * Demonstrates what code is necessary for putting DB
  * content onto a GSA.
+ * <p> Note: this code does not pool DB connections.
+ * <p> Example command line:
+ * <p>
+ *
+ * /jdk7-32/bin/java \
+ *     -cp adaptor-withlib.jar:adaptor-examples.jar:mysql-5.1.10.jar \
+ *     com.google.enterprise.adaptor.examples.DbAdaptorTemplate \
+ *     -Dgsa.hostname=myGSA -Ddb.name=podata -Ddb.tablename=itinerary \
+ *     -Djournal.reducedMem=true -Dadaptor.pushDocIdsOnStartup=false
  */
 public class DbAdaptorTemplate extends AbstractAdaptor {
   private static final Logger log
@@ -109,7 +118,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       int numberOfColumns = rsMetaData.getColumnCount();
       if (0 == numberOfColumns) {
         log.warning("no columns in results");
-        // TODO(pjo): Cause some sort of error code.
+        // Possibly cause an error?
         resp.getOutputStream().write(
             "no columns in database result".getBytes(encoding));
         return;
@@ -162,7 +171,6 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
   }
 
   private Connection makeNewConnection() throws SQLException {
-    // TODO(pjo): DB connection pooling.
     String url = "jdbc:mysql://127.0.0.1/" + dbname;
     log.fine("about to connect");
     Connection conn = DriverManager.getConnection(url, "root", "test");
