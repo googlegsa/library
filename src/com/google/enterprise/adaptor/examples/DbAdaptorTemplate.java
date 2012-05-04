@@ -35,11 +35,11 @@ import java.util.logging.*;
  * <p> Example command line:
  * <p>
  *
- * /jdk7-32/bin/java \
+ * /java/bin/java \
  *     -cp adaptor-withlib.jar:adaptor-examples.jar:mysql-5.1.10.jar \
  *     com.google.enterprise.adaptor.examples.DbAdaptorTemplate \
  *     -Dgsa.hostname=myGSA -Ddb.name=podata -Ddb.tablename=itinerary \
- *     -Djournal.reducedMem=true -Dadaptor.pushDocIdsOnStartup=false
+ *     -Djournal.reducedMem=true
  */
 public class DbAdaptorTemplate extends AbstractAdaptor {
   private static final Logger log
@@ -116,13 +116,6 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       }
       ResultSetMetaData rsMetaData = rs.getMetaData();
       int numberOfColumns = rsMetaData.getColumnCount();
-      if (0 == numberOfColumns) {
-        log.warning("no columns in results");
-        // Possibly cause an error?
-        resp.getOutputStream().write(
-            "no columns in database result".getBytes(encoding));
-        return;
-      }
 
       // If we have data then create lines of resulting document.
       StringBuilder line1 = new StringBuilder();
@@ -189,9 +182,10 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
 
   private static StatementAndResult getStreamFromDb(Connection conn,
       String query) throws SQLException {
-    Statement st = conn.createStatement(java.sql.ResultSet.TYPE_FORWARD_ONLY,
-        java.sql.ResultSet.CONCUR_READ_ONLY);
-    st.setFetchSize(Integer.MIN_VALUE);
+    Statement st = conn.createStatement(
+        /* 1st streaming flag */ java.sql.ResultSet.TYPE_FORWARD_ONLY,
+        /* 2nd streaming flag */ java.sql.ResultSet.CONCUR_READ_ONLY);
+    st.setFetchSize(/*3rd streaming flag*/ Integer.MIN_VALUE);
     log.fine("about to query for stream: " + query);
     ResultSet rs = st.executeQuery(query);
     log.fine("queried for stream");
