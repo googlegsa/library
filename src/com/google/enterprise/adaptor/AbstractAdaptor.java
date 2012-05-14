@@ -90,7 +90,9 @@ public abstract class AbstractAdaptor implements Adaptor {
     try {
       gsa.start();
       log.info("doc content serving started");
-    } catch (Exception e) {
+    } catch (InterruptedException e) {
+      throw new RuntimeException("could not start serving", e);
+    } catch (IOException e) {
       throw new RuntimeException("could not start serving", e);
     }
 
