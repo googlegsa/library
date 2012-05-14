@@ -33,6 +33,7 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,6 +71,18 @@ public class GsaCommunicationHandler {
   private DocIdSender docIdSender;
   private Dashboard dashboard;
   private SensitiveValueCodec secureValueCodec;
+  /**
+   * Used to stop startup prematurely. This allows cancelling an already-running
+   * start(). If start fails, a stale shuttingDownLatch can remain, thus it does
+   * not provide any information as to whether a start() call is running.
+   */
+  private volatile CountDownLatch shuttingDownLatch;
+  /**
+   * Used to stop startup prematurely. When greater than 0, start() should abort
+   * immediately because stop() is currently processing. This allows cancelling
+   * new start() calls before stop() is done processing.
+   */
+  private final AtomicInteger shutdownCount = new AtomicInteger();
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     this.adaptor = adaptor;
@@ -83,6 +96,11 @@ public class GsaCommunicationHandler {
   public synchronized void start() throws IOException, InterruptedException {
     if (server != null) {
       throw new IllegalStateException("Already listening");
+    }
+    shuttingDownLatch = new CountDownLatch(1);
+    if (shutdownCount.get() > 0) {
+      shuttingDownLatch = null;
+      return;
     }
 
     boolean secure = config.isServerSecure();
@@ -195,13 +213,24 @@ public class GsaCommunicationHandler {
     long sleepDurationMillis = 1000;
     // An hour.
     long maxSleepDurationMillis = 60 * 60 * 1000;
+    // Loop until 1) the adaptor starts successfully, 2) stop() is called, or
+    // 3) Thread.interrupt() is called on this thread (which we don't do).
+    // Retrying to start the adaptor is helpful in cases where it needs
+    // initialization data from a repository that is temporarily down; if the
+    // adaptor is running as a service, we don't want to stop starting simply
+    // because another computer is down while we start (which would easily be
+    // the case after a power failure).
     while (true) {
       try {
         adaptor.init(new AdaptorContextImpl());
         break;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Failed to initialize adaptor", ex);
-        Thread.sleep(sleepDurationMillis);
+        if (shuttingDownLatch.await(sleepDurationMillis,
+              TimeUnit.MILLISECONDS)) {
+          // Shutdown initiated.
+          break;
+        }
         sleepDurationMillis
             = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
         ensureLatestConfigLoaded();
@@ -225,6 +254,8 @@ public class GsaCommunicationHandler {
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(), docIdFullPusher);
+
+    shuttingDownLatch = null;
   }
 
   private TransformPipeline createTransformPipeline() {
@@ -357,7 +388,23 @@ public class GsaCommunicationHandler {
    * Stop the current services, allowing up to {@code maxDelay} seconds for
    * things to shutdown.
    */
-  public synchronized void stop(int maxDelay) {
+  public void stop(int maxDelay) {
+    // Prevent new start()s.
+    shutdownCount.incrementAndGet();
+    try {
+      CountDownLatch latch = shuttingDownLatch;
+      if (latch != null) {
+        // Cause existing start() to begin cancelling.
+        latch.countDown();
+      }
+      realStop(maxDelay);
+    } finally {
+      // Permit new start()s.
+      shutdownCount.decrementAndGet();
+    }
+  }
+
+  private synchronized void realStop(int maxDelay) {
     if (shutdownHook != null) {
       try {
         Runtime.getRuntime().removeShutdownHook(shutdownHook);

@@ -113,7 +113,7 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
-  public void testFailingInitAdaptor() throws Exception {
+  public void testFailOnceInitAdaptor() throws Exception {
     class FailFirstAdaptor extends NullAdaptor {
       private int count = 0;
       public boolean started = false;
@@ -131,6 +131,37 @@ public class GsaCommunicationHandlerTest {
     gsa = new GsaCommunicationHandler(adaptor, config);
     gsa.start();
     assertTrue(adaptor.started);
+  }
+
+  @Test
+  public void testFastShutdownWhenStarting() throws Exception {
+    class FailAlwaysAdaptor extends NullAdaptor {
+      @Override
+      public void init(AdaptorContext context) {
+        throw new RuntimeException();
+      }
+    }
+    gsa = new GsaCommunicationHandler(new FailAlwaysAdaptor(), config);
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          // Wait a bit for the handler to start.
+          Thread.sleep(10);
+        } catch (InterruptedException ex) {
+          throw new RuntimeException(ex);
+        }
+        gsa.stop(0);
+      }
+    }).start();
+    long startTime = System.nanoTime();
+    gsa.start();
+    long duration = System.nanoTime() - startTime;
+    final long nanosInAMilli = 1000 * 1000;
+    if (duration > 200 * nanosInAMilli) {
+      fail("Starting took a long time to stop after being aborted: "
+          + duration);
+    }
   }
 
   @Test
