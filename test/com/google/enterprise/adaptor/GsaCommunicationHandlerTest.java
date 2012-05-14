@@ -57,8 +57,13 @@ public class GsaCommunicationHandlerTest {
 
   @After
   public void teardown() {
-    gsa.stop(0);
-    assertFalse(adaptor.inited);
+    // No need to block.
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        gsa.stop(0);
+      }
+    }).start();
   }
 
   @Test
@@ -134,8 +139,13 @@ public class GsaCommunicationHandlerTest {
     assertTrue(adaptor.inited);
     URL url = new URL("http", "localhost", config.getServerPort(), "/");
     URLConnection conn = url.openConnection();
-    thrown.expect(java.io.FileNotFoundException.class);
-    conn.getContent();
+    try {
+      thrown.expect(java.io.FileNotFoundException.class);
+      conn.getContent();
+    } finally {
+      gsa.stop(0);
+      assertFalse(adaptor.inited);
+    }
   }
 
   @Test
