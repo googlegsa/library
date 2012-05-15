@@ -134,6 +134,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       }
       String document = line1.substring(1) + "\n"
           + line2.substring(1) + "\n" + line3.substring(1) + "\n";
+      resp.setContentType("text/plain");
       resp.getOutputStream().write(document.getBytes(encoding));
     } catch (SQLException problem) {
       log.log(Level.SEVERE, "failed getting content", problem);
