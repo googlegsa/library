@@ -72,8 +72,7 @@ class Dashboard {
   }
 
   /** Starts listening for connections to the dashboard. */
-  public void start()
-      throws IOException, NoSuchAlgorithmException {
+  public void start() throws IOException {
     int dashboardPort = config.getServerDashboardPort();
     boolean secure = config.isServerSecure();
     InetSocketAddress dashboardAddr = new InetSocketAddress(dashboardPort);
@@ -81,8 +80,13 @@ class Dashboard {
       dashboardServer = HttpServer.create(dashboardAddr, 0);
     } else {
       dashboardServer = HttpsServer.create(dashboardAddr, 0);
-      HttpsConfigurator httpsConf
-          = new HttpsConfigurator(SSLContext.getDefault());
+      SSLContext defaultSslContext;
+      try {
+        defaultSslContext = SSLContext.getDefault();
+      } catch (NoSuchAlgorithmException ex) {
+        throw new RuntimeException(ex);
+      }
+      HttpsConfigurator httpsConf = new HttpsConfigurator(defaultSslContext);
       ((HttpsServer) dashboardServer).setHttpsConfigurator(httpsConf);
     }
     if (dashboardPort == 0) {

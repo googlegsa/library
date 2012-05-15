@@ -80,7 +80,7 @@ public class GsaCommunicationHandler {
   }
 
   /** Starts listening for communications from GSA. */
-  public synchronized void start() throws Exception {
+  public synchronized void start() throws IOException, InterruptedException {
     if (server != null) {
       throw new IllegalStateException("Already listening");
     }
@@ -89,7 +89,12 @@ public class GsaCommunicationHandler {
     KeyPair key = null;
     try {
       key = getKeyPair(config.getServerKeyAlias());
-    } catch (Exception ex) {
+    } catch (IOException ex) {
+      // The exception is only fatal if we are in secure mode.
+      if (secure) {
+        throw ex;
+      }
+    } catch (RuntimeException ex) {
       // The exception is only fatal if we are in secure mode.
       if (secure) {
         throw ex;
