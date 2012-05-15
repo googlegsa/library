@@ -702,6 +702,9 @@ public class DocumentHandlerTest {
               response.respondNotFound();
               return;
             }
+            // For convenience, check that the unique id is part of the
+            // request's toString().
+            assertTrue(request.toString().contains(defaultDocId.getUniqueId()));
             if (!request.hasChangedSinceLastAccess(new Date(1 * 1000))) {
               response.respondNotModified();
               return;

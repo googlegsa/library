@@ -404,6 +404,12 @@ class DocumentHandler extends AbstractHandler {
     public DocId getDocId() {
       return docId;
     }
+
+    @Override
+    public String toString() {
+      return "Request(docId=" + docId
+          + ",lastAccessTime=" + getLastAccessTime() + ")";
+    }
   }
 
   /**
