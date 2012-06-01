@@ -27,8 +27,83 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.*;
 
 /**
- * Configuration values for this program like the GSA's hostname. Also several
+ * Configuration values for this program, like the GSA's hostname. Also several
  * knobs, or controls, for changing the behavior of the program.
+ * <p>All available configuration:<br>
+ * <style type="text/css"> td { padding-right:2em; } </style>
+ * <table>
+ * <tr><td align=center><b>required?</b></td>
+ *     <td><b>name</b></td><td><b>meaning</b></td>
+ * <tr><td> </td><td>adaptor.autoUnzip </td><td> expand zip files and send
+ *     each file inside   separatly.  Defaults to false
+ * <tr><td> </td><td>adaptor.fullListingSchedule </td><td> when to invoke 
+ *     {@link Adaptor#getDocIds Adaptor.getDocIds}, in cron format (minute,
+ *     hour,  day of month, month, day of week).  Defaults to 0 3 * * *
+ * <tr><td> </td><td>adaptor.incrementalPollPeriodSecs </td><td> number
+ *     of seconds between invocations of {@link
+ *     PollingIncrementalAdaptor#getModifiedDocIds
+ *     PollingIncrementalAdaptor.getModifiedDocIds}.    Defaults to 900
+ * <tr><td> </td><td>adaptor.pushDocIdsOnStartup </td><td> whether to invoke
+ *     {@link Adaptor#getDocIds Adaptor.getDocIds} on process start
+ *     (in addition to adaptor.fullListingSchedule).   Defaults to true
+ * <tr><td> </td><td>docId.isUrl </td><td> say your adaptor's document ids
+ *     are already URLs and avoid them being inserted into adaptor
+       generated URLs.   Defaults to false
+ * <tr><td> </td><td>feed.crawlImmediatelyBitEnabled </td><td> send bit telling
+ *     GSA to crawl immediately.  Defaults to false
+ * <tr><td> </td><td>feed.maxUrls </td><td> set max number of URLs included
+ *     per feed file.    Defaults to 5000
+ * <tr><td> </td><td>feed.name </td><td> source name used in feeds. Generated
+ *     if not provided
+ * <tr><td> </td><td>feed.noRecrawlBitEnabled </td><td> send bit telling
+ *     GSA to crawl your documents only once.  Defaults to  false
+ * <tr><td> </td><td>gsa.614FeedWorkaroundEnabled </td><td> enable detour
+ *     around particular feed parsing failure found in GSA version 6.14 .
+ *     Defaults to false
+ * <tr><td> </td><td>gsa.characterEncoding </td><td> character set used
+ *     in feed files. Defaults to  UTF-8
+ * <tr><td align="center"> yes </td><td>gsa.hostname </td><td> machine to
+ *     send feed files to.  Process errors if not provided 
+ * <tr><td> </td><td>journal.reducedMem </td><td> avoid tracking per URL 
+ *     information in RAM; suggested with over five hundred thousand documents.
+ *     Defaults to false
+ * <tr><td> </td><td>server.dashboardPort </td><td> port on adaptor's
+ *     machine for accessing adaptor's dashboard.   Defaults to  5679
+ * <tr><td> </td><td>server.docIdPath </td><td> part of URL preceding
+ *     encoded document ids.  Defaults to  /doc/
+ * <tr><td> </td><td>server.fullAccessHosts </td><td> hosts allowed access
+ *     without authentication
+ *     (certificates still needed when in secure mode).   Defaults to
+ *     empty but implicitly contains gsa.hostname
+ * <tr><td> </td><td>server.hostname </td><td>
+ *     hostname of adaptor machine for URL generation. 
+ *     The GSA will use this hostname to crawl the adaptor.
+ *     Defaults to automatically detected hostname
+ * <tr><td> </td><td>server.keyAlias </td><td> keystore alias where
+ *     encryption (public and private) keys are stored.
+ *     Defaults to adaptor
+ * <tr><td> </td><td>server.maxWorkerThreads </td><td> number of maximum
+ *     simultenous retrievals  allowed.  Defaults to 16
+ * <tr><td> </td><td>server.port </td><td> retriever port.  Defaults to 5678
+ * <tr><td> </td><td>server.queueCapacity </td><td> max retriever queue size.
+ *     Defaults to  160
+ * <tr><td> </td><td>server.reverseProxyPort </td><td> port used in
+ *     retriever URLs (in case requests
+ *     are routed through a reverse proxy).  Defaults to server.port
+ * <tr><td> </td><td>server.reverseProxyProtocol </td><td> either http or https,
+ *     depending on  proxy traffic.  Defaults to https in secure
+ *     mode and http otherwise
+ * <tr><td> </td><td>server.secure </td><td> enables https and certificate
+ *     checking. Defaults to false
+ * <tr><td> </td><td>server.useCompression </td><td> compress retrieval
+ *     responses. Defaults to true
+ * <tr><td> </td><td>transform.maxDocumentBytes </td><td> max size of
+ *     document that will get transformed.  Defaults to 1048576
+ * <tr><td> </td><td>transform.pipeline </td><td> sequence of
+ *     transformation steps.  Defaults to no-pipeline
+ * <tr><td> </td><td>transform.required </td><td> fail retrieval if document is
+ *     over maxDocumentBytes.  Defaults to false
+ * </table>
  */
 public class Config {
   private static final String DEFAULT_CONFIG_FILE
