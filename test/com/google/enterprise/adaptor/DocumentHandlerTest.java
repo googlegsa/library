@@ -868,8 +868,13 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testFormAclHeaderNull() {
+    assertEquals("", DocumentHandler.formAclHeader(null, new MockDocIdCodec()));
+  }
+
+  @Test
   public void testFormAclHeaderEmpty() {
-    assertEquals("",
+    assertEquals("google%3Aacldenyusers=google%3AfakeUserToPreventMissingAcl",
         DocumentHandler.formAclHeader(Acl.EMPTY, new MockDocIdCodec()));
   }
 

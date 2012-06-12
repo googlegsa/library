@@ -84,7 +84,9 @@ public interface Response {
   public void addMetadata(String key, String value);
 
   /**
-   * Provide the document's ACLs for early-binding security on the GSA.
+   * Provide the document's ACLs for early-binding security on the GSA. By
+   * default, the document's ACL will be {@code null}, which means the document
+   * is public if the document isn't marked as secure via {@link #setSecure}.
    */
   public void setAcl(Acl acl);
 

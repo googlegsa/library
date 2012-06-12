@@ -289,6 +289,12 @@ class DocumentHandler extends AbstractHandler {
   }
 
   static String formAclHeader(Acl acl, DocIdEncoder docIdEncoder) {
+    if (acl == null) {
+      return "";
+    }
+    if (Acl.EMPTY.equals(acl)) {
+      acl = Acl.FAKE_EMPTY;
+    }
     StringBuilder sb = new StringBuilder();
     for (String permitUser : acl.getPermitUsers()) {
       percentEncodeMapEntryPair(sb, "google:aclusers", permitUser);
@@ -310,7 +316,7 @@ class DocumentHandler extends AbstractHandler {
       percentEncodeMapEntryPair(sb, "google:aclinheritancetype",
           acl.getInheritanceType().getCommonForm());
     }
-    return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
+    return sb.substring(0, sb.length() - 1);
   }
 
   /**
@@ -455,7 +461,7 @@ class DocumentHandler extends AbstractHandler {
     private CountingOutputStream countingOs;
     private String contentType;
     private Metadata metadata = new Metadata();
-    private Acl acl = Acl.EMPTY;
+    private Acl acl;
     private boolean secure;
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
