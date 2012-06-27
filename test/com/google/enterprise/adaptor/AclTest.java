@@ -206,6 +206,24 @@ public class AclTest {
   }
 
   @Test
+  public void testToString() {
+    Acl acl = new Acl.Builder()
+        .setDenyGroups(new HashSet<String>(Arrays.asList("dg1", "dg2", "g3")))
+        .setPermitGroups(new HashSet<String>(Arrays.asList("pg1", "pg2", "g3")))
+        .setDenyUsers(new HashSet<String>(
+            Arrays.asList("du1", "du2", "du3", "u4")))
+        .setPermitUsers(new HashSet<String>(
+            Arrays.asList("pu1", "pu2", "u4", "g3")))
+        .setInheritFrom(new DocId("something"))
+        .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES).build();
+
+    assertEquals("Acl(inheritFrom=DocId(something), "
+        + "inheritType=CHILD_OVERRIDES, permitGroups=[g3, pg1, pg2], "
+        + "denyGroups=[dg1, dg2, g3], permitUsers=[g3, pu1, pu2, u4], "
+        + "denyUsers=[du1, du2, du3, u4])", acl.toString());
+  }
+
+  @Test
   public void testEquals() {
     Acl.Builder builder = new Acl.Builder();
     Acl base = builder.build();

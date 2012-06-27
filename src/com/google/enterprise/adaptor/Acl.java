@@ -418,6 +418,17 @@ public class Acl {
   }
 
   /**
+   * Generates a string useful for debugging that contains users and groups
+   * along with inheritance information.
+   */
+  @Override
+  public String toString() {
+    return "Acl(inheritFrom=" + inheritFrom + ", inheritType=" + inheritType
+        + ", permitGroups=" + permitGroups + ", denyGroups=" + denyGroups
+        + ", permitUsers=" + permitUsers + ", denyUsers=" + denyUsers + ")";
+  }
+
+  /**
    * Batch retrieval of ACLs for efficent processing of many authz checks at
    * once.
    *
