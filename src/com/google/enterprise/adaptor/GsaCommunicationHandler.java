@@ -224,6 +224,8 @@ public class GsaCommunicationHandler {
       try {
         adaptor.init(new AdaptorContextImpl());
         break;
+      } catch (InterruptedException ex) {
+        throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Failed to initialize adaptor", ex);
         if (shuttingDownLatch.await(sleepDurationMillis,
