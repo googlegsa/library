@@ -29,7 +29,6 @@ import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.security.Principal;
-import java.text.DateFormat;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -193,8 +192,7 @@ class DocumentHandler extends AbstractHandler {
         return;
       }
 
-      DocumentRequest request = new DocumentRequest(ex, docId,
-                                                    dateFormat.get());
+      DocumentRequest request = new DocumentRequest(ex, docId);
       DocumentResponse response = new DocumentResponse(ex, docId);
       journal.recordRequestProcessingStart();
       try {
@@ -379,17 +377,12 @@ class DocumentHandler extends AbstractHandler {
   }
 
   private static class DocumentRequest implements Request {
-    // DateFormats are relatively expensive to create, and cannot be used from
-    // multiple threads
-    private final DateFormat dateFormat;
     private final HttpExchange ex;
     private final DocId docId;
 
-    private DocumentRequest(HttpExchange ex, DocId docId,
-                            DateFormat dateFormat) {
+    private DocumentRequest(HttpExchange ex, DocId docId) {
       this.ex = ex;
       this.docId = docId;
-      this.dateFormat = dateFormat;
     }
 
     @Override

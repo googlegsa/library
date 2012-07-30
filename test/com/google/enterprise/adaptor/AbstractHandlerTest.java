@@ -88,9 +88,18 @@ public class AbstractHandlerTest {
 
   @Test
   public void testIfModifiedSince() throws Exception {
+    final Date golden = new Date(784111777L * 1000);
     ex.getRequestHeaders().set("If-Modified-Since",
-                               "Thu, 1 Jan 1970 00:00:01 GMT");
-    assertEquals(new Date(1 * 1000), handler.getIfModifiedSince(ex));
+                               "Sun, 06 Nov 1994 08:49:37 GMT");
+    assertEquals(golden, handler.getIfModifiedSince(ex));
+
+    ex.getRequestHeaders().set("If-Modified-Since",
+                               "Sunday, 06-Nov-94 08:49:37 GMT");
+    assertEquals(golden, handler.getIfModifiedSince(ex));
+
+    ex.getRequestHeaders().set("If-Modified-Since",
+                               "Sun Nov  6 08:49:37 1994");
+    assertEquals(golden, handler.getIfModifiedSince(ex));
   }
 
   @Test
@@ -103,6 +112,26 @@ public class AbstractHandlerTest {
     ex.getRequestHeaders().set("If-Modified-Since",
                                "Thu, 1 Jan 1970 00:0001 GMT");
     assertNull(handler.getIfModifiedSince(ex));
+  }
+
+  @Test
+  public void testHandleSuccess() throws Exception {
+    MockTimeProvider timeProvider = new MockTimeProvider();
+    timeProvider.time = 784111777L  * 1000;
+    timeProvider.autoIncrement = false;
+    handler = new MockImpl(timeProvider) {
+      protected void meteredHandle(HttpExchange ex) throws IOException {
+        setLastModified(ex, new Date(timeProvider.currentTimeMillis() + 1000));
+        // Translation used in garbage.
+        cannedRespond(ex, 200, Translation.HTTP_NOT_FOUND);
+      }
+    };
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("Sun, 06 Nov 1994 08:49:37 GMT",
+        ex.getResponseHeaders().getFirst("Date"));
+    assertEquals("Sun, 06 Nov 1994 08:49:38 GMT",
+        ex.getResponseHeaders().getFirst("Last-Modified"));
   }
 
   @Test
@@ -133,6 +162,10 @@ public class AbstractHandlerTest {
   private static class MockImpl extends AbstractHandler {
     public MockImpl() {
       super("localhost", Charset.forName("UTF-8"));
+    }
+
+    public MockImpl(TimeProvider timeProvider) {
+      super("localhost", Charset.forName("UTF-8"), timeProvider);
     }
 
     @Override

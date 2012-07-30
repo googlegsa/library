@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -27,11 +29,7 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
@@ -46,15 +44,41 @@ abstract class AbstractHandler implements HttpHandler {
 
   private static final Logger log
       = Logger.getLogger(AbstractHandler.class.getName());
+  private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
   // DateFormats are relatively expensive to create, and cannot be used from
   // multiple threads
-  protected static ThreadLocal<DateFormat> dateFormat
+  /** RFC 822 date format, as updated by RFC 1123. */
+  protected static final ThreadLocal<DateFormat> dateFormatRfc1123
       = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
-          return new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+          DateFormat df = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+          df.setTimeZone(GMT);
+          return df;
         }
       };
+  /** RFC 1036 date format. */
+  protected static final ThreadLocal<DateFormat> dateFormatRfc1036
+      = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+          DateFormat df = new SimpleDateFormat("EEEE, dd-MMM-yy HH:mm:ss zzz");
+          df.setTimeZone(GMT);
+          return df;
+        }
+      };
+  /** ANSI C's {@code asctime()} format. */
+  protected static final ThreadLocal<DateFormat> dateFormatAsctime
+      = new ThreadLocal<DateFormat>() {
+        @Override
+        protected DateFormat initialValue() {
+          DateFormat df = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy");
+          df.setTimeZone(GMT);
+          return df;
+        }
+      };
+  /** The various date formats as required by RFC 2616 3.3.1. */
+  protected static final List<ThreadLocal<DateFormat>> dateFormatsRfc2616;
   /**
    * When thread-local value is not {@code null}, signals that {@link #handle}
    * should abort immediately with an error. This is a hack required because the
@@ -62,6 +86,15 @@ abstract class AbstractHandler implements HttpHandler {
    */
   public static final ThreadLocal<Object> abortImmediately
       = new ThreadLocal<Object>();
+
+  static {
+    List<ThreadLocal<DateFormat>> tmpList
+        = new ArrayList<ThreadLocal<DateFormat>>();
+    tmpList.add(dateFormatRfc1123);
+    tmpList.add(dateFormatRfc1036);
+    tmpList.add(dateFormatAsctime);
+    dateFormatsRfc2616 = Collections.unmodifiableList(tmpList);
+  }
 
   /**
    * The hostname is sometimes needed to generate the correct DocId; in the case
@@ -73,6 +106,15 @@ abstract class AbstractHandler implements HttpHandler {
    * Default encoding to encode simple response messages.
    */
   protected final Charset defaultEncoding;
+  protected final TimeProvider timeProvider;
+
+  @VisibleForTesting
+  protected AbstractHandler(String fallbackHostname, Charset defaultEncoding,
+      TimeProvider timeProvider) {
+    this.fallbackHostname = fallbackHostname;
+    this.defaultEncoding = defaultEncoding;
+    this.timeProvider = timeProvider;
+  }
 
   /**
    * @param fallbackHostname Fallback hostname in case we talk to an old HTTP
@@ -80,8 +122,7 @@ abstract class AbstractHandler implements HttpHandler {
    * @param defaultEncoding Encoding to use when sending simple text responses
    */
   protected AbstractHandler(String fallbackHostname, Charset defaultEncoding) {
-    this.fallbackHostname = fallbackHostname;
-    this.defaultEncoding = defaultEncoding;
+    this(fallbackHostname, defaultEncoding, new SystemTimeProvider());
   }
 
   String getLoggableHeaders(Headers headers) {
@@ -269,18 +310,23 @@ abstract class AbstractHandler implements HttpHandler {
     if (ifModifiedSince == null) {
       return null;
     }
-    try {
-      return dateFormat.get().parse(ifModifiedSince);
-    } catch (java.text.ParseException e) {
-      log.log(Level.WARNING, "Exception when parsing ifModifiedSince", e);
-      // Ignore and act like it wasn't present
-      return null;
+    for (ThreadLocal<DateFormat> threadLocal : dateFormatsRfc2616) {
+      try {
+        return threadLocal.get().parse(ifModifiedSince);
+      } catch (java.text.ParseException e) {
+        // Ignore and try another format. We expect only to encounter the first
+        // format, however (the other formats are pre-HTTP/1.1).
+        log.log(Level.FINE, "Exception when parsing If-Modified-Since", e);
+      }
     }
+    log.log(Level.WARNING, "Could not parse If-Modified-Since: {0}",
+        ifModifiedSince);
+    return null;
   }
 
   protected void setLastModified(HttpExchange ex, Date lastModified) {
     ex.getResponseHeaders().set("Last-Modified",
-                                dateFormat.get().format(lastModified));
+                                dateFormatRfc1123.get().format(lastModified));
 
   }
 
@@ -301,7 +347,9 @@ abstract class AbstractHandler implements HttpHandler {
       logRequest(ex);
       log.log(Level.FINE, "Processing request with {0}",
               this.getClass().getName());
-      ex.getResponseHeaders().set("Date", dateFormat.get().format(new Date()));
+      Date currentTime = new Date(timeProvider.currentTimeMillis());
+      ex.getResponseHeaders().set("Date",
+          dateFormatRfc1123.get().format(currentTime));
       meteredHandle(ex);
     } catch (Exception e) {
       Boolean headersSent = (Boolean) ex.getAttribute(ATTR_HEADERS_SENT);
