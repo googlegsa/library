@@ -174,7 +174,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       is.close();
     }
 
-    String[] list = str.split("\0");
+    String[] list = str.split("\0", -1);
     List<Map.Entry<String, String>> all = new ArrayList<Map.Entry<String, String>>();
     for (int i = 0; i + 1 < list.length; i += 2) {
       all.add(new SimpleEntry<String, String>(list[i], list[i + 1]));
