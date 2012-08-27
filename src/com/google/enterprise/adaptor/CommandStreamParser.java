@@ -21,14 +21,12 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -212,20 +210,31 @@ public class CommandStreamParser {
 
 
   private static enum Operation {
-    ID,
-    RESULT_LINK,
-    LAST_MODIFIED,
-    CRAWL_IMMEDIATELY,
-    CRAWL_ONCE,
-    LOCK,
-    DELETE,
-    UP_TO_DATE,
-    NOT_FOUND,
-    MIME_TYPE,
-    META_NAME,
-    META_VALUE,
-    CONTENT,
-    AUTHZ_STATUS
+    ID("id"),
+    RESULT_LINK("result-link"),
+    LAST_MODIFIED("last-modified"),
+    CRAWL_IMMEDIATELY("crawl-immediately"),
+    CRAWL_ONCE("crawl-once"),
+    LOCK("lock"),
+    DELETE("delete"),
+    UP_TO_DATE("up-to-date"),
+    NOT_FOUND("not-found"),
+    MIME_TYPE("mime-type"),
+    META_NAME("meta-name"),
+    META_VALUE("meta-value"),
+    CONTENT("content"),
+    AUTHZ_STATUS("authz-status"),
+    ;
+
+    private final String commandName;
+
+    private Operation(String commandName) {
+      this.commandName = commandName;
+    }
+
+    public String getCommandName() {
+      return commandName;
+    }
   }
 
   private static final Logger log = Logger.getLogger(CommandStreamParser.class.getName());
@@ -237,30 +246,9 @@ public class CommandStreamParser {
 
   static {
     Map<String, Operation> stringToOperation = new HashMap<String, Operation>();
-    stringToOperation.put("id", Operation.ID);
-    stringToOperation.put("result-link", Operation.RESULT_LINK);
-    stringToOperation.put("last-modified", Operation.LAST_MODIFIED);
-    stringToOperation.put("crawl-immediately", Operation.CRAWL_IMMEDIATELY);
-    stringToOperation.put("crawl-once", Operation.CRAWL_ONCE);
-    stringToOperation.put("lock", Operation.LOCK);
-    stringToOperation.put("delete", Operation.DELETE);
-    stringToOperation.put("up-to-date", Operation.UP_TO_DATE);
-    stringToOperation.put("not-found", Operation.NOT_FOUND);
-    stringToOperation.put("mime-type", Operation.MIME_TYPE);
-    stringToOperation.put("meta-name", Operation.META_NAME);
-    stringToOperation.put("meta-value", Operation.META_VALUE);
-    stringToOperation.put("content", Operation.CONTENT);
-    stringToOperation.put("authz-status", Operation.AUTHZ_STATUS);
-
-    // Confirm that every operation is in the map exactly once
-    Collection<Operation> opsInMap = stringToOperation.values();
-    Operation[] opsInEnum = Operation.class.getEnumConstants();
-
-    if (!opsInMap.containsAll(Arrays.asList(opsInEnum)) || opsInMap.size() != opsInEnum.length) {
-      throw new RuntimeException("Internal Error: Every operation must have exactly one"
-          + "entry in the stringToOperation map");
+    for (Operation operation : Operation.values()) {
+      stringToOperation.put(operation.getCommandName(), operation);
     }
-
     STRING_TO_OPERATION = Collections.unmodifiableMap(stringToOperation);
   }
 
@@ -268,65 +256,16 @@ public class CommandStreamParser {
   private int versionNumber = 0;
   private String delimiter;
   private boolean inIdList;
-  private CharsetDecoder charsetDecoder = CHARSET.newDecoder();
-
-  /** */
-  public static class RetrieverInfo {
-
-    private boolean upToDate;
-    private boolean notFound;
-    private DocId docId;
-    private String mimeType;
-    private Metadata metadata;
-    private byte[] contents;
-
-    RetrieverInfo(DocId docId, Metadata metadata, byte[] contents, boolean upToDate,
-        String mimeType, boolean notFound) {
-      this.docId = docId;
-      this.metadata = metadata.unmodifiableView();
-      this.contents = contents;
-      this.upToDate = upToDate;
-      this.mimeType = mimeType;
-      this.notFound = notFound;
-    }
-
-    public String getMimeType() {
-      return mimeType;
-    }
-
-    public boolean isUpToDate() {
-      return upToDate;
-    }
-
-    public boolean notFound() {
-      return notFound;
-    }
-
-    public DocId getDocId() {
-      return docId;
-    }
-
-    /** Returns unmodifiable view of Metadata. */
-    public Metadata getMetadata() {
-      return metadata;
-    }
-
-    public byte[] getContents() {
-      return contents;
-    }
-  }
 
   /** */
   private static class Command {
 
     private Operation operation;
     private String argument;
-    private byte[] contents;
 
-    Command(Operation operation, String argument, byte[] contents) {
+    Command(Operation operation, String argument) {
       this.operation = operation;
       this.argument = argument;
-      this.contents = contents;
     }
 
     public Operation getOperation() {
@@ -339,10 +278,6 @@ public class CommandStreamParser {
 
     public boolean hasArgument() {
       return argument != null;
-    }
-
-    public byte[] getContents() {
-      return contents;
     }
   }
 
@@ -383,15 +318,11 @@ public class CommandStreamParser {
           break;
         case AUTHZ_STATUS:
           String authzStatusString = command.getArgument();
-          if (authzStatusString.equals("PERMIT")) {
-            authzStatus = AuthzStatus.PERMIT;
-          } else if (authzStatusString.equals("DENY")) {
-            authzStatus = AuthzStatus.DENY;
-          } else if (authzStatusString.equals("INDETERMINATE")) {
-            authzStatus = AuthzStatus.INDETERMINATE;
-          } else {
+          try {
+            authzStatus = AuthzStatus.valueOf(authzStatusString);
+          } catch (IllegalArgumentException ex) {
             log.warning("Unrecognized authz-status of '" + authzStatusString + "' for document: '" +
-            docId + "'");
+                docId + "'");
           }
           break;
         default:
@@ -405,13 +336,8 @@ public class CommandStreamParser {
     return Collections.unmodifiableMap(result);
   }
 
-  public RetrieverInfo readFromRetriever() throws IOException {
+  public void readFromRetriever(DocId docId, Response response) throws IOException {
 
-    Metadata metadata = new Metadata();
-    byte[] content = null;
-    boolean upToDate = false;
-    boolean notFound = false;
-    String mimeType = null;
     Command command = readCommand();
 
     if (command == null) {
@@ -421,14 +347,18 @@ public class CommandStreamParser {
           + " Instead encountered '" + command.getOperation() + "'.");
     }
 
-    String docId = command.getArgument();
+    DocId foundDocId = new DocId(command.getArgument());
+    if (!docId.equals(foundDocId)) {
+      throw new IOException("requested document "  + docId + " does not match retrieved "
+          + "document  " + foundDocId + ".");
+    }
     command = readCommand();
     while (command != null) {
       switch (command.getOperation()) {
         case ID:
           throw new IOException("Only one document ID can be specified in a retriever message");
         case CONTENT:
-          content = command.getContents();
+          IOHelper.copyStream(inputStream, response.getOutputStream());
           break;
         case META_NAME:
           String metaName = command.getArgument();
@@ -436,16 +366,21 @@ public class CommandStreamParser {
           if (command == null || command.getOperation() != Operation.META_VALUE) {
             throw new IOException("meta-name must be immediately followed by meta-value");
           }
-          metadata.add(metaName, command.getArgument());
+          log.log(Level.FINEST, "Retriever: {0} has metadata {1}",
+              new Object[] {docId.getUniqueId(), command.getArgument()});
+          response.addMetadata(metaName, command.getArgument());
           break;
         case UP_TO_DATE:
-          upToDate = true;
+          log.log(Level.FINEST, "Retriever: {0} is up to date.", docId.getUniqueId());
+          response.respondNotModified();
           break;
         case NOT_FOUND:
-          notFound = true;
+          response.respondNotFound();
           break;
         case MIME_TYPE:
-          mimeType = command.getArgument();
+          log.log(Level.FINEST, "Retriever: {0} has mime-type {1}",
+              new Object[] {docId.getUniqueId(), command.getArgument()});
+          response.setContentType(command.getArgument());
           break;
         default:
           throw new IOException("Retriever Error: invalid operation: '" + command.getOperation() +
@@ -453,18 +388,24 @@ public class CommandStreamParser {
       }
       command = readCommand();
     }
-
-    return new RetrieverInfo(new DocId(docId), metadata, content, upToDate, mimeType, notFound);
   }
 
-  public ArrayList<DocIdPusher.Record> readFromLister() throws IOException {
+  /**
+   * Parse a listing response, sending results to {@code pusher}. If {@code handler} is {@code
+   * null}, then {@code pusher}'s default handler will be used. In case of failure sending in
+   * {@code pusher}, the rest of the input stream may not be read.
+   *
+   * @return {@code null} on success, otherwise the first Record to fail
+   */
+  public DocIdPusher.Record readFromLister(DocIdPusher pusher, PushErrorHandler handler)
+      throws IOException, InterruptedException {
     ArrayList<DocIdPusher.Record> result = new ArrayList<DocIdPusher.Record>();
     DocIdPusher.Record.Builder builder = null;
     Command command = readCommand();
 
-    // Starting out at end-of-stream so return an empty list.
+    // Starting out at end-of-stream so don't send anything.
     if (command == null) {
-      return result;
+      return null;
     }
 
     // The first operation must be a doc ID.
@@ -477,6 +418,14 @@ public class CommandStreamParser {
         case ID:
           if (builder != null) {
             result.add(builder.build());
+            // TODO(ejona): make threshold smarter.
+            if (result.size() >= 10000) {
+              DocIdPusher.Record errorRecord = pusher.pushRecords(result, handler);
+              if (errorRecord != null) {
+                return errorRecord;
+              }
+              result.clear();
+            }
           }
           builder = new DocIdPusher.Record.Builder(new DocId(command.getArgument()));
           break;
@@ -512,8 +461,7 @@ public class CommandStreamParser {
       command = readCommand();
     }
     result.add(builder.build());
-
-    return result;
+    return pusher.pushRecords(result, handler);
   }
 
   /**
@@ -543,16 +491,12 @@ public class CommandStreamParser {
       }
 
       String argument = null;
-      byte content[] = null;
 
       if (commandTokens.length > 1) {
         argument = commandTokens[1];
       }
 
-      if (operation == Operation.CONTENT) {
-        content = readBytesUntilEnd();
-      }
-      result = new Command(operation, argument, content);
+      result = new Command(operation, argument);
     }
     return result;
   }
@@ -659,11 +603,6 @@ public class CommandStreamParser {
     if (bytes == null) {
       return null;
     }
-    return charsetDecoder.decode(ByteBuffer.wrap(bytes)).toString();
+    return CHARSET.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
   }
-
-  private byte[] readBytesUntilEnd() throws IOException {
-    return IOHelper.readInputStreamToByteArray(inputStream);
-  }
-
 }

@@ -21,12 +21,14 @@ import java.util.Map;
 
 class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   private List<DocId> ids = new ArrayList<DocId>();
+  private List<DocIdPusher.Record> records = new ArrayList<DocIdPusher.Record>();
 
   @Override
   public Record pushRecords(Iterable<Record> records,
                           PushErrorHandler handler)
       throws InterruptedException {
     for (Record record : records) {
+      this.records.add(record);
       ids.add(record.getDocId());
     }
     return null;
@@ -36,8 +38,13 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
     return Collections.unmodifiableList(ids);
   }
 
+  public List<DocIdPusher.Record> getRecords() {
+    return Collections.unmodifiableList(records);
+  }
+
   public void reset() {
     ids.clear();
+    records.clear();
   }
 
   @Override

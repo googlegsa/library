@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -140,7 +139,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     CommandStreamParser parser = new CommandStreamParser(
         new ByteArrayInputStream(command.getStdout()));
     log.finest("Pushing Document IDs.");
-    pusher.pushRecords(parser.readFromLister());
+    parser.readFromLister(pusher, null);
   }
 
   /** Gives the bytes of a document referenced with id. */
@@ -176,37 +175,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
 
     CommandStreamParser parser = new CommandStreamParser(
         new ByteArrayInputStream(command.getStdout()));
-    CommandStreamParser.RetrieverInfo retrieverInfo = parser.readFromRetriever();
-
-    if (!req.getDocId().equals(retrieverInfo.getDocId())) {
-      throw new IOException("requested document "  + req.getDocId() + " does not match retrieved "
-          + "document  " + retrieverInfo.getDocId() + ".");
-    }
-    if (retrieverInfo.notFound()) {
-      resp.respondNotFound();
-    } else if (retrieverInfo.isUpToDate()) {
-      log.finest("Retriever: " + id.getUniqueId() + " is up to date.");
-      resp.respondNotModified();
-
-    } else {
-      if (retrieverInfo.getMimeType() != null) {
-        log.finest("Retriever: " + id.getUniqueId() + " has mime-type "
-            + retrieverInfo.getMimeType());
-        resp.setContentType(retrieverInfo.getMimeType());
-      }
-      if (retrieverInfo.getMetadata() != null) {
-        log.log(Level.FINEST, "Retriever: {0} has metadata {1}",
-            new Object[] {id.getUniqueId(), retrieverInfo.getMetadata()});
-        for (Map.Entry<String, String> e : retrieverInfo.getMetadata()) {
-          resp.addMetadata(e.getKey(), e.getValue());
-        }
-      }
-      if (retrieverInfo.getContents() != null) {
-        resp.getOutputStream().write(retrieverInfo.getContents());
-      } else {
-        throw new IOException("No content returned by retriever for "  + req.getDocId() + ".");
-      }
-    }
+    parser.readFromRetriever(id, resp);
   }
 
   /**

@@ -27,10 +27,10 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,78 +42,83 @@ public class CommandStreamParserTest {
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  public void testReadDocIds() throws IOException {
+  public void testReadDocIds() throws Exception {
     String source = "GSA Adaptor Data Version 1 [\n]\nid=123\nid=456\n" +
         "id-list\n10\n20\n30\n\nid=789\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    ArrayList<DocIdPusher.Record> docInfoList = parser.readFromLister();
-    assertEquals("123", docInfoList.get(0).getDocId().getUniqueId());
-    assertEquals("456", docInfoList.get(1).getDocId().getUniqueId());
-    assertEquals("10", docInfoList.get(2).getDocId().getUniqueId());
-    assertEquals("20", docInfoList.get(3).getDocId().getUniqueId());
-    assertEquals("30", docInfoList.get(4).getDocId().getUniqueId());
-    assertEquals("789", docInfoList.get(5).getDocId().getUniqueId());
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    parser.readFromLister(pusher, null);
+    assertEquals("123", pusher.getDocIds().get(0).getUniqueId());
+    assertEquals("456", pusher.getDocIds().get(1).getUniqueId());
+    assertEquals("10",  pusher.getDocIds().get(2).getUniqueId());
+    assertEquals("20",  pusher.getDocIds().get(3).getUniqueId());
+    assertEquals("30",  pusher.getDocIds().get(4).getUniqueId());
+    assertEquals("789", pusher.getDocIds().get(5).getUniqueId());
   }
 
   @Test
-  public void testInvalidHeaderString() throws IOException {
+  public void testInvalidHeaderString() throws Exception {
     String source = "GSA Adaptor Data Ver 1 [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
         "\nend-message";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
 
     thrown.expect(IOException.class);
-    parser.readFromLister();
+    parser.readFromLister(pusher, null);
 
   }
 
   @Test
-  public void testInvalidVersion() throws IOException {
+  public void testInvalidVersion() throws Exception {
     String source = "GSA Adaptor Data Version 1a [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n" +
         "id=789\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
 
     thrown.expect(IOException.class);
-    parser.readFromLister();
+    parser.readFromLister(pusher, null);
 
   }
 
   @Test
-  public void testEmptyDelimiter() throws IOException {
+  public void testEmptyDelimiter() throws Exception {
     String source = "GSA Adaptor Data Version 1 []\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
         "\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
 
     thrown.expect(IOException.class);
-    parser.readFromLister();
+    parser.readFromLister(pusher, null);
 
   }
 
-  void checkDelimiter(String delimiter, boolean isValid) throws IOException {
+  void checkDelimiter(String delimiter, boolean isValid) throws Exception {
     String source = "GSA Adaptor Data Version 1 [" + delimiter + "]" + delimiter + "id=123";
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     if (!isValid) {
       thrown.expect(IOException.class);
     }
-    ArrayList<DocIdPusher.Record> docInfoList = parser.readFromLister();
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    parser.readFromLister(pusher, null);
 
     if (isValid) {
-      assertEquals(new DocId("123"), docInfoList.get(0).getDocId()); //.getUniqueId());
+      assertEquals(new DocId("123"), pusher.getDocIds().get(0)); //.getUniqueId());
     }
 
   }
 
   @Test
-  public void testUnsupportedDelimiterCharacters() throws IOException {
+  public void testUnsupportedDelimiterCharacters() throws Exception {
     checkDelimiter("A", false);
     checkDelimiter("K", false);
     checkDelimiter("Z", false);
@@ -141,7 +146,7 @@ public class CommandStreamParserTest {
   }
 
   @Test
-  public void testSupportedDelimiterCharacters() throws IOException {
+  public void testSupportedDelimiterCharacters() throws Exception {
     checkDelimiter("\0", true);
     checkDelimiter("~!#$%^&*(){}", true);
     checkDelimiter("ĀÁÂḀⒶ", true);
@@ -157,15 +162,17 @@ public class CommandStreamParserTest {
         "meta-name=project\nmeta-value=plexi\ncontent\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
 
-    CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
-    assertEquals("123", info.getDocId().getUniqueId());
-    assertTrue(info.isUpToDate());
-    assertArrayEquals("2468".getBytes(), info.getContents());
-    Metadata metadata = info.getMetadata();
+    parser.readFromRetriever(new DocId("123"), response);
+    assertTrue(response.isNotModified());
+    assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
+    Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
     assertEquals("plexi", metadata.getOneValue("project"));
   }
@@ -180,15 +187,17 @@ public class CommandStreamParserTest {
         "meta-name=project\nmeta-value=klexa\ncontent\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
 
-    CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
-    assertEquals("123", info.getDocId().getUniqueId());
-    assertTrue(info.isUpToDate());
-    assertArrayEquals("2468".getBytes(), info.getContents());
-    Metadata metadata = info.getMetadata();
+    parser.readFromRetriever(new DocId("123"), response);
+    assertTrue(response.isNotModified());
+    assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
+    Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
     Set<String> projectNames = new HashSet<String>();
     projectNames.add("plexi");
@@ -213,10 +222,13 @@ public class CommandStreamParserTest {
     byte[] source = byteArrayOutputStream.toByteArray();
 
     InputStream inputStream = new ByteArrayInputStream(source);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
-    assertArrayEquals(byteSource, info.getContents());
+    parser.readFromRetriever(new DocId("5"), response);
+    assertArrayEquals(byteSource, outputStream.toByteArray());
   }
 
   @Test
@@ -236,10 +248,13 @@ public class CommandStreamParserTest {
      byte[] source = byteArrayOutputStream.toByteArray();
 
      InputStream inputStream = new ByteArrayInputStream(source);
+     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+     WrapperAdaptor.GetContentsResponse response
+         = new WrapperAdaptor.GetContentsResponse(outputStream);
      CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-     CommandStreamParser.RetrieverInfo info = parser.readFromRetriever();
-     assertArrayEquals(byteSource, info.getContents());
+     parser.readFromRetriever(new DocId("5"), response);
+     assertArrayEquals(byteSource, outputStream.toByteArray());
    }
 
   @Test
@@ -290,28 +305,30 @@ public class CommandStreamParserTest {
  }
 
   @Test
-  public void testListerNoData() throws IOException {
+  public void testListerNoData() throws Exception {
     String source = "GSA Adaptor Data Version 1 [\n]\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    ArrayList<DocIdPusher.Record> result = parser.readFromLister();
-    assertEquals(0, result.size());
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    parser.readFromLister(pusher, null);
+    assertEquals(0, pusher.getDocIds().size());
  }
 
   @Test
-  public void testListerDataStartsWithDocId() throws IOException {
+  public void testListerDataStartsWithDocId() throws Exception {
     String source = "GSA Adaptor Data Version 1 [\n]\nlock\n" +
         "id=001\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
     thrown.expect(IOException.class);
-    ArrayList<DocIdPusher.Record> result = parser.readFromLister();
+    parser.readFromLister(pusher, null);
  }
 
   @Test
-  public void testLister() throws IOException, URISyntaxException {
+  public void testLister() throws Exception {
     String source = "GSA Adaptor Data Version 1 [\n]\n" +
         "id=001\nlock\ncrawl-once\ndelete\ncrawl-immediately\n" +
         "last-modified=1292805597\n" +
@@ -320,6 +337,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
     DocIdPusher.Record expected = new DocIdPusher.Record.Builder(new DocId("001"))
         .setCrawlImmediately(true)
         .setCrawlOnce(true)
@@ -329,11 +347,39 @@ public class CommandStreamParserTest {
         .setLock(true)
         .build();
 
-    ArrayList<DocIdPusher.Record> result = parser.readFromLister();
-    assertEquals(expected, result.get(0));
+    parser.readFromLister(pusher, null);
+    assertEquals(expected, pusher.getRecords().get(0));
 
  }
 
+  @Test
+  public void testManyRecords() throws Exception {
+    final List<DocId> goldenIds;
+    {
+      final int idsToGenerate = 30001;
+      List<DocId> ids = new ArrayList<DocId>(idsToGenerate);
+      for (int i = 0; i < idsToGenerate; i++) {
+        ids.add(new DocId("id " + i));
+      }
+      goldenIds = ids;
+    }
+    String source;
+    {
+      StringBuilder sb = new StringBuilder("GSA Adaptor Data Version 1 [\n]\n");
+      for (DocId id : goldenIds) {
+        sb.append("id=");
+        sb.append(id.getUniqueId());
+        sb.append("\n");
+      }
+      source = sb.toString();
+    }
 
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
 
+    parser.readFromLister(pusher, null);
+    assertEquals(goldenIds, pusher.getDocIds());
+
+  }
 }

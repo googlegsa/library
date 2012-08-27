@@ -196,6 +196,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private List<URI> anchorUris = new ArrayList<URI>();
     private List<String> anchorTexts = new ArrayList<String>();
     private boolean notFound;
+    private boolean notModified;
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
@@ -206,7 +207,7 @@ abstract class WrapperAdaptor implements Adaptor {
 
     @Override
     public void respondNotModified() {
-      throw new UnsupportedOperationException();
+      notModified = true;
     }
 
     @Override
@@ -283,6 +284,10 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public boolean isNotFound() {
       return notFound;
+    }
+
+    public boolean isNotModified() {
+      return notModified;
     }
 
     public boolean isNoIndex() {
