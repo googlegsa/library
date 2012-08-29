@@ -32,8 +32,10 @@ import com.google.enterprise.adaptor.Response;
 
 import org.junit.Test;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -54,7 +56,7 @@ import java.util.Set;
 public class CommandLineAdaptorTest {
   private final Charset charset = Charset.forName("US-ASCII");
 
-  private static class MockListerCommand extends Command {
+  private static class MockListerCommand extends StreamingCommand {
 
     static final List<DocId> original = Arrays.asList(new DocId[] {
         new DocId("1001"),
@@ -63,25 +65,35 @@ public class CommandLineAdaptorTest {
     });
 
     @Override
-    public int exec(String[] command, File workingDir, byte[] stdin) {
+    public int exec(String[] command, File workingDir, InputSource stdin, final OutputSink stdout,
+        OutputSink stderr) throws IOException, InterruptedException {
       assertEquals(command[0], "./lister_cmd.sh");
       assertEquals(command[1], "lister_arg1");
 
-      return 0;
-    }
-
-    @Override
-    public byte[] getStdout() {
-      StringBuilder result = new StringBuilder();
+      final StringBuilder result = new StringBuilder();
       result.append("GSA Adaptor Data Version 1 [\n]\n");
       for (DocId docId : original) {
         result.append("id=").append(docId.getUniqueId()).append("\n");
       }
-      return result.toString().getBytes();
+      Thread out = new Thread() {
+        @Override
+        public void run() {
+          try {
+            stdout.sink(new ByteArrayInputStream(result.toString().getBytes()));
+          } catch (IOException ex) {
+            throw new RuntimeException(ex);
+          }
+        }
+      };
+
+      out.start();
+      out.join();
+
+      return 0;
     }
   }
 
-  private static class MockRetrieverCommand extends Command {
+  private static class MockRetrieverCommand extends StreamingCommand {
 
     private static final Map<String, String> ID_TO_CONTENT;
     private static final Map<String, String> ID_TO_MIME_TYPE;
@@ -126,31 +138,21 @@ public class CommandLineAdaptorTest {
       ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
     }
 
-    private String docId;
-    private String content;
-    private Metadata metadata;
-    private Date lastModified;
-    private Date lastCrawled;
-    private String mimeType;
-
     @Override
-    public int exec(String[] command, File workingDir, byte[] stdin) {
+    public int exec(String[] command, File workingDir, InputSource stdin, final OutputSink stdout,
+                    OutputSink stderr) throws IOException, InterruptedException {
       assertEquals(command[0], "./retriever_cmd.sh");
       assertEquals(command[1], "retriever_arg1");
       assertEquals(command[2], "retriever_arg2");
 
-      docId = command[3];
-      content = ID_TO_CONTENT.get(docId);
-      metadata = ID_TO_METADATA.get(docId);
-      lastModified = ID_TO_LAST_MODIFIED.get(docId);
-      lastCrawled = ID_TO_LAST_CRAWLED.get(docId);
-      mimeType = ID_TO_MIME_TYPE.get(docId);
-      return 0;
-    }
+      String docId = command[3];
+      String content = ID_TO_CONTENT.get(docId);
+      Metadata metadata = ID_TO_METADATA.get(docId);
+      Date lastModified = ID_TO_LAST_MODIFIED.get(docId);
+      Date lastCrawled = ID_TO_LAST_CRAWLED.get(docId);
+      String mimeType = ID_TO_MIME_TYPE.get(docId);
 
-    @Override
-    public byte[] getStdout() {
-      StringBuffer result = new StringBuffer();
+      final StringBuffer result = new StringBuffer();
       result.append("GSA Adaptor Data Version 1 [\n]\n");
       result.append("id=").append(docId).append("\n");
       if (lastCrawled.after(lastModified)) {
@@ -169,8 +171,21 @@ public class CommandLineAdaptorTest {
         result.append("content").append("\n");
         result.append(content);
       }
+      Thread out = new Thread() {
+        @Override
+        public void run() {
+          try {
+            stdout.sink(new ByteArrayInputStream(result.toString().getBytes()));
+          } catch (IOException ex) {
+            throw new RuntimeException(ex);
+          }
+        }
+      };
 
-      return result.toString().getBytes();
+      out.start();
+      out.join();
+
+      return 0;
     }
   }
 
@@ -218,12 +233,12 @@ public class CommandLineAdaptorTest {
 
   private static class CommandLineAdaptorTestMock extends CommandLineAdaptor {
     @Override
-    protected Command newListerCommand() {
+    protected StreamingCommand newListerCommand() {
       return new MockListerCommand();
     }
 
     @Override
-    protected Command newRetrieverCommand() {
+    protected StreamingCommand newRetrieverCommand() {
       return new MockRetrieverCommand();
     }
 

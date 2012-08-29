@@ -87,7 +87,7 @@ public class Command {
     ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
     StreamOutputSink err = new StreamOutputSink(errBuffer);
 
-    returnCode = StreamingCommand.exec(command, workingDir, in, out, err);
+    returnCode = new StreamingCommand().exec(command, workingDir, in, out, err);
 
     stdout = outBuffer.toByteArray();
     stderr = errBuffer.toByteArray();

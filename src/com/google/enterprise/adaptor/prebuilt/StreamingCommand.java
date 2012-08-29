@@ -29,15 +29,15 @@ public class StreamingCommand {
   private static InputSource noInputSource = new NoInputSource();
   private static OutputSink dropOutputSink = new DropOutputSink();
 
-  private StreamingCommand() {}
+  public StreamingCommand() {}
 
   /**
    * Same as {@code exec(command, null, stdin, stdout, stderr)}.
    *
    * @see #exec(String[], File, InputSource, OutputSink, OutputSink)
    */
-  public static int exec(String[] command, InputSource stdin, OutputSink stdout,
-                         OutputSink stderr)
+  public int exec(String[] command, InputSource stdin, OutputSink stdout,
+                  OutputSink stderr)
       throws IOException, InterruptedException {
     return exec(command, null, stdin, stdout, stderr);
   }
@@ -52,8 +52,8 @@ public class StreamingCommand {
    * @return Process return code
    * @throws IOException if creating process fails
    */
-  public static int exec(String[] command, File workingDir, InputSource stdin,
-                         OutputSink stdout, OutputSink stderr)
+  public int exec(String[] command, File workingDir, InputSource stdin,
+                  OutputSink stdout, OutputSink stderr)
       throws IOException, InterruptedException {
     if (stdin == null) {
       stdin = noInputSource;
