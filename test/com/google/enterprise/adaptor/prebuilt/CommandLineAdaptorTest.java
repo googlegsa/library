@@ -264,6 +264,7 @@ public class CommandLineAdaptorTest {
   private static class ContentsResponseTestMock implements Response {
     private OutputStream os;
     private String contentType;
+    private Date lastModified;
     private Metadata metadata = new Metadata();
     private Acl acl;
     private boolean secure;
@@ -298,6 +299,11 @@ public class CommandLineAdaptorTest {
     @Override
     public void setContentType(String contentType) {
       this.contentType = contentType;
+    }
+
+    @Override
+    public void setLastModified(Date lastModified) {
+      this.lastModified = lastModified;
     }
 
     @Override
@@ -338,6 +344,10 @@ public class CommandLineAdaptorTest {
 
     public String getContentType() {
       return contentType;
+    }
+
+    public Date getLastModified() {
+      return lastModified;
     }
 
     /** Returns unmodifibale view of metadata. */

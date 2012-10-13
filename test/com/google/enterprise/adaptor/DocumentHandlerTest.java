@@ -314,6 +314,7 @@ public class DocumentHandlerTest {
     assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-External-Anchor"));
     assertFalse(ex.getResponseHeaders().containsKey("X-Robots-Tag"));
     assertFalse(ex.getResponseHeaders().containsKey("X-Gsa-Serve-Security"));
+    assertFalse(ex.getResponseHeaders().containsKey("Last-Modified"));
   }
 
   @Test
@@ -588,6 +589,21 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testSetLastModifiedLast() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setLastModified(new Date(0));
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    handler.handle(ex);
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
   public void testSetMetadataLate() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -728,6 +744,7 @@ public class DocumentHandlerTest {
               return;
             }
             response.setContentType("text/plain");
+            response.setLastModified(new Date(1 * 1000));
             response.addMetadata("not", "important");
             response.setAcl(Acl.EMPTY);
             response.getOutputStream();
@@ -749,6 +766,8 @@ public class DocumentHandlerTest {
     assertEquals(200, ex.getResponseCode());
     assertEquals("text/plain",
                  ex.getResponseHeaders().getFirst("Content-Type"));
+    assertEquals("Thu, 01 Jan 1970 00:00:01 GMT",
+                 ex.getResponseHeaders().getFirst("Last-Modified"));
 
     ex = new MockHttpExchange("http", "HEAD", defaultPath,
                               new MockHttpContext(handler, "/"));

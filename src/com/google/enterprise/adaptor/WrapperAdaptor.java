@@ -119,6 +119,11 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
+    public void setLastModified(Date lastModified) {
+      response.setLastModified(lastModified);
+    }
+
+    @Override
     public void addMetadata(String key, String value) {
       response.addMetadata(key, value);
     }
@@ -190,6 +195,7 @@ abstract class WrapperAdaptor implements Adaptor {
   public static class GetContentsResponse implements Response {
     private OutputStream os;
     private String contentType;
+    private Date lastModified;
     private Metadata metadata = new Metadata();
     private Acl acl;
     private boolean secure;
@@ -223,6 +229,11 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void setContentType(String contentType) {
       this.contentType = contentType;
+    }
+
+    @Override
+    public void setLastModified(Date lastModified) {
+      this.lastModified = lastModified;
     }
 
     @Override

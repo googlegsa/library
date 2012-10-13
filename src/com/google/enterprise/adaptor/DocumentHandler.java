@@ -453,6 +453,7 @@ class DocumentHandler extends AbstractHandler {
     private OutputStream os;
     private CountingOutputStream countingOs;
     private String contentType;
+    private Date lastModified;
     private Metadata metadata = new Metadata();
     private Acl acl;
     private boolean secure;
@@ -527,6 +528,14 @@ class DocumentHandler extends AbstractHandler {
         throw new IllegalStateException("Already responded");
       }
       this.contentType = contentType;
+    }
+
+    @Override
+    public void setLastModified(Date lastModified) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.lastModified = lastModified;
     }
 
     @Override
@@ -672,6 +681,9 @@ class DocumentHandler extends AbstractHandler {
       if (useCompression) {
         // TODO(ejona): decide when to use compression based on mime-type
         enableCompressionIfSupported(ex);
+      }
+      if (lastModified != null) {
+        DocumentHandler.this.setLastModified(ex, lastModified);
       }
       startResponse(ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
     }

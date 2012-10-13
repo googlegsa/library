@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import java.io.*;
 import java.net.URI;
+import java.util.Date;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent
@@ -70,6 +71,11 @@ public interface Response {
    * Describe the content type of the document.
    */
   public void setContentType(String contentType);
+
+  /**
+   * Provide the last modification time of the document.
+   */
+  public void setLastModified(Date lastModified);
 
   /**
    * Add metadata element that applies to the document. Providing multiple
