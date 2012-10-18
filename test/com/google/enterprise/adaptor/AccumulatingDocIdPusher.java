@@ -21,7 +21,8 @@ import java.util.Map;
 
 class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   private List<DocId> ids = new ArrayList<DocId>();
-  private List<DocIdPusher.Record> records = new ArrayList<DocIdPusher.Record>();
+  private List<DocIdPusher.Record> records
+      = new ArrayList<DocIdPusher.Record>();
 
   @Override
   public Record pushRecords(Iterable<Record> records,
