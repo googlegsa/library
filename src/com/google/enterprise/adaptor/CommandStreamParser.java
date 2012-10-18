@@ -350,7 +350,7 @@ public class CommandStreamParser {
     DocId foundDocId = new DocId(command.getArgument());
     if (!docId.equals(foundDocId)) {
       throw new IOException("requested document "  + docId + " does not match retrieved "
-          + "document  " + foundDocId + ".");
+          + "document " + foundDocId + ".");
     }
     command = readCommand();
     while (command != null) {
@@ -366,8 +366,9 @@ public class CommandStreamParser {
           if (command == null || command.getOperation() != Operation.META_VALUE) {
             throw new IOException("meta-name must be immediately followed by meta-value");
           }
-          log.log(Level.FINEST, "Retriever: {0} has metadata {1}",
-              new Object[] {docId.getUniqueId(), command.getArgument()});
+          log.log(Level.FINEST, "Retriever: {0} has metadata {1}={2}",
+              new Object[] {docId.getUniqueId(), metaName,
+                command.getArgument()});
           response.addMetadata(metaName, command.getArgument());
           break;
         case UP_TO_DATE:
