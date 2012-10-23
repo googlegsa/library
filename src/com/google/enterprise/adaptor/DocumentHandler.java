@@ -450,6 +450,11 @@ class DocumentHandler extends AbstractHandler {
   private class DocumentResponse implements Response {
     private State state = State.SETUP;
     private HttpExchange ex;
+    // Whether ex.getResponseBody().close() has been called while we are in the
+    // NO_TRANSFORM state. This isn't used for much internal code that calls
+    // close on the stream since it is obvious in those states that we won't
+    // ever attempt to flush or close the stream a second time.
+    private boolean responseBodyClosed;
     private OutputStream os;
     private CountingOutputStream countingOs;
     private String contentType;
@@ -632,12 +637,25 @@ class DocumentHandler extends AbstractHandler {
           break;
 
         case NO_TRANSFORM:
-          // The adaptor called getOutputStream, but that doesn't mean they
-          // wrote out to it (consider an empty document). Thus, we force a
-          // usage of the output stream now.
-          os.flush();
-          ex.getResponseBody().flush();
-          ex.getResponseBody().close();
+          if (!responseBodyClosed) {
+            // The Adaptor didn't close the stream, so close it for them, making
+            // sure to flush any existing contents. We choose to use the same
+            // OutputStream as the Adaptor in order to prevent bugs due to
+            // different codepaths.
+            //
+            // In particular, it is possible the adaptor called getOutputStream,
+            // but didn't write out to the stream (consider an empty document
+            // and some code choosing to never call write because all the bytes
+            // were written). In using the OutputStream provided to the Adaptor
+            // for flush()ing we also trigger a call to startSending().
+            os.flush();
+            os.close();
+          }
+          if (!responseBodyClosed) {
+            throw new AssertionError();
+          }
+          // At this point we are guaranteed that ex.getResponseBody().close()
+          // has been called.
           break;
 
         case HEAD:
@@ -706,9 +724,16 @@ class DocumentHandler extends AbstractHandler {
      * Used when transform pipeline is circumvented.
      */
     private class LazyContentOutputStream extends AbstractLazyOutputStream {
+      @Override
       protected OutputStream retrieveOs() throws IOException {
         startSending(true);
         return ex.getResponseBody();
+      }
+
+      @Override
+      public void close() throws IOException {
+        responseBodyClosed = true;
+        super.close();
       }
     }
     
@@ -823,46 +848,6 @@ class DocumentHandler extends AbstractHandler {
       }
       // Write to buffer.
       buffer.write(b, off, len);
-    }
-  }
-
-  /**
-   * {@link FilterOutputStream} replacement that uses {@link
-   * #write(byte[],int,int)} for all writes.
-   */
-  private static class FastFilterOutputStream extends OutputStream {
-    private byte[] singleByte = new byte[1];
-    // Protected to mimic FilterOutputStream.
-    protected OutputStream out;
-
-    public FastFilterOutputStream(OutputStream out) {
-      this.out = out;
-    }
-
-    @Override
-    public void close() throws IOException {
-      out.close();
-    }
-
-    @Override
-    public void flush() throws IOException {
-      out.flush();
-    }
-
-    @Override
-    public void write(byte[] b, int off, int len) throws IOException {
-      out.write(b, off, len);
-    }
-
-    @Override
-    public void write(byte[] b) throws IOException {
-      write(b, 0, b.length);
-    }
-
-    @Override
-    public void write(int b) throws IOException {
-      singleByte[0] = (byte) b;
-      write(singleByte);
     }
   }
 }

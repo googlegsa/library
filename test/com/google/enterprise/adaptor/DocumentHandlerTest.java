@@ -748,8 +748,9 @@ public class DocumentHandlerTest {
             response.addMetadata("not", "important");
             response.setAcl(Acl.EMPTY);
             response.getOutputStream();
-            // It is free to get it multiple times
-            response.getOutputStream();
+            // It is free to get it multiple times. Is free to close() stream.
+            // Other tests choose not to close the stream.
+            response.getOutputStream().close();
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);

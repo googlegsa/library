@@ -68,9 +68,6 @@ public class MockHttpExchange extends HttpExchange {
       if (responseBody != null) {
         responseBody.close();
       }
-      if (responseBodyOrig != null) {
-        responseBodyOrig.close();
-      }
     } catch (IOException ex) {
       throw new IllegalStateException(ex);
     }
@@ -162,7 +159,7 @@ public class MockHttpExchange extends HttpExchange {
     }
     responseCode = rCode;
     responseBodyOrig = new ByteArrayOutputStream();
-    responseBody = responseBodyOrig;
+    responseBody = new ClosingFilterOutputStream(responseBodyOrig);
     // TODO(ejona): handle responseLengeth
   }
 
@@ -194,5 +191,37 @@ public class MockHttpExchange extends HttpExchange {
 
   public byte[] getResponseBytes() {
     return ((ByteArrayOutputStream) responseBodyOrig).toByteArray();
+  }
+
+  private static class ClosingFilterOutputStream
+      extends FastFilterOutputStream {
+    private boolean closed;
+
+    public ClosingFilterOutputStream(OutputStream os) {
+      super(os);
+    }
+
+    @Override
+    public void close() throws IOException {
+      // Permit multiple closes.
+      closed = true;
+      super.close();
+    }
+
+    @Override
+    public void flush() throws IOException {
+      if (closed) {
+        throw new IOException("Stream closed");
+      }
+      super.flush();
+    }
+
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+      if (closed) {
+        throw new IOException("Stream closed");
+      }
+      super.write(b, off, len);
+    }
   }
 }
