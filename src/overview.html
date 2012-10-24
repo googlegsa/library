@@ -150,6 +150,9 @@ feed.name=mydocfeedtogsa</pre>
   <p> Press enter for the key password (to use the same password
     as the keystore).
 
+  <p>To allow the adaptor to trust itself, execute:
+  <pre>keytool -keystore cacerts.jks -importcert -file adaptor.crt</pre>
+
   <h4>Exchanging Certificates</h4>
   <p>To allow the adaptor to trust the GSA, execute:
   <pre>keytool -keystore cacerts.jks -importcert -file gsa.crt</pre>

@@ -28,7 +28,7 @@ import org.opensaml.xml.ConfigurationException;
 
 import java.io.*;
 import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
+import java.net.*;
 import java.security.*;
 import java.security.cert.CertificateException;
 import java.util.*;
@@ -42,6 +42,8 @@ import javax.net.ssl.SSLParameters;
 
 /** This class handles the communications with GSA. */
 public class GsaCommunicationHandler {
+  private static final String SLEEP_PATH = "/sleep";
+
   private static final Logger log
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
@@ -407,7 +409,7 @@ public class GsaCommunicationHandler {
     }
   }
 
-  private synchronized void realStop(int maxDelay) {
+  private synchronized void realStop(int maxDelaySeconds) {
     if (shutdownHook != null) {
       try {
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
@@ -428,16 +430,75 @@ public class GsaCommunicationHandler {
     if (incrementalAdaptorPoller != null) {
       incrementalAdaptorPoller.cancel();
     }
+    SleepHandler sleepHandler = new SleepHandler(config.getServerHostname(),
+        config.getGsaCharacterEncoding(), 100 /* millis */);
     if (server != null) {
-      server.stop(maxDelay);
+      // Workaround Java Bug 7105369.
+      server.createContext(SLEEP_PATH, sleepHandler);
+      issueSleepGetRequest(config.getServerPort());
+
+      server.stop(maxDelaySeconds);
+      log.finer("Completed stop");
       ((ExecutorService) server.getExecutor()).shutdownNow();
       server = null;
     }
     if (dashboard != null) {
-      dashboard.stop();
+      // Workaround Java Bug 7105369.
+      dashboard.getServer().createContext(SLEEP_PATH, sleepHandler);
+      issueSleepGetRequest(config.getServerDashboardPort());
+
+      dashboard.stop(maxDelaySeconds);
+      log.finer("Completed dashboard stop");
       dashboard = null;
     }
     adaptor.destroy();
+  }
+
+  /**
+   * Issues a GET request to a SleepHandler. This is used to workaround Java
+   * Bug 7105369.
+   *
+   * <p>The bug is an issue with HttpServer where stop() waits the full amount
+   * of allotted time if the serve is idle. However, if a request is being
+   * handled when stop() is called, then it will return as soon as all requests
+   * are processed, or the allotted time is reached.
+   *
+   * <p>Thus, this workaround tries to force a request to be in-procees when
+   * stop() is called, so that it can return sooner. We issue a request to a
+   * SleepHandler that takes a fixed amount of time to process the request
+   * before calling stop(). In the event everything goes as planned, the request
+   * completes after stop() has been called and allows stop() to exit quickly.
+   */
+  private void issueSleepGetRequest(int port) {
+    URL url;
+    try {
+      url = new URL(config.isServerSecure() ? "https" : "http",
+          config.getServerHostname(), port, SLEEP_PATH);
+    } catch (MalformedURLException ex) {
+      log.log(Level.WARNING,
+          "Unexpected error. Shutting down will be slow.", ex);
+      return;
+    }
+
+    final URLConnection conn;
+    try {
+      conn = url.openConnection();
+      conn.connect();
+    } catch (IOException ex) {
+      log.log(Level.WARNING, "Error performing shutdown GET", ex);
+      return;
+    }
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        try {
+          conn.getInputStream().close();
+          log.finer("Closed shutdown GET");
+        } catch (IOException ex) {
+          log.log(Level.WARNING, "Error closing stream of shutdown GET", ex);
+        }
+      }
+    }).start();
   }
 
   /**

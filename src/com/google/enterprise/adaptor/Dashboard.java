@@ -124,16 +124,20 @@ class Dashboard {
         config.getGsaHostname(), secure);
   }
 
-  public void stop() {
+  public void stop(int maxDelaySeconds) {
     if (circularLogRpcMethod != null) {
       circularLogRpcMethod.close();
       circularLogRpcMethod = null;
     }
     if (dashboardServer != null) {
-      dashboardServer.stop(1);
+      dashboardServer.stop(maxDelaySeconds);
       ((ExecutorService) dashboardServer.getExecutor()).shutdownNow();
       dashboardServer = null;
     }
+  }
+
+  public HttpServer getServer() {
+    return dashboardServer;
   }
 
   public void addStatusSource(StatusSource source) {

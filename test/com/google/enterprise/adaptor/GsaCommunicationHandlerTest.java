@@ -180,6 +180,18 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
+  public void testFastShutdown() throws Exception {
+    gsa.start();
+    long startTime = System.nanoTime();
+    gsa.stop(10);
+    long duration = System.nanoTime() - startTime;
+    final long nanosInAMilli = 1000 * 1000;
+    if (duration > 1000 * nanosInAMilli) {
+      fail("Stopping took a long time: " + duration);
+    }
+  }
+
+  @Test
   public void testBasicHttpsListen() throws Exception {
     config.setValue("server.secure", "true");
     gsa.start();
