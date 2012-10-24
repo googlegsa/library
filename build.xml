@@ -145,14 +145,14 @@
 
     <!-- Compile secmgr. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8">
+      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
       <classpath refid="secmgr.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/**"/>
     </javac>
 
     <!-- Compile adaptorlib. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8">
+      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
@@ -161,7 +161,7 @@
 
     <!-- Compile examples. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8">
+      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="examples.build.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
@@ -170,7 +170,7 @@
     <mkdir dir="${build-test.dir}"/>
     <!-- Compile JUnit helper -->
     <javac srcdir="${lib.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="true" encoding="utf-8">
+      includeantruntime="true" encoding="utf-8" target="1.6" source="1.6">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath location="${junit.jar}"/>
       <include name="JUnitLogFixFormatter.java"/>
@@ -178,7 +178,7 @@
 
     <!-- Compile tests, excluding example tests. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8">
+      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
@@ -188,7 +188,7 @@
 
     <!-- Compile tests for examples. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8">
+      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
       <compilerarg value="-Xlint:unchecked"/>
       <classpath refid="examples.build.classpath"/>
       <classpath location="${build-src.dir}"/>
