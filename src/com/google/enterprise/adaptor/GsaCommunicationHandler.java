@@ -430,6 +430,7 @@ public class GsaCommunicationHandler {
     }
     if (server != null) {
       server.stop(maxDelay);
+      ((ExecutorService) server.getExecutor()).shutdownNow();
       server = null;
     }
     if (dashboard != null) {

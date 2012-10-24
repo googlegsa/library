@@ -131,6 +131,7 @@ class Dashboard {
     }
     if (dashboardServer != null) {
       dashboardServer.stop(1);
+      ((ExecutorService) dashboardServer.getExecutor()).shutdownNow();
       dashboardServer = null;
     }
   }
