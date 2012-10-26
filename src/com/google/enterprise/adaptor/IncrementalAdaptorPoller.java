@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.*;
 
@@ -74,10 +73,12 @@ class IncrementalAdaptorPoller {
       thread = Thread.currentThread();
       try {
         adaptor.getModifiedDocIds(pusher);
-      } catch (IOException ex) {
-        log.log(Level.WARNING, "Exception during incremental polling", ex);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
+      } catch (Exception ex) {
+        // We need to catch all exceptions, because if the exception is thrown
+        // to Timer, then Timer's thread gets killed.
+        log.log(Level.WARNING, "Exception during incremental polling", ex);
       } finally {
         thread = null;
       }

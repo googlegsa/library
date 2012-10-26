@@ -85,6 +85,28 @@ public class IncrementalAdaptorPollerTest {
     assertTrue(adaptor.interrupted);
   }
 
+  @Test
+  public void testContinueOnException() throws Exception {
+    PollingIncrMockAdaptor adaptor = new PollingIncrMockAdaptor() {
+      @Override
+      public void getModifiedDocIds(DocIdPusher pusher)
+         throws InterruptedException, IOException {
+        super.getModifiedDocIds(pusher);
+        throw new RuntimeException("Failed on purpose");
+      }
+    };
+    IncrementalAdaptorPoller poller
+        = new IncrementalAdaptorPoller(adaptor, new FakeDocIdPusher());
+    try {
+      poller.start(1);
+      assertNotNull(adaptor.queue.poll(100, TimeUnit.MILLISECONDS));
+      // Is Timer still running?
+      assertNotNull(adaptor.queue.poll(100, TimeUnit.MILLISECONDS));
+    } finally {
+      poller.cancel();
+    }
+  }
+
   private static class FakeDocIdPusher extends AbstractDocIdPusher {
     @Override
     public Record pushRecords(Iterable<Record> records,
