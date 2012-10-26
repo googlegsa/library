@@ -38,6 +38,9 @@ class AdministratorSecurityHandler extends AbstractHandler {
   private static final String LOGIN_PAGE = "resources/login.html";
   /** Page to display when the user credentials are invalid. */
   private static final String LOGIN_FAILED_PAGE = "resources/login-failed.html";
+  /** Page to display when the user credentials were not able to be verified. */
+  private static final String LOGIN_INDETERMINATE_PAGE
+      = "resources/login-indeterminate.html";
 
   /** Wrapped handler, for when the user is authenticated. */
   private final HttpHandler handler;
@@ -74,7 +77,9 @@ class AdministratorSecurityHandler extends AbstractHandler {
         // request method was POST was because of submitting our login form.
         sendRedirect(ex, getRequestUri(ex));
         return;
-      } else if (authn == AuthzStatus.DENY) {
+      } else if (authn == AuthzStatus.INDETERMINATE) {
+        pageToDisplay = LOGIN_INDETERMINATE_PAGE;
+      } else {
         pageToDisplay = LOGIN_FAILED_PAGE;
       }
     }
@@ -141,7 +146,10 @@ class AdministratorSecurityHandler extends AbstractHandler {
 
     // Check to see if provided username and password are valid.
     AuthzStatus result = authnClient.authn(username, password);
-    if (result != AuthzStatus.PERMIT) {
+    if (result == AuthzStatus.INDETERMINATE) {
+      log.fine("Failed communicating with the GSA");
+      return result;
+    } else if (result != AuthzStatus.PERMIT) {
       log.fine("GSA login was not successful");
       return result;
     }
@@ -188,6 +196,11 @@ class AdministratorSecurityHandler extends AbstractHandler {
         new GsaClient(protocol, gsaHostname, port, username, password);
       } catch (AuthenticationException e) {
         log.log(Level.FINE, "AuthenticationException", e);
+        if (e.getCause() instanceof ConnectException) {
+          return AuthzStatus.INDETERMINATE;
+        } else if (e.getCause() instanceof UnknownHostException) {
+          return AuthzStatus.INDETERMINATE;
+        }
         return AuthzStatus.DENY;
       }
       return AuthzStatus.PERMIT;
