@@ -45,16 +45,19 @@ class GsaFeedFileMaker {
 
   private final DocIdEncoder idEncoder;
   private final boolean separateClosingRecordTagWorkaround;
+  private final boolean useAuthMethodWorkaround;
 
   public GsaFeedFileMaker(DocIdEncoder encoder) {
-    this(encoder, false);
+    this(encoder, false, false);
   }
 
   public GsaFeedFileMaker(DocIdEncoder encoder,
-      boolean separateClosingRecordTagWorkaround) {
+      boolean separateClosingRecordTagWorkaround,
+      boolean useAuthMethodWorkaround) {
     this.idEncoder = encoder;
     this.separateClosingRecordTagWorkaround
         = separateClosingRecordTagWorkaround;
+    this.useAuthMethodWorkaround = useAuthMethodWorkaround;
   }
 
   /** Adds header to document's root.
@@ -106,6 +109,9 @@ class GsaFeedFileMaker {
     }
     if (docRecord.isToBeCrawledOnce()) {
       record.setAttribute("crawl-once", "true");
+    }
+    if (useAuthMethodWorkaround) {
+      record.setAttribute("authmethod", "httpsso");
     }
     // TODO(pjo): record.setAttribute(no-follow,);
 

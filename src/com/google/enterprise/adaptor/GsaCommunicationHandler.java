@@ -206,7 +206,8 @@ public class GsaCommunicationHandler {
 
     GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec,
-        config.isGsa614FeedWorkaroundEnabled());
+        config.isGsa614FeedWorkaroundEnabled(),
+        config.isGsa70AuthMethodWorkaroundEnabled());
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
 

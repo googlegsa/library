@@ -60,6 +60,8 @@ import java.util.logging.*;
  * <tr><td> </td><td>gsa.614FeedWorkaroundEnabled </td><td> enable detour
  *     around particular feed parsing failure found in GSA version 6.14 .
  *     Defaults to false
+ * <tr><td> </td><td>gsa.70AuthMethodWorkaroundEnabled </td><td> send authmethod
+ *     in feed files to workaround early GSA 7.0 bug. Defaults to false
  * <tr><td> </td><td>gsa.characterEncoding </td><td> character set used
  *     in feed files. Defaults to  UTF-8
  * <tr><td align="center"> yes </td><td>gsa.hostname </td><td> machine to
@@ -154,6 +156,7 @@ public class Config {
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("gsa.614FeedWorkaroundEnabled", "false");
+    addKey("gsa.70AuthMethodWorkaroundEnabled", "false");
     addKey("docId.isUrl", "false");
     addKey("feed.name", "GENERATE");
     addKey("feed.noRecrawlBitEnabled", "false");
@@ -475,6 +478,10 @@ public class Config {
 
   public boolean isGsa614FeedWorkaroundEnabled() {
     return Boolean.parseBoolean(getValue("gsa.614FeedWorkaroundEnabled"));
+  }
+
+  public boolean isGsa70AuthMethodWorkaroundEnabled() {
+    return Boolean.parseBoolean(getValue("gsa.70AuthMethodWorkaroundEnabled"));
   }
 
   /**

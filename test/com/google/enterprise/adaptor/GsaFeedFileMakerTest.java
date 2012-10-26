@@ -210,7 +210,33 @@ public class GsaFeedFileMakerTest {
     List<DocIdPusher.Record> records = new ArrayList<DocIdPusher.Record>();
     records.add(new DocIdPusher.Record.Builder(new DocId("docid1")).build());
 
-    meker = new GsaFeedFileMaker(encoder, true /* 6.14 workaround */);
+    meker = new GsaFeedFileMaker(encoder, true /* 6.14 workaround */, false);
+    String xml = meker.makeMetadataAndUrlXml("test", records);
+    xml = xml.replace("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void test70RecordWorkaround() {
+    String golden
+        = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<header>\n"
+        + "<datasource>test</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group>\n"
+        + "<record authmethod=\"httpsso\" displayurl=\"\""
+        + " mimetype=\"text/plain\" url=\"http://localhost/docid1\"/>\n"
+        + "</group>\n"
+        + "</gsafeed>\n";
+
+    List<DocIdPusher.Record> records = new ArrayList<DocIdPusher.Record>();
+    records.add(new DocIdPusher.Record.Builder(new DocId("docid1")).build());
+
+    meker = new GsaFeedFileMaker(encoder, false, true /* 7.0 workaround */);
     String xml = meker.makeMetadataAndUrlXml("test", records);
     xml = xml.replace("\r\n", "\n");
     assertEquals(golden, xml);
