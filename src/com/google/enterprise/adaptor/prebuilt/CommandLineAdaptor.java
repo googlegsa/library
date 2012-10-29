@@ -111,7 +111,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     this.retrieverCommand = new ArrayList<String>(commandWithArgs);
   }
 
-  public List<String> geRetrieverCommand() {
+  public List<String> getRetrieverCommand() {
     return Collections.unmodifiableList(retrieverCommand);
   }
 
