@@ -55,6 +55,20 @@ public class ConfigTest {
   }
 
   @Test
+  public void testAddDuplicateKeyWithValue() {
+    config.addKey("somekey", "value");
+    thrown.expect(IllegalStateException.class);
+    config.addKey("somekey", null);
+  }
+
+  @Test
+  public void testAddDuplicateKeyWithoutValue() {
+    config.addKey("somekey", null);
+    thrown.expect(IllegalStateException.class);
+    config.addKey("somekey", "value");
+  }
+
+  @Test
   public void testConfigModificationDetection() throws Exception {
     configFile.setFileContents("adaptor.fullListingSchedule=1\n");
     config.autoConfig(new String[] {"-Dgsa.hostname=notreal"});
