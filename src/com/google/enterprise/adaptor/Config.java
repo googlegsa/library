@@ -68,7 +68,7 @@ import java.util.logging.*;
  *     send feed files to.  Process errors if not provided 
  * <tr><td> </td><td>journal.reducedMem </td><td> avoid tracking per URL 
  *     information in RAM; suggested with over five hundred thousand documents.
- *     Defaults to false
+ *     Defaults to true
  * <tr><td> </td><td>server.dashboardPort </td><td> port on adaptor's
  *     machine for accessing adaptor's dashboard.   Defaults to  5679
  * <tr><td> </td><td>server.docIdPath </td><td> part of URL preceding
@@ -173,7 +173,7 @@ public class Config {
     // 1 MiB.
     addKey("transform.maxDocumentBytes", "1048576");
     addKey("transform.required", "false");
-    addKey("journal.reducedMem", "false");
+    addKey("journal.reducedMem", "true");
   }
 
   public Set<String> getAllKeys() {
