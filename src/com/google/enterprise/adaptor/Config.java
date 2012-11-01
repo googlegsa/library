@@ -685,7 +685,7 @@ public class Config {
    * default value is used and the user must provide one.
    */
   public synchronized void addKey(String key, String defaultValue) {
-    if (defaultConfig.contains(key) || noDefaultConfig.contains(key)) {
+    if (defaultConfig.containsKey(key) || noDefaultConfig.contains(key)) {
       throw new IllegalStateException("Key already added: " + key);
     }
     if (defaultValue == null) {
@@ -701,7 +701,7 @@ public class Config {
    * provide one.
    */
   public synchronized void overrideKey(String key, String defaultValue) {
-    if (!defaultConfig.contains(key) && !noDefaultConfig.contains(key)) {
+    if (!defaultConfig.containsKey(key) && !noDefaultConfig.contains(key)) {
       log.log(Level.WARNING, "Overriding unknown configuration key: {0}", key);
     }
     defaultConfig.remove(key);
