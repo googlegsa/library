@@ -488,6 +488,12 @@ public class GsaCommunicationHandler {
       log.log(Level.WARNING, "Error performing shutdown GET", ex);
       return;
     }
+    try {
+      // Provide some time for the connect() to be processed on the server.
+      Thread.sleep(15);
+    } catch (InterruptedException ex) {
+      Thread.currentThread().interrupt();
+    }
     new Thread(new Runnable() {
       @Override
       public void run() {
