@@ -73,6 +73,10 @@ class Dashboard {
 
   /** Starts listening for connections to the dashboard. */
   public void start() throws IOException {
+    // The Dashboard is on a separate port to prevent malicious HTML documents
+    // in the user's repository from performing admin actions with
+    // XMLHttpRequest or the like, as the HTML page will then be blocked by
+    // same-origin policies.
     int dashboardPort = config.getServerDashboardPort();
     boolean secure = config.isServerSecure();
     InetSocketAddress dashboardAddr = new InetSocketAddress(dashboardPort);
