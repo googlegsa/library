@@ -199,10 +199,10 @@ class DocumentHandler extends AbstractHandler {
         adaptor.getDocContent(request, response);
       } catch (RuntimeException e) {
         journal.recordRequestProcessingFailure();
-        throw e;
+        throw new RuntimeException("Exception in retriever: " + docId, e);
       } catch (IOException e) {
         journal.recordRequestProcessingFailure();
-        throw e;
+        throw new IOException("Exception in retriever: " + docId, e);
       }
       journal.recordRequestProcessingEnd(response.getWrittenContentSize());
 
