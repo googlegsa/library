@@ -1,5 +1,6 @@
 <project name="plexi" default="build" basedir=".">
   <description>GSA Adaptor library</description>
+  <tstamp/>
   <property name="src.dir" location="src"/>
   <property name="test.dir" location="test"/>
   <property name="test.class" value="*Test"/>
@@ -20,7 +21,11 @@
   <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
   <!-- Adaptor suffix for distribution files. Useful for placing version numbers
        on our jars. -->
-  <property name="adaptorlib.suffix" value=""/>
+  <condition property="adaptorlib.suffix" value="-${adaptorlib.version}">
+    <isset property="adaptorlib.version"/>
+  </condition>
+  <!-- If adaptorlib.version isn't set, simply use the current date. -->
+  <property name="adaptorlib.suffix" value="-${DSTAMP}"/>
 
   <path id="adaptorlib.build.classpath">
     <fileset dir="${lib.dir}">
@@ -197,11 +202,21 @@
     </javac>
   </target>
 
+  <target name="-discover-version" unless="adaptorlib.version">
+    <exec executable="git" outputproperty="adaptorlib.version"
+      logError="true" failifexecutionfails="false">
+      <arg value="describe"/>
+      <arg value="--always"/>
+    </exec>
+    <!-- Set version if git describe failed. -->
+    <property name="adaptorlib.version" value="unknown"/>
+  </target>
+
   <target name="dist" description="Generate distribution binaries"
     depends="clean,test,package"/>
 
   <target name="package" description="Generate binaries"
-    depends="build,javadoc">
+    depends="build,javadoc,-discover-version">
     <property name="dist.staging.dir" value="${build.dir}/dist/staging"/>
 
     <delete dir="${build.dir}/dist"/>
@@ -220,6 +235,15 @@
     <!-- adaptor.jar -->
     <jar destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"
       basedir="${build-src.dir}" excludes="${adaptor.pkg.dir}/examples/**">
+      <manifest>
+        <section name="com/google/enterprise/adaptor/">
+          <attribute name="Implementation-Title"
+            value="Google Adaptor Library"/>
+          <attribute name="Implementation-Vendor" value="Google Inc."/>
+          <attribute name="Implementation-Version"
+            value="${adaptorlib.version}"/>
+        </section>
+      </manifest>
       <fileset dir="${resource.dir}"/>
     </jar>
 
