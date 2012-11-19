@@ -243,7 +243,11 @@
     </copy>
 
     <!-- adaptor-withlib.jar -->
-    <jar destfile="${build.dir}/dist/adaptor-withlib.tmp.jar">
+    <jar destfile="${build.dir}/dist/adaptor-withlib.tmp.jar"
+      filesetmanifest="mergewithoutmain">
+      <!-- Provide an empty manifest to encourage mergewithoutmain to function.
+           See https://issues.apache.org/bugzilla/show_bug.cgi?id=54171 . -->
+      <manifest/>
       <zipfileset src="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"/>
       <zipgroupfileset dir="${dist.staging.dir}/lib"/>
     </jar>
