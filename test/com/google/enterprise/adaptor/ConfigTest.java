@@ -69,6 +69,18 @@ public class ConfigTest {
   }
 
   @Test
+  public void testGetValue() {
+    config.addKey("somekey", "default", new Config.ValueComputer() {
+          public String compute(String rawValue) {
+            assertEquals("default", rawValue);
+            return "computed";
+          }
+        });
+    assertEquals("default", config.getRawValue("somekey"));
+    assertEquals("computed", config.getValue("somekey"));
+  }
+
+  @Test
   public void testConfigModificationDetection() throws Exception {
     configFile.setFileContents("adaptor.fullListingSchedule=1\n");
     config.autoConfig(new String[] {"-Dgsa.hostname=notreal"});

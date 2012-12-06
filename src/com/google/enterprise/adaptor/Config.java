@@ -131,6 +131,13 @@ public class Config {
   private long configFileLastModified;
   private List<ConfigModificationListener> modificationListeners
       = new CopyOnWriteArrayList<ConfigModificationListener>();
+  /**
+   * Map from config key to computer that generates the value for the key. These
+   * generated values are generally due to one value being formed from other
+   * values by default.
+   */
+  private Map<String, ValueComputer> computeMap
+      = new HashMap<String, ValueComputer>();
 
   public Config() {
     String hostname = null;
@@ -141,8 +148,22 @@ public class Config {
     }
     addKey("server.hostname", hostname);
     addKey("server.port", "5678");
-    addKey("server.reverseProxyPort", "GENERATE");
-    addKey("server.reverseProxyProtocol", "GENERATE");
+    addKey("server.reverseProxyPort", "GENERATE", new ValueComputer() {
+          public String compute(String rawValue) {
+            if ("GENERATE".equals(rawValue)) {
+              return getValue("server.port");
+            }
+            return rawValue;
+          }
+        });
+    addKey("server.reverseProxyProtocol", "GENERATE", new ValueComputer() {
+          public String compute(String rawValue) {
+            if ("GENERATE".equals(rawValue)) {
+              return isServerSecure() ? "https" : "http";
+            }
+            return rawValue;
+          }
+        });
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
@@ -158,7 +179,15 @@ public class Config {
     addKey("gsa.614FeedWorkaroundEnabled", "false");
     addKey("gsa.70AuthMethodWorkaroundEnabled", "false");
     addKey("docId.isUrl", "false");
-    addKey("feed.name", "GENERATE");
+    addKey("feed.name", "GENERATE", new ValueComputer() {
+          public String compute(String rawValue) {
+            if ("GENERATE".equals(rawValue)) {
+              return "adaptor_" + getValue("server.hostname").replace('.', '-')
+                  + "_" + getValue("server.port");
+            }
+            return rawValue;
+          }
+        });
     addKey("feed.noRecrawlBitEnabled", "false");
     addKey("feed.crawlImmediatelyBitEnabled", "false");
     //addKey("feed.noFollowBitEnabled", "false");
@@ -192,13 +221,7 @@ public class Config {
   /* Preferences suggested you set them: */
 
   public String getFeedName() {
-    String feedName = getValue("feed.name");
-    if (!"GENERATE".equals(feedName)) {
-      return feedName;
-    } else {
-      return "adaptor_" + getServerHostname().replace('.', '-') + "_"
-          + getServerPort();
-    }
+    return getValue("feed.name");
   }
 
   /**
@@ -214,10 +237,7 @@ public class Config {
    * adaptor. This does not affect the actual port the adaptor uses.
    */
   public int getServerReverseProxyPort() {
-    if (!"GENERATE".equals(getValue("server.reverseProxyPort"))) {
-      return Integer.parseInt(getValue("server.reverseProxyPort"));
-    }
-    return getServerPort();
+    return Integer.parseInt(getValue("server.reverseProxyPort"));
   }
 
   /**
@@ -225,10 +245,7 @@ public class Config {
    * adaptor. This does not affect the actual protocol the adaptor uses.
    */
   public String getServerReverseProxyProtocol() {
-    if (!"GENERATE".equals(getValue("server.reverseProxyProtocol"))) {
-      return getValue("server.reverseProxyProtocol");
-    }
-    return isServerSecure() ? "https" : "http";
+    return getValue("server.reverseProxyProtocol");
   }
 
   /**
@@ -652,15 +669,36 @@ public class Config {
   }
 
   /**
-   * Get a configuration value. Never returns {@code null}.
+   * Get a configuration value exactly as provided in configuration. Generally,
+   * {@link #getValue} should be used instead of this method.
    *
+   * @return raw non-{@code null} value of {@code key}
    * @throws IllegalStateException if {@code key} has no value
    */
-  public String getValue(String key) {
+  public String getRawValue(String key) {
     String value = config.getProperty(key);
     if (value == null) {
       throw new IllegalStateException(MessageFormat.format(
           "You must set configuration key ''{0}''.", key));
+    }
+    return value;
+  }
+
+  /**
+   * Get a configuration value as computed based on the configuration. Some
+   * configuration values can be generated from other values. This method
+   * returns that computed configuration value instead of the raw value provided
+   * in configuration. This method should be preferred over {@link
+   * #getRawValue}.
+   *
+   * @return non-{@code null} value of {@code key}
+   * @throws IllegalStateException if {@code key} has no value
+   */
+  public String getValue(String key) {
+    String value = getRawValue(key);
+    ValueComputer computer = computeMap.get(key);
+    if (computer != null) {
+      value = computer.compute(value);
     }
     return value;
   }
@@ -693,6 +731,12 @@ public class Config {
     } else {
       defaultConfig.setProperty(key, defaultValue);
     }
+  }
+
+  synchronized void addKey(String key, String defaultValue,
+      ValueComputer computer) {
+    addKey(key, defaultValue);
+    computeMap.put(key, computer);
   }
 
   /**
@@ -743,5 +787,13 @@ public class Config {
                 "Unexpected exception. Consider filing a bug.", ex);
       }
     }
+  }
+
+  interface ValueComputer {
+    /**
+     * Computes the effective value of a configuration value provided the
+     * literal value provided in configuration.
+     */
+    public String compute(String rawValue);
   }
 }
