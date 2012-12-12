@@ -232,13 +232,13 @@ public class Config {
    * Required to be set: GSA machine to send document ids to. This is the
    * hostname of your GSA on your network.
    */
-  public String getGsaHostname() {
+  String getGsaHostname() {
     return getValue("gsa.hostname");
   }
 
   /* Preferences suggested you set them: */
 
-  public String getFeedName() {
+  String getFeedName() {
     return getValue("feed.name");
   }
 
@@ -246,7 +246,7 @@ public class Config {
    * Suggested to be set: Local port, on this computer, onto which requests from
    * GSA come in on.
    */
-  public int getServerPort() {
+  int getServerPort() {
     return Integer.parseInt(getValue("server.port"));
   }
 
@@ -254,7 +254,7 @@ public class Config {
    * The port that should be used in feed file and other references to the
    * adaptor. This does not affect the actual port the adaptor uses.
    */
-  public int getServerReverseProxyPort() {
+  int getServerReverseProxyPort() {
     return Integer.parseInt(getValue("server.reverseProxyPort"));
   }
 
@@ -262,14 +262,14 @@ public class Config {
    * The protocol that should be used in feed files and other references to the
    * adaptor. This does not affect the actual protocol the adaptor uses.
    */
-  public String getServerReverseProxyProtocol() {
+  String getServerReverseProxyProtocol() {
     return getValue("server.reverseProxyProtocol");
   }
 
   /**
    * Local port, on this computer, from which the dashboard is served.
    */
-  public int getServerDashboardPort() {
+  int getServerDashboardPort() {
     return Integer.parseInt(getValue("server.dashboardPort"));
   }
 
@@ -284,12 +284,12 @@ public class Config {
    * <p>By default DocIds are URL encoded and prefixed with http:// and this
    * host's name and port.
    */
-  public boolean isDocIdUrl() {
+  boolean isDocIdUrl() {
     return Boolean.parseBoolean(getValue("docId.isUrl"));
   }
 
   /** Without changes contains InetAddress.getLocalHost().getHostName(). */
-  public String getServerHostname() {
+  String getServerHostname() {
     return getValue("server.hostname");
   }
 
@@ -306,7 +306,7 @@ public class Config {
    * startup and when a request is made from one of those IPs the client is
    * given access.
    */
-  public String[] getServerFullAccessHosts() {
+  String[] getServerFullAccessHosts() {
     return getValue("server.fullAccessHosts").split(",");
   }
 
@@ -321,7 +321,7 @@ public class Config {
    * contain a path like {@code /yourfavoritepath}. By default, the protocol,
    * hostname, and port are retrieved automatically and no path is set.
    */
-  public URI getServerBaseUri() {
+  URI getServerBaseUri() {
     return URI.create(getServerReverseProxyProtocol() + "://"
         + getServerHostname() + ":" + getServerReverseProxyPort());
   }
@@ -330,7 +330,7 @@ public class Config {
    * Optional: Path below {@link #getServerBaseUri(DocId)} where documents are
    * namespaced. Generally, should be at least {@code "/"} and end with a slash.
    */
-  public String getServerDocIdPath() {
+  String getServerDocIdPath() {
     return getValue("server.docIdPath");
   }
 
@@ -361,7 +361,7 @@ public class Config {
    * be able to parse back the original document ID when a request comes to this
    * server.
    */
-  public URI getServerBaseUri(DocId docId) {
+  URI getServerBaseUri(DocId docId) {
     return getServerBaseUri();
   }
 
@@ -376,14 +376,14 @@ public class Config {
    * reasonable amount of configuration and know-how. To provide easy
    * out-of-the-box execution, this is disabled by default.
    */
-  public boolean isServerSecure() {
+  boolean isServerSecure() {
     return Boolean.parseBoolean(getValue("server.secure"));
   }
 
   /**
    * The alias in the keystore that has the key to use for encryption.
    */
-  public String getServerKeyAlias() {
+  String getServerKeyAlias() {
     return getValue("server.keyAlias");
   }
 
@@ -393,26 +393,26 @@ public class Config {
    * be using a transform pipeline and will have multiple complete copies of the
    * response in memory at the same time.
    */
-  public int getServerMaxWorkerThreads() {
+  int getServerMaxWorkerThreads() {
     return Integer.parseInt(getValue("server.maxWorkerThreads"));
   }
 
   /**
    * The maximum request queue length.
    */
-  public int getServerQueueCapacity() {
+  int getServerQueueCapacity() {
     return Integer.parseInt(getValue("server.queueCapacity"));
   }
 
-  public String getServerSamlEntityId() {
+  String getServerSamlEntityId() {
     return getValue("server.samlEntityId");
   }
 
-  public boolean isServerToUseCompression() {
+  boolean isServerToUseCompression() {
     return Boolean.parseBoolean(getValue("server.useCompression"));
   }
 
-  public boolean sendDocControlsHeader() {
+  boolean sendDocControlsHeader() {
     return Boolean.parseBoolean(getValue("adaptor.sendDocControlsHeader"));
   }
 
@@ -421,7 +421,7 @@ public class Config {
    * file. If connector handles updates and deletes then GSA does not have to
    * recrawl periodically to notice that a document is changed or deleted.
    */
-  public boolean isFeedNoRecrawlBitEnabled() {
+  boolean isFeedNoRecrawlBitEnabled() {
     return Boolean.getBoolean(getValue("feed.noRecrawlBitEnabled"));
   }
 
@@ -429,7 +429,7 @@ public class Config {
    * Optional (default false): Adds crawl-immediately bit with sent records in
    * feed file.  This bit makes the sent URL get crawl priority.
    */
-  public boolean isCrawlImmediatelyBitEnabled() {
+  boolean isCrawlImmediatelyBitEnabled() {
     return Boolean.parseBoolean(getValue("feed.crawlImmediatelyBitEnabled"));
   }
 
@@ -437,7 +437,7 @@ public class Config {
    * Whether the default {@code main()} should automatically start pushing all
    * document ids on startup. Defaults to {@code true}.
    */
-  public boolean isAdaptorPushDocIdsOnStartup() {
+  boolean isAdaptorPushDocIdsOnStartup() {
     return Boolean.parseBoolean(getValue("adaptor.pushDocIdsOnStartup"));
   }
 
@@ -445,7 +445,7 @@ public class Config {
    * Automatically unzips and {@code DocId}s ending in {@code .zip} and provides
    * them to the GSA.
    */
-  public boolean useAdaptorAutoUnzip() {
+  boolean useAdaptorAutoUnzip() {
     return Boolean.parseBoolean(getValue("adaptor.autoUnzip"));
   } 
 
@@ -454,15 +454,15 @@ public class Config {
    * listings of {@code DocId}s. Multiple times can be specified by separating
    * them with a '|' (vertical bar).
    */
-  public String getAdaptorFullListingSchedule() {
+  String getAdaptorFullListingSchedule() {
     return getValue("adaptor.fullListingSchedule");
   }
 
-  public long getAdaptorIncrementalPollPeriodMillis() {
+  long getAdaptorIncrementalPollPeriodMillis() {
     return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
   }
 
-  public long getAdaptorDocContentTimeoutMillis() {
+  long getAdaptorDocContentTimeoutMillis() {
     return Long.parseLong(getValue("adaptor.docContentTimeoutSecs")) * 1000;
   }
 
@@ -472,7 +472,7 @@ public class Config {
    * configuration entry is added in each map based on the name provided by the
    * user.
    */
-  public synchronized List<Map<String, String>> getTransformPipelineSpec() {
+  synchronized List<Map<String, String>> getTransformPipelineSpec() {
     final String configKey = "transform.pipeline";
     String configValue = getValue(configKey).trim();
     if ("".equals(configValue)) {
@@ -494,15 +494,15 @@ public class Config {
     return transforms;
   }
 
-  public int getTransformMaxDocumentBytes() {
+  int getTransformMaxDocumentBytes() {
     return Integer.parseInt(getValue("transform.maxDocumentBytes"));
   }
 
-  public boolean isTransformRequired() {
+  boolean isTransformRequired() {
     return Boolean.parseBoolean(getValue("transform.required"));
   }
 
-  public boolean isJournalReducedMem() {
+  boolean isJournalReducedMem() {
     return Boolean.parseBoolean(getValue("journal.reducedMem"));
   }
 
@@ -512,26 +512,26 @@ public class Config {
 //   * file. No-follow means that if document content has links they are not
 //   * followed.
 //   */
-//  public boolean isNoFollowBitEnabled() {
+//  boolean isNoFollowBitEnabled() {
 //    return Boolean.parseBoolean(getValue("feed.noFollowBitEnabled"));
 //  }
 
   /* Preferences expected to never change: */
 
   /** Provides the character encoding the GSA prefers. */
-  public Charset getGsaCharacterEncoding() {
+  Charset getGsaCharacterEncoding() {
     return Charset.forName(getValue("gsa.characterEncoding"));
   }
 
-  public boolean isGsa614FeedWorkaroundEnabled() {
+  boolean isGsa614FeedWorkaroundEnabled() {
     return Boolean.parseBoolean(getValue("gsa.614FeedWorkaroundEnabled"));
   }
 
-  public boolean isGsa70AuthMethodWorkaroundEnabled() {
+  boolean isGsa70AuthMethodWorkaroundEnabled() {
     return Boolean.parseBoolean(getValue("gsa.70AuthMethodWorkaroundEnabled"));
   }
 
-  public String getGsaSamlEntityId() {
+  String getGsaSamlEntityId() {
     return getValue("gsa.samlEntityId");
   }
 
@@ -539,7 +539,7 @@ public class Config {
    * Provides max number of URLs (equal to number of document ids) that are sent
    * to the GSA per feed file.
    */
-  public int getFeedMaxUrls() {
+  int getFeedMaxUrls() {
     return Integer.parseInt(getValue("feed.maxUrls"));
   }
 

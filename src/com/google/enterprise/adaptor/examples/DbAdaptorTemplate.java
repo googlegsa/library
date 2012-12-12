@@ -59,7 +59,8 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
   public void init(AdaptorContext context) throws Exception {
     Class.forName("org.gjt.mm.mysql.Driver");
     log.info("loaded driver");
-    maxIdsPerFeedFile = context.getConfig().getFeedMaxUrls();
+    maxIdsPerFeedFile
+        = Integer.parseInt(context.getConfig().getValue("feed.maxUrls"));
     dbname = context.getConfig().getValue("db.name");
     tablename = context.getConfig().getValue("db.tablename");
   }
