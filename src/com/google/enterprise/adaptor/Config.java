@@ -43,6 +43,9 @@ import java.util.logging.*;
  *     of seconds between invocations of {@link
  *     PollingIncrementalAdaptor#getModifiedDocIds
  *     PollingIncrementalAdaptor.getModifiedDocIds}.    Defaults to 900
+ * <tr><td> </td><td>adaptor.docContentTimeoutSecs </td><td> number of seconds
+ *     before a call to get document content times out and is interrupted.
+ *     Defaults to 30
  * <tr><td> </td><td>adaptor.pushDocIdsOnStartup </td><td> whether to invoke
  *     {@link Adaptor#getDocIds Adaptor.getDocIds} on process start
  *     (in addition to adaptor.fullListingSchedule).   Defaults to true
@@ -198,6 +201,7 @@ public class Config {
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
     // 15 minutes.
     addKey("adaptor.incrementalPollPeriodSecs", "900");
+    addKey("adaptor.docContentTimeoutSecs", "30");
     addKey("transform.pipeline", "");
     // 1 MiB.
     addKey("transform.maxDocumentBytes", "1048576");
@@ -434,6 +438,10 @@ public class Config {
 
   public long getAdaptorIncrementalPollPeriodMillis() {
     return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
+  }
+
+  public long getAdaptorDocContentTimeoutMillis() {
+    return Long.parseLong(getValue("adaptor.docContentTimeoutSecs")) * 1000;
   }
 
   /**

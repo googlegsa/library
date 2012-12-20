@@ -25,6 +25,7 @@ import java.io.*;
 import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.concurrent.*;
 
 import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.auth.x500.X500Principal;
@@ -54,7 +55,7 @@ public class DocumentHandlerTest {
     new DocumentHandler("localhost", Charset.forName("UTF-8"), null, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false);
+        false, false, new MockWatchdog());
   }
 
   @Test
@@ -63,7 +64,7 @@ public class DocumentHandlerTest {
     new DocumentHandler("localhost", Charset.forName("UTF-8"), docIdCodec, null,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false);
+        false, false, new MockWatchdog());
   }
 
   @Test
@@ -72,7 +73,7 @@ public class DocumentHandlerTest {
     new DocumentHandler("localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, null, new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false);
+        false, false, new MockWatchdog());
   }
 
   @Test
@@ -82,7 +83,7 @@ public class DocumentHandlerTest {
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), null,
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false);
+        false, false, new MockWatchdog());
   }
 
   @Test
@@ -92,7 +93,17 @@ public class DocumentHandlerTest {
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, null, null, 0,
-        false, false);
+        false, false, new MockWatchdog());
+  }
+
+  @Test
+  public void testNullWatchdog() {
+    thrown.expect(NullPointerException.class);
+    new DocumentHandler("localhost",
+        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
+        "localhost", new String[0], handler, sessionManager, null, 0,
+        false, false, null);
   }
 
   @Test
@@ -124,7 +135,7 @@ public class DocumentHandlerTest {
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], authnHandler, sessionManager, null, 0,
-        false, false);
+        false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
   }
@@ -211,7 +222,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[] {remoteIp, " "}, null, sessionManager, null, 0, false,
-        false);
+        false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -225,7 +236,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false);
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
@@ -242,7 +254,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false);
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         null));
@@ -256,7 +269,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false);
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new KerberosPrincipal("someuser@not-domain")));
@@ -270,7 +284,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false);
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("OU=Unknown, O=Unknown, C=Unknown")));
@@ -284,7 +299,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false);
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=nottrusted, OU=Unknown, O=Unknown, C=Unknown")));
@@ -299,7 +315,8 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), remoteIp,
-        new String[0], null, sessionManager, null, 0, false, false);
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -335,6 +352,48 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testWatchdogInterruption() throws Exception {
+    ScheduledExecutorService executor
+        = Executors.newSingleThreadScheduledExecutor();
+    Watchdog watchdog = new Watchdog(1, executor);
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        Thread.sleep(100);
+        super.getDocContent(request, response);
+      }
+    };
+    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        mockAdaptor, "localhost", new String[0], null,
+        sessionManager, null, 0, false, false, watchdog);
+    try {
+      handler.handle(ex);
+    } finally {
+      executor.shutdownNow();
+    }
+    assertEquals(500, ex.getResponseCode());
+  }
+
+  @Test
+  public void testWatchdogNoInterruption() throws Exception {
+    ScheduledExecutorService executor
+        = Executors.newSingleThreadScheduledExecutor();
+    Watchdog watchdog = new Watchdog(100, executor);
+    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        mockAdaptor, "localhost", new String[0], null,
+        sessionManager, null, 0, false, false, watchdog);
+    try {
+      handler.handle(ex);
+    } finally {
+      executor.shutdownNow();
+    }
+    assertEquals(200, ex.getResponseCode());
+  }
+
+  @Test
   public void testTransform() throws Exception {
     final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
@@ -355,7 +414,7 @@ public class DocumentHandlerTest {
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
-          throws IOException {
+          throws IOException, InterruptedException {
         response.addMetadata(key, "testing value");
         super.getDocContent(request, response);
       }
@@ -365,7 +424,7 @@ public class DocumentHandlerTest {
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 100,
-        false, false);
+        false, false, new MockWatchdog());
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -407,7 +466,7 @@ public class DocumentHandlerTest {
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 3, false,
-        false);
+        false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
@@ -439,7 +498,7 @@ public class DocumentHandlerTest {
         Charset.forName("UTF-8"), docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 3, true,
-        false);
+        false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
     assertTrue(mockAdaptor.failedAtCorrectTime);
@@ -801,7 +860,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
-        null, sessionManager, null, 0, false, false);
+        null, sessionManager, null, 0, false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
@@ -834,7 +893,7 @@ public class DocumentHandlerTest {
         "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false);
+        sessionManager, null, 0, false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -844,7 +903,7 @@ public class DocumentHandlerTest {
     return new DocumentHandler("localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false);
+        sessionManager, null, 0, false, false, new MockWatchdog());
   }
 
   @Test

@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -69,6 +71,7 @@ public class GsaCommunicationHandler {
   private HttpServer server;
   private Thread shutdownHook;
   private IncrementalAdaptorPoller incrementalAdaptorPoller;
+  private ScheduledExecutorService watchdogExecutor;
   private final DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
   private Dashboard dashboard;
@@ -162,6 +165,10 @@ public class GsaCommunicationHandler {
         1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
 
+    watchdogExecutor = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("watchdog")
+        .build());
+
     SessionManager<HttpExchange> sessionManager
         = new SessionManager<HttpExchange>(
           new SessionManager.HttpExchangeClientStore("sessid_" + port, secure),
@@ -182,6 +189,8 @@ public class GsaCommunicationHandler {
           config.getServerHostname(), config.getGsaCharacterEncoding(),
           adaptor, docIdCodec, metadata));
     }
+    Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
+        watchdogExecutor);
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
@@ -193,7 +202,7 @@ public class GsaCommunicationHandler {
                             createTransformPipeline(),
                             config.getTransformMaxDocumentBytes(),
                             config.isTransformRequired(),
-                            config.isServerToUseCompression()));
+                            config.isServerToUseCompression(), watchdog));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
@@ -450,6 +459,10 @@ public class GsaCommunicationHandler {
       dashboard.stop(maxDelaySeconds);
       log.finer("Completed dashboard stop");
       dashboard = null;
+    }
+    if (watchdogExecutor != null) {
+      watchdogExecutor.shutdownNow();
+      watchdogExecutor = null;
     }
     adaptor.destroy();
   }

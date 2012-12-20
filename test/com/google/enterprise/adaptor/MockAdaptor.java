@@ -30,7 +30,7 @@ class MockAdaptor extends AbstractAdaptor {
 
   @Override
   public void getDocContent(Request request, Response response)
-      throws IOException {
+      throws IOException, InterruptedException {
     response.getOutputStream().write(documentBytes);
   }
 }

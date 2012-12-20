@@ -31,7 +31,8 @@ abstract class WrapperAdaptor implements Adaptor {
   }
 
   @Override
-  public void getDocContent(Request req, Response resp) throws IOException {
+  public void getDocContent(Request req, Response resp) throws IOException,
+      InterruptedException {
     adaptor.getDocContent(req, resp);
   }
 

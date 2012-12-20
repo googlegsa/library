@@ -47,6 +47,7 @@ class DocumentHandler extends AbstractHandler {
   private final DocIdEncoder docIdEncoder;
   private final Journal journal;
   private final Adaptor adaptor;
+  private final Watchdog watchdog;
   /**
    * List of Common Names of Subjects that are provided full access when in
    * secure mode. All entries should be lower case.
@@ -74,10 +75,11 @@ class DocumentHandler extends AbstractHandler {
                          HttpHandler authnHandler,
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
-                         boolean transformRequired, boolean useCompression) {
+                         boolean transformRequired, boolean useCompression,
+                         Watchdog watchdog) {
     super(defaultHostname, defaultCharset);
     if (docIdDecoder == null || docIdEncoder == null || journal == null
-        || adaptor == null || sessionManager == null) {
+        || adaptor == null || sessionManager == null || watchdog == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
@@ -90,6 +92,7 @@ class DocumentHandler extends AbstractHandler {
     this.transformMaxBytes = transformMaxBytes;
     this.transformRequired = transformRequired;
     this.useCompression = useCompression;
+    this.watchdog = watchdog;
 
     initFullAccess(gsaHostname, fullAccessHosts);
   }
@@ -195,14 +198,20 @@ class DocumentHandler extends AbstractHandler {
       DocumentRequest request = new DocumentRequest(ex, docId);
       DocumentResponse response = new DocumentResponse(ex, docId);
       journal.recordRequestProcessingStart();
+      watchdog.processingStarting();
       try {
         adaptor.getDocContent(request, response);
+      } catch (InterruptedException e) {
+        journal.recordRequestProcessingFailure();
+        throw new RuntimeException("Retriever interrupted: " + docId, e);
       } catch (RuntimeException e) {
         journal.recordRequestProcessingFailure();
         throw new RuntimeException("Exception in retriever: " + docId, e);
       } catch (IOException e) {
         journal.recordRequestProcessingFailure();
         throw new IOException("Exception in retriever: " + docId, e);
+      } finally {
+        watchdog.processingCompleted();
       }
       journal.recordRequestProcessingEnd(response.getWrittenContentSize());
 

@@ -221,7 +221,8 @@ class AutoUnzipAdaptor extends WrapperAdaptor {
    * adaptor or simply call wrapped adaptor.
    */
   @Override
-  public void getDocContent(Request req, Response resp) throws IOException {
+  public void getDocContent(Request req, Response resp) throws IOException,
+      InterruptedException {
     DocId docId = req.getDocId();
     DocId[] parts = getDocIdParts(docId);
     Request auRequest = new AutoUnzipRequest(req, parts[0]);

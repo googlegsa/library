@@ -49,7 +49,7 @@ public interface Adaptor {
    * will determine if and when to retry.
    */
   public void getDocContent(Request request, Response response)
-      throws IOException;
+      throws IOException, InterruptedException;
 
   /**
    * Pushes all the {@code DocId}s that are suppose to be indexed by the GSA.
