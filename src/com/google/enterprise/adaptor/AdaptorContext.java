@@ -14,6 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
 /**
  * Methods for an Adaptor to communicate with the adaptor library.
  * Implementations of this class must be thread-safe.
@@ -62,4 +66,35 @@ public interface AdaptorContext {
    * plain text.
    */
   public SensitiveValueDecoder getSensitiveValueDecoder();
+
+  /**
+   * Registers a handler with the library's {@link
+   * com.sun.net.httpserver.HttpServer} in similar fashion to {@link
+   * com.sun.net.httpserver.HttpServer#createContext}. Removal of the handler
+   * can be acheived by calling {@code
+   * httpContext.getServer().removeContext(httpContext)} on the returned
+   * context. Handler registration should generally occur during {@link
+   * Adaptor#init} and removal during {@link Adaptor#destroy}.
+   *
+   * <p>Although {@code path} may be passed directly to the underlying {@code
+   * HttpServer}, that is not necessarily the case. Thus, implementations should
+   * use the returned context's path when forming URLs to the handler. In
+   * addition, the handler and context may be modified before being returned;
+   * this is primarily to allow adding commonly-needed filters for error
+   * handling and logging, but also available for implementation-specific needs.
+   */
+  public HttpContext createHttpContext(String path, HttpHandler handler);
+
+  /**
+   * Get the session for the user communicating via {@code ex}. If a session
+   * does not already exist, then {@code create} determines if one should be
+   * created.
+   *
+   * @param ex exchange which user issued request
+   * @param create whether a new session should be created if one does not
+   *     already exist for this user
+   * @return user's session, or {@code null} if session did not already exist
+   *     and {@code create = false}
+   */
+  public Session getUserSession(HttpExchange ex, boolean create);
 }

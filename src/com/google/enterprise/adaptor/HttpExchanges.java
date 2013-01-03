@@ -19,9 +19,11 @@ import com.sun.net.httpserver.HttpsServer;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 import java.nio.charset.Charset;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -31,7 +33,7 @@ import java.util.logging.Logger;
 import java.util.zip.GZIPOutputStream;
 
 /** Utility class for working with {@link HttpExchange}s. */
-final class HttpExchanges {
+public final class HttpExchanges {
   private static final Logger log
       = Logger.getLogger(HttpExchanges.class.getName());
   private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
@@ -280,5 +282,48 @@ final class HttpExchanges {
     ex.getResponseHeaders().set("Last-Modified",
                                 dateFormatRfc1123.get().format(lastModified));
 
+  }
+
+  /**
+   * Parse request GET query parameters of {@code ex} into its parts, correctly
+   * taking into account {@code charset}. The encoding of the GET parameters is
+   * not specified in the request parameters, so it must be negotiated elsewhere
+   * (i.e., via hard-coding). ISO 8859-1 (Latin-1) and UTF-8 are the only
+   * commonly used encodings for query parameters.
+   *
+   * @param ex exchange whose request query string is to be parsed
+   * @param charset character set used during encoding
+   * @return fully-decoded parameter values
+   */
+  public static Map<String, List<String>> parseQueryParameters(HttpExchange ex,
+      Charset charset) {
+    String queryString = ex.getRequestURI().getRawQuery();
+    if (queryString == null || queryString.isEmpty()) {
+      return Collections.emptyMap();
+    }
+    Map<String, List<String>> parsedParams
+        = new TreeMap<String, List<String>>();
+    for (String param : queryString.split("&")) {
+      String[] parts = param.split("=", 2);
+      String key = parts[0];
+      String value = parts.length == 2 ? parts[1] : "";
+      try {
+        key = URLDecoder.decode(key, charset.name());
+        value = URLDecoder.decode(value, charset.name());
+      } catch (UnsupportedEncodingException e) {
+        throw new AssertionError(e);
+      }
+      List<String> values = parsedParams.get(key);
+      if (values == null) {
+        values = new LinkedList<String>();
+        parsedParams.put(key, values);
+      }
+      values.add(value);
+    }
+
+    for (Map.Entry<String, List<String>> me : parsedParams.entrySet()) {
+      me.setValue(Collections.unmodifiableList(me.getValue()));
+    }
+    return Collections.unmodifiableMap(parsedParams);
   }
 }

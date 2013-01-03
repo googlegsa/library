@@ -14,6 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
+import com.sun.net.httpserver.HttpContext;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -384,6 +388,16 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public SensitiveValueDecoder getSensitiveValueDecoder() {
       return context.getSensitiveValueDecoder();
+    }
+
+    @Override
+    public HttpContext createHttpContext(String path, HttpHandler handler) {
+      return context.createHttpContext(path, handler);
+    }
+
+    @Override
+    public Session getUserSession(HttpExchange ex, boolean create) {
+      return context.getUserSession(ex, create);
     }
   }
 }

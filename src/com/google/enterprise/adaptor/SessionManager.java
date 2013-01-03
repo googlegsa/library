@@ -87,7 +87,7 @@ class SessionManager<E> {
 
   protected synchronized Session createSession(E clientState) {
     cleanupExpiredSessions();
-    Session session = new Session();
+    Session session = new HashMapSession();
     String id = generateRandomIdentifier();
     sessions.put(id, session);
     clientStore.store(clientState, id);

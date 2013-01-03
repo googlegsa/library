@@ -19,19 +19,27 @@ import java.util.*;
 /**
  * Generic session-state container, but intended for authn bookkeeping.
  */
-public interface Session {
+class HashMapSession implements Session {
+  private final Map<String, Object> state = new HashMap<String, Object>();
+
   /**
    * Set attribute value, replacing existing value if it already exists.
    */
-  public void setAttribute(String key, Object value);
+  public synchronized void setAttribute(String key, Object value) {
+    state.put(key, value);
+  }
 
   /**
    * Get attribute value.
    */
-  public Object getAttribute(String key);
+  public synchronized Object getAttribute(String key) {
+    return state.get(key);
+  }
 
   /**
    * Remove attribute value.
    */
-  public Object removeAttribute(String key);
+  public synchronized Object removeAttribute(String key) {
+    return state.remove(key);
+  }
 }

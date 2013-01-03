@@ -20,7 +20,10 @@ import org.opensaml.ws.transport.http.HTTPInTransport;
 import org.opensaml.xml.security.credential.Credential;
 
 import java.io.InputStream;
+import java.nio.charset.Charset;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * An adaptor for implementing {@link HttpInTransport} with {@link
@@ -30,6 +33,7 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
   protected final HttpExchange ex;
   private boolean isAuthenticated;
   private boolean isHttps;
+  private final Map<String, List<String>> queryParameters;
 
   public HttpExchangeInTransportAdapter(HttpExchange ex) {
     this(ex, false);
@@ -38,6 +42,13 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
   public HttpExchangeInTransportAdapter(HttpExchange ex, boolean isHttps) {
     this.ex = ex;
     this.isHttps = isHttps;
+    if (ex.getRequestMethod().equals("GET")) {
+      this.queryParameters
+          = HttpExchanges.parseQueryParameters(ex, Charset.forName("UTF-8"));
+    } else {
+      // Unsupported decoding.
+      this.queryParameters = null;
+    }
   }
 
   /**
@@ -169,7 +180,8 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
    */
   @Override
   public String getParameterValue(String name) {
-    throw new UnsupportedOperationException();
+    List<String> values = getParameterValues(name);
+    return values == null ? null : values.get(0);
   }
 
   /**
@@ -179,7 +191,12 @@ class HttpExchangeInTransportAdapter implements HTTPInTransport {
    */
   @Override
   public List<String> getParameterValues(String name) {
-    throw new UnsupportedOperationException();
+    if (queryParameters == null) {
+      throw new UnsupportedOperationException(
+          "Parameter decoding only supported for GET requests");
+    }
+    List<String> values = queryParameters.get(name);
+    return values == null ? null : Collections.unmodifiableList(values);
   }
 
   /**

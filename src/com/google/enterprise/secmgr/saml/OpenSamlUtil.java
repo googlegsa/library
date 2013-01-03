@@ -71,6 +71,7 @@ import org.opensaml.saml2.core.SubjectConfirmation;
 import org.opensaml.saml2.core.SubjectConfirmationData;
 import org.opensaml.saml2.metadata.EntityDescriptor;
 import org.opensaml.saml2.metadata.KeyDescriptor;
+import org.opensaml.saml2.metadata.AssertionConsumerService;
 import org.opensaml.saml2.metadata.RoleDescriptor;
 import org.opensaml.saml2.metadata.SingleSignOnService;
 import org.opensaml.saml2.metadata.provider.FilesystemMetadataProvider;
@@ -241,6 +242,8 @@ public final class OpenSamlUtil {
       makeSamlObjectBuilder(ArtifactResponse.DEFAULT_ELEMENT_NAME);
   private static final SAMLObjectBuilder<Assertion> assertionBuilder =
       makeSamlObjectBuilder(Assertion.DEFAULT_ELEMENT_NAME);
+  private static final SAMLObjectBuilder<AssertionConsumerService> assertionConsumerServiceBuilder =
+      makeSamlObjectBuilder(AssertionConsumerService.DEFAULT_ELEMENT_NAME);
   private static final SAMLObjectBuilder<Attribute> attributeBuilder =
       makeSamlObjectBuilder(Attribute.DEFAULT_ELEMENT_NAME);
   private static final SAMLObjectBuilder<AttributeStatement> attributeStatementBuilder =
@@ -417,6 +420,23 @@ public final class OpenSamlUtil {
       }
     }
     return assertion;
+  }
+
+  /**
+   * Static factory for SAML {@link AssertionConsumerService} objects.
+   *
+   * @param location A URL for this service.
+   * @param binding A SAML binding used to communicate with the service.
+   * @return A new {@code AssertionConsumerService} object.
+   */
+  public static AssertionConsumerService makeAssertionConsumerService(String location,
+      String binding) {
+    AssertionConsumerService endpoint = assertionConsumerServiceBuilder.buildObject();
+    endpoint.setLocation(location);
+    endpoint.setBinding(binding);
+    endpoint.setIndex(0);
+    endpoint.setIsDefault(true);
+    return endpoint;
   }
 
   /**
@@ -688,12 +708,37 @@ public final class OpenSamlUtil {
   }
 
   /**
+   * Static factory for SAML {@link Status} objects.
+   *
+   * @param statusCode A status code indicating result status of a request.
+   * @param statusMessage An optional message providing human-readable detail of the status.
+   * @return A new {@link Status} object.
+   */
+  public static Status makeStatus(StatusCode statusCode, StatusMessage statusMessage) {
+    Status status = statusBuilder.buildObject();
+    status.setStatusCode(statusCode);
+    if (statusMessage != null) {
+      status.setStatusMessage(statusMessage);
+    }
+    return status;
+  }
+
+  /**
+   * Static factory for a successful SAML status element.
+   *
+   * @return A successful {@link Status} element.
+   */
+  public static Status makeSuccessfulStatus() {
+    return makeStatus(makeStatusCode(StatusCode.SUCCESS_URI), null);
+  }
+
+  /**
    * Static factory for SAML {@link StatusCode} objects.
    *
    * @param value A URI specifying one of the standard SAML status codes.
    * @return A new <code>StatusCode</code> object.
    */
-  private static StatusCode makeStatusCode(String value) {
+  public static StatusCode makeStatusCode(String value) {
     StatusCode code = statusCodeBuilder.buildObject();
     code.setValue(value);
     return code;
@@ -705,7 +750,7 @@ public final class OpenSamlUtil {
    * @param value A status message string.
    * @return A new <code>StatusMessage</code> object.
    */
-  private static StatusMessage makeStatusMessage(String value) {
+  public static StatusMessage makeStatusMessage(String value) {
     StatusMessage message = statusMessageBuilder.buildObject();
     message.setMessage(value);
     return message;

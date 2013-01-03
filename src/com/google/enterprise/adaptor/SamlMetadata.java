@@ -63,6 +63,17 @@ class SamlMetadata {
     acs.setLocation(
         "https://" + hostname + ":" + port + "/samlassertionconsumer");
 
+    IDPSSODescriptor idpsso = makeSamlObject(
+        IDPSSODescriptor.DEFAULT_ELEMENT_NAME);
+    ed.getRoleDescriptors().add(idpsso);
+    idpsso.addSupportedProtocol(SAMLConstants.SAML20P_NS);
+
+    SingleSignOnService ssos = makeSamlObject(
+        SingleSignOnService.DEFAULT_ELEMENT_NAME);
+    idpsso.getSingleSignOnServices().add(ssos);
+    ssos.setBinding(SAMLConstants.SAML2_REDIRECT_BINDING_URI);
+    ssos.setLocation("https://" + hostname + ":" + port + "/samlip");
+
     return ed;
   }
 
@@ -90,6 +101,25 @@ class SamlMetadata {
     ars.setBinding(SAMLConstants.SAML2_SOAP11_BINDING_URI);
     ars.setLocation(
         "https://" + gsaHostname + "/security-manager/samlartifact");
+
+    SPSSODescriptor spsso = makeSamlObject(
+        SPSSODescriptor.DEFAULT_ELEMENT_NAME);
+    ed.getRoleDescriptors().add(spsso);
+    idpsso.addSupportedProtocol(SAMLConstants.SAML20P_NS);
+
+    // TODO(ejona): Loop through all full access hosts.
+    AssertionConsumerService acs = makeSamlObject(
+        AssertionConsumerService.DEFAULT_ELEMENT_NAME);
+    spsso.getAssertionConsumerServices().add(acs);
+    acs.setBinding(SAMLConstants.SAML2_ARTIFACT_BINDING_URI);
+    acs.setLocation(
+        "https://" + gsaHostname + "/security-manager/samlassertionconsumer");
+
+    acs = makeSamlObject(AssertionConsumerService.DEFAULT_ELEMENT_NAME);
+    spsso.getAssertionConsumerServices().add(acs);
+    acs.setBinding(SAMLConstants.SAML2_POST_BINDING_URI);
+    acs.setLocation(
+        "https://" + gsaHostname + "/security-manager/samlassertionconsumer");
 
     return ed;
   }

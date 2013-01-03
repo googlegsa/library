@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc. All Rights Reserved.
+// Copyright 2013 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -14,24 +14,20 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import com.sun.net.httpserver.*;
 
 /**
- * Generic session-state container, but intended for authn bookkeeping.
+ * Mock {@link HttpContext}.
  */
-public interface Session {
-  /**
-   * Set attribute value, replacing existing value if it already exists.
-   */
-  public void setAttribute(String key, Object value);
+public class MockHttpsContext extends MockHttpContext {
+  private final HttpServer httpServer = new MockHttpsServer();
 
-  /**
-   * Get attribute value.
-   */
-  public Object getAttribute(String key);
+  public MockHttpsContext(HttpHandler handler, String path) {
+    super(handler, path);
+  }
 
-  /**
-   * Remove attribute value.
-   */
-  public Object removeAttribute(String key);
+  @Override
+  public HttpServer getServer() {
+    return httpServer;
+  }
 }

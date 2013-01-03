@@ -19,6 +19,8 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
+import java.util.Arrays;
+
 /**
  * Test cases for {@link HttpExchangeInTransportAdapter}.
  */
@@ -55,6 +57,26 @@ public class HttpExchangeInTransportAdapterTest {
   }
 
   @Test
+  public void testIsHttps() {
+    assertFalse(inTransport.isConfidential());
+    assertFalse(inTransport.isIntegrityProtected());
+
+    inTransport = new HttpExchangeInTransportAdapter(
+          new MockHttpExchange("GET", "/", null), true);
+    assertTrue(inTransport.isConfidential());
+    assertTrue(inTransport.isIntegrityProtected());
+  }
+
+  @Test
+  public void testSetAuthenticated() {
+    assertFalse(inTransport.isAuthenticated());
+    inTransport.setAuthenticated(true);
+    assertTrue(inTransport.isAuthenticated());
+    inTransport.setAuthenticated(false);
+    assertFalse(inTransport.isAuthenticated());
+  }
+
+  @Test
   public void testSetConfidential() {
     thrown.expect(UnsupportedOperationException.class);
     inTransport.setConfidential(true);
@@ -79,13 +101,27 @@ public class HttpExchangeInTransportAdapterTest {
   }
 
   @Test
-  public void testGetParameterValue() {
-    thrown.expect(UnsupportedOperationException.class);
-    inTransport.getParameterValue(null);
+  public void testGetParameterValuesNone() {
+    inTransport = new HttpExchangeInTransportAdapter(
+        new MockHttpExchange("GET", "/", null));
+    assertEquals(null, inTransport.getParameterValues("p"));
+    assertEquals(null, inTransport.getParameterValue("p"));
   }
 
   @Test
-  public void testGetParameterValues() {
+  public void testGetParameterValuesBasic() {
+    inTransport = new HttpExchangeInTransportAdapter(
+        new MockHttpExchange("GET", "/?p=1&abc=def&p=%3a%3B%26%C3%BC&p",
+          null));
+    assertEquals(Arrays.asList("1", ":;&ü", ""),
+        inTransport.getParameterValues("p"));
+    assertEquals("1", inTransport.getParameterValue("p"));
+  }
+
+  @Test
+  public void testGetParameterValuesPost() {
+    inTransport = new HttpExchangeInTransportAdapter(
+        new MockHttpExchange("POST", "/", null));
     thrown.expect(UnsupportedOperationException.class);
     inTransport.getParameterValues(null);
   }

@@ -19,6 +19,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
@@ -76,12 +77,14 @@ public class GsaCommunicationHandler {
    */
   private String sendDocIdsSchedId;
   private HttpServer server;
+  private SessionManager<HttpExchange> sessionManager;
   private Thread shutdownHook;
   private ScheduledExecutorService backgroundExecutor;
   private final DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
   private Dashboard dashboard;
   private SensitiveValueCodec secureValueCodec;
+  private SamlIdentityProvider samlIdentityProvider;
   /**
    * Used to stop startup prematurely. This allows cancelling an already-running
    * start(). If start fails, a stale shuttingDownLatch can remain, thus it does
@@ -180,8 +183,7 @@ public class GsaCommunicationHandler {
         new ThreadFactoryBuilder().setDaemon(true).setNameFormat("background")
         .build());
 
-    SessionManager<HttpExchange> sessionManager
-        = new SessionManager<HttpExchange>(
+    sessionManager = new SessionManager<HttpExchange>(
           new SessionManager.HttpExchangeClientStore("sessid_" + port, secure),
           30 * 60 * 1000 /* session lifetime: 30 minutes */,
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
@@ -191,6 +193,17 @@ public class GsaCommunicationHandler {
       SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
           config.getServerPort(), config.getGsaHostname());
 
+      if (adaptor instanceof AuthnAdaptor) {
+        log.config("Adaptor is an AuthnAdaptor; enabling adaptor-based "
+            + "authentication");
+        samlIdentityProvider = new SamlIdentityProvider(
+            (AuthnAdaptor) adaptor, metadata, key);
+        addFilters(server.createContext("/samlip",
+            samlIdentityProvider.getSingleSignOnHandler()));
+      } else {
+        log.config("Adaptor is not an AuthnAdaptor; not enabling adaptor-based "
+            + "authentication");
+      }
       addFilters(server.createContext("/samlassertionconsumer",
           new SamlAssertionConsumerHandler(sessionManager)));
       authnHandler = new AuthnHandler(sessionManager, metadata, key);
@@ -471,6 +484,7 @@ public class GsaCommunicationHandler {
       backgroundExecutor.shutdownNow();
       backgroundExecutor = null;
     }
+    sessionManager = null;
     adaptor.destroy();
   }
 
@@ -716,6 +730,29 @@ public class GsaCommunicationHandler {
     @Override
     public SensitiveValueDecoder getSensitiveValueDecoder() {
       return secureValueCodec;
+    }
+
+    @Override
+    public HttpContext createHttpContext(String path, HttpHandler handler) {
+      return addFilters(server.createContext(path, handler));
+    }
+
+    @Override
+    public Session getUserSession(HttpExchange ex, boolean create) {
+      Session session = sessionManager.getSession(ex, create);
+      if (session == null) {
+        return null;
+      }
+      final String wrappedSessionName = "wrapped-session";
+      Session nsSession;
+      synchronized (session) {
+        nsSession = (Session) session.getAttribute(wrappedSessionName);
+        if (nsSession == null) {
+          nsSession = new NamespacedSession(session, "adaptor-impl-");
+          session.setAttribute(wrappedSessionName, nsSession);
+        }
+      }
+      return nsSession;
     }
   }
 
