@@ -15,31 +15,28 @@
 package com.google.enterprise.adaptor;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.logging.Logger;
 
 /** Serves class' resources like dashboard's html and jquery js. */
-class DashboardHandler extends AbstractHandler {
+class DashboardHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(DashboardHandler.class.getName());
   /** Subpackage to look for static resources within. */
   private static final String STATIC_PACKAGE = "resources";
 
-  public DashboardHandler(String fallbackHostname, Charset defaultEncoding) {
-    super(fallbackHostname, defaultEncoding);
-  }
-
-  protected void meteredHandle(HttpExchange ex) throws IOException {
+  @Override
+  public void handle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod)) {
-      URI req = getRequestUri(ex);
+      URI req = HttpExchanges.getRequestUri(ex);
       final String basePath = ex.getHttpContext().getPath();
       final String pathPrefix = basePath + "/";
       if (basePath.equals(req.getPath())) {
@@ -52,7 +49,8 @@ class DashboardHandler extends AbstractHandler {
           throw new IllegalStateException(e);
         }
         ex.getResponseHeaders().set("Location", redirect.toString());
-        respond(ex, HttpURLConnection.HTTP_MOVED_PERM, null, null);
+        HttpExchanges.respond(
+            ex, HttpURLConnection.HTTP_MOVED_PERM, null, null);
         return;
       }
       String path = req.getPath();
@@ -63,20 +61,21 @@ class DashboardHandler extends AbstractHandler {
       path = STATIC_PACKAGE + "/" + path;
       java.net.URL url = DashboardHandler.class.getResource(path);
       if (url == null) {
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
-                      Translation.HTTP_NOT_FOUND );
+        HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+            Translation.HTTP_NOT_FOUND);
         return;
       }
       Date lastModified = new Date(url.openConnection().getLastModified());
       if (lastModified.getTime() == 0) {
         log.info("Resource didn't have a lastModified time");
       } else {
-        Date since = getIfModifiedSince(ex);
+        Date since = HttpExchanges.getIfModifiedSince(ex);
         if (since != null && !lastModified.after(since)) {
-          respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
+          HttpExchanges.respond(
+              ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
           return;
         }
-        setLastModified(ex, lastModified);
+        HttpExchanges.setLastModified(ex, lastModified);
       }
       byte contents[] = loadPage(path);
       String contentType = "application/octet-stream";
@@ -87,10 +86,11 @@ class DashboardHandler extends AbstractHandler {
       } else if (path.endsWith(".js")) {
         contentType = "text/javascript";
       }
-      enableCompressionIfSupported(ex);
-      respond(ex, HttpURLConnection.HTTP_OK, contentType, contents);
+      HttpExchanges.enableCompressionIfSupported(ex);
+      HttpExchanges.respond(
+          ex, HttpURLConnection.HTTP_OK, contentType, contents);
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
           Translation.HTTP_BAD_METHOD);
     }
   }

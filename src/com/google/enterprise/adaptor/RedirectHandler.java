@@ -15,46 +15,41 @@
 package com.google.enterprise.adaptor;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.net.*;
-import java.nio.charset.Charset;
 
 /**
  * HTTP Handler that responds with a fixed redirect. The redirect only occurs if
  * this handler's path is identical to the requested path, otherwise the
  * response is 404.
  */
-class RedirectHandler extends AbstractHandler {
+class RedirectHandler implements HttpHandler {
   private final String redirectPath;
 
   /**
-   * @param fallbackHostname Fallback hostname in case we talk to an old HTTP
-   *    client
-   * @param defaultEncoding Encoding to use when sending simple text responses
    * @param redirectPath relative or absolute path to redirect clients to
    */
-  public RedirectHandler(String fallbackHostname, Charset defaultEncoding,
-                         String redirectPath) {
-    super(fallbackHostname, defaultEncoding);
+  public RedirectHandler(String redirectPath) {
     this.redirectPath = redirectPath;
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
                     Translation.HTTP_NOT_FOUND);
       return;
     }
 
-    URI base = getRequestUri(ex);
+    URI base = HttpExchanges.getRequestUri(ex);
     URI path;
     try {
       path = new URI(redirectPath);
     } catch (URISyntaxException e) {
       throw new IOException("Could not construct URI");
     }
-    sendRedirect(ex, base.resolve(path));
+    HttpExchanges.sendRedirect(ex, base.resolve(path));
   }
 }

@@ -41,12 +41,12 @@ public class SamlAssertionConsumerHandlerTest {
   private SamlMetadata metadata = new SamlMetadata("localhost", 80,
       "thegsa");
   private SamlAssertionConsumerHandler handler
-      = new SamlAssertionConsumerHandler("localhost", charset, sessionManager);
+      = new SamlAssertionConsumerHandler(sessionManager);
   private MockHttpExchange ex
-      = new MockHttpExchange("https", "GET", "/?SAMLart=1234someid5678",
+      = new MockHttpExchange("GET", "/?SAMLart=1234someid5678",
           new MockHttpContext(null, "/"));
   private MockHttpExchange initialEx
-      = new MockHttpExchange("https", "GET", "/doc/someid",
+      = new MockHttpExchange("GET", "/doc/someid",
           new MockHttpContext(null, "/doc/"));
 
   private static final String GOLDEN_ARTIFACT_RESOLVE_REQUEST
@@ -625,7 +625,7 @@ public class SamlAssertionConsumerHandlerTest {
   @Test
   public void testPost() throws Exception {
     MockHttpExchange ex
-        = new MockHttpExchange("http", "POST", "/?SAMLart=1234someid5678",
+        = new MockHttpExchange("POST", "/?SAMLart=1234someid5678",
                                new MockHttpContext(null, "/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());

@@ -39,9 +39,9 @@ import javax.naming.ldap.Rdn;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.security.auth.x500.X500Principal;
 
-class DocumentHandler extends AbstractHandler {
+class DocumentHandler implements HttpHandler {
   private static final Logger log
-      = Logger.getLogger(AbstractHandler.class.getName());
+      = Logger.getLogger(DocumentHandler.class.getName());
 
   private final DocIdDecoder docIdDecoder;
   private final DocIdEncoder docIdEncoder;
@@ -68,8 +68,7 @@ class DocumentHandler extends AbstractHandler {
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
    */
-  public DocumentHandler(String defaultHostname, Charset defaultCharset,
-                         DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
+  public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
                          String gsaHostname, String[] fullAccessHosts,
                          HttpHandler authnHandler,
@@ -77,7 +76,6 @@ class DocumentHandler extends AbstractHandler {
                          TransformPipeline transform, int transformMaxBytes,
                          boolean transformRequired, boolean useCompression,
                          Watchdog watchdog) {
-    super(defaultHostname, defaultCharset);
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || sessionManager == null || watchdog == null) {
       throw new NullPointerException();
@@ -184,11 +182,11 @@ class DocumentHandler extends AbstractHandler {
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
-      DocId docId = docIdDecoder.decodeDocId(getRequestUri(ex));
+      DocId docId = docIdDecoder.decodeDocId(HttpExchanges.getRequestUri(ex));
       log.fine("id: " + docId.getUniqueId());
 
       if (!authzed(ex, docId)) {
@@ -217,8 +215,8 @@ class DocumentHandler extends AbstractHandler {
 
       response.complete();
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
-                    Translation.HTTP_BAD_METHOD);
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+          Translation.HTTP_BAD_METHOD);
     }
   }
 
@@ -232,8 +230,8 @@ class DocumentHandler extends AbstractHandler {
     if ("SecMgr".equals(ex.getRequestHeaders().getFirst("User-Agent"))) {
       // Assume that the SecMgr is performing a "HEAD" request to check authz.
       // We don't support this, so we always issue deny.
-      cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
-                    Translation.HTTP_FORBIDDEN_SECMGR);
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+          Translation.HTTP_FORBIDDEN_SECMGR);
       return false;
     }
 
@@ -265,8 +263,8 @@ class DocumentHandler extends AbstractHandler {
       }
 
       if (status == AuthzStatus.INDETERMINATE) {
-        cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
-                      Translation.HTTP_NOT_FOUND);
+        HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+            Translation.HTTP_NOT_FOUND);
         return false;
       } else if (status == AuthzStatus.DENY) {
         if (identity == null && authnHandler != null) {
@@ -275,8 +273,8 @@ class DocumentHandler extends AbstractHandler {
           authnHandler.handle(ex);
           return false;
         } else {
-          cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
-                        Translation.HTTP_FORBIDDEN);
+          HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+              Translation.HTTP_FORBIDDEN);
           return false;
         }
       }
@@ -405,7 +403,7 @@ class DocumentHandler extends AbstractHandler {
 
     @Override
     public Date getLastAccessTime() {
-      return getIfModifiedSince(ex);
+      return HttpExchanges.getIfModifiedSince(ex);
     }
 
     @Override
@@ -622,12 +620,13 @@ class DocumentHandler extends AbstractHandler {
           throw new IOException("No response sent from adaptor");
 
         case NOT_MODIFIED:
-          respond(ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
+          HttpExchanges.respond(
+              ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
           break;
 
         case NOT_FOUND:
-          cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
-                        Translation.HTTP_NOT_FOUND);
+          HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+              Translation.HTTP_NOT_FOUND);
           break;
 
         case TRANSFORM:
@@ -707,12 +706,13 @@ class DocumentHandler extends AbstractHandler {
       }
       if (useCompression) {
         // TODO(ejona): decide when to use compression based on mime-type
-        enableCompressionIfSupported(ex);
+        HttpExchanges.enableCompressionIfSupported(ex);
       }
       if (lastModified != null) {
-        DocumentHandler.this.setLastModified(ex, lastModified);
+        HttpExchanges.setLastModified(ex, lastModified);
       }
-      startResponse(ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
+      HttpExchanges.startResponse(
+          ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
     }
 
     private ByteArrayOutputStream transform(byte[] content) throws IOException {

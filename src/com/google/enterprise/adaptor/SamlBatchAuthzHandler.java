@@ -19,6 +19,7 @@ import com.google.enterprise.secmgr.saml.HTTPSOAP11MultiContextEncoder;
 import com.google.enterprise.secmgr.saml.OpenSamlUtil;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.joda.time.DateTime;
 
@@ -39,7 +40,6 @@ import org.opensaml.xml.security.SecurityException;
 
 import java.io.IOException;
 import java.net.*;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.logging.*;
 
@@ -47,35 +47,31 @@ import java.util.logging.*;
  * Handler for responding to late-binding, SAML batch authorization requests
  * from the GSA.
  */
-class SamlBatchAuthzHandler extends AbstractHandler {
+class SamlBatchAuthzHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(SamlBatchAuthzHandler.class.getName());
 
-  private final String defaultHostname;
   private final Adaptor adaptor;
   private final SamlMetadata metadata;
   private DocIdDecoder docIdDecoder;
 
-  public SamlBatchAuthzHandler(String defaultHostname, Charset defaultCharset,
-                               Adaptor adaptor, DocIdDecoder docIdDecoder,
+  public SamlBatchAuthzHandler(Adaptor adaptor, DocIdDecoder docIdDecoder,
                                SamlMetadata samlMetadata) {
-    super(defaultHostname, defaultCharset);
-    this.defaultHostname = defaultHostname;
     this.adaptor = adaptor;
     this.docIdDecoder = docIdDecoder;
     this.metadata = samlMetadata;
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     if (!"POST".equals(ex.getRequestMethod())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
           Translation.HTTP_BAD_METHOD);
       return;
     }
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
-                    Translation.HTTP_NOT_FOUND);
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+          Translation.HTTP_NOT_FOUND);
       return;
     }
     // Setup SAML context.
@@ -93,13 +89,13 @@ class SamlBatchAuthzHandler extends AbstractHandler {
         decoder.decode(context);
       } catch (MessageDecodingException e) {
         log.log(Level.INFO, "Error decoding message", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
-                      Translation.HTTP_BAD_REQUEST_ERROR_DECODING);
+        HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+            Translation.HTTP_BAD_REQUEST_ERROR_DECODING);
         return;
       } catch (SecurityException e) {
         log.log(Level.WARNING, "Security error while decoding message", e);
-        cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
-                      Translation.HTTP_BAD_REQUEST_SECURITY_ERROR);
+        HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+            Translation.HTTP_BAD_REQUEST_SECURITY_ERROR);
         return;
       } catch (IndexOutOfBoundsException e) {
         // Normal indication that there are no more messages to decode.
@@ -111,11 +107,11 @@ class SamlBatchAuthzHandler extends AbstractHandler {
     // Figure out if the user is authorized.
     List<Response> responses;
     try {
-      responses = processQueries(queries, getRequestUri(ex));
+      responses = processQueries(queries, HttpExchanges.getRequestUri(ex));
     } catch (TranslationIllegalArgumentException e) {
       log.log(Level.INFO, "Error processing queries", e);
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
-                    e.getTranslation());
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+          e.getTranslation());
       return;
     }
 

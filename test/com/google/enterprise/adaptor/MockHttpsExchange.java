@@ -34,9 +34,9 @@ public class MockHttpsExchange extends HttpsExchange {
     this.sslSession = sslSession;
   }
 
-  public MockHttpsExchange(String protocol, String method, String path,
+  public MockHttpsExchange(String method, String path,
                            HttpContext context, SSLSession sslSession) {
-    this.ex = new MockHttpExchange(protocol, method, path, context);
+    this.ex = new MockHttpExchange(method, path, context);
     this.sslSession = sslSession;
   }
 

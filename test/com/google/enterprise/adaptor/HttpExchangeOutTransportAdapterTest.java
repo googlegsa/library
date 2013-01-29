@@ -28,7 +28,7 @@ public class HttpExchangeOutTransportAdapterTest {
 
   private HttpExchangeOutTransportAdapter outTransport
       = new HttpExchangeOutTransportAdapter(
-          new MockHttpExchange("http", "GET", "/", null));
+          new MockHttpExchange("GET", "/", null));
 
   @Test
   public void testGetAttribute() {

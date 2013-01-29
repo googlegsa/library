@@ -119,7 +119,7 @@ public class SessionManagerTest {
         = new SessionManager.HttpExchangeClientStore("test2");
     SessionManager.ClientStore<HttpExchange> clientStore3
         = new SessionManager.HttpExchangeClientStore("notfound");
-    HttpExchange ex = new MockHttpExchange("http", "GET", "/", null);
+    HttpExchange ex = new MockHttpExchange("GET", "/", null);
     ex.getRequestHeaders().set("Cookie", "test1=value1; value; test2=value2");
     assertEquals("value1", clientStore1.retrieve(ex));
     assertEquals("value2", clientStore2.retrieve(ex));

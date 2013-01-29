@@ -18,13 +18,13 @@ import com.google.enterprise.secmgr.http.HttpClientInterface;
 import com.google.enterprise.secmgr.modules.SamlClient;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.opensaml.xml.security.SecurityHelper;
 import org.opensaml.xml.security.credential.Credential;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
-import java.nio.charset.Charset;
 import java.security.KeyPair;
 
 /**
@@ -32,7 +32,7 @@ import java.security.KeyPair;
  * the GSA's security manager via SAML. This class only sends the initial
  * request; the response is handled in {@link SamlAssertionConsumerHandler}.
  */
-class AuthnHandler extends AbstractHandler {
+class AuthnHandler implements HttpHandler {
   /** Manager that handles keeping track of users attempting to authenticate. */
   private final SessionManager<HttpExchange> sessionManager;
   /**
@@ -54,18 +54,14 @@ class AuthnHandler extends AbstractHandler {
    *   messages
    * @param metadata SAML configuration of endpoints
    */
-  AuthnHandler(String fallbackHostname, Charset defaultEncoding,
-               SessionManager<HttpExchange> sessionManager,
+  AuthnHandler(SessionManager<HttpExchange> sessionManager,
                SamlMetadata metadata, KeyPair key) {
-    this(fallbackHostname, defaultEncoding, sessionManager, metadata,
-         new HttpClientAdapter(), key);
+    this(sessionManager, metadata, new HttpClientAdapter(), key);
   }
 
-  AuthnHandler(String fallbackHostname, Charset defaultEncoding,
-               SessionManager<HttpExchange> sessionManager,
+  AuthnHandler(SessionManager<HttpExchange> sessionManager,
                SamlMetadata metadata, HttpClientInterface httpClient,
                KeyPair key) {
-    super(fallbackHostname, defaultEncoding);
     if (sessionManager == null || metadata == null || httpClient == null) {
       throw new NullPointerException();
     }
@@ -77,10 +73,10 @@ class AuthnHandler extends AbstractHandler {
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if (!"GET".equals(requestMethod) && !"HEAD".equals(requestMethod)) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
           Translation.HTTP_BAD_METHOD);
       return;
     }
@@ -99,7 +95,7 @@ class AuthnHandler extends AbstractHandler {
             "GSA Adaptor",
             cred,
             httpClient);
-    authnState.startAttempt(client, getRequestUri(ex));
+    authnState.startAttempt(client, HttpExchanges.getRequestUri(ex));
     client.sendAuthnRequest(new HttpExchangeOutTransportAdapter(ex, true));
   }
 }

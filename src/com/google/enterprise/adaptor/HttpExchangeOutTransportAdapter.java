@@ -129,10 +129,7 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   /** {@inheritDoc} */
   @Override
   public OutputStream getOutgoingStream() {
-    // Unfortunate coupling with AbstractHandler, but there doesn't seem to be a
-    // better alternative.
-    if (ex.getAttribute(AbstractHandler.ATTR_HEADERS_SENT) == null) {
-      ex.setAttribute(AbstractHandler.ATTR_HEADERS_SENT, true);
+    if (!HttpExchanges.headersSent(ex)) {
       try {
         ex.sendResponseHeaders(HttpURLConnection.HTTP_OK, 0);
       } catch (java.io.IOException e) {
@@ -177,7 +174,6 @@ class HttpExchangeOutTransportAdapter implements HTTPOutTransport {
   @Override
   public void sendRedirect(String location) {
     ex.getResponseHeaders().set("Location", location);
-    ex.setAttribute(AbstractHandler.ATTR_HEADERS_SENT, true);
     try {
       ex.sendResponseHeaders(307, -1);
     } catch (java.io.IOException ex) {

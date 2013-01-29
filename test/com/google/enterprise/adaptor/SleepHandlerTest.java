@@ -18,47 +18,44 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import java.nio.charset.Charset;
-
 /**
  * Tests for {@link SleepHandler}.
  */
 public class SleepHandlerTest {
-  private SleepHandler handler = new SleepHandler("localhost",
-      Charset.forName("UTF-8"), 1);
+  private SleepHandler handler = new SleepHandler(1);
 
   @Test
   public void testSuccess() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "GET", "/r", "/r");
+    MockHttpExchange ex = makeExchange("GET", "/r", "/r");
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
   }
 
   @Test
   public void testPost() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
   }
 
   @Test
   public void testWrongPath() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "GET", "/rwrong", "/r");
+    MockHttpExchange ex = makeExchange("GET", "/rwrong", "/r");
     handler.handle(ex);
     assertEquals(404, ex.getResponseCode());
   }
 
   @Test
   public void testInterrupted() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "GET", "/r", "/r");
+    MockHttpExchange ex = makeExchange("GET", "/r", "/r");
     Thread.currentThread().interrupt();
     handler.handle(ex);
     assertEquals(500, ex.getResponseCode());
   }
 
-  private MockHttpExchange makeExchange(String protocol, String method,
-        String path, String contextPath) throws Exception {
-    MockHttpExchange ex = new MockHttpExchange(protocol, method, path,
+  private MockHttpExchange makeExchange(String method, String path,
+      String contextPath) throws Exception {
+    MockHttpExchange ex = new MockHttpExchange(method, path,
         new MockHttpContext(handler, contextPath));
     return ex;
   }

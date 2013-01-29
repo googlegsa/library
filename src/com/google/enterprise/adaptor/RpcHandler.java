@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
@@ -28,7 +29,7 @@ import java.util.logging.*;
 /**
  * JSON-RPC handler for communication with the dashboard.
  */
-class RpcHandler extends AbstractHandler {
+class RpcHandler implements HttpHandler {
   /** Key used to store the XSRF-prevention token in the session. */
   private static final String XSRF_TOKEN_ATTR_NAME = "rpc-xsrf-token";
   /** Cookie name used to provide the XSRF token to client. */
@@ -42,9 +43,7 @@ class RpcHandler extends AbstractHandler {
       = new HashMap<String, RpcMethod>();
   private final SessionManager<HttpExchange> sessionManager;
 
-  public RpcHandler(String defaultHostname, Charset defaultCharset,
-                    SessionManager<HttpExchange> sessionManager) {
-    super(defaultHostname, defaultCharset);
+  public RpcHandler(SessionManager<HttpExchange> sessionManager) {
     this.sessionManager = sessionManager;
   }
 
@@ -75,15 +74,15 @@ class RpcHandler extends AbstractHandler {
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     if (!"POST".equals(ex.getRequestMethod())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
-                    Translation.HTTP_BAD_METHOD);
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+          Translation.HTTP_BAD_METHOD);
       return;
     }
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
-                    Translation.HTTP_NOT_FOUND);
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+          Translation.HTTP_NOT_FOUND);
       return;
     }
     // Make sure the session has a XSRF token.
@@ -98,7 +97,7 @@ class RpcHandler extends AbstractHandler {
         = ex.getRequestHeaders().getFirst(XSRF_TOKEN_HEADER_NAME);
     if (!xsrfToken.equals(providedXsrfToken)) {
       ex.getResponseHeaders().set(XSRF_TOKEN_HEADER_NAME, xsrfToken);
-      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
           Translation.HTTP_CONFLICT_INVALID_HEADER, XSRF_TOKEN_HEADER_NAME);
       return;
     }
@@ -109,8 +108,8 @@ class RpcHandler extends AbstractHandler {
       requestObj = JSONValue.parse(request);
     }
     if (requestObj == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
-                    Translation.HTTP_BAD_REQUEST_INVALID_JSON);
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_REQUEST,
+          Translation.HTTP_BAD_REQUEST_INVALID_JSON);
       return;
     }
     String method;
@@ -127,8 +126,8 @@ class RpcHandler extends AbstractHandler {
       response.put("id", null);
       response.put("result", null);
       response.put("error", "Invalid request format: " + e.getMessage());
-      respond(ex, HttpURLConnection.HTTP_OK, "application/json",
-              JSONValue.toJSONString(response).getBytes(defaultEncoding));
+      HttpExchanges.respond(ex, HttpURLConnection.HTTP_OK, "application/json",
+          JSONValue.toJSONString(response).getBytes(charset));
       return;
     }
 
@@ -159,9 +158,9 @@ class RpcHandler extends AbstractHandler {
     response.put("id", id);
     response.put("result", result);
     response.put("error", error);
-    enableCompressionIfSupported(ex);
-    respond(ex, HttpURLConnection.HTTP_OK, "application/json",
-            response.toString().getBytes(charset));
+    HttpExchanges.enableCompressionIfSupported(ex);
+    HttpExchanges.respond(ex, HttpURLConnection.HTTP_OK, "application/json",
+        response.toString().getBytes(charset));
   }
 
   public interface RpcMethod {

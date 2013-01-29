@@ -20,14 +20,12 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
-import java.nio.charset.Charset;
 
 /**
  * Tests for {@link DashboardHandler}.
  */
 public class DashboardHandlerTest {
-  private static final Charset UTF_8 = Charset.forName("UTF-8");
-  private DashboardHandler handler = new DashboardHandler("localhost", UTF_8);
+  private DashboardHandler handler = new DashboardHandler();
   private String pathPrefix = "/dash";
   private MockHttpContext httpContext
       = new MockHttpContext(handler, pathPrefix);
@@ -130,12 +128,12 @@ public class DashboardHandlerTest {
   @Test
   public void testPost() throws Exception {
     MockHttpExchange ex
-        = new MockHttpExchange("http", "POST", pathPrefix + "/", httpContext);
+        = new MockHttpExchange("POST", pathPrefix + "/", httpContext);
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
   }
 
   private MockHttpExchange createExchange(String path) {
-    return new MockHttpExchange("http", "GET", pathPrefix + path, httpContext);
+    return new MockHttpExchange("GET", pathPrefix + path, httpContext);
   }
 }

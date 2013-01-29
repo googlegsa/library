@@ -37,9 +37,9 @@ public class SamlBatchAuthzHandlerTest {
 
   private MockAdaptor adaptor = new MockAdaptor();
   private SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-      "localhost", Charset.forName("UTF-8"), adaptor, new MockDocIdCodec(),
+      adaptor, new MockDocIdCodec(),
       new SamlMetadata("localhost", 80, "localhost"));
-  private MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+  private MockHttpExchange ex = new MockHttpExchange("POST", "/",
       new MockHttpContext(handler, "/"));
   private Charset charset = Charset.forName("UTF-8");
 
@@ -50,7 +50,7 @@ public class SamlBatchAuthzHandlerTest {
 
   @Test
   public void testGet() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
+    MockHttpExchange ex = new MockHttpExchange("GET", "/",
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
@@ -58,7 +58,7 @@ public class SamlBatchAuthzHandlerTest {
 
   @Test
   public void testWrongPath() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/wrong",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/wrong",
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(404, ex.getResponseCode());
@@ -88,10 +88,9 @@ public class SamlBatchAuthzHandlerTest {
   @Test
   public void testDenyAuthz() throws Exception {
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        "localhost", Charset.forName("UTF-8"), new PrivateMockAdaptor(),
-        new MockDocIdCodec(),
+        new PrivateMockAdaptor(), new MockDocIdCodec(),
         new SamlMetadata("localhost", 80, "localhost"));
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
         = SOAP_HEADER
@@ -122,9 +121,9 @@ public class SamlBatchAuthzHandlerTest {
       }
     };
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        "localhost", Charset.forName("UTF-8"), adaptor, new MockDocIdCodec(),
+        adaptor, new MockDocIdCodec(),
         new SamlMetadata("localhost", 80, "localhost"));
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
         = SOAP_HEADER
@@ -157,9 +156,9 @@ public class SamlBatchAuthzHandlerTest {
       }
     };
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        "localhost", Charset.forName("UTF-8"), adaptor, new MockDocIdCodec(),
+        adaptor, new MockDocIdCodec(),
         new SamlMetadata("localhost", 80, "localhost"));
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
         = SOAP_HEADER
@@ -190,9 +189,9 @@ public class SamlBatchAuthzHandlerTest {
       }
     };
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        "localhost", Charset.forName("UTF-8"), adaptor, new MockDocIdCodec(),
+        adaptor, new MockDocIdCodec(),
         new SamlMetadata("localhost", 80, "localhost"));
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
         = SOAP_HEADER

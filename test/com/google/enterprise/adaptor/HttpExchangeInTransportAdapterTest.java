@@ -28,7 +28,7 @@ public class HttpExchangeInTransportAdapterTest {
 
   private HttpExchangeInTransportAdapter inTransport
       = new HttpExchangeInTransportAdapter(
-          new MockHttpExchange("http", "GET", "/", null));
+          new MockHttpExchange("GET", "/", null));
 
   @Test
   public void testGetAttribute() {

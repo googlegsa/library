@@ -31,7 +31,6 @@ import org.opensaml.saml2.core.AuthnRequest;
 import org.opensaml.saml2.core.NameID;
 
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.*;
 
 /**
@@ -47,9 +46,9 @@ public class AuthnHandlerTest {
   private SamlMetadata metadata = new SamlMetadata("localhost", 80,
       "thegsa");
   private HttpClientAdapter httpClient = new HttpClientAdapter();
-  private AuthnHandler handler = new AuthnHandler("localhost",
-      Charset.forName("UTF-8"), sessionManager, metadata, httpClient, null);
-  private MockHttpExchange ex = new MockHttpExchange("http", "GET", "/",
+  private AuthnHandler handler = new AuthnHandler(sessionManager, metadata,
+      httpClient, null);
+  private MockHttpExchange ex = new MockHttpExchange("GET", "/",
       new MockHttpContext(null, "/"));
 
   @BeforeClass
@@ -95,8 +94,7 @@ public class AuthnHandlerTest {
     assertTrue(!authnState.isAuthenticated());
 
     // Act like we are the receiving end of the communication.
-    MockHttpExchange remoteEx = new MockHttpExchange("https", "GET",
-        uri.toString(),
+    MockHttpExchange remoteEx = new MockHttpExchange("GET", uri.toString(),
         new MockHttpContext(null, "/security-manager/samlauthn"));
 
     SAMLMessageContext<AuthnRequest, AuthnRequest, NameID> context
@@ -137,7 +135,7 @@ public class AuthnHandlerTest {
 
   @Test
   public void testHead() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "HEAD", "/",
+    MockHttpExchange ex = new MockHttpExchange("HEAD", "/",
                                                new MockHttpContext(null, "/"));
     handler.handle(ex);
     assertEquals(307, ex.getResponseCode());
@@ -148,7 +146,7 @@ public class AuthnHandlerTest {
 
   @Test
   public void testBadMethod() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
                                                new MockHttpContext(null, "/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());

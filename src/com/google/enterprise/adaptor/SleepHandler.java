@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -22,28 +23,26 @@ import java.nio.charset.Charset;
 import java.util.logging.*;
 
 /** Handler that simply sleeps for a given amount of time. */
-class SleepHandler extends AbstractHandler {
+class SleepHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(SleepHandler.class.getName());
 
   private final Charset charset = Charset.forName("UTF-8");
   private final long sleepDurationMillis;
 
-  public SleepHandler(String defaultHostname, Charset defaultCharset,
-      long sleepDurationMillis) {
-    super(defaultHostname, defaultCharset);
+  public SleepHandler(long sleepDurationMillis) {
     this.sleepDurationMillis = sleepDurationMillis;
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     if (!"GET".equals(ex.getRequestMethod())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
           Translation.HTTP_BAD_METHOD);
       return;
     }
     if (!ex.getRequestURI().getPath().equals(ex.getHttpContext().getPath())) {
-      cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
           Translation.HTTP_NOT_FOUND);
       return;
     }
@@ -51,11 +50,11 @@ class SleepHandler extends AbstractHandler {
       Thread.sleep(sleepDurationMillis);
     } catch (InterruptedException ie) {
       log.log(Level.WARNING, "Request interrupted", ie);
-      respond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR, "text/plain",
-          "Interrupted".getBytes(charset));
+      HttpExchanges.respond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR,
+          "text/plain", "Interrupted".getBytes(charset));
       return;
     }
-    respond(ex, HttpURLConnection.HTTP_OK, "text/plain",
+    HttpExchanges.respond(ex, HttpURLConnection.HTTP_OK, "text/plain",
         "Done".getBytes(charset));
   }
 }

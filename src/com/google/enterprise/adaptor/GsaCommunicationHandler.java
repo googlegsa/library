@@ -16,6 +16,8 @@ package com.google.enterprise.adaptor;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import com.sun.net.httpserver.Filter;
+import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -92,6 +94,11 @@ public class GsaCommunicationHandler {
    * new start() calls before stop() is done processing.
    */
   private final AtomicInteger shutdownCount = new AtomicInteger();
+  private final List<Filter> commonFilters = Arrays.asList(new Filter[] {
+    new AbortImmediatelyFilter(),
+    new LoggingFilter(),
+    new InternalErrorFilter(),
+  });
 
   public GsaCommunicationHandler(Adaptor adaptor, Config config) {
     this.adaptor = adaptor;
@@ -164,7 +171,7 @@ public class GsaCommunicationHandler {
     // The Executor can't reject jobs directly, because HttpServer does not
     // appear to handle that case.
     RejectedExecutionHandler policy
-        = new SuggestHandlerAbortPolicy(AbstractHandler.abortImmediately);
+        = new SuggestHandlerAbortPolicy(HttpExchanges.abortImmediately);
     Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
         1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
@@ -184,29 +191,24 @@ public class GsaCommunicationHandler {
       SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
           config.getServerPort(), config.getGsaHostname());
 
-      server.createContext("/samlassertionconsumer",
-          new SamlAssertionConsumerHandler(config.getServerHostname(),
-            config.getGsaCharacterEncoding(), sessionManager));
-      authnHandler = new AuthnHandler(config.getServerHostname(),
-          config.getGsaCharacterEncoding(), sessionManager, metadata, key);
-      server.createContext("/saml-authz", new SamlBatchAuthzHandler(
-          config.getServerHostname(), config.getGsaCharacterEncoding(),
-          adaptor, docIdCodec, metadata));
+      addFilters(server.createContext("/samlassertionconsumer",
+          new SamlAssertionConsumerHandler(sessionManager)));
+      authnHandler = new AuthnHandler(sessionManager, metadata, key);
+      addFilters(server.createContext("/saml-authz", new SamlBatchAuthzHandler(
+          adaptor, docIdCodec, metadata)));
     }
     Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
         backgroundExecutor);
-    server.createContext(config.getServerBaseUri().getPath()
+    addFilters(server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
-        new DocumentHandler(config.getServerHostname(),
-                            config.getGsaCharacterEncoding(), docIdCodec,
-                            docIdCodec, journal, adaptor,
+        new DocumentHandler(docIdCodec, docIdCodec, journal, adaptor,
                             config.getGsaHostname(),
                             config.getServerFullAccessHosts(),
                             authnHandler, sessionManager,
                             createTransformPipeline(),
                             config.getTransformMaxDocumentBytes(),
                             config.isTransformRequired(),
-                            config.isServerToUseCompression(), watchdog));
+                            config.isServerToUseCompression(), watchdog)));
     server.start();
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + port);
@@ -445,8 +447,7 @@ public class GsaCommunicationHandler {
     if (scheduler.isStarted()) {
       scheduler.stop();
     }
-    SleepHandler sleepHandler = new SleepHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), 100 /* millis */);
+    SleepHandler sleepHandler = new SleepHandler(100 /* millis */);
     if (server != null) {
       // Workaround Java Bug 7105369.
       server.createContext(SLEEP_PATH, sleepHandler);
@@ -556,6 +557,11 @@ public class GsaCommunicationHandler {
               ex);
       return false;
     }
+  }
+
+  HttpContext addFilters(HttpContext context) {
+    context.getFilters().addAll(commonFilters);
+    return context;
   }
 
   /**

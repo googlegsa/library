@@ -24,7 +24,6 @@ import java.util.*;
  * Mock {@link HttpExchange} for testing.
  */
 public class MockHttpExchange extends HttpExchange {
-  private final String protocol;
   private final String method;
   private final URI uri;
   private final Map<String, Object> attributes = new HashMap<String, Object>();
@@ -41,16 +40,20 @@ public class MockHttpExchange extends HttpExchange {
   private int responseCode = -1;
   private HttpContext httpContext;
 
-  public MockHttpExchange(String protocol, String method, String path,
+  public MockHttpExchange(String method, String path,
                           HttpContext context) {
-    if (protocol == null || method == null || path == null) {
+    this(method, "localhost", path, context);
+  }
+
+  private MockHttpExchange(String method, String host, String path,
+      HttpContext context) {
+    if (method == null || host == null || path == null) {
       throw new NullPointerException();
     }
     if (!("GET".equals(method) || "POST".equals(method)
           || "HEAD".equals(method))) {
       throw new IllegalArgumentException("invalid method");
     }
-    this.protocol = protocol;
     this.method = method;
     try {
       this.uri = new URI(path);
@@ -58,6 +61,7 @@ public class MockHttpExchange extends HttpExchange {
       throw new IllegalStateException(ex);
     }
     this.httpContext = context;
+    getRequestHeaders().add("Host", host);
   }
 
   @Override
@@ -100,7 +104,7 @@ public class MockHttpExchange extends HttpExchange {
 
   @Override
   public String getProtocol() {
-    return protocol;
+    return "HTTP/1.1";
   }
 
   @Override
@@ -157,6 +161,7 @@ public class MockHttpExchange extends HttpExchange {
     if (responseBody != null) {
       throw new IllegalStateException();
     }
+    getResponseHeaders().add("Date", "Sun, 06 Nov 1994 08:49:37 GMT");
     responseCode = rCode;
     responseBodyOrig = new ByteArrayOutputStream();
     responseBody = new ClosingFilterOutputStream(responseBodyOrig);

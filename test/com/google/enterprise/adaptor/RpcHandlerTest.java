@@ -41,15 +41,14 @@ public class RpcHandlerTest {
   private SessionManager<HttpExchange> sessionManager
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
          clientStore, 10000, 1000);
-  private RpcHandler handler = new RpcHandler(
-      "localhost", Charset.forName("UTF-8"), sessionManager);
+  private RpcHandler handler = new RpcHandler(sessionManager);
   private Charset charset = Charset.forName("UTF-8");
   private String sessionId;
   private String xsrfToken;
 
   @Before
   public void loadXsrfToken() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     handler.handle(ex);
     assertEquals(409, ex.getResponseCode());
     xsrfToken = (String) ex.getResponseHeaders().getFirst(
@@ -61,21 +60,21 @@ public class RpcHandlerTest {
 
   @Test
   public void testGet() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "GET", "/r", "/r");
+    MockHttpExchange ex = makeExchange("GET", "/r", "/r");
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
   }
 
   @Test
   public void testWrongPath() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/rwrong", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/rwrong", "/r");
     handler.handle(ex);
     assertEquals(404, ex.getResponseCode());
   }
 
   @Test
   public void testUnknownMethod() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream(
         "{\"method\": \"wrong\",\"params\":null,\"id\":null}"));
     handler.handle(ex);
@@ -88,7 +87,7 @@ public class RpcHandlerTest {
 
   @Test
   public void testInvalidXsrfToken() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", "/r",
+    MockHttpExchange ex = new MockHttpExchange("POST", "/r",
         new MockHttpContext(handler, "/r"));
     ex.getRequestHeaders().set("Cookie", SESSION_COOKIE_NAME + "=" + sessionId);
     handler.handle(ex);
@@ -99,7 +98,7 @@ public class RpcHandlerTest {
 
   @Test
   public void testInvalidJson() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream("{"));
     handler.handle(ex);
     assertEquals(400, ex.getResponseCode());
@@ -107,14 +106,14 @@ public class RpcHandlerTest {
 
   @Test
   public void testNoInput() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     handler.handle(ex);
     assertEquals(400, ex.getResponseCode());
   }
 
   @Test
   public void testInvalidInput() throws Exception {
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream("[]"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -136,7 +135,7 @@ public class RpcHandlerTest {
         }
       }
     });
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream(
         "{\"id\": null, \"method\": \"someName\", \"params\": [\"input\"]}"));
     handler.handle(ex);
@@ -148,7 +147,7 @@ public class RpcHandlerTest {
 
     // Make sure that the method can be unregistered.
     handler.unregisterRpcMethod("someName");
-    ex = makeExchange("http", "POST", "/r", "/r");
+    ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream(
         "{\"id\": null, \"method\": \"someName\", \"params\": [\"input\"]}"));
     handler.handle(ex);
@@ -167,7 +166,7 @@ public class RpcHandlerTest {
         return null;
       }
     });
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream(
         "{\"id\": null, \"method\": \"someName\", \"params\": null}"));
     handler.handle(ex);
@@ -186,7 +185,7 @@ public class RpcHandlerTest {
         throw new RuntimeException("some error");
       }
     });
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream(
         "{\"id\": null, \"method\": \"someName\", \"params\": null}"));
     handler.handle(ex);
@@ -205,7 +204,7 @@ public class RpcHandlerTest {
         throw new RuntimeException();
       }
     });
-    MockHttpExchange ex = makeExchange("http", "POST", "/r", "/r");
+    MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     ex.setRequestBody(stringToStream(
         "{\"id\": null, \"method\": \"someName\", \"params\": null}"));
     handler.handle(ex);
@@ -233,9 +232,9 @@ public class RpcHandlerTest {
     handler.unregisterRpcMethod("someName");
   }
 
-  private MockHttpExchange makeExchange(String protocol, String method,
-        String path, String contextPath) throws Exception {
-    MockHttpExchange ex = new MockHttpExchange(protocol, method, path,
+  private MockHttpExchange makeExchange(String method, String path,
+      String contextPath) throws Exception {
+    MockHttpExchange ex = new MockHttpExchange(method, path,
                                 new MockHttpContext(handler, contextPath));
     ex.getRequestHeaders().set(RpcHandler.XSRF_TOKEN_HEADER_NAME, xsrfToken);
     ex.getRequestHeaders().set("Cookie", SESSION_COOKIE_NAME + "=" + sessionId);

@@ -26,10 +26,9 @@ import java.nio.charset.Charset;
 import java.util.logging.*;
 
 /**
- * Require GSA-Administrator authentication before allowing access to wrapped
- * handler.
+ * Require GSA-Administrator authentication before allowing requests.
  */
-class AdministratorSecurityHandler extends AbstractHandler {
+class AdministratorSecurityHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(AdministratorSecurityHandler.class.getName());
   /** Key used to store the fact the user has been authenticated. */
@@ -49,25 +48,20 @@ class AdministratorSecurityHandler extends AbstractHandler {
   /** Trusted entity for performing authentication of user credentials. */
   private final AuthnClient authnClient;
 
-  AdministratorSecurityHandler(String fallbackHostname, Charset defaultEncoding,
-      HttpHandler handler, SessionManager<HttpExchange> sessionManager,
-      AuthnClient authnClient) {
-    super(fallbackHostname, defaultEncoding);
+  AdministratorSecurityHandler(HttpHandler handler,
+      SessionManager<HttpExchange> sessionManager, AuthnClient authnClient) {
     this.handler = handler;
     this.sessionManager = sessionManager;
     this.authnClient = authnClient;
   }
 
-  public AdministratorSecurityHandler(String fallbackHostname,
-      Charset defaultEncoding, HttpHandler handler,
+  public AdministratorSecurityHandler(HttpHandler handler,
       SessionManager<HttpExchange> sessionManager, String gsaHostname,
       boolean useHttps) {
-    this(fallbackHostname, defaultEncoding, handler, sessionManager,
-        new GsaAuthnClient(gsaHostname, useHttps));
+    this(handler, sessionManager, new GsaAuthnClient(gsaHostname, useHttps));
   }
 
-  @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  private void meteredHandle(HttpExchange ex) throws IOException {
     String pageToDisplay = LOGIN_PAGE;
 
     if ("POST".equals(ex.getRequestMethod())) {
@@ -75,7 +69,7 @@ class AdministratorSecurityHandler extends AbstractHandler {
       if (authn == AuthzStatus.PERMIT) {
         // Need the client to access the page via GET since the only reason the
         // request method was POST was because of submitting our login form.
-        sendRedirect(ex, getRequestUri(ex));
+        HttpExchanges.sendRedirect(ex, HttpExchanges.getRequestUri(ex));
         return;
       } else if (authn == AuthzStatus.INDETERMINATE) {
         pageToDisplay = LOGIN_INDETERMINATE_PAGE;
@@ -95,7 +89,8 @@ class AdministratorSecurityHandler extends AbstractHandler {
     } finally {
       is.close();
     }
-    respond(ex, HttpURLConnection.HTTP_FORBIDDEN, "text/html", page);
+    HttpExchanges.respond(
+        ex, HttpURLConnection.HTTP_FORBIDDEN, "text/html", page);
   }
 
   /**
@@ -166,13 +161,15 @@ class AdministratorSecurityHandler extends AbstractHandler {
     // Clickjacking defence.
     ex.getResponseHeaders().set("X-Frame-Options", "deny");
 
+    // This comment is no longer true and exists from before logging was done in
+    // a filter. TODO(ejona): split into a separate filter and handler.
     // Perform fast-path checking here to prevent double-logging most requests.
     Session session = sessionManager.getSession(ex, false);
     if (session != null && session.getAttribute(SESSION_ATTR_NAME) != null) {
       handler.handle(ex);
       return;
     }
-    super.handle(ex);
+    meteredHandle(ex);
   }
 
   interface AuthnClient {

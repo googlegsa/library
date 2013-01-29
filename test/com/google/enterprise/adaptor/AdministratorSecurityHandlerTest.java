@@ -21,7 +21,6 @@ import com.sun.net.httpserver.*;
 import org.junit.Test;
 
 import java.io.*;
-import java.nio.charset.Charset;
 
 /**
  * Tests for {@link AdministratorSecurityHandler}.
@@ -32,15 +31,14 @@ public class AdministratorSecurityHandlerTest {
           new SessionManager.HttpExchangeClientStore(), 10000, 1000);
   private MockHttpHandler mockHandler = new MockHttpHandler();
   private AdministratorSecurityHandler handler
-      = new AdministratorSecurityHandler("localhost", Charset.forName("UTF-8"),
-          mockHandler, sessionManager, new MockAuthnClient());
-  private MockHttpExchange ex = new MockHttpExchange("http", "POST", "/",
+      = new AdministratorSecurityHandler(mockHandler, sessionManager,
+          new MockAuthnClient());
+  private MockHttpExchange ex = new MockHttpExchange("POST", "/",
       new MockHttpContext(handler, "/"));
 
   @Test
   public void testGet() throws Exception {
-    ex = new MockHttpExchange("http", "GET", "/",
-        new MockHttpContext(handler, "/"));
+    ex = new MockHttpExchange("GET", "/", new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
     assertEquals(0, mockHandler.getTimesExecuted());
@@ -108,8 +106,7 @@ public class AdministratorSecurityHandlerTest {
     String cookie = ex.getResponseHeaders().getFirst("Set-Cookie")
         .split(";")[0];
 
-    ex = new MockHttpExchange("http", "GET", "/",
-        new MockHttpContext(handler, "/"));
+    ex = new MockHttpExchange("GET", "/", new MockHttpContext(handler, "/"));
     ex.getRequestHeaders().set("Cookie", cookie);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -118,7 +115,7 @@ public class AdministratorSecurityHandlerTest {
 
   @Test
   public void testPreexistingSession() throws Exception {
-    HttpExchange tmpEx = new MockHttpExchange("http", "GET", "/",
+    HttpExchange tmpEx = new MockHttpExchange("GET", "/",
       new MockHttpContext(handler, "/"));
     // Create session
     sessionManager.getSession(tmpEx, true);

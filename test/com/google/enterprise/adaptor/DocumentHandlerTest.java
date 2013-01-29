@@ -17,13 +17,13 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.*;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.*;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -46,32 +46,29 @@ public class DocumentHandlerTest {
   private DocId defaultDocId = new DocId("test docId");
   private String defaultPath
       = docIdCodec.encodeDocId(defaultDocId).getRawPath();
-  private MockHttpExchange ex = new MockHttpExchange("http", "GET", defaultPath,
+  private MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
       new MockHttpContext(null, "/"));
 
   @Test
   public void testNullDocIdDecoder() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler("localhost", Charset.forName("UTF-8"), null, docIdCodec,
-        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
-        "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+    new DocumentHandler(null, docIdCodec, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost", new String[0], handler,
+        sessionManager, null, 0, false, false, new MockWatchdog());
   }
 
   @Test
   public void testNullDocIdEncoder() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler("localhost", Charset.forName("UTF-8"), docIdCodec, null,
-        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
-        "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+    new DocumentHandler(docIdCodec, null, new Journal(new MockTimeProvider()),
+        new PrivateMockAdaptor(), "localhost", new String[0], handler,
+        sessionManager, null, 0, false, false, new MockWatchdog());
   }
 
   @Test
   public void testNullJournal() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler("localhost", Charset.forName("UTF-8"),
-        docIdCodec, docIdCodec, null, new PrivateMockAdaptor(),
+    new DocumentHandler(docIdCodec, docIdCodec, null, new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
         false, false, new MockWatchdog());
   }
@@ -79,8 +76,7 @@ public class DocumentHandlerTest {
   @Test
   public void testNullAdaptor() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), null,
         "localhost", new String[0], handler, sessionManager, null, 0,
         false, false, new MockWatchdog());
@@ -89,8 +85,7 @@ public class DocumentHandlerTest {
   @Test
   public void testNullSessionManager() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, null, null, 0,
         false, false, new MockWatchdog());
@@ -99,8 +94,7 @@ public class DocumentHandlerTest {
   @Test
   public void testNullWatchdog() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
         false, false, null);
@@ -123,16 +117,14 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecurityDenyWithAuthnHandler() throws Exception {
-    AbstractHandler authnHandler
-        = new AbstractHandler("localhost", Charset.forName("UTF-8")) {
+    HttpHandler authnHandler = new HttpHandler() {
       @Override
-      protected void meteredHandle(HttpExchange ex) throws IOException {
+      public void handle(HttpExchange ex) throws IOException {
         // Translation.HTTP_NOT_FOUND was randomly chosen.
-        cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
+        HttpExchanges.cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
       }
     };
-    DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], authnHandler, sessionManager, null, 0,
         false, false, new MockWatchdog());
@@ -218,7 +210,6 @@ public class DocumentHandlerTest {
   public void testSecurityFromGsa() throws Exception {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[] {remoteIp, " "}, null, sessionManager, null, 0, false,
@@ -233,7 +224,6 @@ public class DocumentHandlerTest {
   @Test
   public void testSecuritySecureFromGsa() throws Exception {
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
@@ -251,7 +241,6 @@ public class DocumentHandlerTest {
   @Test
   public void testSecuritySecureNoCertificate() throws Exception {
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
@@ -266,7 +255,6 @@ public class DocumentHandlerTest {
   @Test
   public void testSecuritySecureNotX500Principal() throws Exception {
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
@@ -281,7 +269,6 @@ public class DocumentHandlerTest {
   @Test
   public void testSecuritySecureNoCommonName() throws Exception {
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
@@ -296,7 +283,6 @@ public class DocumentHandlerTest {
   @Test
   public void testSecuritySecureNotWhitelisted() throws Exception {
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
@@ -312,7 +298,6 @@ public class DocumentHandlerTest {
   public void testSecurityFromGsaAutoAddWhitelist() throws Exception {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), remoteIp,
         new String[0], null, sessionManager, null, 0, false, false,
@@ -336,7 +321,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testNormalHead() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "HEAD", defaultPath,
+    MockHttpExchange ex = new MockHttpExchange("HEAD", defaultPath,
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -345,7 +330,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testNormalPost() throws Exception {
-    MockHttpExchange ex = new MockHttpExchange("http", "POST", defaultPath,
+    MockHttpExchange ex = new MockHttpExchange("POST", defaultPath,
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
@@ -364,16 +349,15 @@ public class DocumentHandlerTest {
         super.getDocContent(request, response);
       }
     };
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        mockAdaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false, watchdog);
+    handler = new DocumentHandler(docIdCodec, docIdCodec,
+        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
+        new String[0], null, sessionManager, null, 0, false, false, watchdog);
     try {
+      thrown.expect(RuntimeException.class);
       handler.handle(ex);
     } finally {
       executor.shutdownNow();
     }
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -381,10 +365,9 @@ public class DocumentHandlerTest {
     ScheduledExecutorService executor
         = Executors.newSingleThreadScheduledExecutor();
     Watchdog watchdog = new Watchdog(100, executor);
-    handler = new DocumentHandler("localhost", Charset.forName("UTF-8"),
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        mockAdaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false, watchdog);
+    handler = new DocumentHandler(docIdCodec, docIdCodec,
+        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
+        new String[0], null, sessionManager, null, 0, false, false, watchdog);
     try {
       handler.handle(ex);
     } finally {
@@ -420,8 +403,7 @@ public class DocumentHandlerTest {
       }
     };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 100,
         false, false, new MockWatchdog());
@@ -462,8 +444,7 @@ public class DocumentHandlerTest {
       }
     };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 3, false,
         false, new MockWatchdog());
@@ -494,14 +475,16 @@ public class DocumentHandlerTest {
     };
     CheckFailAdaptor mockAdaptor = new CheckFailAdaptor();
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler("localhost",
-        Charset.forName("UTF-8"), docIdCodec, docIdCodec,
+    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 3, true,
         false, new MockWatchdog());
-    handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
-    assertTrue(mockAdaptor.failedAtCorrectTime);
+    thrown.expect(IOException.class);
+    try {
+      handler.handle(ex);
+    } finally {
+      assertTrue(mockAdaptor.failedAtCorrectTime);
+    }
   }
 
   @Test
@@ -542,8 +525,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(IOException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -556,8 +539,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -569,8 +552,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(IOException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -598,8 +581,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -613,8 +596,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -643,8 +626,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -658,8 +641,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -673,8 +656,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -688,8 +671,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -703,8 +686,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -718,8 +701,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -733,8 +716,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -748,8 +731,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -763,8 +746,8 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
     handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
   }
 
   @Test
@@ -818,7 +801,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
 
-    MockHttpExchange ex = new MockHttpExchange("http", "GET", defaultPath,
+    MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
         new MockHttpContext(handler, "/"));
     ex.getRequestHeaders().set("If-Modified-Since",
                                "Thu, 1 Jan 1970 00:00:00 GMT");
@@ -829,7 +812,7 @@ public class DocumentHandlerTest {
     assertEquals("Thu, 01 Jan 1970 00:00:01 GMT",
                  ex.getResponseHeaders().getFirst("Last-Modified"));
 
-    ex = new MockHttpExchange("http", "HEAD", defaultPath,
+    ex = new MockHttpExchange("HEAD", defaultPath,
                               new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -857,7 +840,6 @@ public class DocumentHandlerTest {
         };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
         null, sessionManager, null, 0, false, false, new MockWatchdog());
@@ -890,7 +872,6 @@ public class DocumentHandlerTest {
           }
         };
     DocumentHandler handler = new DocumentHandler(
-        "localhost", Charset.forName("UTF-8"),
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[0], null,
         sessionManager, null, 0, false, false, new MockWatchdog());
@@ -900,10 +881,10 @@ public class DocumentHandlerTest {
   }
 
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
-    return new DocumentHandler("localhost", Charset.forName("UTF-8"),
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        adaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+    return new DocumentHandler(docIdCodec, docIdCodec,
+        new Journal(new MockTimeProvider()), adaptor, "localhost",
+        new String[0], null, sessionManager, null, 0, false, false,
+        new MockWatchdog());
   }
 
   @Test

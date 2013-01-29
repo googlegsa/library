@@ -19,6 +19,7 @@ import com.google.enterprise.secmgr.modules.SamlClient;
 import com.google.enterprise.secmgr.servlets.ResponseParser;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.joda.time.DateTime;
 import org.opensaml.saml2.core.Response;
@@ -27,7 +28,6 @@ import org.opensaml.saml2.core.StatusCode;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.nio.charset.Charset;
 import java.util.Date;
 import java.util.Set;
 import java.util.logging.Level;
@@ -41,7 +41,7 @@ import java.util.logging.Logger;
  * the client, followed by redirecting the client back to the original page they
  * tried to visit.
  */
-class SamlAssertionConsumerHandler extends AbstractHandler {
+class SamlAssertionConsumerHandler implements HttpHandler {
   private static final Logger log = Logger.getLogger(
       SamlAssertionConsumerHandler.class.getName());
 
@@ -54,18 +54,16 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
   /**
    * @param sessionManager manager to use to find authn attempts in progress
    */
-  SamlAssertionConsumerHandler(String fallbackHostname, Charset defaultEncoding,
-                               SessionManager<HttpExchange> sessionManager) {
-    super(fallbackHostname, defaultEncoding);
+  SamlAssertionConsumerHandler(SessionManager<HttpExchange> sessionManager) {
     this.sessionManager = sessionManager;
     SecurityManagerConfig.load();
   }
 
   @Override
-  public void meteredHandle(HttpExchange ex) throws IOException {
+  public void handle(HttpExchange ex) throws IOException {
     String requestMethod = ex.getRequestMethod();
     if (!"GET".equals(requestMethod)) {
-      cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_BAD_METHOD,
           Translation.HTTP_BAD_METHOD);
       return;
     }
@@ -73,36 +71,37 @@ class SamlAssertionConsumerHandler extends AbstractHandler {
     AuthnState authnState = (AuthnState) session.getAttribute(
         AuthnState.SESSION_ATTR_NAME);
     if (authnState == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
                     Translation.AUTHN_UNKNOWN_SESSION);
       return;
     }
     if (authnState.isAuthenticated()) {
       // TODO(ejona): keep track of each request, so that we can redirect here
-      cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_CONFLICT,
                     Translation.AUTHN_RETRY);
       return;
     }
     SamlClient client = authnState.getSamlClient();
     URI origUri = authnState.getOriginalUri();
     if (client == null || origUri == null) {
-      cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_INTERNAL_ERROR,
                     Translation.AUTHN_NOT_STARTED);
       return;
     }
     boolean authnSuccess;
     // GET implies the assertion is being sent with the artifact binding.
     log.info("Received assertion via artifact binding");
-    Response samlResponse = client.decodeArtifactResponse(getRequestUri(ex),
+    Response samlResponse = client.decodeArtifactResponse(
+        HttpExchanges.getRequestUri(ex),
         new HttpExchangeInTransportAdapter(ex));
     authnSuccess = consumeAssertion(client, samlResponse,
         client.getArtifactAssertionConsumerService().getLocation(),
         authnState);
 
     if (authnSuccess) {
-      sendRedirect(ex, origUri); 
+      HttpExchanges.sendRedirect(ex, origUri); 
     } else {
-      cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
                     Translation.HTTP_FORBIDDEN_AUTHN_FAILURE);
     }
   }

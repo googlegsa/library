@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -53,8 +54,7 @@ class Dashboard {
     this.journal = journal;
     this.sessionManager = sessionManager;
 
-    rpcHandler = new RpcHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), sessionManager);
+    rpcHandler = new RpcHandler(sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
     rpcHandler.registerRpcMethod("startIncrementalFeedPush",
         new StartIncrementalFeedPushRpcMethod());
@@ -109,16 +109,14 @@ class Dashboard {
     Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
         10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
     dashboardServer.setExecutor(executor);
-    HttpHandler dashboardHandler = new DashboardHandler(
-        config.getServerHostname(), config.getGsaCharacterEncoding());
-    dashboardServer.createContext("/dashboard",
+    HttpHandler dashboardHandler = new DashboardHandler();
+    addFilters(dashboardServer.createContext("/dashboard",
         createAdminSecurityHandler(dashboardHandler, config, sessionManager,
-                                   secure));
-    dashboardServer.createContext("/rpc",
-        createAdminSecurityHandler(rpcHandler, config, sessionManager, secure));
-    dashboardServer.createContext("/",
-        new RedirectHandler(config.getServerHostname(),
-            config.getGsaCharacterEncoding(), "/dashboard"));
+                                   secure)));
+    addFilters(dashboardServer.createContext("/rpc", createAdminSecurityHandler(
+        rpcHandler, config, sessionManager, secure)));
+    addFilters(dashboardServer.createContext("/",
+        new RedirectHandler("/dashboard")));
     dashboardServer.start();
     log.info("dashboard is listening on port #" + dashboardPort);
   }
@@ -126,8 +124,7 @@ class Dashboard {
   private AdministratorSecurityHandler createAdminSecurityHandler(
       HttpHandler handler, Config config,
       SessionManager<HttpExchange> sessionManager, boolean secure) {
-    return new AdministratorSecurityHandler(config.getServerHostname(),
-        config.getGsaCharacterEncoding(), handler, sessionManager,
+    return new AdministratorSecurityHandler(handler, sessionManager,
         config.getGsaHostname(), secure);
   }
 
@@ -153,6 +150,10 @@ class Dashboard {
 
   public void removeStatusSource(StatusSource source) {
     monitor.removeSource(source);
+  }
+
+  private HttpContext addFilters(HttpContext context) {
+    return gsaCommHandler.addFilters(context);
   }
 
   private class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
