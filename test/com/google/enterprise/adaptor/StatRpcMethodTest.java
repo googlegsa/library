@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//      http://www.apache.org/licenses/LICENSE-2.0
+//      http://www.apache.org/licenses/LICENSE-2.0 
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,6 +18,8 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
+import java.io.IOException;
+
 import java.util.*;
 
 /**
@@ -27,7 +29,7 @@ public class StatRpcMethodTest {
   private RpcHandler.RpcMethod method;
 
   public StatRpcMethodTest() {
-    method = new StatRpcMethod(new SnapshotMockJournal());
+    method = new StatRpcMethod(new SnapshotMockJournal(), new AdaptorMock());
   }
 
   @Test
@@ -47,6 +49,16 @@ public class StatRpcMethodTest {
       simpleStats.put("currentPushStart", 0L);
       simpleStats.put("whenStarted", 0L);
       golden.put("simpleStats", simpleStats);
+
+      Locale locale = Locale.ENGLISH;
+      Map<String, Object> versionMap = new HashMap<String, Object>();
+      versionMap.put("versionJvm", System.getProperty("java.version"));
+      versionMap.put("versionAdaptorLibrary",
+                     Translation.STATS_VERSION_UNKNOWN.toString(locale));
+      versionMap.put("versionAdaptor",
+                     Translation.STATS_VERSION_UNKNOWN.toString(locale));
+
+      golden.put("versionStats", versionMap);
 
       List<Map<String, Object>> stats = new ArrayList<Map<String, Object>>();
       Map<String, Object> stat = new HashMap<String, Object>();
@@ -88,6 +100,12 @@ public class StatRpcMethodTest {
       return new JournalSnapshot(this, 0, new Stats[] {
         new Stats(2, 100, 0),
       });
+    }
+  }
+
+  private class AdaptorMock extends WrapperAdaptor {
+    AdaptorMock() {
+      super(null);
     }
   }
 }

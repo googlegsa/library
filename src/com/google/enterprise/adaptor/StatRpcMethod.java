@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -24,13 +25,23 @@ import java.util.TreeMap;
  * ajax calls from dashboard.
  */
 class StatRpcMethod implements RpcHandler.RpcMethod {
+  private String adaptorVersion = null;
   private Journal journal;
 
-  public StatRpcMethod(Journal journal) {
+  public StatRpcMethod(Journal journal, Adaptor adaptor) {
     this.journal = journal;
+
+    Class adaptorClass = adaptor.getClass();
+    if (adaptorClass.getPackage() != null) {
+      adaptorVersion = adaptorClass.getPackage().getImplementationVersion();
+    }
   }
 
+  @Override
   public Object run(List request) {
+    // TODO(ejona): choose locale based on Accept-Languages.
+    Locale locale = Locale.ENGLISH;
+
     Journal.JournalSnapshot journalSnap = journal.getSnapshot();
 
     Map<String, Object> map = new TreeMap<String, Object>();
@@ -51,6 +62,18 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
       simple.put("currentPushStart", journalSnap.currentPushStart);
       simple.put("whenStarted", journalSnap.whenStarted);
       map.put("simpleStats", simple);
+    }
+
+    {
+      Map<String, Object> versionMap = new TreeMap<String, Object>();
+
+      versionMap.put("versionJvm", System.getProperty("java.version"));
+      versionMap.put("versionAdaptorLibrary",
+                     getAdaptorLibraryVersion(locale));
+      versionMap.put("versionAdaptor",
+                     getAdaptorVersion(locale));
+
+      map.put("versionStats", versionMap);
     }
 
     {
@@ -93,5 +116,16 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
     statMap.put("requestProcessingsThroughput",
                 stat.requestProcessingsThroughput);
     return statMap;
+  }
+
+  private String getAdaptorLibraryVersion(Locale locale) {
+    String version = this.getClass().getPackage().getImplementationVersion();
+    return version == null ?
+        Translation.STATS_VERSION_UNKNOWN.toString(locale) : version;
+  }
+
+  private String getAdaptorVersion(Locale locale) {
+    return adaptorVersion == null ?
+        Translation.STATS_VERSION_UNKNOWN.toString(locale) : adaptorVersion;
   }
 }

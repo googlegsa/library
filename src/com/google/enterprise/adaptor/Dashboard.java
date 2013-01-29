@@ -47,7 +47,7 @@ class Dashboard {
 
   public Dashboard(Config config, GsaCommunicationHandler gsaCommHandler,
                    Journal journal, SessionManager<HttpExchange> sessionManager,
-                   SensitiveValueCodec secureValueCodec) {
+                   SensitiveValueCodec secureValueCodec, Adaptor adaptor) {
     this.config = config;
     this.gsaCommHandler = gsaCommHandler;
     this.journal = journal;
@@ -59,7 +59,7 @@ class Dashboard {
     circularLogRpcMethod = new CircularLogRpcMethod();
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
-    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal));
+    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal, adaptor));
     rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
     rpcHandler.registerRpcMethod("checkForUpdatedConfig",
         new CheckForUpdatedConfigRpcMethod(gsaCommHandler));

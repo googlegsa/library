@@ -289,6 +289,15 @@
     </pathconvert>
     <jar destfile="${dist.staging.dir}/examples/adaptor${adaptorlib.suffix}-examples.jar"
       basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/examples/**">
+      <manifest>
+        <section name="com/google/enterprise/adaptor/examples/">
+          <attribute name="Implementation-Title"
+            value="Google Example Adaptors"/>
+          <attribute name="Implementation-Vendor" value="Google Inc."/>
+          <attribute name="Implementation-Version"
+            value="${adaptorlib.version}"/>
+        </section>
+      </manifest>
       <zipgroupfileset dir="${lib.dir}" includes="${tmp.examples.zipgroup}"/>
       <fileset dir="${src.dir}"
         includes="${adaptor.pkg.dir}/examples/**/*.java"/>

@@ -98,6 +98,11 @@ function getStatsCallback(result, error) {
     throw error;
   }
   var data = result;
+
+  $('#version-jvm').text(data.versionStats.versionJvm);
+  $('#version-adaptor-library').text(data.versionStats.versionAdaptorLibrary);
+  $('#version-adaptor').text(data.versionStats.versionAdaptor);
+
   $('#gaf-num-total-doc-ids-pushed').text(
       data.simpleStats.numTotalDocIdsPushed);
   $('#gaf-num-unique-doc-ids-pushed').text(

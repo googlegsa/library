@@ -208,7 +208,7 @@ public class GsaCommunicationHandler {
     log.info("server is listening on port #" + port);
 
     dashboard = new Dashboard(config, this, journal, sessionManager,
-        secureValueCodec);
+        secureValueCodec, adaptor);
     dashboard.start();
     shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
     Runtime.getRuntime().addShutdownHook(shutdownHook);
