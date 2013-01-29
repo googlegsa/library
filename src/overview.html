@@ -172,6 +172,19 @@ feed.name=mydocfeedtogsa</pre>
   <pre>server.secure=true</pre>
   <p>The adaptor can now use the GSA's authentication configuration and will use
     HTTPS for all communication.</p>
+  <p> Example command line to run secure:
+  <pre>
+    java \
+    -Djava.util.logging.config.file=src/logging.properties \
+    -Djavax.net.ssl.keyStore=keys.jks \
+    -Djavax.net.ssl.keyStoreType=jks \
+    -Djavax.net.ssl.keyStorePassword=changeit \
+    -Djavax.net.ssl.trustStore=cacerts.jks \
+    -Djavax.net.ssl.trustStoreType=jks \
+    -Djavax.net.ssl.trustStorePassword=changeit \
+    -classpath 'adaptor.jar:adaptor-examples.jar' \
+    com.google.enterprise.adaptor.examples.AdaptorWithCrawlTimeMetadataTemplate
+  </pre>
 
   <h4>Enable Stricter Security (optional)</h4>
   <p>There are additional security options you can control on the GSA.
@@ -192,5 +205,6 @@ feed.name=mydocfeedtogsa</pre>
     Note: By using these settings you improve security, but also require
     all adaptors to be configured for security and have 
     <code>server.secure=true</code> in their configuration.
+
 
 </body>
