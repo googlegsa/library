@@ -103,6 +103,10 @@ function getStatsCallback(result, error) {
   $('#version-adaptor-library').text(data.versionStats.versionAdaptorLibrary);
   $('#version-adaptor').text(data.versionStats.versionAdaptor);
 
+  $('#gaf-incremental-feed-push').attr(
+      'disabled',
+      !data.simpleStats.isIncrementalSupported);
+
   $('#gaf-num-total-doc-ids-pushed').text(
       data.simpleStats.numTotalDocIdsPushed);
   $('#gaf-num-unique-doc-ids-pushed').text(
@@ -234,6 +238,23 @@ function startFeedPush() {
     }
     var notificationSpan = result ? $('#gaf-start-feed-push-success')
         : $('#gaf-start-feed-push-already-running');
+    notificationSpan.show();
+    window.setTimeout(function() {
+      notificationSpan.fadeOut();
+    }, 5000);
+  });
+}
+
+function startIncrementalFeedPush() {
+  var sending = $('#gaf-incremental-feed-push-sending');
+  sending.show();
+  rpc('startIncrementalFeedPush', null, function(result, error) {
+    sending.hide();
+    if (result === null) {
+      throw error !== null ? error : "Invalid response from server";
+    }
+    var notificationSpan = result ? $('#gaf-incremental-feed-push-success')
+        : $('#gaf-incremental-feed-push-already-running');
     notificationSpan.show();
     window.setTimeout(function() {
       notificationSpan.fadeOut();
@@ -378,6 +399,7 @@ $(document).ready(function() {
   rpc('getConfig', null, getConfigCallback);
   rpc('getLog', null, getLogCallback);
   rpc('encodeSensitiveValue', ["", "ENCRYPTED"], isEncryptionSupportedCallback);
+  $('#gaf-incremental-feed-push').click(startIncrementalFeedPush);
   $('#gaf-start-feed-push').click(startFeedPush);
   $('#gaf-check-config').click(checkConfig);
   $('#gaf-sec-runenc').click(encodeSensitiveValue);

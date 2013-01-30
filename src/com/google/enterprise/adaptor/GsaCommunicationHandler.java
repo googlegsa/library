@@ -65,13 +65,17 @@ public class GsaCommunicationHandler {
   private final OneAtATimeRunnable docIdFullPusher = new OneAtATimeRunnable(
       new PushRunnable(), new AlreadyRunningRunnable());
   /**
+   * Runnable to be called for doing incremental feed pushes. It is only
+   * set if the Adaptor supports incremental updates. Otherwise, it's null.
+   */
+  private OneAtATimeRunnable docIdIncrementalPusher;
+  /**
    * Schedule identifier for {@link #sendDocIds}.
    */
   private String sendDocIdsSchedId;
   private HttpServer server;
   private Thread shutdownHook;
-  private IncrementalAdaptorPoller incrementalAdaptorPoller;
-  private ScheduledExecutorService watchdogExecutor;
+  private ScheduledExecutorService backgroundExecutor;
   private final DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
   private Dashboard dashboard;
@@ -165,8 +169,8 @@ public class GsaCommunicationHandler {
         1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
 
-    watchdogExecutor = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("watchdog")
+    backgroundExecutor = Executors.newScheduledThreadPool(2,
+        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("background")
         .build());
 
     SessionManager<HttpExchange> sessionManager
@@ -190,7 +194,7 @@ public class GsaCommunicationHandler {
           adaptor, docIdCodec, metadata));
     }
     Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
-        watchdogExecutor);
+        backgroundExecutor);
     server.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
         new DocumentHandler(config.getServerHostname(),
@@ -259,10 +263,15 @@ public class GsaCommunicationHandler {
     }*/
 
     if (adaptor instanceof PollingIncrementalAdaptor) {
-      incrementalAdaptorPoller = new IncrementalAdaptorPoller(
-          (PollingIncrementalAdaptor) adaptor, docIdSender);
-      incrementalAdaptorPoller.start(
-          config.getAdaptorIncrementalPollPeriodMillis());
+      docIdIncrementalPusher = new OneAtATimeRunnable(
+          new IncrementalPushRunnable((PollingIncrementalAdaptor) adaptor),
+          new AlreadyRunningRunnable());
+
+      backgroundExecutor.scheduleAtFixedRate(
+          docIdIncrementalPusher,
+          0,
+          config.getAdaptorIncrementalPollPeriodMillis(),
+          TimeUnit.MILLISECONDS);
     }
 
     scheduler.start();
@@ -436,9 +445,6 @@ public class GsaCommunicationHandler {
     if (scheduler.isStarted()) {
       scheduler.stop();
     }
-    if (incrementalAdaptorPoller != null) {
-      incrementalAdaptorPoller.cancel();
-    }
     SleepHandler sleepHandler = new SleepHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding(), 100 /* millis */);
     if (server != null) {
@@ -460,9 +466,9 @@ public class GsaCommunicationHandler {
       log.finer("Completed dashboard stop");
       dashboard = null;
     }
-    if (watchdogExecutor != null) {
-      watchdogExecutor.shutdownNow();
-      watchdogExecutor = null;
+    if (backgroundExecutor != null) {
+      backgroundExecutor.shutdownNow();
+      backgroundExecutor = null;
     }
     adaptor.destroy();
   }
@@ -529,6 +535,19 @@ public class GsaCommunicationHandler {
     return docIdFullPusher.runInNewThread() != null;
   }
 
+  /**
+   * Perform an push of incremental changes. This works only for adaptors that
+   * support incremental polling (implements {@link PollingIncrementalAdaptor}.
+   */
+  public synchronized boolean checkAndScheduleIncrementalPushOfDocIds() {
+    if (docIdIncrementalPusher == null) {
+      throw new IllegalStateException(
+          "This adaptor does not support incremental push");
+    }
+
+    return docIdIncrementalPusher.runInNewThread() != null;
+  }
+
   boolean ensureLatestConfigLoaded() {
     try {
       return config.ensureLatestConfigLoaded();
@@ -564,6 +583,29 @@ public class GsaCommunicationHandler {
 
     public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
       return handler;
+    }
+  }
+
+  /**
+   * Runnable that performs incremental feed push.
+   */
+  private class IncrementalPushRunnable implements Runnable {
+    private PollingIncrementalAdaptor adaptor;
+
+    public IncrementalPushRunnable(PollingIncrementalAdaptor adaptor) {
+      this.adaptor = adaptor;
+    }
+
+    @Override
+    public void run() {
+      try {
+        log.info("Incremental feed push has been initiated");
+        adaptor.getModifiedDocIds(docIdSender);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      } catch (Exception ex) {
+        log.log(Level.WARNING, "Exception during incremental polling", ex);
+      }
     }
   }
 

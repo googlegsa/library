@@ -27,9 +27,11 @@ import java.util.TreeMap;
 class StatRpcMethod implements RpcHandler.RpcMethod {
   private String adaptorVersion = null;
   private Journal journal;
+  private boolean isAdaptorIncremental;
 
   public StatRpcMethod(Journal journal, Adaptor adaptor) {
     this.journal = journal;
+    this.isAdaptorIncremental = adaptor instanceof PollingIncrementalAdaptor;
 
     Class adaptorClass = adaptor.getClass();
     if (adaptorClass.getPackage() != null) {
@@ -48,6 +50,7 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
 
     {
       Map<String, Object> simple = new TreeMap<String, Object>();
+      simple.put("isIncrementalSupported", isAdaptorIncremental);
       simple.put("numTotalDocIdsPushed", journalSnap.numTotalDocIdsPushed);
       simple.put("numUniqueDocIdsPushed", journalSnap.numUniqueDocIdsPushed);
       simple.put("numTotalGsaRequests", journalSnap.numTotalGsaRequests);

@@ -56,10 +56,13 @@ class Dashboard {
     rpcHandler = new RpcHandler(config.getServerHostname(),
         config.getGsaCharacterEncoding(), sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
+    rpcHandler.registerRpcMethod("startIncrementalFeedPush",
+        new StartIncrementalFeedPushRpcMethod());
     circularLogRpcMethod = new CircularLogRpcMethod();
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
-    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal, adaptor));
+    rpcHandler.registerRpcMethod("getStats",
+        new StatRpcMethod(journal, adaptor));
     rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
     rpcHandler.registerRpcMethod("checkForUpdatedConfig",
         new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
@@ -156,6 +159,15 @@ class Dashboard {
     @Override
     public Object run(List request) {
       return gsaCommHandler.checkAndScheduleImmediatePushOfDocIds();
+    }
+  }
+
+  private class StartIncrementalFeedPushRpcMethod
+      implements RpcHandler.RpcMethod {
+
+    @Override
+    public Object run(List request) {
+      return gsaCommHandler.checkAndScheduleIncrementalPushOfDocIds();
     }
   }
 
