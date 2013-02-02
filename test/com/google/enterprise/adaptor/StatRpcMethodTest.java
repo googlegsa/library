@@ -37,6 +37,7 @@ public class StatRpcMethodTest {
     Map<String, Object> golden = new HashMap<String, Object>();
     {
       Map<String, Object> simpleStats = new HashMap<String, Object>();
+      simpleStats.put("isIncrementalSupported", false);
       simpleStats.put("numTotalDocIdsPushed", 0L);
       simpleStats.put("numTotalGsaRequests", 0L);
       simpleStats.put("numTotalNonGsaRequests", 0L);
