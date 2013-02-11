@@ -222,9 +222,6 @@ public class GsaCommunicationHandler {
                             config.getTransformMaxDocumentBytes(),
                             config.isTransformRequired(),
                             config.isServerToUseCompression(), watchdog)));
-    server.start();
-    log.info("GSA host name: " + config.getGsaHostname());
-    log.info("server is listening on port #" + port);
 
     dashboard = new Dashboard(config, this, journal, sessionManager,
         secureValueCodec, adaptor);
@@ -269,6 +266,10 @@ public class GsaCommunicationHandler {
         ensureLatestConfigLoaded();
       }
     }
+
+    server.start();
+    log.info("GSA host name: " + config.getGsaHostname());
+    log.info("server is listening on port #" + port);
 
     // Since we are white-listing particular keys for auto-update, things aren't
     // ready enough to expose to adaptors.

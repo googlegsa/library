@@ -23,6 +23,7 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for {@link GsaCommunicationHandler}.
@@ -177,6 +178,68 @@ public class GsaCommunicationHandlerTest {
       gsa.stop(0);
       assertFalse(adaptor.inited);
     }
+  }
+
+  /**
+   * Tests that Adaptor is properly initialized before HTTP serving is started.
+   */
+  @Test
+  public void testInitBeforeServing() throws Exception {
+    class SlowAdaptor extends NullAdaptor {
+      public AtomicBoolean getBeforeInit = new AtomicBoolean();
+      public String dependency;
+
+      @Override
+      public void init(AdaptorContext context) {
+        try {
+          Thread.sleep(500);
+          dependency = "The H";
+        } catch (InterruptedException e) {
+          throw new AssertionError(e);
+        }
+      }
+
+      @Override
+      public void getDocContent(Request req, Response resp)
+          throws IOException {
+        if (null == dependency) {
+          getBeforeInit.set(true);
+        }
+        resp.respondNotFound();
+      }
+    }
+    SlowAdaptor adaptor = new SlowAdaptor();
+    gsa = new GsaCommunicationHandler(adaptor, config);
+
+    Thread tryFetch = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        while (true) {
+          try {
+            URL url = new URL(
+                "http", "localhost", config.getServerPort(), "/doc/1");
+            URLConnection conn = url.openConnection();
+            conn.getContent();
+          } catch (IOException e) {
+            // retry
+          }
+
+          try {
+            Thread.sleep(20);
+          } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return;
+          }
+        }
+      }
+    });
+    tryFetch.start();
+
+    gsa.start();
+    tryFetch.interrupt();
+    tryFetch.join();
+
+    assertEquals(false, adaptor.getBeforeInit.get());
   }
 
   @Test
@@ -356,7 +419,7 @@ public class GsaCommunicationHandlerTest {
     }
 
     @Override
-    public void getDocContent(Request req, Response resp) {
+    public void getDocContent(Request req, Response resp) throws IOException {
       throw new UnsupportedOperationException();
     }
   }
