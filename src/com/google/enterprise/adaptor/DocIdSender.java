@@ -45,7 +45,7 @@ class DocIdSender extends AbstractDocIdPusher {
    * Calls {@link Adaptor#getDocIds}. This method blocks until all DocIds are
    * sent or retrying failed.
    */
-  public void pushDocIdsFromAdaptor(GetDocIdsErrorHandler handler)
+  public void pushFullDocIdsFromAdaptor(GetDocIdsErrorHandler handler)
       throws InterruptedException {
     if (handler == null) {
       throw new NullPointerException();
@@ -76,6 +76,43 @@ class DocIdSender extends AbstractDocIdPusher {
     }
     journal.recordFullPushSuccessful();
     log.info("Completed full pushing DocIds");
+  }
+
+  /**
+   * Calls {@link Adaptor#getModifiedDocIds}. This method blocks until all
+   * DocIds are sent or retrying failed.
+   */
+  public void pushIncrementalDocIdsFromAdaptor(GetDocIdsErrorHandler handler)
+      throws InterruptedException {
+    if (handler == null) {
+      throw new NullPointerException();
+    }
+    log.info("Beginning incremental push of DocIds");
+    journal.recordIncrementalPushStarted();
+    for (int ntries = 1;; ntries++) {
+      boolean keepGoing = true;
+      try {
+        ((PollingIncrementalAdaptor) adaptor).getModifiedDocIds(this);
+        break; // Success
+      } catch (InterruptedException ex) {
+        // Stop early.
+        journal.recordIncrementalPushInterrupted();
+        log.info("Interrupted. Aborted incremental push of DocIds");
+        throw ex;
+      } catch (Exception ex) {
+        log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
+        keepGoing = handler.handleFailedToGetDocIds(ex, ntries);
+      }
+      if (keepGoing) {
+        log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+      } else {
+        journal.recordIncrementalPushFailed();
+        log.warning("Gave up. Failed full push of DocIds");
+        return; // Bail
+      }
+    }
+    journal.recordIncrementalPushSuccessful();
+    log.info("Completed incremental pushing DocIds");
   }
 
   /**

@@ -119,19 +119,37 @@ function getStatsCallback(result, error) {
       data.simpleStats.numUniqueNonGsaRequests);
   $('#gaf-when-started').text(String(new Date(data.simpleStats.whenStarted)));
   $('#gaf-time-resolution').text(data.simpleStats.timeResolution);
-  var hadSuccessfulPush = Boolean(data.simpleStats.lastSuccessfulPushStart);
-  $('#gaf-last-successful-push-start').text(
-      hadSuccessfulPush
-      ? String(new Date(data.simpleStats.lastSuccessfulPushStart))
+
+  var hadSuccessfulFullPush = Boolean(
+      data.simpleStats.lastSuccessfulFullPushStart);
+  $('#gaf-last-successful-full-push-start').text(
+      hadSuccessfulFullPush
+      ? String(new Date(data.simpleStats.lastSuccessfulFullPushStart))
       : "None yet");
-  $('#gaf-last-successful-push-end').text(
-      hadSuccessfulPush
-      ? String(new Date(data.simpleStats.lastSuccessfulPushEnd))
+  $('#gaf-last-successful-full-push-end').text(
+      hadSuccessfulFullPush
+      ? String(new Date(data.simpleStats.lastSuccessfulFullPushEnd))
       : "None yet");
-  var curPushStart = data.simpleStats.currentPushStart;
+  var curFullPushStart = data.simpleStats.currentFullPushStart;
   $('#gaf-current-full-push').text(
-      curPushStart
-      ? "Started " + String(new Date(curPushStart))
+      curFullPushStart
+      ? "Started " + String(new Date(curFullPushStart))
+      : "None in progress");
+
+  var hadSuccessfulIncrementalPush = Boolean(
+      data.simpleStats.lastSuccessfulIncrementalPushStart);
+  $('#gaf-last-successful-incr-push-start').text(
+      hadSuccessfulIncrementalPush
+      ? String(new Date(data.simpleStats.lastSuccessfulIncrementalPushStart))
+      : "None yet");
+  $('#gaf-last-successful-incr-push-end').text(
+      hadSuccessfulIncrementalPush
+      ? String(new Date(data.simpleStats.lastSuccessfulIncrementalPushEnd))
+      : "None yet");
+  var curIncrementalPushStart = data.simpleStats.currentIncrementalPushStart;
+  $('#gaf-current-incr-push').text(
+      curIncrementalPushStart
+      ? "Started " + String(new Date(curIncrementalPushStart))
       : "None in progress");
 
   var vals = [];

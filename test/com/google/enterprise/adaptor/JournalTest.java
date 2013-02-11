@@ -193,32 +193,32 @@ public class JournalTest {
     timeProvider.time = 2;
     journal.recordFullPushSuccessful();
     Journal.JournalSnapshot snapshot = journal.getSnapshot();
-    assertEquals(1, snapshot.lastSuccessfulPushStart);
-    assertEquals(2, snapshot.lastSuccessfulPushEnd);
+    assertEquals(1, snapshot.lastSuccessfulFullPushStart);
+    assertEquals(2, snapshot.lastSuccessfulFullPushEnd);
 
     timeProvider.time = 5;
     journal.recordFullPushStarted();
     timeProvider.time = 7;
     journal.recordFullPushInterrupted();
     snapshot = journal.getSnapshot();
-    assertEquals(1, snapshot.lastSuccessfulPushStart);
-    assertEquals(2, snapshot.lastSuccessfulPushEnd);
+    assertEquals(1, snapshot.lastSuccessfulFullPushStart);
+    assertEquals(2, snapshot.lastSuccessfulFullPushEnd);
 
     timeProvider.time = 8;
     journal.recordFullPushStarted();
     timeProvider.time = 9;
     journal.recordFullPushFailed();
     snapshot = journal.getSnapshot();
-    assertEquals(1, snapshot.lastSuccessfulPushStart);
-    assertEquals(2, snapshot.lastSuccessfulPushEnd);
+    assertEquals(1, snapshot.lastSuccessfulFullPushStart);
+    assertEquals(2, snapshot.lastSuccessfulFullPushEnd);
 
     timeProvider.time = 11;
     journal.recordFullPushStarted();
     timeProvider.time = 15;
     journal.recordFullPushSuccessful();
     snapshot = journal.getSnapshot();
-    assertEquals(11, snapshot.lastSuccessfulPushStart);
-    assertEquals(15, snapshot.lastSuccessfulPushEnd);
+    assertEquals(11, snapshot.lastSuccessfulFullPushStart);
+    assertEquals(15, snapshot.lastSuccessfulFullPushEnd);
   }
 
   @Test
@@ -256,6 +256,78 @@ public class JournalTest {
   }
 
   @Test
+  public void testIncrementalPushStats() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    timeProvider.autoIncrement = false;
+
+    timeProvider.time = 1;
+    journal.recordIncrementalPushStarted();
+    timeProvider.time = 2;
+    journal.recordIncrementalPushSuccessful();
+    Journal.JournalSnapshot snapshot = journal.getSnapshot();
+    assertEquals(1, snapshot.lastSuccessfulIncrementalPushStart);
+    assertEquals(2, snapshot.lastSuccessfulIncrementalPushEnd);
+
+    timeProvider.time = 5;
+    journal.recordIncrementalPushStarted();
+    timeProvider.time = 7;
+    journal.recordIncrementalPushInterrupted();
+    snapshot = journal.getSnapshot();
+    assertEquals(1, snapshot.lastSuccessfulIncrementalPushStart);
+    assertEquals(2, snapshot.lastSuccessfulIncrementalPushEnd);
+
+    timeProvider.time = 8;
+    journal.recordIncrementalPushStarted();
+    timeProvider.time = 9;
+    journal.recordIncrementalPushFailed();
+    snapshot = journal.getSnapshot();
+    assertEquals(1, snapshot.lastSuccessfulIncrementalPushStart);
+    assertEquals(2, snapshot.lastSuccessfulIncrementalPushEnd);
+
+    timeProvider.time = 11;
+    journal.recordIncrementalPushStarted();
+    timeProvider.time = 15;
+    journal.recordIncrementalPushSuccessful();
+    snapshot = journal.getSnapshot();
+    assertEquals(11, snapshot.lastSuccessfulIncrementalPushStart);
+    assertEquals(15, snapshot.lastSuccessfulIncrementalPushEnd);
+  }
+
+  @Test
+  public void testIncrementalPushStartDouble() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    // Make sure we are past epoch, because that is a special value in the
+    // journaling code.
+    timeProvider.time = 1;
+    journal.recordIncrementalPushStarted();
+    thrown.expect(IllegalStateException.class);
+    journal.recordIncrementalPushStarted();
+  }
+
+  @Test
+  public void testIncrementalPushInterruptedPremature() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    // Make sure we are past epoch, because that is a special value in the
+    // journaling code.
+    timeProvider.time = 1;
+    thrown.expect(IllegalStateException.class);
+    journal.recordIncrementalPushInterrupted();
+  }
+
+  @Test
+  public void testIncrementalPushFailedPremature() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+    // Make sure we are past epoch, because that is a special value in the
+    // journaling code.
+    timeProvider.time = 1;
+    thrown.expect(IllegalStateException.class);
+    journal.recordIncrementalPushFailed();
+  }
+  @Test
   public void testStatsNoStart() {
     Journal journal = new Journal(new MockTimeProvider());
     thrown.expect(IllegalStateException.class);
@@ -268,24 +340,51 @@ public class JournalTest {
   }
 
   @Test
-  public void testLastPushStatus() {
+  public void testLastFullPushStatus() {
     final MockTimeProvider timeProvider = new MockTimeProvider();
     final Journal journal = new Journal(timeProvider);
 
-    assertEquals(Journal.CompletionStatus.SUCCESS, journal.getLastPushStatus());
+    assertEquals(Journal.CompletionStatus.SUCCESS,
+        journal.getLastFullPushStatus());
 
     journal.recordFullPushStarted();
     journal.recordFullPushInterrupted();
     assertEquals(Journal.CompletionStatus.INTERRUPTION,
-        journal.getLastPushStatus());
+        journal.getLastFullPushStatus());
 
     journal.recordFullPushStarted();
     journal.recordFullPushFailed();
-    assertEquals(Journal.CompletionStatus.FAILURE, journal.getLastPushStatus());
+    assertEquals(Journal.CompletionStatus.FAILURE,
+        journal.getLastFullPushStatus());
 
     journal.recordFullPushStarted();
     journal.recordFullPushSuccessful();
-    assertEquals(Journal.CompletionStatus.SUCCESS, journal.getLastPushStatus());
+    assertEquals(Journal.CompletionStatus.SUCCESS,
+        journal.getLastFullPushStatus());
+  }
+
+  @Test
+  public void testLastIncrementalPushStatus() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+
+    assertEquals(Journal.CompletionStatus.SUCCESS,
+        journal.getLastIncrementalPushStatus());
+
+    journal.recordIncrementalPushStarted();
+    journal.recordIncrementalPushInterrupted();
+    assertEquals(Journal.CompletionStatus.INTERRUPTION,
+        journal.getLastIncrementalPushStatus());
+
+    journal.recordIncrementalPushStarted();
+    journal.recordIncrementalPushFailed();
+    assertEquals(Journal.CompletionStatus.FAILURE,
+        journal.getLastIncrementalPushStatus());
+
+    journal.recordIncrementalPushStarted();
+    journal.recordIncrementalPushSuccessful();
+    assertEquals(Journal.CompletionStatus.SUCCESS,
+        journal.getLastIncrementalPushStatus());
   }
 
   @Test

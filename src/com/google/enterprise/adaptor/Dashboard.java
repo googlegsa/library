@@ -292,7 +292,7 @@ class Dashboard {
 
     @Override
     public Status retrieveStatus() {
-      switch (journal.getLastPushStatus()) {
+      switch (journal.getLastFullPushStatus()) {
         case SUCCESS:
           return new TranslationStatus(Status.Code.NORMAL);
         case INTERRUPTION:

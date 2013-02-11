@@ -65,7 +65,7 @@ public class DocIdSenderTest {
     config.setValue("feed.maxUrls", "2");
     config.setValue("feed.name", "testing");
 
-    docIdSender.pushDocIdsFromAdaptor(runtimeExceptionHandler);
+    docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
     assertEquals(4, fileMaker.i);
     assertEquals(Arrays.asList(new String[] {
       "testing", "testing", "testing", "testing",
@@ -93,7 +93,7 @@ public class DocIdSenderTest {
     // Don't send anything.
     adaptor.pushItems = new ArrayList<List<DocIdPusher.Record>>();
     thrown.expect(NullPointerException.class);
-    docIdSender.pushDocIdsFromAdaptor(null);
+    docIdSender.pushFullDocIdsFromAdaptor(null);
   }
   
   @Test
@@ -107,7 +107,7 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
                                   adaptor);
     thrown.expect(InterruptedException.class);
-    docIdSender.pushDocIdsFromAdaptor(runtimeExceptionHandler);
+    docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
   }
 
   @Test
@@ -133,7 +133,7 @@ public class DocIdSenderTest {
     GetDocIdsErrorHandler errorHandler = new TryTwiceGetDocIdsErrorHandler();
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
                                   adaptor);
-    docIdSender.pushDocIdsFromAdaptor(errorHandler);
+    docIdSender.pushFullDocIdsFromAdaptor(errorHandler);
     assertEquals(2, adaptor.times);
   }
 

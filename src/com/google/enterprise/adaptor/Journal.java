@@ -50,12 +50,17 @@ class Journal {
    * Date in milliseconds of current full push start. If zero, then there is not
    * a running full push.
    */
-  private long currentPushStart;
+  private long currentFullPushStart;
   /** Date in milliseconds. */
-  private long lastSuccessfulPushStart;
+  private long lastSuccessfulFullPushStart;
   /** Date in milliseconds. */
-  private long lastSuccessfulPushEnd;
-  private CompletionStatus lastPushStatus = CompletionStatus.SUCCESS;
+  private long lastSuccessfulFullPushEnd;
+  private CompletionStatus lastFullPushStatus = CompletionStatus.SUCCESS;
+
+  private long currentIncrementalPushStart;
+  private long lastSuccessfulIncrementalPushStart;
+  private long lastSuccessfulIncrementalPushEnd;
+  private CompletionStatus lastIncrementalPushStatus = CompletionStatus.SUCCESS;
 
   enum CompletionStatus {
     SUCCESS,
@@ -226,10 +231,10 @@ class Journal {
    * Record that a full push has started. Only one is tracked at a time.
    */
   synchronized void recordFullPushStarted() {
-    if (currentPushStart != 0) {
+    if (currentFullPushStart != 0) {
       throw new IllegalStateException("Full push already started");
     }
-    currentPushStart = timeProvider.currentTimeMillis();
+    currentFullPushStart = timeProvider.currentTimeMillis();
   }
 
   /**
@@ -238,11 +243,11 @@ class Journal {
   void recordFullPushSuccessful() {
     long endTime = timeProvider.currentTimeMillis();
     synchronized (this) {
-      long startTime = currentPushStart;
-      currentPushStart = 0;
-      this.lastSuccessfulPushStart = startTime;
-      this.lastSuccessfulPushEnd = endTime;
-      lastPushStatus = CompletionStatus.SUCCESS;
+      long startTime = currentFullPushStart;
+      currentFullPushStart = 0;
+      this.lastSuccessfulFullPushStart = startTime;
+      this.lastSuccessfulFullPushEnd = endTime;
+      lastFullPushStatus = CompletionStatus.SUCCESS;
     }
   }
 
@@ -250,26 +255,76 @@ class Journal {
    * Record that the full push was interrupted prematurely.
    */
   synchronized void recordFullPushInterrupted() {
-    if (currentPushStart == 0) {
+    if (currentFullPushStart == 0) {
       throw new IllegalStateException("Full push not already started");
     }
-    currentPushStart = 0;
-    lastPushStatus = CompletionStatus.INTERRUPTION;
+    currentFullPushStart = 0;
+    lastFullPushStatus = CompletionStatus.INTERRUPTION;
   }
 
   /**
    * Record that the full push was interrupted prematurely.
    */
   synchronized void recordFullPushFailed() {
-    if (currentPushStart == 0) {
+    if (currentFullPushStart == 0) {
       throw new IllegalStateException("Full push not already started");
     }
-    currentPushStart = 0;
-    lastPushStatus = CompletionStatus.FAILURE;
+    currentFullPushStart = 0;
+    lastFullPushStatus = CompletionStatus.FAILURE;
   }
 
-  synchronized CompletionStatus getLastPushStatus() {
-    return lastPushStatus;
+  synchronized CompletionStatus getLastFullPushStatus() {
+    return lastFullPushStatus;
+  }
+
+  /**
+   * Record that an incremental push has started.
+   */
+  synchronized void recordIncrementalPushStarted() {
+    if (currentIncrementalPushStart != 0) {
+      throw new IllegalStateException("Incremental push already started");
+    }
+    currentIncrementalPushStart = timeProvider.currentTimeMillis();
+  }
+
+  /**
+   * Record that the incremental push completed successfully.
+   */
+  void recordIncrementalPushSuccessful() {
+    long endTime = timeProvider.currentTimeMillis();
+    synchronized (this) {
+      long startTime = currentIncrementalPushStart;
+      currentIncrementalPushStart = 0;
+      this.lastSuccessfulIncrementalPushStart = startTime;
+      this.lastSuccessfulIncrementalPushEnd = endTime;
+      lastIncrementalPushStatus = CompletionStatus.SUCCESS;
+    }
+  }
+
+  /**
+   * Record that the incremental push was interrupted prematurely.
+   */
+  synchronized void recordIncrementalPushInterrupted() {
+    if (currentIncrementalPushStart == 0) {
+      throw new IllegalStateException("Incremental push not already started");
+    }
+    currentIncrementalPushStart = 0;
+    lastIncrementalPushStatus = CompletionStatus.INTERRUPTION;
+  }
+
+  /**
+   * Record that the incremental push was interrupted prematurely.
+   */
+  synchronized void recordIncrementalPushFailed() {
+    if (currentIncrementalPushStart == 0) {
+      throw new IllegalStateException("Full push not already started");
+    }
+    currentIncrementalPushStart = 0;
+    lastIncrementalPushStatus = CompletionStatus.FAILURE;
+  }
+
+  synchronized CompletionStatus getLastIncrementalPushStatus() {
+    return lastIncrementalPushStatus;
   }
 
   double getRetrieverErrorRate(long maxCount) {
@@ -340,9 +395,12 @@ class Journal {
     final long whenStarted;
     final long currentTime;
     final long timeResolution;
-    final long lastSuccessfulPushStart;
-    final long lastSuccessfulPushEnd;
-    final long currentPushStart;
+    final long lastSuccessfulFullPushStart;
+    final long lastSuccessfulFullPushEnd;
+    final long currentFullPushStart;
+    final long lastSuccessfulIncrementalPushStart;
+    final long lastSuccessfulIncrementalPushEnd;
+    final long currentIncrementalPushStart;
     final Stats[] timeStats;
 
     JournalSnapshot(Journal journal, long currentTime, Stats[] timeStatsClone) {
@@ -353,9 +411,12 @@ class Journal {
       this.numUniqueNonGsaRequests = journal.timesNonGsaRequested.size();
       this.numTotalNonGsaRequests = journal.totalNonGsaRequests;
       this.timeResolution = journal.timeResolution;
-      this.lastSuccessfulPushStart = journal.lastSuccessfulPushStart;
-      this.lastSuccessfulPushEnd = journal.lastSuccessfulPushEnd;
-      this.currentPushStart = journal.currentPushStart;
+      this.lastSuccessfulFullPushStart = journal.lastSuccessfulFullPushStart;
+      this.lastSuccessfulFullPushEnd = journal.lastSuccessfulFullPushEnd;
+      this.currentFullPushStart = journal.currentFullPushStart;
+      this.lastSuccessfulIncrementalPushStart = journal.lastSuccessfulIncrementalPushStart;
+      this.lastSuccessfulIncrementalPushEnd = journal.lastSuccessfulIncrementalPushEnd;
+      this.currentIncrementalPushStart = journal.currentIncrementalPushStart;
       this.whenStarted = journal.startedAt;
       this.currentTime = currentTime;
       this.timeStats = timeStatsClone;

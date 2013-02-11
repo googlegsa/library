@@ -59,10 +59,17 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
       simple.put("numUniqueNonGsaRequests",
                  journalSnap.numUniqueNonGsaRequests);
       simple.put("timeResolution", journalSnap.timeResolution);
-      simple.put("lastSuccessfulPushStart",
-                 journalSnap.lastSuccessfulPushStart);
-      simple.put("lastSuccessfulPushEnd", journalSnap.lastSuccessfulPushEnd);
-      simple.put("currentPushStart", journalSnap.currentPushStart);
+      simple.put("lastSuccessfulFullPushStart",
+                 journalSnap.lastSuccessfulFullPushStart);
+      simple.put("lastSuccessfulFullPushEnd",
+          journalSnap.lastSuccessfulFullPushEnd);
+      simple.put("currentFullPushStart", journalSnap.currentFullPushStart);
+      simple.put("lastSuccessfulIncrementalPushStart",
+                 journalSnap.lastSuccessfulIncrementalPushStart);
+      simple.put("lastSuccessfulIncrementalPushEnd",
+          journalSnap.lastSuccessfulIncrementalPushEnd);
+      simple.put("currentIncrementalPushStart",
+          journalSnap.currentIncrementalPushStart);
       simple.put("whenStarted", journalSnap.whenStarted);
       map.put("simpleStats", simple);
     }

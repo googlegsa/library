@@ -50,14 +50,25 @@ public interface AdaptorContext {
   public void removeStatusSource(StatusSource source);
 
   /**
-   * Override the default {@link GetDocIdsErrorHandler}.
+   * Override the default {@link GetDocIdsErrorHandler} for full push.
    */
-  public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler);
+  public void setGetDocIdsFullErrorHandler(GetDocIdsErrorHandler handler);
 
   /**
-   * Retrieve the current {@link GetDocIdsErrorHandler}.
+   * Retrieve the current {@link GetDocIdsErrorHandler} for full push.
    */
-  public GetDocIdsErrorHandler getGetDocIdsErrorHandler();
+  public GetDocIdsErrorHandler getGetDocIdsFullErrorHandler();
+
+  /**
+   * Override the default {@link GetDocIdsErrorHandler} for incremental push.
+   */
+  public void setGetDocIdsIncrementalErrorHandler(
+      GetDocIdsErrorHandler handler);
+
+  /**
+   * Retrieve the current {@link GetDocIdsErrorHandler} for incremental push.
+   */
+  public GetDocIdsErrorHandler getGetDocIdsIncrementalErrorHandler();
 
   /**
    * Retrieve decoder for sensitive values, like passwords. To protect sensitive

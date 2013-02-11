@@ -589,7 +589,7 @@ public class GsaCommunicationHandler {
     @Override
     public void run() {
       try {
-        docIdSender.pushDocIdsFromAdaptor(handler);
+        docIdSender.pushFullDocIdsFromAdaptor(handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       }
@@ -611,6 +611,8 @@ public class GsaCommunicationHandler {
    * Runnable that performs incremental feed push.
    */
   private class IncrementalPushRunnable implements Runnable {
+    private volatile GetDocIdsErrorHandler handler
+        = new DefaultGetDocIdsErrorHandler();
     private PollingIncrementalAdaptor adaptor;
 
     public IncrementalPushRunnable(PollingIncrementalAdaptor adaptor) {
@@ -620,15 +622,25 @@ public class GsaCommunicationHandler {
     @Override
     public void run() {
       try {
-        log.info("Incremental feed push has been initiated");
-        adaptor.getModifiedDocIds(docIdSender);
+        docIdSender.pushIncrementalDocIdsFromAdaptor(handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
         log.log(Level.WARNING, "Exception during incremental polling", ex);
       }
     }
-  }
+
+    public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler) {
+      if (handler == null) {
+        throw new NullPointerException();
+      }
+      this.handler = handler;
+    }
+
+    public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
+      return handler;
+    }
+}
 
   /**
    * Runnable that logs an error that {@link PushRunnable} is already executing.
@@ -717,13 +729,26 @@ public class GsaCommunicationHandler {
     }
 
     @Override
-    public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler) {
+    public void setGetDocIdsFullErrorHandler(GetDocIdsErrorHandler handler) {
       ((PushRunnable) docIdFullPusher.getRunnable())
           .setGetDocIdsErrorHandler(handler);
     }
 
     @Override
-    public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
+    public GetDocIdsErrorHandler getGetDocIdsFullErrorHandler() {
+      return ((PushRunnable) docIdFullPusher.getRunnable())
+          .getGetDocIdsErrorHandler();
+    }
+
+    @Override
+    public void setGetDocIdsIncrementalErrorHandler(
+        GetDocIdsErrorHandler handler) {
+      ((PushRunnable) docIdFullPusher.getRunnable())
+          .setGetDocIdsErrorHandler(handler);
+    }
+
+    @Override
+    public GetDocIdsErrorHandler getGetDocIdsIncrementalErrorHandler() {
       return ((PushRunnable) docIdFullPusher.getRunnable())
           .getGetDocIdsErrorHandler();
     }

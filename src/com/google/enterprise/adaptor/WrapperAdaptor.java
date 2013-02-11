@@ -376,13 +376,24 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setGetDocIdsErrorHandler(GetDocIdsErrorHandler handler) {
-      context.setGetDocIdsErrorHandler(handler);
+    public void setGetDocIdsFullErrorHandler(GetDocIdsErrorHandler handler) {
+      context.setGetDocIdsFullErrorHandler(handler);
     }
 
     @Override
-    public GetDocIdsErrorHandler getGetDocIdsErrorHandler() {
-      return context.getGetDocIdsErrorHandler();
+    public GetDocIdsErrorHandler getGetDocIdsFullErrorHandler() {
+      return context.getGetDocIdsFullErrorHandler();
+    }
+
+    @Override
+    public void setGetDocIdsIncrementalErrorHandler(
+        GetDocIdsErrorHandler handler) {
+      context.setGetDocIdsIncrementalErrorHandler(handler);
+    }
+
+    @Override
+    public GetDocIdsErrorHandler getGetDocIdsIncrementalErrorHandler() {
+      return context.getGetDocIdsIncrementalErrorHandler();
     }
 
     @Override

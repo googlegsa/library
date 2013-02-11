@@ -77,12 +77,12 @@ public class GsaCommunicationHandlerTest {
         assertNotNull(context.getDocIdEncoder());
         assertNotNull(context.getSensitiveValueDecoder());
         GetDocIdsErrorHandler originalHandler
-            = context.getGetDocIdsErrorHandler();
+            = context.getGetDocIdsFullErrorHandler();
         GetDocIdsErrorHandler replacementHandler
             = new DefaultGetDocIdsErrorHandler();
         assertNotNull(originalHandler);
-        context.setGetDocIdsErrorHandler(replacementHandler);
-        assertSame(replacementHandler, context.getGetDocIdsErrorHandler());
+        context.setGetDocIdsFullErrorHandler(replacementHandler);
+        assertSame(replacementHandler, context.getGetDocIdsFullErrorHandler());
 
         StatusSource source = new MockStatusSource("test",
             new MockStatus(Status.Code.NORMAL));

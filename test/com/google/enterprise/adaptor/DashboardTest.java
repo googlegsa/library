@@ -88,7 +88,7 @@ public class DashboardTest {
         = new AtomicReference<Journal.CompletionStatus>();
     final Journal journal = new Journal(timeProvider) {
       @Override
-      public CompletionStatus getLastPushStatus() {
+      public CompletionStatus getLastFullPushStatus() {
         return ref.get();
       }
     };
