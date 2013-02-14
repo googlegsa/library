@@ -139,25 +139,27 @@ feed.name=mydocfeedtogsa</pre>
   <p>Now you should generate a self-signed certificate for the adaptor and
     export the newly created certificate. Within the adaptor's directory, you
     should run:
-  <pre>keytool -alias adaptor -keystore keys.jks -genkeypair -keyalg RSA -validity 365</pre>
-  <p>Use "changeit" for the keystore password. For "What is your first and last
-    name?", you should enter the hostname of your computer. You are free to
-    answer the other questions however you wish (including not answering them).
-    When you are happy with your answers, answer "yes" to "Is
-    CN=yourcomputershostname, OU=... correct?" <br> 
-  <p> Then, still in adaptor's directory, you should run:
-  <pre>keytool -alias adaptor -keystore keys.jks -exportcert -rfc -file adaptor.crt</pre>
-  <p> Press enter for the key password (to use the same password
-    as the keystore).
+  <pre>keytool -genkeypair -keystore keys.jks -storepass changeit -keypass changeit -alias adaptor -keyalg RSA -validity 365</pre>
+  <p>For "What is your first and last name?", you should enter the hostname of
+    the adaptor's computer. You are free to answer the other questions however
+    you wish (including not answering them). When you are happy with your
+    answers, answer "yes" to "Is CN=yourcomputershostname, OU=... correct?"
+  <p>Then, still in adaptor's directory, you should run:
+  <pre>keytool -exportcert -alias adaptor -keystore keys.jks -storepass changeit -keypass changeit -rfc -file adaptor.crt</pre>
+
+  <p>Copy cacerts from Java to the adaptor's directory. For Windows:
+  <pre>copy PATH\TO\JRE\lib\security\cacerts cacerts.jks</pre>
+  <p>For all other OSes:
+  <pre>cp PATH/TO/JRE/lib/security/cacerts cacerts.jks</pre>
 
   <p>To allow the adaptor to trust itself, execute:
-  <pre>keytool -keystore cacerts.jks -importcert -file adaptor.crt</pre>
+  <pre>keytool -importcert -keystore cacerts.jks -storepass changeit -file adaptor.crt -alias adaptor</pre>
+  <p>Answer "yes" to "Trust this certificate?"
 
   <h4>Exchanging Certificates</h4>
   <p>To allow the adaptor to trust the GSA, execute:
-  <pre>keytool -keystore cacerts.jks -importcert -file gsa.crt</pre>
-  <p>Use "changeit" for the keystore password. Answer "yes" to "Trust this
-    certificate?"
+  <pre>keytool -importcert -keystore cacerts.jks -storepass changeit -file gsa.crt -alias gsa</pre>
+  <p>Answer "yes" to "Trust this certificate?"
 
   <p>To allow the GSA to trust the adaptor, within the GSA's Admin Console, go
     to <b>Administration &gt; Certificate Authorities</b>. Click the <b>Choose
