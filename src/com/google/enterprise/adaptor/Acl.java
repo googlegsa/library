@@ -121,8 +121,9 @@ public class Acl {
    * user and his groups are unspecified in the ACL, then the response is
    * indeterminate.
    */
-  public AuthzStatus isAuthorizedLocal(String userIdentifier,
-                                       Collection<String> groups) {
+  public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
+    String userIdentifier = userIdentity.getUsername();
+    Collection<String> groups = userIdentity.getGroups();
     Set<String> commonGroups = new HashSet<String>(denyGroups);
     commonGroups.retainAll(groups);
     if (denyUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {
@@ -178,8 +179,8 @@ public class Acl {
    * ACLs. In these situations the ACLs are checked, but the result is
    * INDETERMINATE and different authz checks must be made.
    *
-   * @param userIdentifier the username of the user
-   * @param groups all the groups the user belongs to
+   * @param userIdentity identity containing the user's username and all the
+   *     groups the user belongs to
    * @param aclChain ordered list of ACLs from root to leaf
    * @throws IllegalArgumentException if the chain is empty, the first element
    *     of the chain's {@code getInheritFrom() != null}, or if any element but
@@ -187,8 +188,7 @@ public class Acl {
    * @see #isAuthorizedLocal
    * @see InheritanceType
    */
-  public static AuthzStatus isAuthorized(String userIdentifier,
-                                         Collection<String> groups,
+  public static AuthzStatus isAuthorized(AuthnIdentity userIdentity,
                                          List<Acl> aclChain) {
     // Check for completely broken chains. Users of the API should be aware
     // enough to easily prevent these from happening. These also don't directly
@@ -229,26 +229,26 @@ public class Acl {
         return AuthzStatus.INDETERMINATE;
       }
     }
-    AuthzStatus result = isAuthorizedRecurse(userIdentifier, groups, aclChain);
+    AuthzStatus result = isAuthorizedRecurse(userIdentity, aclChain);
     return (result == AuthzStatus.INDETERMINATE) ? AuthzStatus.DENY : result;
   }
 
-  private static AuthzStatus isAuthorizedRecurse(final String userIdentifier,
-      final Collection<String> groups, final List<Acl> aclChain) {
+  private static AuthzStatus isAuthorizedRecurse(
+      final AuthnIdentity userIdentity, final List<Acl> aclChain) {
     if (aclChain.size() == 1) {
-      return aclChain.get(0).isAuthorizedLocal(userIdentifier, groups);
+      return aclChain.get(0).isAuthorizedLocal(userIdentity);
     }
     Decision parentDecision = new Decision() {
       @Override
       protected AuthzStatus computeDecision() {
-        return aclChain.get(0).isAuthorizedLocal(userIdentifier, groups);
+        return aclChain.get(0).isAuthorizedLocal(userIdentity);
       }
     };
     Decision childDecision = new Decision() {
       @Override
       protected AuthzStatus computeDecision() {
         // Recurse.
-        return isAuthorizedRecurse(userIdentifier, groups,
+        return isAuthorizedRecurse(userIdentity,
             aclChain.subList(1, aclChain.size()));
       }
     };
@@ -266,14 +266,14 @@ public class Acl {
    * not returned by {@code retriever} when requested, its response will be
    * {@link AuthzStatus#INDETERMINATE} for that DocId.
    *
-   * @param userIdentifier the username of the user
-   * @param groups all the groups the user belongs to
+   * @param userIdentity identity containing the user's username and all the
+   *     groups the user belongs to
    * @param ids collection of DocIds that need authz performed
    * @param retriever object to use to obtain an ACL for a given DocId
    * @throws IOException if the retriever throws an IOException
    */
   public static Map<DocId, AuthzStatus> isAuthorizedBatch(
-      String userIdentifier, Collection<String> groups, Collection<DocId> ids,
+      AuthnIdentity userIdentity, Collection<DocId> ids,
       BatchRetriever retriever) throws IOException {
     Map<DocId, Acl> acls = retrieveNecessaryAcls(ids, retriever);
     Map<DocId, AuthzStatus> results
@@ -285,7 +285,7 @@ public class Acl {
         // There was a cycle or other problem generating the chain.
         result = AuthzStatus.INDETERMINATE;
       } else {
-        result = isAuthorized(userIdentifier, groups, chain);
+        result = isAuthorized(userIdentity, chain);
       }
       results.put(docId, result);
     }

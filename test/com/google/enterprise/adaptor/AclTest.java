@@ -40,38 +40,38 @@ public class AclTest {
     // Test all main combinations:
     // (user permitted, denied, or indeterminate) x (group permitted, denied,
     //   indeterminate, no groups)
-    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal("permitUser",
-        Collections.singletonList("permitGroup")));
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("permitUser",
-        Collections.singletonList("denyGroup")));
-    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal("permitUser",
-        Collections.singletonList("unknownGroup")));
-    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal("permitUser",
-        Collections.<String>emptyList()));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permitUser", "permitGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permitUser", "denyGroup")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permitUser", "unknownGroup")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permitUser")));
 
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("denyUser",
-        Collections.singletonList("permitGroup")));
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("denyUser",
-        Collections.singletonList("denyGroup")));
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("denyUser",
-        Collections.singletonList("unknownGroup")));
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("denyUser",
-        Collections.<String>emptyList()));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyUser", "permitGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyUser", "denyGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyUser", "unknownGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyUser")));
 
-    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal("unknownUser",
-        Collections.singletonList("permitGroup")));
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("unknownUser",
-        Collections.singletonList("denyGroup")));
-    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal("unknownUser",
-        Collections.singletonList("unknownGroup")));
-    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal("unknownUser",
-        Collections.<String>emptyList()));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("unknownUser", "permitGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("unknownUser", "denyGroup")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("unknownUser", "unknownGroup")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("unknownUser")));
 
     // Make sure that deny wins.
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("permitUser",
-        Arrays.asList("denyGroup", "permitGroup")));
-    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal("bothUser",
-        Arrays.asList("permitGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permitUser", "denyGroup", "permitGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("bothUser", "permitGroup")));
   }
 
   @Test
@@ -320,23 +320,21 @@ public class AclTest {
     Collection<String> empty
         = Collections.unmodifiableList(Collections.<String>emptyList());
 
-    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized("user", empty,
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity("user"),
           Arrays.asList(root, middle, leaf)));
   }
 
   @Test
   public void testEmptyAclChain() {
     thrown.expect(IllegalArgumentException.class);
-    Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Collections.<Acl>emptyList());
+    Acl.isAuthorized(createIdentity("user"), Collections.<Acl>emptyList());
   }
 
   @Test
   public void testInvalidRootAclChain() {
     Acl acl = new Acl.Builder().setInheritFrom(new DocId("parent")).build();
     thrown.expect(IllegalArgumentException.class);
-    Acl.isAuthorized("user", Collections.<String>emptyList(),
-                     Collections.singletonList(acl));
+    Acl.isAuthorized(createIdentity("user"), Collections.singletonList(acl));
   }
 
   @Test
@@ -347,7 +345,7 @@ public class AclTest {
     Acl broken = root;
 
     thrown.expect(IllegalArgumentException.class);
-    Acl.isAuthorized("user", Collections.<String>emptyList(),
+    Acl.isAuthorized(createIdentity("user"),
                      Arrays.asList(root, child, broken));
   }
 
@@ -357,10 +355,9 @@ public class AclTest {
     acls.put(new DocId("1"), null);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "alice";
-    List<String> groups = Arrays.asList("eng");
+    AuthnIdentity identity = createIdentity("alice", "eng");
     thrown.expect(NullPointerException.class);
-    Acl.isAuthorizedBatch(user, groups, Arrays.asList(new DocId("1")),
+    Acl.isAuthorizedBatch(identity, Arrays.asList(new DocId("1")),
                           retriever);
   }
 
@@ -373,9 +370,8 @@ public class AclTest {
              .setPermitUsers(Arrays.asList("group")).build());
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "user";
-    List<String> groups = Arrays.asList("wrong group");
-    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorizedBatch(user, groups,
+    AuthnIdentity identity = createIdentity("user", "wrong group");
+    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorizedBatch(identity,
         Arrays.asList(id, id2), retriever).get(id));
   }
 
@@ -401,9 +397,8 @@ public class AclTest {
         return acls;
       }
     };
-    String user = "user";
-    List<String> groups = Collections.emptyList();
-    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorizedBatch(user, groups,
+    AuthnIdentity identity = createIdentity("user");
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorizedBatch(identity,
         Arrays.asList(file), retriever).get(file));
   }
 
@@ -458,16 +453,15 @@ public class AclTest {
     golden.put(file2, AuthzStatus.INDETERMINATE);
     golden = Collections.unmodifiableMap(golden);
 
-    String user = "user";
-    List<String> groups = Collections.emptyList();
-    assertEquals(golden, Acl.isAuthorizedBatch(user, groups,
+    AuthnIdentity identity = createIdentity("user");
+    assertEquals(golden, Acl.isAuthorizedBatch(identity,
         Arrays.asList(file1, file2), retriever));
   }
 
   @Test
   public void testEmptyIsAuthorized() {
-    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorized("user",
-        Collections.<String>emptyList(), Arrays.asList(Acl.EMPTY)));
+    assertEquals(AuthzStatus.INDETERMINATE, Acl.isAuthorized(
+        createIdentity("user"), Arrays.asList(Acl.EMPTY)));
   }
 
   @Test
@@ -516,11 +510,10 @@ public class AclTest {
         .build();
   }
 
-  private AuthzStatus callIsAuthorized(String userIdentifier,
-      Collection<String> groups, DocId id, Acl.BatchRetriever retriever)
-      throws IOException {
-    return Acl.isAuthorizedBatch(userIdentifier, groups, Arrays.asList(id),
-                                 retriever).get(id);
+  private AuthzStatus callIsAuthorized(AuthnIdentity identity, DocId id,
+      Acl.BatchRetriever retriever) throws IOException {
+    return Acl.isAuthorizedBatch(identity, Arrays.asList(id), retriever)
+        .get(id);
   }
 
   private void testRule(Acl.InheritanceType rule, AuthzStatus child,
@@ -674,51 +667,47 @@ public class AclTest {
     acls.put(new DocId("5"), emptyAcl);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "alice";
-    List<String> groups = Arrays.asList("eng");
+    AuthnIdentity identity = createIdentity("alice", "eng");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
 
-    user = "bob";
-    groups = Arrays.asList("hr");
+    identity = createIdentity("bob", "hr");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("2"), retriever));
+        callIsAuthorized(identity, new DocId("2"), retriever));
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("3"), retriever));
+        callIsAuthorized(identity, new DocId("3"), retriever));
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("4"), retriever));
+        callIsAuthorized(identity, new DocId("4"), retriever));
 
-    user = "alice";
+    identity = createIdentity("alice", "hr");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("2"), retriever));
+        callIsAuthorized(identity, new DocId("2"), retriever));
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("3"), retriever));
+        callIsAuthorized(identity, new DocId("3"), retriever));
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("4"), retriever));
+        callIsAuthorized(identity, new DocId("4"), retriever));
 
-    user = "eve";
-    groups = Collections.emptyList();
+    identity = createIdentity("eve");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("3"), retriever));
+        callIsAuthorized(identity, new DocId("3"), retriever));
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("4"), retriever));
+        callIsAuthorized(identity, new DocId("4"), retriever));
 
-    user = "";
-    groups = Arrays.asList("qa");
+    identity = createIdentity("", "qa");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("3"), retriever));
+        callIsAuthorized(identity, new DocId("3"), retriever));
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("4"), retriever));
+        callIsAuthorized(identity, new DocId("4"), retriever));
 
     // Docs with empty ACLs should return INDETERMINATE.
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, new DocId("5"), retriever));
+        callIsAuthorized(identity, new DocId("5"), retriever));
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, new DocId("9"), retriever));
+        callIsAuthorized(identity, new DocId("9"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -735,10 +724,9 @@ public class AclTest {
     acls.put(new DocId("Folder"), folder);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "adam";
-    List<String> groups = Collections.emptyList();
+    AuthnIdentity identity = createIdentity("adam");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -755,10 +743,9 @@ public class AclTest {
     acls.put(new DocId("Folder"), folder);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "adam";
-    List<String> groups = Collections.emptyList();
+    AuthnIdentity identity = createIdentity("adam");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -775,10 +762,9 @@ public class AclTest {
     acls.put(new DocId("Folder"), folder);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "adam";
-    List<String> groups = Arrays.asList("eng");
+    AuthnIdentity identity = createIdentity("adam", "eng");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -796,14 +782,13 @@ public class AclTest {
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
     // eve is denied...
-    String user = "eve";
-    List<String> groups = Arrays.asList("qa");
+    AuthnIdentity identity = createIdentity("eve", "qa");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
     // although qa is in general permitted.
-    user = "bob";
+    identity = createIdentity("bob", "qa");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -827,28 +812,24 @@ public class AclTest {
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
     // Permitted by Folder, but denied by Share
-    String user = "adam";
-    List<String> groups = Arrays.asList("eng");
+    AuthnIdentity identity = createIdentity("adam", "eng");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
 
     // Permitted by File (via group), but denied by Share (by omission)
-    user = "eve";
-    groups = Arrays.asList("qa");
+    identity = createIdentity("eve", "qa");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
 
     // Permitted by File (via user), permitted by Share (via group)
-    user = "bob";
-    groups = Arrays.asList("finance");
+    identity = createIdentity("bob", "finance");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
 
     // Permitted by Share (via user), but INDETERMINATE otherwise, so DENY
-    user = "charlie";
-    groups = Collections.emptyList();
+    identity = createIdentity("charlie");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -864,10 +845,9 @@ public class AclTest {
     acls.put(new DocId("Share"), share);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "eve";
-    List<String> groups = Arrays.asList("qa");
+    AuthnIdentity identity = createIdentity("eve", "qa");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -883,10 +863,9 @@ public class AclTest {
     acls.put(new DocId("Folder"), folder);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "eve";
-    List<String> groups = Arrays.asList("qa");
+    AuthnIdentity identity = createIdentity("eve", "qa");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -906,15 +885,13 @@ public class AclTest {
     acls.put(new DocId("Website"), website);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "adam";
-    List<String> groups = Arrays.asList("eng");
+    AuthnIdentity identity = createIdentity("adam", "eng");
     assertEquals(AuthzStatus.PERMIT,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
 
-    user = "eve";
-    groups = Arrays.asList("qa");
+    identity = createIdentity("eve", "qa");
     assertEquals(AuthzStatus.DENY,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -935,15 +912,13 @@ public class AclTest {
     acls.put(new DocId("Share"), share);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "adam";
-    List<String> groups = Arrays.asList("eng");
+    AuthnIdentity identity = createIdentity("adam", "eng");
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, fid, retriever));
+        callIsAuthorized(identity, fid, retriever));
 
-    user = "eve";
-    groups = Arrays.asList("qa");
+    identity = createIdentity("eve", "qa");
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, fid, retriever));
+        callIsAuthorized(identity, fid, retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -956,10 +931,9 @@ public class AclTest {
     // No "Folder" ACLs
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "user";
-    List<String> groups = Arrays.asList("group");
+    AuthnIdentity identity = createIdentity("user", "group");
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -972,10 +946,9 @@ public class AclTest {
     // No "Folder" ACLs
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "user";
-    List<String> groups = Arrays.asList("group");
+    AuthnIdentity identity = createIdentity("user", "group");
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
   }
 
   // Port of test from GSA with similar name. Should be kept in sync.
@@ -993,11 +966,36 @@ public class AclTest {
     acls.put(new DocId("Folder2"), folder2);
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
-    String user = "adam";
-    List<String> groups = Collections.emptyList();
+    AuthnIdentity identity = createIdentity("adam");
     assertEquals(AuthzStatus.INDETERMINATE,
-        callIsAuthorized(user, groups, new DocId("1"), retriever));
+        callIsAuthorized(identity, new DocId("1"), retriever));
 
+  }
+
+  private AuthnIdentity createIdentity(String username, String... groups) {
+    return createIdentity(username, Arrays.asList(groups));
+  }
+
+  private AuthnIdentity createIdentity(final String username,
+      List<String> groups) {
+    final Set<String> groupSet
+        = Collections.unmodifiableSet(new TreeSet<String>(groups));
+    return new AuthnIdentity() {
+      @Override
+      public String getUsername() {
+        return username;
+      }
+
+      @Override
+      public String getPassword() {
+        return null;
+      }
+
+      @Override
+      public Set<String> getGroups() {
+        return groupSet;
+      }
+    };
   }
 
   private static class MockBatchRetriever implements Acl.BatchRetriever {
