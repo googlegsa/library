@@ -107,7 +107,7 @@ class DocIdSender extends AbstractDocIdPusher {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       } else {
         journal.recordIncrementalPushFailed();
-        log.warning("Gave up. Failed full push of DocIds");
+        log.warning("Gave up. Failed incremental push of DocIds");
         return; // Bail
       }
     }

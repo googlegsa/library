@@ -317,7 +317,7 @@ class Journal {
    */
   synchronized void recordIncrementalPushFailed() {
     if (currentIncrementalPushStart == 0) {
-      throw new IllegalStateException("Full push not already started");
+      throw new IllegalStateException("Incremental push not already started");
     }
     currentIncrementalPushStart = 0;
     lastIncrementalPushStatus = CompletionStatus.FAILURE;
@@ -414,8 +414,10 @@ class Journal {
       this.lastSuccessfulFullPushStart = journal.lastSuccessfulFullPushStart;
       this.lastSuccessfulFullPushEnd = journal.lastSuccessfulFullPushEnd;
       this.currentFullPushStart = journal.currentFullPushStart;
-      this.lastSuccessfulIncrementalPushStart = journal.lastSuccessfulIncrementalPushStart;
-      this.lastSuccessfulIncrementalPushEnd = journal.lastSuccessfulIncrementalPushEnd;
+      this.lastSuccessfulIncrementalPushStart
+          = journal.lastSuccessfulIncrementalPushStart;
+      this.lastSuccessfulIncrementalPushEnd
+          = journal.lastSuccessfulIncrementalPushEnd;
       this.currentIncrementalPushStart = journal.currentIncrementalPushStart;
       this.whenStarted = journal.startedAt;
       this.currentTime = currentTime;
