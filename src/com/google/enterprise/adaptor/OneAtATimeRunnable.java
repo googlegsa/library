@@ -25,6 +25,27 @@ import java.util.concurrent.atomic.AtomicReference;
  * <p>This class is thread-safe.
  */
 class OneAtATimeRunnable implements Runnable {
+  /**
+   * We use an atomic reference to a thread to manage the life-cycle of this
+   * object. Whenever the value is "null" it means we are not currently running
+   * and a new thread can be started. Whenever we are currently executing we
+   * store reference to the thread that is executing our {@link #runnable}.
+   * When {@link #stop} has been called we store a reference to an empty thread
+   * to prevent future invocation.
+   *
+   * Life-cycle:
+   *  - {@link #run} is called by an external thread; we check if
+   *  {@link #runningThread} is "null": if true, it means that {@link #runnable}
+   *  is not running, we start a new thread of execution and store reference to
+   *  the new thread of execution, otherwise we run code in
+   *  {@link #alreadyRunningRunnable} to signify that one instance is already
+   *  running.
+   *
+   *  - when {@link #stop} is called we replace {@link #runningThread} with a
+   *  reference to a new empty thread that does not do anything and interrupt
+   *  the currently executing thread. This guarantees that {@link #run} method
+   *  won't run in future because {@link #runningThread} won't ever be "null".
+   */
   private AtomicReference<Thread> runningThread = new AtomicReference<Thread>();
   private Runnable runnable;
   private Runnable alreadyRunningRunnable;
@@ -54,7 +75,7 @@ class OneAtATimeRunnable implements Runnable {
     try {
       runnable.run();
     } finally {
-      runningThread.set(null);
+      runningThread.compareAndSet(thisThread, null);
     }
   }
 
@@ -81,7 +102,8 @@ class OneAtATimeRunnable implements Runnable {
    * complete.
    */
   public void stop() {
-    // Permanently set the runningThread to non-null.
+    // Permanently set the runningThread to non-null by setting a new Thread
+    // object that won't ever run. Effectively, this prevents future execution.
     Thread thread = runningThread.getAndSet(new Thread());
     if (thread != null) {
       thread.interrupt();
@@ -105,7 +127,7 @@ class OneAtATimeRunnable implements Runnable {
       try {
         runnable.run();
       } finally {
-        runningThread.set(null);
+        runningThread.compareAndSet(Thread.currentThread(), null);
       }
     }
   }

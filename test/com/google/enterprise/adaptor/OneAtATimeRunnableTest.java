@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Test cases for {@link OneAtATimeRunnable}.
@@ -98,6 +99,19 @@ public class OneAtATimeRunnableTest {
     thread.join();
     assertEquals(1, mainRunnable.getCounter());
     assertEquals(1, alreadyRunning.getCounter());
+  }
+
+  @Test
+  public void testStopThreadIsNotNull() throws Exception {
+    Thread thread = runnable.runInNewThread();
+    while (mainRunnable.getCounter() != 1) {
+      Thread.sleep(1);
+    }
+    runnable.stop();
+    thread.join();
+
+    thread = runnable.runInNewThread();
+    assertNull(thread);
   }
 
   /** Thread-safe. */
