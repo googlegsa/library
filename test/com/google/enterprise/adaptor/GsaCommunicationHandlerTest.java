@@ -114,6 +114,16 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
+  public void testFullPushAfterReload() throws Exception {
+    NullAdaptor adaptor = new NullAdaptor();
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    gsa.start();
+    gsa.stop(1);
+    gsa.start();
+    assertTrue(gsa.checkAndScheduleImmediatePushOfDocIds());
+  }
+
+  @Test
   public void testFailOnceInitAdaptor() throws Exception {
     class FailFirstAdaptor extends NullAdaptor {
       private int count = 0;

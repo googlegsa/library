@@ -65,8 +65,7 @@ public class GsaCommunicationHandler {
    * permits one invocation at a time. If multiple simultaneous invocations
    * occur, all but the first will log a warning and return immediately.
    */
-  private final OneAtATimeRunnable docIdFullPusher = new OneAtATimeRunnable(
-      new PushRunnable(), new AlreadyRunningRunnable());
+  private OneAtATimeRunnable docIdFullPusher;
   /**
    * Runnable to be called for doing incremental feed pushes. It is only
    * set if the Adaptor supports incremental updates. Otherwise, it's null.
@@ -178,6 +177,9 @@ public class GsaCommunicationHandler {
     Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
         1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
+
+    docIdFullPusher = new OneAtATimeRunnable(
+        new PushRunnable(), new AlreadyRunningRunnable());
 
     backgroundExecutor = Executors.newScheduledThreadPool(2,
         new ThreadFactoryBuilder().setDaemon(true).setNameFormat("background")
