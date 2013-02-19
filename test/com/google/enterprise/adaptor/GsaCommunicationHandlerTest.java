@@ -186,14 +186,14 @@ public class GsaCommunicationHandlerTest {
   @Test
   public void testInitBeforeServing() throws Exception {
     class SlowAdaptor extends NullAdaptor {
-      public AtomicBoolean getBeforeInit = new AtomicBoolean();
-      public String dependency;
+      public AtomicBoolean initHasFinished = new AtomicBoolean();
+      public AtomicBoolean getCalledBeforeInitFinished = new AtomicBoolean();
 
       @Override
       public void init(AdaptorContext context) {
         try {
-          Thread.sleep(500);
-          dependency = "The H";
+          Thread.sleep(500);  // the slowness of this adaptor
+          initHasFinished.set(true);
         } catch (InterruptedException e) {
           throw new AssertionError(e);
         }
@@ -202,8 +202,8 @@ public class GsaCommunicationHandlerTest {
       @Override
       public void getDocContent(Request req, Response resp)
           throws IOException {
-        if (null == dependency) {
-          getBeforeInit.set(true);
+        if (!initHasFinished.get()) {
+          getCalledBeforeInitFinished.set(true);
         }
         resp.respondNotFound();
       }
@@ -239,7 +239,7 @@ public class GsaCommunicationHandlerTest {
     tryFetch.interrupt();
     tryFetch.join();
 
-    assertEquals(false, adaptor.getBeforeInit.get());
+    assertEquals(false, adaptor.getCalledBeforeInitFinished.get());
   }
 
   @Test
