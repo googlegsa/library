@@ -48,6 +48,11 @@ public class HttpExchangesTest {
     ex.getRequestHeaders().set("Accept-Encoding", "gzip,deflate");
     HttpExchanges.enableCompressionIfSupported(ex);
     assertEquals("gzip", ex.getResponseHeaders().getFirst("Content-Encoding"));
+    ex.sendResponseHeaders(200, 0);
+    int bytesToWrite = 1000;
+    ex.getResponseBody().write(new byte[bytesToWrite]);
+    ex.getResponseBody().close();
+    assertTrue(ex.getResponseBytes().length < bytesToWrite);
   }
 
   @Test

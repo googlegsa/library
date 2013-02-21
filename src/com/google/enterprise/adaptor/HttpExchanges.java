@@ -75,7 +75,7 @@ public final class HttpExchanges {
         }
       };
   /** The various date formats as required by RFC 2616 3.3.1. */
-  protected static final List<ThreadLocal<DateFormat>> dateFormatsRfc2616;
+  private static final List<ThreadLocal<DateFormat>> dateFormatsRfc2616;
   /**
    * When thread-local value is not {@code null}, signals that {@link #handle}
    * should abort immediately with an error. This is a hack required because the
@@ -130,7 +130,7 @@ public final class HttpExchanges {
    * Sends response to GSA. Should only be used when the request method is
    * HEAD.
    */
-  public static void respondToHead(HttpExchange ex, int code,
+  static void respondToHead(HttpExchange ex, int code,
       String contentType) throws IOException {
     ex.getResponseHeaders().set("Transfer-Encoding", "chunked");
     respond(ex, code, contentType, (byte[]) null);
@@ -175,7 +175,7 @@ public final class HttpExchanges {
    * Sends headers and configures {@code ex} for (possibly) sending content.
    * Completing the request is the caller's responsibility.
    */
-  public static void startResponse(HttpExchange ex, int code,
+  static void startResponse(HttpExchange ex, int code,
       String contentType, boolean hasBody) throws IOException {
     log.finest("Starting response");
     if (contentType != null) {
@@ -187,12 +187,6 @@ public final class HttpExchanges {
     } else {
       // Chuncked encoding
       ex.sendResponseHeaders(code, 0);
-      // Check to see if enableCompressionIfSupported was called
-      if ("gzip".equals(ex.getResponseHeaders().getFirst("Content-Encoding"))) {
-        // Creating the GZIPOutputStream must happen after sendResponseHeaders
-        // since the constructor writes data to the provided OutputStream
-        ex.setStreams(null, new GZIPOutputStream(ex.getResponseBody()));
-      }
     }
   }
 
@@ -200,7 +194,7 @@ public final class HttpExchanges {
    * Sends response to GSA. Should not be used directly if the request method
    * is HEAD.
    */
-  public static void respond(HttpExchange ex, int code, String contentType,
+  static void respond(HttpExchange ex, int code, String contentType,
       byte response[]) throws IOException {
     startResponse(ex, code, contentType, response != null);
     if (response != null) {
@@ -227,8 +221,12 @@ public final class HttpExchanges {
   }
 
   /**
-   * If the client supports it, set the correct headers and make {@link
-   * #respond} provide GZIPed response data to the client.
+   * If the client supports it, set the correct headers and streams to provide
+   * GZIPed response data to the client. Because the content may become
+   * compressed, users of this method should generally use a {@code
+   * responseLength} of {@code 0} when calling {@link
+   * HttpExchange#sendResponseHeaders}. The exception is when responding to a
+   * HEAD request, in which {@code -1} is required.
    */
   public static void enableCompressionIfSupported(HttpExchange ex)
       throws IOException {
@@ -240,6 +238,20 @@ public final class HttpExchanges {
     if (encodings.contains("gzip")) {
       log.finer("Enabling gzip compression for response");
       ex.getResponseHeaders().set("Content-Encoding", "gzip");
+      // Although the documentation states that getResponseBody() can only be
+      // called after sendResponseHeaders(), this is not actually the case.
+      // Being able to call getResponseBody() before sendResponseHeaders() is
+      // the only way for filters to function and so is supported even though
+      // the documentation says otherwise.
+      final OutputStream os = ex.getResponseBody();
+      ex.setStreams(null, new AbstractLazyOutputStream() {
+        @Override
+        protected OutputStream retrieveOs() throws IOException {
+          // Creating the GZIPOutputStream must happen after sendResponseHeaders
+          // since the constructor writes data to the provided OutputStream.
+          return new GZIPOutputStream(os);
+        }
+      });
     }
   }
 

@@ -34,9 +34,10 @@ public class MockHttpExchange extends HttpExchange {
   private final Headers requestHeaders = new Headers();
   private final Headers responseHeaders = new Headers();
   /** The response body that has the contents that would be sent to the UA */
-  private ByteArrayOutputStream responseBodyOrig;
+  private ByteArrayOutputStream responseBodyOrig = new ByteArrayOutputStream();
   /** Overridable response body that hopefully wraps requestBodyOrig */
-  private OutputStream responseBody;
+  private OutputStream responseBody
+      = new ClosingFilterOutputStream(responseBodyOrig);
   private int responseCode = -1;
   private HttpContext httpContext;
 
@@ -140,9 +141,9 @@ public class MockHttpExchange extends HttpExchange {
 
   @Override
   public OutputStream getResponseBody() {
-    if (responseBody == null) {
-      throw new IllegalStateException();
-    }
+    // Although the documentation specifies that getResponseBody() may only be
+    // called after sendResponseHeaders(), this is not actually the case. The
+    // restriction is not in affect to allow filters to function.
     return responseBody;
   }
 
@@ -158,13 +159,11 @@ public class MockHttpExchange extends HttpExchange {
 
   @Override
   public void sendResponseHeaders(int rCode, long responseLength) {
-    if (responseBody != null) {
+    if (responseCode != -1) {
       throw new IllegalStateException();
     }
     getResponseHeaders().add("Date", "Sun, 06 Nov 1994 08:49:37 GMT");
     responseCode = rCode;
-    responseBodyOrig = new ByteArrayOutputStream();
-    responseBody = new ClosingFilterOutputStream(responseBodyOrig);
     // TODO(ejona): handle responseLengeth
   }
 
