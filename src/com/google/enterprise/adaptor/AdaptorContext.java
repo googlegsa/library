@@ -81,11 +81,9 @@ public interface AdaptorContext {
   /**
    * Registers a handler with the library's {@link
    * com.sun.net.httpserver.HttpServer} in similar fashion to {@link
-   * com.sun.net.httpserver.HttpServer#createContext}. Removal of the handler
-   * can be acheived by calling {@code
-   * httpContext.getServer().removeContext(httpContext)} on the returned
-   * context. Handler registration should generally occur during {@link
-   * Adaptor#init} and removal during {@link Adaptor#destroy}.
+   * com.sun.net.httpserver.HttpServer#createContext}. The handler will
+   * automatically be removed during adaptor shutdown. Handler registration
+   * should occur during {@link Adaptor#init}.
    *
    * <p>Although {@code path} may be passed directly to the underlying {@code
    * HttpServer}, that is not necessarily the case. Thus, implementations should

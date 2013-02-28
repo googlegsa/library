@@ -47,7 +47,7 @@ public class DocumentHandlerTest {
   private String defaultPath
       = docIdCodec.encodeDocId(defaultDocId).getRawPath();
   private MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
-      new MockHttpContext(null, "/"));
+      new MockHttpContext("/"));
 
   @Test
   public void testNullDocIdDecoder() {

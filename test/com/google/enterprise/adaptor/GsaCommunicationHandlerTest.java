@@ -16,6 +16,8 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
+import com.sun.net.httpserver.HttpExchange;
+
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -24,6 +26,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Tests for {@link GsaCommunicationHandler}.
@@ -42,6 +45,7 @@ public class GsaCommunicationHandlerTest {
   private Config config;
   private GsaCommunicationHandler gsa;
   private NullAdaptor adaptor = new NullAdaptor();
+  private MockHttpServer mockServer = new MockHttpServer();
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -58,41 +62,51 @@ public class GsaCommunicationHandlerTest {
 
   @After
   public void teardown() {
-    // No need to block.
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        gsa.stop(0);
-      }
-    }).start();
+    gsa.stop(0, TimeUnit.SECONDS);
   }
 
   @Test
   public void testAdaptorContext() throws Exception {
+    final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
     class PollingIncrNullAdaptor extends NullAdaptor {
       @Override
       public void init(AdaptorContext context) {
-        assertSame(config, context.getConfig());
-        assertNotNull(context.getDocIdPusher());
-        assertNotNull(context.getDocIdEncoder());
-        assertNotNull(context.getSensitiveValueDecoder());
-        GetDocIdsErrorHandler originalHandler
-            = context.getGetDocIdsFullErrorHandler();
-        GetDocIdsErrorHandler replacementHandler
-            = new DefaultGetDocIdsErrorHandler();
-        assertNotNull(originalHandler);
-        context.setGetDocIdsFullErrorHandler(replacementHandler);
-        assertSame(replacementHandler, context.getGetDocIdsFullErrorHandler());
+        try {
+          assertSame(config, context.getConfig());
+          assertNotNull(context.getDocIdPusher());
+          assertNotNull(context.getDocIdEncoder());
+          assertNotNull(context.getSensitiveValueDecoder());
+          GetDocIdsErrorHandler originalHandler
+              = context.getGetDocIdsFullErrorHandler();
+          GetDocIdsErrorHandler replacementHandler
+              = new DefaultGetDocIdsErrorHandler();
+          assertNotNull(originalHandler);
+          context.setGetDocIdsFullErrorHandler(replacementHandler);
+          assertSame(replacementHandler,
+              context.getGetDocIdsFullErrorHandler());
 
-        StatusSource source = new MockStatusSource("test",
-            new MockStatus(Status.Code.NORMAL));
-        context.addStatusSource(source);
-        context.removeStatusSource(source);
+          StatusSource source = new MockStatusSource("test",
+              new MockStatus(Status.Code.NORMAL));
+          context.addStatusSource(source);
+          context.removeStatusSource(source);
+        } catch (Throwable t) {
+          error.set(t);
+        }
       }
     }
     PollingIncrNullAdaptor adaptor = new PollingIncrNullAdaptor();
     gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start();
+    gsa.start(mockServer, mockServer);
+    Throwable t = error.get();
+    if (t != null) {
+      if (t instanceof Exception) {
+        throw (Exception) t;
+      } else if (t instanceof Error) {
+        throw (Error) t;
+      } else {
+        throw new AssertionError();
+      }
+    }
   }
 
   @Test
@@ -109,7 +123,7 @@ public class GsaCommunicationHandlerTest {
     }
     PollingIncrNullAdaptor adaptor = new PollingIncrNullAdaptor();
     gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start();
+    gsa.start(mockServer, mockServer);
     assertNotNull(adaptor.queue.poll(1, TimeUnit.SECONDS));
   }
 
@@ -117,9 +131,9 @@ public class GsaCommunicationHandlerTest {
   public void testFullPushAfterReload() throws Exception {
     NullAdaptor adaptor = new NullAdaptor();
     gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start();
-    gsa.stop(1);
-    gsa.start();
+    gsa.start(mockServer, mockServer);
+    gsa.stop(1, TimeUnit.SECONDS);
+    gsa.start(mockServer, mockServer);
     assertTrue(gsa.checkAndScheduleImmediatePushOfDocIds());
   }
 
@@ -140,54 +154,8 @@ public class GsaCommunicationHandlerTest {
     }
     FailFirstAdaptor adaptor = new FailFirstAdaptor();
     gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start();
+    gsa.start(mockServer, mockServer);
     assertTrue(adaptor.started);
-  }
-
-  @Test
-  public void testFastShutdownWhenStarting() throws Exception {
-    class FailAlwaysAdaptor extends NullAdaptor {
-      @Override
-      public void init(AdaptorContext context) {
-        throw new RuntimeException();
-      }
-    }
-    gsa = new GsaCommunicationHandler(new FailAlwaysAdaptor(), config);
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          // Wait a bit for the handler to start.
-          Thread.sleep(10);
-        } catch (InterruptedException ex) {
-          throw new RuntimeException(ex);
-        }
-        gsa.stop(0);
-      }
-    }).start();
-    long startTime = System.nanoTime();
-    gsa.start();
-    long duration = System.nanoTime() - startTime;
-    final long nanosInAMilli = 1000 * 1000;
-    if (duration > 200 * nanosInAMilli) {
-      fail("Starting took a long time to stop after being aborted: "
-          + duration);
-    }
-  }
-
-  @Test
-  public void testBasicListen() throws Exception {
-    gsa.start();
-    assertTrue(adaptor.inited);
-    URL url = new URL("http", "localhost", config.getServerPort(), "/");
-    URLConnection conn = url.openConnection();
-    try {
-      thrown.expect(java.io.FileNotFoundException.class);
-      conn.getContent();
-    } finally {
-      gsa.stop(0);
-      assertFalse(adaptor.inited);
-    }
   }
 
   /**
@@ -225,13 +193,13 @@ public class GsaCommunicationHandlerTest {
       @Override
       public void run() {
         while (true) {
-          try {
-            URL url = new URL(
-                "http", "localhost", config.getServerPort(), "/doc/1");
-            URLConnection conn = url.openConnection();
-            conn.getContent();
-          } catch (IOException e) {
-            // retry
+          HttpExchange ex = mockServer.createExchange("GET", "/doc/1");
+          if (ex != null) {
+            try {
+              mockServer.handle(ex);
+            } catch (IOException e) {
+              // We will already be retrying.
+            }
           }
 
           try {
@@ -245,34 +213,11 @@ public class GsaCommunicationHandlerTest {
     });
     tryFetch.start();
 
-    gsa.start();
+    gsa.start(mockServer, mockServer);
     tryFetch.interrupt();
     tryFetch.join();
 
     assertEquals(false, adaptor.getCalledBeforeInitFinished.get());
-  }
-
-  @Test
-  public void testFastShutdown() throws Exception {
-    gsa.start();
-    long startTime = System.nanoTime();
-    gsa.stop(10);
-    long duration = System.nanoTime() - startTime;
-    final long nanosInAMilli = 1000 * 1000;
-    if (duration > 1000 * nanosInAMilli) {
-      fail("Stopping took a long time: " + duration);
-    }
-  }
-
-  @Test
-  public void testBasicHttpsListen() throws Exception {
-    config.setValue("server.secure", "true");
-    gsa.start();
-    assertTrue(adaptor.inited);
-    URL url = new URL("https", "localhost", config.getServerPort(), "/");
-    URLConnection conn = url.openConnection();
-    thrown.expect(java.io.FileNotFoundException.class);
-    conn.getContent();
   }
 
   @Test

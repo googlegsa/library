@@ -49,7 +49,7 @@ public class AuthnHandlerTest {
   private AuthnHandler handler = new AuthnHandler(sessionManager, metadata,
       httpClient, null);
   private MockHttpExchange ex = new MockHttpExchange("GET", "/",
-      new MockHttpContext(null, "/"));
+      new MockHttpContext("/"));
 
   @BeforeClass
   public static void initSaml() {
@@ -95,7 +95,7 @@ public class AuthnHandlerTest {
 
     // Act like we are the receiving end of the communication.
     MockHttpExchange remoteEx = new MockHttpExchange("GET", uri.toString(),
-        new MockHttpContext(null, "/security-manager/samlauthn"));
+        new MockHttpContext("/security-manager/samlauthn"));
 
     SAMLMessageContext<AuthnRequest, AuthnRequest, NameID> context
         = OpenSamlUtil.makeSamlMessageContext();
@@ -137,7 +137,7 @@ public class AuthnHandlerTest {
   @Test
   public void testHead() throws Exception {
     MockHttpExchange ex = new MockHttpExchange("HEAD", "/",
-                                               new MockHttpContext(null, "/"));
+                                               new MockHttpContext("/"));
     handler.handle(ex);
     assertEquals(307, ex.getResponseCode());
     AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
@@ -148,7 +148,7 @@ public class AuthnHandlerTest {
   @Test
   public void testBadMethod() throws Exception {
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
-                                               new MockHttpContext(null, "/"));
+                                               new MockHttpContext("/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
   }

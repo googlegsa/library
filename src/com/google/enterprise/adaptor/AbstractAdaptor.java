@@ -76,31 +76,7 @@ public abstract class AbstractAdaptor implements Adaptor {
    * sending {@code DocId}s on a schedule, and optionally sends {@code DocId}s
    * on startup.
    */
-  public static GsaCommunicationHandler main(Adaptor adaptor, String[] args) {
-    Config config = new Config();
-    adaptor.initConfig(config);
-    config.autoConfig(args);
-
-    if (config.useAdaptorAutoUnzip()) {
-      adaptor = new AutoUnzipAdaptor(adaptor);
-    }
-    GsaCommunicationHandler gsa = new GsaCommunicationHandler(adaptor, config);
-
-    // Setup providing content.
-    try {
-      gsa.start();
-      log.info("doc content serving started");
-    } catch (InterruptedException e) {
-      throw new RuntimeException("could not start serving", e);
-    } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
-    }
-
-    if (config.isAdaptorPushDocIdsOnStartup()) {
-      log.info("Pushing once at program start");
-      gsa.checkAndScheduleImmediatePushOfDocIds();
-    }
-
-    return gsa;
+  public static Application main(Adaptor adaptor, String[] args) {
+    return Application.main(adaptor, args);
   }
 }

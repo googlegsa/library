@@ -16,14 +16,31 @@ package com.google.enterprise.adaptor;
 
 import com.sun.net.httpserver.*;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.*;
 import java.util.concurrent.Executor;
 
 /**
  * Mock {@link HttpServer}.
  */
 public class MockHttpServer extends HttpServer {
+  private final InetSocketAddress addr;
+  private final List<HttpContext> contexts = new ArrayList<HttpContext>();
+
   public MockHttpServer() {
+    this(new InetSocketAddress(80));
+  }
+
+  public MockHttpServer(InetSocketAddress addr) {
+    if (addr == null) {
+      throw new NullPointerException();
+    }
+    this.addr = addr;
+  }
+
+  private HttpContext instantiateContext(String path) {
+    return new MockHttpContext(this, path);
   }
 
   @Override
@@ -32,18 +49,28 @@ public class MockHttpServer extends HttpServer {
   }
 
   @Override
-  public HttpContext createContext(String path) {
-    throw new UnsupportedOperationException();
+  public synchronized HttpContext createContext(String path) {
+    HttpContext context = instantiateContext(path);
+    for (HttpContext trailContext : contexts) {
+      if (path.equals(trailContext.getPath())) {
+        throw new IllegalArgumentException("Handler already exists for path");
+      }
+    }
+    contexts.add(context);
+    return context;
   }
 
   @Override
-  public HttpContext createContext(String path, HttpHandler handler) {
-    throw new UnsupportedOperationException();
+  public synchronized HttpContext createContext(
+      String path, HttpHandler handler) {
+    HttpContext context = createContext(path);
+    context.setHandler(handler);
+    return context;
   }
 
   @Override
   public InetSocketAddress getAddress() {
-    throw new UnsupportedOperationException();
+    return addr;
   }
 
   @Override
@@ -52,13 +79,29 @@ public class MockHttpServer extends HttpServer {
   }
 
   @Override
-  public void removeContext(HttpContext context) {
-    throw new UnsupportedOperationException();
+  public synchronized void removeContext(HttpContext context) {
+    if (context == null) {
+      throw new NullPointerException();
+    }
+    contexts.remove(context);
   }
 
   @Override
-  public void removeContext(String path) {
-    throw new UnsupportedOperationException();
+  public synchronized void removeContext(String path) {
+    if (path == null) {
+      throw new NullPointerException();
+    }
+    Iterator<HttpContext> iter = contexts.iterator();
+    while (iter.hasNext()) {
+      HttpContext context = iter.next();
+      if (context.getPath().equals(path)) {
+        iter.remove();
+        // Completed.
+        return;
+      }
+    }
+    // Not found.
+    throw new IllegalArgumentException();
   }
 
   @Override
@@ -74,5 +117,29 @@ public class MockHttpServer extends HttpServer {
   @Override
   public void stop(int delay) {
     throw new UnsupportedOperationException();
+  }
+
+  public synchronized HttpExchange createExchange(String method, String path) {
+    HttpContext best = null;
+    int bestLength = -1;
+    for (HttpContext context : contexts) {
+      if (path.startsWith(context.getPath()) &&
+          context.getPath().length() > bestLength) {
+        best = context;
+        bestLength = context.getPath().length();
+      }
+    }
+    if (best == null) {
+      return null;
+    }
+    return new MockHttpExchange(method, path, best);
+  }
+
+  public void handle(HttpExchange ex) throws IOException {
+    if (ex == null) {
+      throw new NullPointerException();
+    }
+    HttpContext context = ex.getHttpContext();
+    new Filter.Chain(context.getFilters(), context.getHandler()).doFilter(ex);
   }
 }

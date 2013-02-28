@@ -44,10 +44,10 @@ public class SamlAssertionConsumerHandlerTest {
       = new SamlAssertionConsumerHandler(sessionManager);
   private MockHttpExchange ex
       = new MockHttpExchange("GET", "/?SAMLart=1234someid5678",
-          new MockHttpContext(null, "/"));
+          new MockHttpContext("/"));
   private MockHttpExchange initialEx
       = new MockHttpExchange("GET", "/doc/someid",
-          new MockHttpContext(null, "/doc/"));
+          new MockHttpContext("/doc/"));
 
   private static final String GOLDEN_ARTIFACT_RESOLVE_REQUEST
       = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -627,7 +627,7 @@ public class SamlAssertionConsumerHandlerTest {
   public void testPost() throws Exception {
     MockHttpExchange ex
         = new MockHttpExchange("POST", "/?SAMLart=1234someid5678",
-                               new MockHttpContext(null, "/"));
+                               new MockHttpContext("/"));
     handler.handle(ex);
     assertEquals(405, ex.getResponseCode());
     assertTrue(!isAuthned(sessionManager.getSession(ex)));

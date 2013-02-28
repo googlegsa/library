@@ -18,17 +18,11 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
 
 import java.io.*;
-import java.net.InetSocketAddress;
-import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.*;
-
-import javax.net.ssl.SSLContext;
 
 /**
  * Central creation of objects necessary for the dashboard.
@@ -39,7 +33,7 @@ class Dashboard {
 
   private final Config config;
   private final Journal journal;
-  private HttpServer dashboardServer;
+  private HttpServerScope scope;
   private CircularLogRpcMethod circularLogRpcMethod;
   private final StatusMonitor monitor = new StatusMonitor();
   private final GsaCommunicationHandler gsaCommHandler;
@@ -75,50 +69,20 @@ class Dashboard {
   }
 
   /** Starts listening for connections to the dashboard. */
-  public void start() throws IOException {
-    // The Dashboard is on a separate port to prevent malicious HTML documents
-    // in the user's repository from performing admin actions with
-    // XMLHttpRequest or the like, as the HTML page will then be blocked by
-    // same-origin policies.
-    int dashboardPort = config.getServerDashboardPort();
-    boolean secure = config.isServerSecure();
-    InetSocketAddress dashboardAddr = new InetSocketAddress(dashboardPort);
-    if (!secure) {
-      dashboardServer = HttpServer.create(dashboardAddr, 0);
-    } else {
-      dashboardServer = HttpsServer.create(dashboardAddr, 0);
-      SSLContext defaultSslContext;
-      try {
-        defaultSslContext = SSLContext.getDefault();
-      } catch (NoSuchAlgorithmException ex) {
-        throw new RuntimeException(ex);
-      }
-      HttpsConfigurator httpsConf = new HttpsConfigurator(defaultSslContext);
-      ((HttpsServer) dashboardServer).setHttpsConfigurator(httpsConf);
-    }
-    if (dashboardPort == 0) {
-        // If the port is zero, then the OS chose a port for us. This is mainly
-        // useful during testing.
-        dashboardPort = dashboardServer.getAddress().getPort();
+  public void start(HttpServer dashboardServer) throws IOException {
+    this.scope = new HttpServerScope(dashboardServer);
+    int dashboardPort = dashboardServer.getAddress().getPort();
+    if (dashboardPort != config.getServerDashboardPort()) {
         config.setValue("server.dashboardPort", "" + dashboardPort);
     }
-    // Use separate Executor for Dashboard to allow the administrator to
-    // investigate why things are going wrong without waiting on the normal work
-    // queue.
-    int maxThreads = 4;
-    Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
-        10, TimeUnit.MINUTES, new LinkedBlockingQueue<Runnable>());
-    dashboardServer.setExecutor(executor);
+    boolean secure = config.isServerSecure();
     HttpHandler dashboardHandler = new DashboardHandler();
-    addFilters(dashboardServer.createContext("/dashboard",
+    addFilters(scope.createContext("/dashboard",
         createAdminSecurityHandler(dashboardHandler, config, sessionManager,
                                    secure)));
-    addFilters(dashboardServer.createContext("/rpc", createAdminSecurityHandler(
+    addFilters(scope.createContext("/rpc", createAdminSecurityHandler(
         rpcHandler, config, sessionManager, secure)));
-    addFilters(dashboardServer.createContext("/",
-        new RedirectHandler("/dashboard")));
-    dashboardServer.start();
-    log.info("dashboard is listening on port #" + dashboardPort);
+    addFilters(scope.createContext("/", new RedirectHandler("/dashboard")));
   }
 
   private AdministratorSecurityHandler createAdminSecurityHandler(
@@ -128,20 +92,19 @@ class Dashboard {
         config.getGsaHostname(), secure);
   }
 
-  public void stop(int maxDelaySeconds) {
+  public void stop() {
     if (circularLogRpcMethod != null) {
       circularLogRpcMethod.close();
       circularLogRpcMethod = null;
     }
-    if (dashboardServer != null) {
-      dashboardServer.stop(maxDelaySeconds);
-      ((ExecutorService) dashboardServer.getExecutor()).shutdownNow();
-      dashboardServer = null;
+    if (scope != null) {
+      scope.close();
+      scope = null;
     }
   }
 
-  public HttpServer getServer() {
-    return dashboardServer;
+  public HttpServerScope getScope() {
+    return scope;
   }
 
   public void addStatusSource(StatusSource source) {

@@ -21,8 +21,6 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
 import it.sauronsoftware.cron4j.InvalidPatternException;
@@ -42,13 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLParameters;
-
 /** This class handles the communications with GSA. */
-public class GsaCommunicationHandler {
-  private static final String SLEEP_PATH = "/sleep";
-
+public final class GsaCommunicationHandler {
   private static final Logger log
       = Logger.getLogger(GsaCommunicationHandler.class.getName());
 
@@ -75,9 +68,8 @@ public class GsaCommunicationHandler {
    * Schedule identifier for {@link #sendDocIds}.
    */
   private String sendDocIdsSchedId;
-  private HttpServer server;
+  private HttpServerScope scope;
   private SessionManager<HttpExchange> sessionManager;
-  private Thread shutdownHook;
   private ScheduledExecutorService backgroundExecutor;
   private final DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
@@ -111,9 +103,18 @@ public class GsaCommunicationHandler {
   }
 
   /** Starts listening for communications from GSA. */
-  public synchronized void start() throws IOException, InterruptedException {
-    if (server != null) {
+  public synchronized void start(HttpServer server, HttpServer dashboardServer)
+      throws IOException, InterruptedException {
+    if (this.scope != null) {
       throw new IllegalStateException("Already listening");
+    }
+    if (server == null || dashboardServer == null) {
+      throw new NullPointerException();
+    }
+    if (server instanceof HttpsServer
+        != dashboardServer instanceof HttpsServer) {
+      throw new IllegalArgumentException(
+          "Both servers must be HttpServers or both HttpsServers");
     }
     shuttingDownLatch = new CountDownLatch(1);
     if (shutdownCount.get() > 0) {
@@ -121,7 +122,10 @@ public class GsaCommunicationHandler {
       return;
     }
 
-    boolean secure = config.isServerSecure();
+    boolean secure = server instanceof HttpsServer;
+    if (secure != config.isServerSecure()) {
+      config.setValue("server.secure", "" + secure);
+    }
     KeyPair key = null;
     try {
       key = getKeyPair(config.getServerKeyAlias());
@@ -138,45 +142,12 @@ public class GsaCommunicationHandler {
     }
     secureValueCodec = new SensitiveValueCodec(key);
 
-    int port = config.getServerPort();
-    InetSocketAddress addr = new InetSocketAddress(port);
-    if (!secure) {
-      server = HttpServer.create(addr, 0);
-    } else {
-      server = HttpsServer.create(addr, 0);
-      try {
-        HttpsConfigurator httpsConf
-            = new HttpsConfigurator(SSLContext.getDefault()) {
-              public void configure(HttpsParameters params) {
-                SSLParameters sslParams
-                    = getSSLContext().getDefaultSSLParameters();
-                // Allow verifying the GSA and other trusted computers.
-                sslParams.setWantClientAuth(true);
-                params.setSSLParameters(sslParams);
-              }
-            };
-        ((HttpsServer) server).setHttpsConfigurator(httpsConf);
-      } catch (java.security.NoSuchAlgorithmException ex) {
-        throw new RuntimeException(ex);
-      }
-    }
-    if (port == 0) {
-        // If the port is zero, then the OS chose a port for us. This is mainly
-        // useful during testing.
-        port = server.getAddress().getPort();
+    int port = server.getAddress().getPort();
+    if (port != config.getServerPort()) {
         config.setValue("server.port", "" + port);
     }
-    int maxThreads = config.getServerMaxWorkerThreads();
-    int queueCapacity = config.getServerQueueCapacity();
-    BlockingQueue<Runnable> blockingQueue
-        = new ArrayBlockingQueue<Runnable>(queueCapacity);
-    // The Executor can't reject jobs directly, because HttpServer does not
-    // appear to handle that case.
-    RejectedExecutionHandler policy
-        = new SuggestHandlerAbortPolicy(HttpExchanges.abortImmediately);
-    Executor executor = new ThreadPoolExecutor(maxThreads, maxThreads,
-        1, TimeUnit.MINUTES, blockingQueue, policy);
-    server.setExecutor(executor);
+
+    scope = new HttpServerScope(server);
 
     docIdFullPusher = new OneAtATimeRunnable(
         new PushRunnable(), new AlreadyRunningRunnable());
@@ -189,47 +160,6 @@ public class GsaCommunicationHandler {
           new SessionManager.HttpExchangeClientStore("sessid_" + port, secure),
           30 * 60 * 1000 /* session lifetime: 30 minutes */,
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
-    AuthnHandler authnHandler = null;
-    if (secure) {
-      bootstrapOpenSaml();
-      SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
-          config.getServerPort(), config.getGsaHostname());
-
-      if (adaptor instanceof AuthnAdaptor) {
-        log.config("Adaptor is an AuthnAdaptor; enabling adaptor-based "
-            + "authentication");
-        samlIdentityProvider = new SamlIdentityProvider(
-            (AuthnAdaptor) adaptor, metadata, key);
-        addFilters(server.createContext("/samlip",
-            samlIdentityProvider.getSingleSignOnHandler()));
-      } else {
-        log.config("Adaptor is not an AuthnAdaptor; not enabling adaptor-based "
-            + "authentication");
-      }
-      addFilters(server.createContext("/samlassertionconsumer",
-          new SamlAssertionConsumerHandler(sessionManager)));
-      authnHandler = new AuthnHandler(sessionManager, metadata, key);
-      addFilters(server.createContext("/saml-authz", new SamlBatchAuthzHandler(
-          adaptor, docIdCodec, metadata)));
-    }
-    Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
-        backgroundExecutor);
-    addFilters(server.createContext(config.getServerBaseUri().getPath()
-        + config.getServerDocIdPath(),
-        new DocumentHandler(docIdCodec, docIdCodec, journal, adaptor,
-                            config.getGsaHostname(),
-                            config.getServerFullAccessHosts(),
-                            authnHandler, sessionManager,
-                            createTransformPipeline(),
-                            config.getTransformMaxDocumentBytes(),
-                            config.isTransformRequired(),
-                            config.isServerToUseCompression(), watchdog)));
-
-    dashboard = new Dashboard(config, this, journal, sessionManager,
-        secureValueCodec, adaptor);
-    dashboard.start();
-    shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
-    Runtime.getRuntime().addShutdownHook(shutdownHook);
 
     config.addConfigModificationListener(new GsaConfigModListener());
 
@@ -239,6 +169,14 @@ public class GsaCommunicationHandler {
         config.isGsa70AuthMethodWorkaroundEnabled());
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
+
+    dashboard = new Dashboard(config, this, journal, sessionManager,
+        secureValueCodec, adaptor);
+
+    // We are about to start the Adaptor, so anything available through
+    // AdaptorContext or other means must be initialized at this point. Any
+    // reference to 'adaptor' before this point must be done very carefully to
+    // ensure it doesn't call the adaptor until after Adaptor.init() completes.
 
     long sleepDurationMillis = 1000;
     // An hour.
@@ -269,9 +207,8 @@ public class GsaCommunicationHandler {
       }
     }
 
-    server.start();
-    log.info("GSA host name: " + config.getGsaHostname());
-    log.info("server is listening on port #" + port);
+    // Since the Adaptor has been started, we can now issue other calls to it.
+    // Usages of 'adaptor' are completely safe after this point.
 
     // Since we are white-listing particular keys for auto-update, things aren't
     // ready enough to expose to adaptors.
@@ -279,6 +216,52 @@ public class GsaCommunicationHandler {
       config.addConfigModificationListener(
           (ConfigModificationListener) adaptor);
     }*/
+
+    AuthnHandler authnHandler = null;
+    if (secure) {
+      bootstrapOpenSaml();
+      SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
+          config.getServerPort(), config.getGsaHostname());
+
+      if (adaptor instanceof AuthnAdaptor) {
+        log.config("Adaptor is an AuthnAdaptor; enabling adaptor-based "
+            + "authentication");
+        samlIdentityProvider = new SamlIdentityProvider(
+            (AuthnAdaptor) adaptor, metadata, key);
+        addFilters(scope.createContext("/samlip",
+            samlIdentityProvider.getSingleSignOnHandler()));
+      } else {
+        log.config("Adaptor is not an AuthnAdaptor; not enabling adaptor-based "
+            + "authentication");
+      }
+      addFilters(scope.createContext("/samlassertionconsumer",
+          new SamlAssertionConsumerHandler(sessionManager)));
+      authnHandler = new AuthnHandler(sessionManager, metadata, key);
+      addFilters(scope.createContext("/saml-authz", new SamlBatchAuthzHandler(
+          adaptor, docIdCodec, metadata)));
+    }
+    Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
+        backgroundExecutor);
+    addFilters(scope.createContext(config.getServerBaseUri().getPath()
+        + config.getServerDocIdPath(),
+        new DocumentHandler(docIdCodec, docIdCodec, journal, adaptor,
+                            config.getGsaHostname(),
+                            config.getServerFullAccessHosts(),
+                            authnHandler, sessionManager,
+                            createTransformPipeline(),
+                            config.getTransformMaxDocumentBytes(),
+                            config.isTransformRequired(),
+                            config.isServerToUseCompression(), watchdog)));
+
+    // Start communicating with other services. As a general rule, by this time
+    // we want all services we provide to be up and running. However, note that
+    // the adaptor may have started sending feeds as soon as we called init(),
+    // and that is "okay." In addition, the HttpServer we were provided may not
+    // have been started yet.
+
+    scheduler.start();
+    sendDocIdsSchedId = scheduler.schedule(
+        config.getAdaptorFullListingSchedule(), docIdFullPusher);
 
     if (adaptor instanceof PollingIncrementalAdaptor) {
       docIdIncrementalPusher = new OneAtATimeRunnable(
@@ -292,9 +275,7 @@ public class GsaCommunicationHandler {
           TimeUnit.MILLISECONDS);
     }
 
-    scheduler.start();
-    sendDocIdsSchedId = scheduler.schedule(
-        config.getAdaptorFullListingSchedule(), docIdFullPusher);
+    dashboard.start(dashboardServer);
 
     shuttingDownLatch = null;
   }
@@ -429,7 +410,7 @@ public class GsaCommunicationHandler {
    * Stop the current services, allowing up to {@code maxDelay} seconds for
    * things to shutdown.
    */
-  public void stop(int maxDelay) {
+  public void stop(long time, TimeUnit unit) {
     // Prevent new start()s.
     shutdownCount.incrementAndGet();
     try {
@@ -438,110 +419,39 @@ public class GsaCommunicationHandler {
         // Cause existing start() to begin cancelling.
         latch.countDown();
       }
-      realStop(maxDelay);
+      realStop(time, unit);
     } finally {
       // Permit new start()s.
       shutdownCount.decrementAndGet();
     }
   }
 
-  private synchronized void realStop(int maxDelaySeconds) {
-    if (shutdownHook != null) {
-      try {
-        Runtime.getRuntime().removeShutdownHook(shutdownHook);
-      } catch (IllegalStateException ex) {
-        // Already executing hook.
-      }
-      shutdownHook = null;
-    }
+  private synchronized void realStop(long time, TimeUnit unit) {
     scheduler.deschedule(sendDocIdsSchedId);
     sendDocIdsSchedId = null;
+    if (scope != null) {
+      scope.close();
+      scope = null;
+    }
     // Stop sendDocIds before scheduler, because scheduler blocks until all
     // tasks are completed. We want to interrupt sendDocIds so that the
     // scheduler stops within a reasonable amount of time.
-    docIdFullPusher.stop();
+    if (docIdFullPusher != null) {
+      docIdFullPusher.stop();
+    }
     if (scheduler.isStarted()) {
       scheduler.stop();
     }
-    SleepHandler sleepHandler = new SleepHandler(100 /* millis */);
-    if (server != null) {
-      // Workaround Java Bug 7105369.
-      server.createContext(SLEEP_PATH, sleepHandler);
-      issueSleepGetRequest(config.getServerPort());
-
-      server.stop(maxDelaySeconds);
-      log.finer("Completed stop");
-      ((ExecutorService) server.getExecutor()).shutdownNow();
-      server = null;
-    }
     if (dashboard != null) {
-      // Workaround Java Bug 7105369.
-      dashboard.getServer().createContext(SLEEP_PATH, sleepHandler);
-      issueSleepGetRequest(config.getServerDashboardPort());
-
-      dashboard.stop(maxDelaySeconds);
-      log.finer("Completed dashboard stop");
-      dashboard = null;
+      dashboard.stop();
     }
     if (backgroundExecutor != null) {
       backgroundExecutor.shutdownNow();
       backgroundExecutor = null;
     }
+    // TODO(ejona): wait until all threads are actually done processing.
     sessionManager = null;
     adaptor.destroy();
-  }
-
-  /**
-   * Issues a GET request to a SleepHandler. This is used to workaround Java
-   * Bug 7105369.
-   *
-   * <p>The bug is an issue with HttpServer where stop() waits the full amount
-   * of allotted time if the serve is idle. However, if a request is being
-   * handled when stop() is called, then it will return as soon as all requests
-   * are processed, or the allotted time is reached.
-   *
-   * <p>Thus, this workaround tries to force a request to be in-procees when
-   * stop() is called, so that it can return sooner. We issue a request to a
-   * SleepHandler that takes a fixed amount of time to process the request
-   * before calling stop(). In the event everything goes as planned, the request
-   * completes after stop() has been called and allows stop() to exit quickly.
-   */
-  private void issueSleepGetRequest(int port) {
-    URL url;
-    try {
-      url = new URL(config.isServerSecure() ? "https" : "http",
-          config.getServerHostname(), port, SLEEP_PATH);
-    } catch (MalformedURLException ex) {
-      log.log(Level.WARNING,
-          "Unexpected error. Shutting down will be slow.", ex);
-      return;
-    }
-
-    final URLConnection conn;
-    try {
-      conn = url.openConnection();
-      conn.connect();
-    } catch (IOException ex) {
-      log.log(Level.WARNING, "Error performing shutdown GET", ex);
-      return;
-    }
-    try {
-      // Provide some time for the connect() to be processed on the server.
-      Thread.sleep(15);
-    } catch (InterruptedException ex) {
-      Thread.currentThread().interrupt();
-    }
-    new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          conn.getInputStream().close();
-          log.finer("Closed shutdown GET");
-        } catch (IOException ex) {
-          log.log(Level.WARNING, "Error closing stream of shutdown GET", ex);
-        }
-      }
-    }).start();
   }
 
   /**
@@ -655,14 +565,6 @@ public class GsaCommunicationHandler {
     }
   }
 
-  private class ShutdownHook implements Runnable {
-    @Override
-    public void run() {
-      // Allow three seconds for things to stop.
-      stop(3);
-    }
-  }
-
   private class GsaConfigModListener implements ConfigModificationListener {
     @Override
     public void configModified(ConfigModificationEvent ev) {
@@ -690,9 +592,12 @@ public class GsaCommunicationHandler {
       if (!modifiedKeysRequiringRestart.isEmpty()) {
         log.warning("Unsafe configuration keys modified. To ensure a sane "
                     + "state, the adaptor is restarting.");
-        stop(3);
+        HttpServer existingServer = scope.getHttpServer();
+        HttpServer existingDashboardServer
+            = dashboard.getScope().getHttpServer();
+        stop(3, TimeUnit.SECONDS);
         try {
-          start();
+          start(existingServer, existingDashboardServer);
         } catch (Exception ex) {
           log.log(Level.SEVERE, "Automatic restart failed", ex);
           throw new RuntimeException(ex);
@@ -762,7 +667,7 @@ public class GsaCommunicationHandler {
 
     @Override
     public HttpContext createHttpContext(String path, HttpHandler handler) {
-      return addFilters(server.createContext(path, handler));
+      return addFilters(scope.createContext(path, handler));
     }
 
     @Override
@@ -781,31 +686,6 @@ public class GsaCommunicationHandler {
         }
       }
       return nsSession;
-    }
-  }
-
-  /**
-   * Executes Runnable in current thread, but only after setting a thread-local
-   * object. The code that will be run, is expected to take notice of the set
-   * variable and abort immediately. This is a hack.
-   */
-  private static class SuggestHandlerAbortPolicy
-      implements RejectedExecutionHandler {
-    private final ThreadLocal<Object> abortImmediately;
-    private final Object signal = new Object();
-
-    public SuggestHandlerAbortPolicy(ThreadLocal<Object> abortImmediately) {
-      this.abortImmediately = abortImmediately;
-    }
-
-    @Override
-    public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
-      abortImmediately.set(signal);
-      try {
-        r.run();
-      } finally {
-        abortImmediately.set(null);
-      }
     }
   }
 }

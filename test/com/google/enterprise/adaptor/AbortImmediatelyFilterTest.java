@@ -35,7 +35,7 @@ public class AbortImmediatelyFilterTest {
   private Filter filter = new AbortImmediatelyFilter();
   private List<Filter> filters = Arrays.asList(filter);
   private MockHttpExchange ex = new MockHttpExchange("GET", "/",
-      new MockHttpContext(null, "/"));
+      new MockHttpContext("/"));
 
   @Test
   public void testDescription() {

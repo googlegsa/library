@@ -27,12 +27,12 @@ import java.util.Date;
  */
 public class HttpExchangesTest {
   private MockHttpExchange ex = new MockHttpExchange("GET", "/",
-      new MockHttpContext(null, "/"));
+      new MockHttpContext("/"));
 
   @Test
   public void testRequestUriHttp10() {
     ex = new MockHttpExchange("GET", "/test",
-                              new MockHttpContext(null, "/"));
+                              new MockHttpContext("/"));
     assertEquals("http://localhost/test",
         HttpExchanges.getRequestUri(ex).toString());
   }
@@ -71,7 +71,7 @@ public class HttpExchangesTest {
   @Test
   public void testCannedHead() throws Exception {
     ex = new MockHttpExchange("HEAD", "/test",
-                              new MockHttpContext(null, "/"));
+                              new MockHttpContext("/"));
     // Translation.HTTP_NOT_FOUND was randomly chosen.
     HttpExchanges.cannedRespond(ex, 200, Translation.HTTP_NOT_FOUND);
     assertEquals(0, ex.getResponseBytes().length);

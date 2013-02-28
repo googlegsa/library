@@ -35,7 +35,7 @@ public class InternalErrorFilterTest {
   private Filter filter = new InternalErrorFilter();
   private List<Filter> filters = Arrays.asList(filter);
   private MockHttpExchange ex = new MockHttpExchange("GET", "/",
-      new MockHttpContext(null, "/"));
+      new MockHttpContext("/"));
 
   @Test
   public void testDescription() {
