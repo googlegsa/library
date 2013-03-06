@@ -156,7 +156,8 @@ class SamlAssertionConsumerHandler implements HttpHandler {
             new Object[] {subjectName, new Date(expirationTime)});
     AuthnIdentity identity = new AuthnIdentityImpl
         .Builder(new UserPrincipal(subjectName))
-        .setGroups(groups).setPassword(password).build();
+        .setGroups(GroupPrincipal.makeSet(groups))
+        .setPassword(password).build();
     authnState.authenticated(identity, expirationTime);
     return true;
   }

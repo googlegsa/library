@@ -22,6 +22,7 @@ import com.google.enterprise.adaptor.CommandStreamParser;
 import com.google.enterprise.adaptor.Config;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
+import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 
@@ -236,12 +237,13 @@ public class CommandLineAdaptor extends AbstractAdaptor {
 
     // Write out the list of groups that this user belongs to
     if (userIdentity.getGroups() != null) {
-      for (String group : userIdentity.getGroups()) {
-        if (group.contains(authzDelimiter)) {
+      for (GroupPrincipal group : userIdentity.getGroups()) {
+        String name = group.getName();
+        if (name.contains(authzDelimiter)) {
           throw new IllegalArgumentException("Group cannot contain the delimiter: "
               + authzDelimiter);
         }
-        stdinStringBuilder.append("group=").append(group).append(authzDelimiter);
+        stdinStringBuilder.append("group=").append(name).append(authzDelimiter);
       }
     }
 

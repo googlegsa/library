@@ -159,12 +159,13 @@ class SamlIdentityProvider {
     }
 
     Attribute groupsAttribute = makeAttribute("member-of");
-    Iterable<String> groups = identity.getGroups();
+    Iterable<GroupPrincipal> groups = identity.getGroups();
     if (groups == null) {
       groups = Collections.emptySet();
     }
-    for (String group : groups) {
-      groupsAttribute.getAttributeValues().add(makeAttributeValue(group));
+    for (GroupPrincipal group : groups) {
+      String name = group.getName();
+      groupsAttribute.getAttributeValues().add(makeAttributeValue(name));
     }
 
     return makeResponse(issuer, now, makeSuccessfulStatus(), inResponseTo,

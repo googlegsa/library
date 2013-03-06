@@ -34,15 +34,19 @@ public class AuthnIdentityImplTest {
     new AuthnIdentityImpl.Builder(null);
   }
 
+  private static Set<GroupPrincipal> makeGroups() {
+    return GroupPrincipal.makeSet(Collections.singleton("group"));
+  }
+
   @Test
   public void testSetAllConstruction() {
     AuthnIdentity identity = new AuthnIdentityImpl
         .Builder(new UserPrincipal("testing"))
-        .setPassword("pass").setGroups(Collections.singleton("group"))
+        .setPassword("pass").setGroups(makeGroups())
         .build();
     assertEquals("testing", identity.getUser().getName());
     assertEquals("pass", identity.getPassword());
-    assertEquals(Collections.singleton("group"), identity.getGroups());
+    assertEquals(makeGroups(), identity.getGroups());
   }
 
   @Test
@@ -56,12 +60,11 @@ public class AuthnIdentityImplTest {
 
   @Test
   public void testImmutable() {
-    HashSet<String> groups = new HashSet<String>();
-    groups.add("group");
+    Set<GroupPrincipal> groups = makeGroups();
     AuthnIdentity identity = new AuthnIdentityImpl
         .Builder(new UserPrincipal("testing"))
         .setGroups(groups).build();
-    groups.add("anotherGroup");
-    assertEquals(Collections.singleton("group"), identity.getGroups());
+    groups.add(new GroupPrincipal("anotherGroup"));
+    assertEquals(makeGroups(), identity.getGroups());
   }
 }

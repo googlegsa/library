@@ -14,6 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
+import java.util.Collection;
+import java.util.Set;
+import java.util.TreeSet;
+
 /**
  * Represents group.
  */
@@ -24,5 +28,28 @@ public class GroupPrincipal extends Principal {
 
   public GroupPrincipal(String n) {
     super(n);
+  }
+
+  public static Set<GroupPrincipal> makeSet(Collection<String> names) {
+    if (null == names) {
+      return null;
+    }
+    Set<GroupPrincipal> groups = new TreeSet<GroupPrincipal>();
+    for (String n : names) {
+      groups.add(new GroupPrincipal(n));
+    }
+    return groups;
+  }
+
+  public static Set<GroupPrincipal> makeSet(Collection<String> names,
+      String namespace) {
+    if (null == names) {
+      return null;
+    }
+    Set<GroupPrincipal> groups = new TreeSet<GroupPrincipal>();
+    for (String n : names) {
+      groups.add(new GroupPrincipal(n, namespace));
+    }
+    return groups;
   }
 }

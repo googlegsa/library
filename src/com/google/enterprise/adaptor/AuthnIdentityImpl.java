@@ -22,10 +22,10 @@ import java.util.*;
 class AuthnIdentityImpl implements AuthnIdentity {
   private final UserPrincipal user;
   private final String password;
-  private final Set<String> groups;
+  private final Set<GroupPrincipal> groups;
 
   private AuthnIdentityImpl(UserPrincipal user, String password,
-                            Set<String> groups) {
+                            Set<GroupPrincipal> groups) {
     this.user = user;
     this.password = password;
     this.groups = groups;
@@ -51,7 +51,7 @@ class AuthnIdentityImpl implements AuthnIdentity {
    * {@inheritDoc}
    */
   @Override
-  public Set<String> getGroups() {
+  public Set<GroupPrincipal> getGroups() {
     return groups;
   }
 
@@ -68,7 +68,7 @@ class AuthnIdentityImpl implements AuthnIdentity {
   public static class Builder {
     private UserPrincipal user;
     private String password;
-    private Set<String> groups;
+    private Set<GroupPrincipal> groups;
 
     /**
      * Construct new builder. All values are initialized to {@code null}, except
@@ -97,12 +97,13 @@ class AuthnIdentityImpl implements AuthnIdentity {
       return this;
     }
 
-    public Builder setGroups(Set<String> groups) {
+    public Builder setGroups(Set<GroupPrincipal> groups) {
       if (groups == null) {
         this.groups = null;
         return this;
       }
-      this.groups = Collections.unmodifiableSet(new HashSet<String>(groups));
+      this.groups = Collections.unmodifiableSet(
+          new HashSet<GroupPrincipal>(groups));
       return this;
     }
   }

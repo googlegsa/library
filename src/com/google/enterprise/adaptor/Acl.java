@@ -122,8 +122,12 @@ public class Acl {
    * indeterminate.
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
+    // TODO: Use Principals for cmp instead of Strings
     String userIdentifier = userIdentity.getUser().getName();
-    Collection<String> groups = userIdentity.getGroups();
+    Collection<String> groups = new HashSet<String>();
+    for (GroupPrincipal gp : userIdentity.getGroups()) {
+      groups.add(gp.getName());
+    }
     Set<String> commonGroups = new HashSet<String>(denyGroups);
     commonGroups.retainAll(groups);
     if (denyUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {

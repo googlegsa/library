@@ -323,7 +323,7 @@ public class SamlAssertionConsumerHandlerTest {
     Set<String> groups = new HashSet<String>();
     groups.add("group1");
     groups.add("pollysGroup");
-    assertEquals(groups, identity.getGroups());
+    assertEquals(GroupPrincipal.makeSet(groups), identity.getGroups());
     assertEquals("p0ck3t", identity.getPassword());
   }
 

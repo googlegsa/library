@@ -19,7 +19,7 @@ import java.util.Arrays;
 /**
  * Represents either a user or a group.
  */
-public class Principal {
+public class Principal implements Comparable<Principal> {
   private final String name;
   private final String namespace;
 
@@ -68,5 +68,24 @@ public class Principal {
   public String toString() {
     String type = isUser() ? "User" : "Group";
     return "Principal(" + type + "," + name + "," + namespace + ")";
+  }
+
+  /**
+   * Sorts by 1) namespace, 2) user or group, 3) name.
+   */
+  @Override
+  public int compareTo(Principal other){
+    int spacecmp = namespace.compareTo(other.namespace);
+    if (0 != spacecmp) {
+      return spacecmp;
+    }
+    // OK, same namespace
+
+    if (isUser() != other.isUser()) {
+      return isUser() ? -1 : 1;
+    }
+    // OK, same namespace and same type
+
+    return name.compareTo(other.name);
   }
 }

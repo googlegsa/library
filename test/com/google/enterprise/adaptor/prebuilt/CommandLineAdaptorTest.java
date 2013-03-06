@@ -29,6 +29,7 @@ import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Principal;
 import com.google.enterprise.adaptor.UserPrincipal;
+import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 
@@ -419,7 +420,7 @@ public class CommandLineAdaptorTest {
     // Test authorizer
     final UserPrincipal user = new UserPrincipal("user1");
     final String password = "password1";
-    final Set<String> groups = new HashSet<String>(Arrays.asList("group1", "group2"));
+    final Set<GroupPrincipal> groups = GroupPrincipal.makeSet(Arrays.asList("group1", "group2"));
     AuthnIdentity authnIdentity = new AuthnIdentity() {
       @Override
       public UserPrincipal getUser() {
@@ -430,7 +431,7 @@ public class CommandLineAdaptorTest {
         return password;
       }
       @Override
-      public Set<String> getGroups() {
+      public Set<GroupPrincipal> getGroups() {
         return groups;
       }
     };

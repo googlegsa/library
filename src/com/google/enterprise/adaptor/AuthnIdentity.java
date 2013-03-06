@@ -40,5 +40,5 @@ public interface AuthnIdentity {
    *
    * @return the user's groups, or {@code null} if they are unavailable.
    */
-  public Set<String> getGroups();
+  public Set<GroupPrincipal> getGroups();
 }

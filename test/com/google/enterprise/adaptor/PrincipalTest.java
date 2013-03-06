@@ -141,4 +141,25 @@ public class PrincipalTest {
     assertTrue(s.contains("1d"));
     assertTrue(s.contains("Default"));
   }
+
+  @Test
+  public void testComparator() {
+     List<Principal> sorted = Collections.unmodifiableList(Arrays.asList(
+       new UserPrincipal("Garbie", "Newbies"),
+       new GroupPrincipal("Dragons", "Newbies"),
+       new UserPrincipal("Honeysuckle", "Oldies"), 
+       new UserPrincipal("Honeysuckle", "Oldies"), 
+       new UserPrincipal("Honeysuckle", "Oldies"), 
+       new UserPrincipal("Morning Glory", "Oldies"), 
+       new UserPrincipal("Rosedust", "Oldies"), 
+       new GroupPrincipal("Flutter Ponies", "Oldies")
+     ));
+     int ntrials = 10;
+     for (int i = 0; i < ntrials; i++) {
+       List<Principal> dup = new ArrayList<Principal>(sorted);
+       Collections.shuffle(dup);
+       Collections.sort(dup);
+       assertEquals(sorted, dup);
+     }
+  }
 }

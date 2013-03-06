@@ -39,7 +39,7 @@ public class SamlIdentityProviderTest {
       "bruteforce.mtv.corp.google.com", 5678,
       "entyo36.hot.corp.google.com");
   private UserPrincipal user = new UserPrincipal("user1");
-  private Set<String> groups = new TreeSet<String>(Arrays.asList(
+  private Set<GroupPrincipal> groups = GroupPrincipal.makeSet(Arrays.asList(
       "group1", "group2"));
   private AuthnAdaptor adaptor = new AuthnAdaptorImpl();
   private SamlIdentityProvider identityProvider = new SamlIdentityProvider(
@@ -135,7 +135,7 @@ public class SamlIdentityProviderTest {
     }
 
     @Override
-    public Set<String> getGroups() {
+    public Set<GroupPrincipal> getGroups() {
       return groups;
     }
 
