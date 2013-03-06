@@ -156,7 +156,7 @@ public class SamlAssertionConsumerHandlerTest {
     AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
         .getAttribute(AuthnState.SESSION_ATTR_NAME);
     AuthnIdentity identity = authnState.getIdentity();
-    assertEquals("CN=Polly Hedra", identity.getUsername());
+    assertEquals("CN=Polly Hedra", identity.getUser().getName());
     assertNull(identity.getGroups());
     assertNull(identity.getPassword());
   }
@@ -317,7 +317,7 @@ public class SamlAssertionConsumerHandlerTest {
     AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
         .getAttribute(AuthnState.SESSION_ATTR_NAME);
     AuthnIdentity identity = authnState.getIdentity();
-    assertEquals("CN=Polly Hedra", identity.getUsername());
+    assertEquals("CN=Polly Hedra", identity.getUser().getName());
     // Make sure that the information from the extensions was parsed out and
     // made available for later use.
     Set<String> groups = new HashSet<String>();
@@ -596,7 +596,8 @@ public class SamlAssertionConsumerHandlerTest {
     Session session = sessionManager.getSession(ex, false);
     AuthnState authn = (AuthnState) session
         .getAttribute(AuthnState.SESSION_ATTR_NAME);
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    AuthnIdentity identity = new AuthnIdentityImpl
+       .Builder(new UserPrincipal("test")).build();
     authn.authenticated(identity, Long.MAX_VALUE);
 
     handler.handle(ex);

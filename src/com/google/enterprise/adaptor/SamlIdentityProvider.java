@@ -154,7 +154,7 @@ class SamlIdentityProvider {
           inResponseTo);
     }
 
-    if (identity.getUsername().isEmpty()) {
+    if (identity.getUser().getName().isEmpty()) {
       throw new IllegalArgumentException("Username must not be empty");
     }
 
@@ -169,7 +169,7 @@ class SamlIdentityProvider {
 
     return makeResponse(issuer, now, makeSuccessfulStatus(), inResponseTo,
         makeAssertion(issuer, now,
-          makeSubject(identity.getUsername(),
+          makeSubject(identity.getUser().getName(),
             makeSubjectConfirmation(OpenSamlUtil.BEARER_METHOD,
               makeSubjectConfirmationData(recipient, expirationTime,
                 inResponseTo))),

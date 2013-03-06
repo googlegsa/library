@@ -36,18 +36,20 @@ public class AuthnIdentityImplTest {
 
   @Test
   public void testSetAllConstruction() {
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder("testing")
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal("testing"))
         .setPassword("pass").setGroups(Collections.singleton("group"))
         .build();
-    assertEquals("testing", identity.getUsername());
+    assertEquals("testing", identity.getUser().getName());
     assertEquals("pass", identity.getPassword());
     assertEquals(Collections.singleton("group"), identity.getGroups());
   }
 
   @Test
   public void testDefaults() {
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder("testing").build();
-    assertEquals("testing", identity.getUsername());
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal("testing")).build();
+    assertEquals("testing", identity.getUser().getName());
     assertNull(identity.getPassword());
     assertNull(identity.getGroups());
   }
@@ -56,7 +58,8 @@ public class AuthnIdentityImplTest {
   public void testImmutable() {
     HashSet<String> groups = new HashSet<String>();
     groups.add("group");
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder("testing")
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal("testing"))
         .setGroups(groups).build();
     groups.add("anotherGroup");
     assertEquals(Collections.singleton("group"), identity.getGroups());

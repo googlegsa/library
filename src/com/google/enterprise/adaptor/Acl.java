@@ -122,7 +122,7 @@ public class Acl {
    * indeterminate.
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
-    String userIdentifier = userIdentity.getUsername();
+    String userIdentifier = userIdentity.getUser().getName();
     Collection<String> groups = userIdentity.getGroups();
     Set<String> commonGroups = new HashSet<String>(denyGroups);
     commonGroups.retainAll(groups);

@@ -160,7 +160,8 @@ public class DocumentHandlerTest {
     Session session = sessionManager.getSession(ex, true);
     AuthnState authn = new AuthnState();
     session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build();
     authn.authenticated(identity, Long.MAX_VALUE);
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new UserPrivateMockAdaptor());
@@ -198,7 +199,8 @@ public class DocumentHandlerTest {
     Session session = sessionManager.getSession(ex, true);
     AuthnState authn = new AuthnState();
     session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder("test").build();
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build();
     authn.authenticated(identity, Long.MAX_VALUE);
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new PrivateMockAdaptor());

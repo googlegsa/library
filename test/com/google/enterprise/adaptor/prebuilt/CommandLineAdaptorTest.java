@@ -27,6 +27,8 @@ import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.Principal;
+import com.google.enterprise.adaptor.UserPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 
@@ -415,13 +417,13 @@ public class CommandLineAdaptorTest {
     assertEquals(MockListerCommand.original, idList);
 
     // Test authorizer
-    final String username = "user1";
+    final UserPrincipal user = new UserPrincipal("user1");
     final String password = "password1";
     final Set<String> groups = new HashSet<String>(Arrays.asList("group1", "group2"));
     AuthnIdentity authnIdentity = new AuthnIdentity() {
       @Override
-      public String getUsername() {
-        return username;
+      public UserPrincipal getUser() {
+        return user;
       }
       @Override
       public String getPassword() {

@@ -22,11 +22,11 @@ import java.util.Set;
  */
 public interface AuthnIdentity {
   /**
-   * Gets the user identifier. This value will always be available.
+   * Gets the user. This value will always be available.
    *
    * @return the user's identifier.
    */
-  public String getUsername();
+  public UserPrincipal getUser();
 
   /**
    * Gets the user's password.

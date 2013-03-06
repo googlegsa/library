@@ -154,7 +154,8 @@ class SamlAssertionConsumerHandler implements HttpHandler {
         ? Long.MAX_VALUE : expirationDateTime.getMillis();
     log.log(Level.INFO, "SAML subject {0} verified {1}",
             new Object[] {subjectName, new Date(expirationTime)});
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder(subjectName)
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal(subjectName))
         .setGroups(groups).setPassword(password).build();
     authnState.authenticated(identity, expirationTime);
     return true;

@@ -38,7 +38,7 @@ public class SamlIdentityProviderTest {
   private SamlMetadata metadata = new SamlMetadata(
       "bruteforce.mtv.corp.google.com", 5678,
       "entyo36.hot.corp.google.com");
-  private String username = "user1";
+  private UserPrincipal user = new UserPrincipal("user1");
   private Set<String> groups = new TreeSet<String>(Arrays.asList(
       "group1", "group2"));
   private AuthnAdaptor adaptor = new AuthnAdaptorImpl();
@@ -130,8 +130,8 @@ public class SamlIdentityProviderTest {
 
   private class AuthnIdentityImpl implements AuthnIdentity {
     @Override
-    public String getUsername() {
-      return username;
+    public UserPrincipal getUser() {
+      return user;
     }
 
     @Override

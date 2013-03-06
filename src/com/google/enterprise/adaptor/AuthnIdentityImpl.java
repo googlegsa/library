@@ -20,13 +20,13 @@ import java.util.*;
  * Immutable implementation of {@link AuthnIdentity}.
  */
 class AuthnIdentityImpl implements AuthnIdentity {
-  private final String username;
+  private final UserPrincipal user;
   private final String password;
   private final Set<String> groups;
 
-  private AuthnIdentityImpl(String username, String password,
+  private AuthnIdentityImpl(UserPrincipal user, String password,
                             Set<String> groups) {
-    this.username = username;
+    this.user = user;
     this.password = password;
     this.groups = groups;
   }
@@ -35,8 +35,8 @@ class AuthnIdentityImpl implements AuthnIdentity {
    * {@inheritDoc}
    */
   @Override
-  public String getUsername() {
-    return username;
+  public UserPrincipal getUser() {
+    return user;
   }
 
   /**
@@ -57,7 +57,7 @@ class AuthnIdentityImpl implements AuthnIdentity {
 
   @Override
   public String toString() {
-    return "User(" + username + ","
+    return "AuthnIdentityImpl(" + user + ","
         + (password == null ? "no password" : "contains password") + ","
         + "groups=" + groups + ")";
   }
@@ -66,29 +66,29 @@ class AuthnIdentityImpl implements AuthnIdentity {
    * Builder for creating {@link AuthnIdentityImpl} instances.
    */
   public static class Builder {
-    private String username;
+    private UserPrincipal user;
     private String password;
     private Set<String> groups;
 
     /**
      * Construct new builder. All values are initialized to {@code null}, except
-     * for username.
+     * for user.
      *
-     * @param username non-{@code null} username
+     * @param user non-{@code null} user
      */
-    public Builder(String username) {
-      setUsername(username);
+    public Builder(UserPrincipal user) {
+      setUser(user);
     }
 
     public AuthnIdentityImpl build() {
-      return new AuthnIdentityImpl(username, password, groups);
+      return new AuthnIdentityImpl(user, password, groups);
     }
 
-    public Builder setUsername(String username) {
-      if (username == null) {
+    public Builder setUser(UserPrincipal user) {
+      if (user == null) {
         throw new NullPointerException();
       }
-      this.username = username;
+      this.user = user;
       return this;
     }
 

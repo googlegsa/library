@@ -978,12 +978,17 @@ public class AclTest {
 
   private AuthnIdentity createIdentity(final String username,
       List<String> groups) {
+    return createIdentity(new UserPrincipal(username), groups);
+  }
+
+  private AuthnIdentity createIdentity(final UserPrincipal user,
+      List<String> groups) {
     final Set<String> groupSet
         = Collections.unmodifiableSet(new TreeSet<String>(groups));
     return new AuthnIdentity() {
       @Override
-      public String getUsername() {
-        return username;
+      public UserPrincipal getUser() {
+        return user;
       }
 
       @Override

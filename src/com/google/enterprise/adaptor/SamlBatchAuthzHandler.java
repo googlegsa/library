@@ -181,7 +181,8 @@ class SamlBatchAuthzHandler implements HttpHandler {
 
     // Ask the Adaptor if the user is allowed.
     // TODO(ejona): figure out how to get groups and password.
-    AuthnIdentity identity = new AuthnIdentityImpl.Builder(userIdentifier)
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal(userIdentifier))
         .build();
     docIds = Collections.unmodifiableMap(docIds);
     Map<DocId, AuthzStatus> statuses;

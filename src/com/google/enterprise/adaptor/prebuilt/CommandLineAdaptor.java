@@ -214,14 +214,14 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     StringBuilder stdinStringBuilder = new StringBuilder();
 
     // Write out the user name
-    if (userIdentity.getUsername().contains(authzDelimiter)) {
-      throw new IllegalArgumentException("Error - Group '" + userIdentity.getUsername() +
-          "' contains the delimiter '" + authzDelimiter + "'");
+    if (userIdentity.getUser().getName().contains(authzDelimiter)) {
+      throw new IllegalArgumentException("Error - User '" + userIdentity.getUser().getName()
+          + "' contains the delimiter '" + authzDelimiter + "'");
     }
     stdinStringBuilder.append("GSA Adaptor Data Version 1 [" + authzDelimiter + "]"
         + authzDelimiter);
 
-    stdinStringBuilder.append("username=").append(userIdentity.getUsername())
+    stdinStringBuilder.append("username=").append(userIdentity.getUser().getName())
         .append(authzDelimiter);
 
     // Write out the user password
