@@ -905,6 +905,10 @@ public class DocumentHandlerTest {
     assertEquals("", header);
   }
 
+  private static UserPrincipal U(String name) {
+    return new UserPrincipal(name);
+  }
+
   @Test
   public void testFormAclHeader() {
     final String golden
@@ -919,9 +923,9 @@ public class DocumentHandlerTest {
         + "google%3Aaclinheritfrom=http%3A%2F%2Flocalhost%2Fsome%2520docId,"
         + "google%3Aaclinheritancetype=parent-overrides";
     String result = DocumentHandler.formAclHeader(new Acl.Builder()
-        .setPermitUsers(Arrays.asList("pu1", "uid=pu2,dc=com"))
+        .setPermitUsers(Arrays.asList(U("pu1"), U("uid=pu2,dc=com")))
         .setPermitGroups(Arrays.asList("pg1", "gid=pg2,dc=com"))
-        .setDenyUsers(Arrays.asList("du1", "uid=du2,dc=com"))
+        .setDenyUsers(Arrays.asList(U("du1"), U("uid=du2,dc=com")))
         .setDenyGroups(Arrays.asList("dg1", "gid=dg2,dc=com"))
         .setInheritFrom(new DocId("some docId"))
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)

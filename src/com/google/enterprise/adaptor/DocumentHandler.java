@@ -301,14 +301,17 @@ class DocumentHandler implements HttpHandler {
       acl = Acl.FAKE_EMPTY;
     }
     StringBuilder sb = new StringBuilder();
-    for (String permitUser : acl.getPermitUsers()) {
-      percentEncodeMapEntryPair(sb, "google:aclusers", permitUser);
+    // TODO: Use Principals instead of just names
+    for (UserPrincipal permitUser : acl.getPermitUsers()) {
+      String name = permitUser.getName();
+      percentEncodeMapEntryPair(sb, "google:aclusers", name);
     }
     for (String permitGroup : acl.getPermitGroups()) {
       percentEncodeMapEntryPair(sb, "google:aclgroups", permitGroup);
     }
-    for (String denyUser : acl.getDenyUsers()) {
-      percentEncodeMapEntryPair(sb, "google:acldenyusers", denyUser);
+    for (UserPrincipal denyUser : acl.getDenyUsers()) {
+      String name = denyUser.getName();
+      percentEncodeMapEntryPair(sb, "google:acldenyusers", name);
     }
     for (String denyGroup : acl.getDenyGroups()) {
       percentEncodeMapEntryPair(sb, "google:acldenygroups", denyGroup);

@@ -142,14 +142,17 @@ class GsaFeedFileMaker {
       aclElement.setAttribute("inheritance-type",
           acl.getInheritanceType().getCommonForm());
     }
-    for (String permitUser : acl.getPermitUsers()) {
-      constructPrincipal(doc, aclElement, "user", "permit", permitUser);
+    // TODO: Use Principals instead of just string name
+    for (UserPrincipal permitUser : acl.getPermitUsers()) {
+      String name = permitUser.getName();
+      constructPrincipal(doc, aclElement, "user", "permit", name);
     }
     for (String permitGroup : acl.getPermitGroups()) {
       constructPrincipal(doc, aclElement, "group", "permit", permitGroup);
     }
-    for (String denyUser : acl.getDenyUsers()) {
-      constructPrincipal(doc, aclElement, "user", "deny", denyUser);
+    for (UserPrincipal denyUser : acl.getDenyUsers()) {
+      String name = denyUser.getName();
+      constructPrincipal(doc, aclElement, "user", "deny", name);
     }
     for (String denyGroup : acl.getDenyGroups()) {
       constructPrincipal(doc, aclElement, "group", "deny", denyGroup);

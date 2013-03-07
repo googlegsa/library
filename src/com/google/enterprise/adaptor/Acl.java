@@ -40,21 +40,22 @@ public class Acl {
    * and a non-existant ACL.
    */
   static final Acl FAKE_EMPTY = new Acl.Builder()
-      .setDenyUsers(Arrays.asList("google:fakeUserToPreventMissingAcl"))
+      .setDenyUsers(Arrays.asList(
+          new UserPrincipal("google:fakeUserToPreventMissingAcl")))
       .build();
 
   private static final Logger log = Logger.getLogger(Acl.class.getName());
 
   private final Set<String> permitGroups;
   private final Set<String> denyGroups;
-  private final Set<String> permitUsers;
-  private final Set<String> denyUsers;
+  private final Set<UserPrincipal> permitUsers;
+  private final Set<UserPrincipal> denyUsers;
   private final DocId inheritFrom;
   private final InheritanceType inheritType;
 
   private Acl(Set<String> permitGroups, Set<String> denyGroups,
-              Set<String> permitUsers, Set<String> denyUsers, DocId inheritFrom,
-              InheritanceType inheritType) {
+      Set<UserPrincipal> permitUsers, Set<UserPrincipal> denyUsers,
+      DocId inheritFrom, InheritanceType inheritType) {
     this.permitGroups = permitGroups;
     this.denyGroups = denyGroups;
     this.permitUsers = permitUsers;
@@ -80,14 +81,14 @@ public class Acl {
   /**
    * Returns immutable set of permitted users.
    */
-  public Set<String> getPermitUsers() {
+  public Set<UserPrincipal> getPermitUsers() {
     return permitUsers;
   }
 
   /**
    * Returns immutable set of denied users.
    */
-  public Set<String> getDenyUsers() {
+  public Set<UserPrincipal> getDenyUsers() {
     return denyUsers;
   }
 
@@ -123,7 +124,7 @@ public class Acl {
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
     // TODO: Use Principals for cmp instead of Strings
-    String userIdentifier = userIdentity.getUser().getName();
+    UserPrincipal userIdentifier = userIdentity.getUser();
     Collection<String> groups = new HashSet<String>();
     for (GroupPrincipal gp : userIdentity.getGroups()) {
       groups.add(gp.getName());
@@ -145,7 +146,7 @@ public class Acl {
   }
 
   /**
-   * Determine if the provided {@code userIdentifier} belonging to {@code
+   * Determine if the provided {@code userIdentity} belonging to {@code
    * groups} is authorized for the provided {@code aclChain}. The chain should
    * be in order of root to leaf; that means that the particular file or folder
    * you are checking for authz will be at the end of the chain.
@@ -462,8 +463,8 @@ public class Acl {
   public static class Builder {
     private Set<String> permitGroups = Collections.emptySet();
     private Set<String> denyGroups = Collections.emptySet();
-    private Set<String> permitUsers = Collections.emptySet();
-    private Set<String> denyUsers = Collections.emptySet();
+    private Set<UserPrincipal> permitUsers = Collections.emptySet();
+    private Set<UserPrincipal> denyUsers = Collections.emptySet();
     private DocId inheritFrom;
     private InheritanceType inheritType = InheritanceType.LEAF_NODE;
 
@@ -480,8 +481,8 @@ public class Acl {
     public Builder(Acl acl) {
       permitGroups = sanitizeSet(acl.getPermitGroups());
       denyGroups = sanitizeSet(acl.getDenyGroups());
-      permitUsers = sanitizeSet(acl.getPermitUsers());
-      denyUsers = sanitizeSet(acl.getDenyUsers());
+      permitUsers = sanitizeUserSet(acl.getPermitUsers());
+      denyUsers = sanitizeUserSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
       inheritType = acl.getInheritanceType();
     }
@@ -506,6 +507,28 @@ public class Acl {
       }
       // Use TreeSets so that sets have predictable order when serializing.
       return Collections.unmodifiableSet(new TreeSet<String>(set));
+    }
+
+    private Set<UserPrincipal> sanitizeUserSet(Collection<UserPrincipal> set) {
+      if (set.isEmpty()) {
+        Collections.emptySet();
+      }
+      // Check all the values to make sure they are valid.
+      for (UserPrincipal item : set) {
+        if (item == null) {
+          throw new NullPointerException("Entries in set may not be null");
+        }
+        if (!item.getName().equals(item.getName().trim())) {
+          throw new IllegalArgumentException("Entries in set must not start or "
+                                             + "end with whitespace");
+        }
+        if ("".equals(item.getName())) {
+          throw new IllegalArgumentException("Entries in set must not be the "
+                                             + "empty string");
+        }
+      }
+      // Use TreeSets so that sets have predictable order when serializing.
+      return Collections.unmodifiableSet(new TreeSet<UserPrincipal>(set));
     }
 
     /**
@@ -553,8 +576,8 @@ public class Acl {
      * @throws IllegalArgumentException if the collection contains {@code ""}
      *     or a value that has leading or trailing whitespace
      */
-    public Builder setPermitUsers(Collection<String> permitUsers) {
-      this.permitUsers = sanitizeSet(permitUsers);
+    public Builder setPermitUsers(Collection<UserPrincipal> permitUsers) {
+      this.permitUsers = sanitizeUserSet(permitUsers);
       return this;
     }
 
@@ -567,8 +590,8 @@ public class Acl {
      * @throws IllegalArgumentException if the collection contains {@code ""}
      *     or a value that has leading or trailing whitespace
      */
-    public Builder setDenyUsers(Collection<String> denyUsers) {
-      this.denyUsers = sanitizeSet(denyUsers);
+    public Builder setDenyUsers(Collection<UserPrincipal> denyUsers) {
+      this.denyUsers = sanitizeUserSet(denyUsers);
       return this;
     }
 

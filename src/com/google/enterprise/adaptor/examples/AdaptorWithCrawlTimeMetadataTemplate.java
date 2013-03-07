@@ -20,6 +20,7 @@ import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
+import com.google.enterprise.adaptor.UserPrincipal;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -54,7 +55,11 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
     String str;
     if ("1001".equals(id.getUniqueId())) {
       str = "Document 1001 says hello and apple orange";
-      List<String> users1001 = Arrays.asList("peter", "bart", "simon");
+      List<UserPrincipal> users1001 = Arrays.asList(
+         new UserPrincipal("peter"),
+         new UserPrincipal("bart"), 
+         new UserPrincipal("simon")
+      );
       List<String> groups1001 = Arrays.asList("support", "sales");
       // Add custom meta items.
       resp.addMetadata("my-special-key", "my-custom-value");

@@ -167,8 +167,10 @@ public class GsaFeedFileMakerTest {
         .build()));
     acls.add(new DocIdSender.AclItem(new DocId("docid2"), new Acl.Builder()
         .setInheritanceType(Acl.InheritanceType.AND_BOTH_PERMIT)
-        .setPermitUsers(Arrays.asList("pu1", "pu2"))
-        .setDenyUsers(Arrays.asList("du1", "du2"))
+        .setPermitUsers(
+            Arrays.asList(new UserPrincipal("pu1"), new UserPrincipal("pu2")))
+        .setDenyUsers(
+            Arrays.asList(new UserPrincipal("du1"), new UserPrincipal("du2")))
         .setPermitGroups(Arrays.asList("pg1", "pg2<"))
         .setDenyGroups(Arrays.asList("dg1", "dg2&"))
         .build()));
