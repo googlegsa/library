@@ -18,6 +18,7 @@ import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
+import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
@@ -60,7 +61,10 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
          new UserPrincipal("bart"), 
          new UserPrincipal("simon")
       );
-      List<String> groups1001 = Arrays.asList("support", "sales");
+      List<GroupPrincipal> groups1001 = Arrays.asList(
+         new GroupPrincipal("support"),
+         new GroupPrincipal("sales")
+      );
       // Add custom meta items.
       resp.addMetadata("my-special-key", "my-custom-value");
       resp.addMetadata("date", "not soon enough");

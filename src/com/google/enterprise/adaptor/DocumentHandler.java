@@ -306,15 +306,17 @@ class DocumentHandler implements HttpHandler {
       String name = permitUser.getName();
       percentEncodeMapEntryPair(sb, "google:aclusers", name);
     }
-    for (String permitGroup : acl.getPermitGroups()) {
-      percentEncodeMapEntryPair(sb, "google:aclgroups", permitGroup);
+    for (GroupPrincipal permitGroup : acl.getPermitGroups()) {
+      String name = permitGroup.getName();
+      percentEncodeMapEntryPair(sb, "google:aclgroups", name);
     }
     for (UserPrincipal denyUser : acl.getDenyUsers()) {
       String name = denyUser.getName();
       percentEncodeMapEntryPair(sb, "google:acldenyusers", name);
     }
-    for (String denyGroup : acl.getDenyGroups()) {
-      percentEncodeMapEntryPair(sb, "google:acldenygroups", denyGroup);
+    for (GroupPrincipal denyGroup : acl.getDenyGroups()) {
+      String name = denyGroup.getName();
+      percentEncodeMapEntryPair(sb, "google:acldenygroups", name);
     }
     if (acl.getInheritFrom() != null) {
       percentEncodeMapEntryPair(sb, "google:aclinheritfrom",

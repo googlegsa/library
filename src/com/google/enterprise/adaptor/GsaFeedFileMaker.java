@@ -147,15 +147,17 @@ class GsaFeedFileMaker {
       String name = permitUser.getName();
       constructPrincipal(doc, aclElement, "user", "permit", name);
     }
-    for (String permitGroup : acl.getPermitGroups()) {
-      constructPrincipal(doc, aclElement, "group", "permit", permitGroup);
+    for (GroupPrincipal permitGroup : acl.getPermitGroups()) {
+      String name = permitGroup.getName();
+      constructPrincipal(doc, aclElement, "group", "permit", name);
     }
     for (UserPrincipal denyUser : acl.getDenyUsers()) {
       String name = denyUser.getName();
       constructPrincipal(doc, aclElement, "user", "deny", name);
     }
-    for (String denyGroup : acl.getDenyGroups()) {
-      constructPrincipal(doc, aclElement, "group", "deny", denyGroup);
+    for (GroupPrincipal denyGroup : acl.getDenyGroups()) {
+      String name = denyGroup.getName();
+      constructPrincipal(doc, aclElement, "group", "deny", name);
     }
   }
 

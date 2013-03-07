@@ -46,14 +46,14 @@ public class Acl {
 
   private static final Logger log = Logger.getLogger(Acl.class.getName());
 
-  private final Set<String> permitGroups;
-  private final Set<String> denyGroups;
+  private final Set<GroupPrincipal> permitGroups;
+  private final Set<GroupPrincipal> denyGroups;
   private final Set<UserPrincipal> permitUsers;
   private final Set<UserPrincipal> denyUsers;
   private final DocId inheritFrom;
   private final InheritanceType inheritType;
 
-  private Acl(Set<String> permitGroups, Set<String> denyGroups,
+  private Acl(Set<GroupPrincipal> permitGroups, Set<GroupPrincipal> denyGroups,
       Set<UserPrincipal> permitUsers, Set<UserPrincipal> denyUsers,
       DocId inheritFrom, InheritanceType inheritType) {
     this.permitGroups = permitGroups;
@@ -67,14 +67,14 @@ public class Acl {
   /**
    * Returns immutable set of permitted groups.
    */
-  public Set<String> getPermitGroups() {
+  public Set<GroupPrincipal> getPermitGroups() {
     return permitGroups;
   }
 
   /**
    * Returns immutable set of denied groups.
    */
-  public Set<String> getDenyGroups() {
+  public Set<GroupPrincipal> getDenyGroups() {
     return denyGroups;
   }
 
@@ -123,21 +123,16 @@ public class Acl {
    * indeterminate.
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
-    // TODO: Use Principals for cmp instead of Strings
     UserPrincipal userIdentifier = userIdentity.getUser();
-    Collection<String> groups = new HashSet<String>();
-    for (GroupPrincipal gp : userIdentity.getGroups()) {
-      groups.add(gp.getName());
-    }
-    Set<String> commonGroups = new HashSet<String>(denyGroups);
-    commonGroups.retainAll(groups);
+    Set<GroupPrincipal> commonGroups = new HashSet<GroupPrincipal>(denyGroups);
+    commonGroups.retainAll(userIdentity.getGroups());
     if (denyUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {
       return AuthzStatus.DENY;
     }
 
     commonGroups.clear();
     commonGroups.addAll(permitGroups);
-    commonGroups.retainAll(groups);
+    commonGroups.retainAll(userIdentity.getGroups());
     if (permitUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {
       return AuthzStatus.PERMIT;
     }
@@ -461,8 +456,8 @@ public class Acl {
    * Mutable ACL for creating instances of {@link Acl}.
    */
   public static class Builder {
-    private Set<String> permitGroups = Collections.emptySet();
-    private Set<String> denyGroups = Collections.emptySet();
+    private Set<GroupPrincipal> permitGroups = Collections.emptySet();
+    private Set<GroupPrincipal> denyGroups = Collections.emptySet();
     private Set<UserPrincipal> permitUsers = Collections.emptySet();
     private Set<UserPrincipal> denyUsers = Collections.emptySet();
     private DocId inheritFrom;
@@ -479,34 +474,12 @@ public class Acl {
      * acl}.
      */
     public Builder(Acl acl) {
-      permitGroups = sanitizeSet(acl.getPermitGroups());
-      denyGroups = sanitizeSet(acl.getDenyGroups());
+      permitGroups = sanitizeGroupSet(acl.getPermitGroups());
+      denyGroups = sanitizeGroupSet(acl.getDenyGroups());
       permitUsers = sanitizeUserSet(acl.getPermitUsers());
       denyUsers = sanitizeUserSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
       inheritType = acl.getInheritanceType();
-    }
-
-    private Set<String> sanitizeSet(Collection<String> set) {
-      if (set.isEmpty()) {
-        Collections.emptySet();
-      }
-      // Check all the values to make sure they are valid.
-      for (String item : set) {
-        if (item == null) {
-          throw new NullPointerException("Entries in set may not be null");
-        }
-        if (!item.equals(item.trim())) {
-          throw new IllegalArgumentException("Entries in set must not start or "
-                                             + "end with whitespace");
-        }
-        if ("".equals(item)) {
-          throw new IllegalArgumentException("Entries in set must not be the "
-                                             + "empty string");
-        }
-      }
-      // Use TreeSets so that sets have predictable order when serializing.
-      return Collections.unmodifiableSet(new TreeSet<String>(set));
     }
 
     private Set<UserPrincipal> sanitizeUserSet(Collection<UserPrincipal> set) {
@@ -531,6 +504,28 @@ public class Acl {
       return Collections.unmodifiableSet(new TreeSet<UserPrincipal>(set));
     }
 
+    private Set<GroupPrincipal> sanitizeGroupSet(Collection<GroupPrincipal> set) {
+      if (set.isEmpty()) {
+        Collections.emptySet();
+      }
+      // Check all the values to make sure they are valid.
+      for (GroupPrincipal item : set) {
+        if (item == null) {
+          throw new NullPointerException("Entries in set may not be null");
+        }
+        if (!item.getName().equals(item.getName().trim())) {
+          throw new IllegalArgumentException("Entries in set must not start or "
+                                             + "end with whitespace");
+        }
+        if ("".equals(item.getName())) {
+          throw new IllegalArgumentException("Entries in set must not be the "
+                                             + "empty string");
+        }
+      }
+      // Use TreeSets so that sets have predictable order when serializing.
+      return Collections.unmodifiableSet(new TreeSet<GroupPrincipal>(set));
+    }
+
     /**
      * Create immutable {@link Acl} instance of the current state.
      */
@@ -548,8 +543,8 @@ public class Acl {
      * @throws IllegalArgumentException if the collection contains {@code ""}
      *     or a value that has leading or trailing whitespace
      */
-    public Builder setPermitGroups(Collection<String> permitGroups) {
-      this.permitGroups = sanitizeSet(permitGroups);
+    public Builder setPermitGroups(Collection<GroupPrincipal> permitGroups) {
+      this.permitGroups = sanitizeGroupSet(permitGroups);
       return this;
     }
 
@@ -562,8 +557,8 @@ public class Acl {
      * @throws IllegalArgumentException if the collection contains {@code ""}
      *     or a value that has leading or trailing whitespace
      */
-    public Builder setDenyGroups(Collection<String> denyGroups) {
-      this.denyGroups = sanitizeSet(denyGroups);
+    public Builder setDenyGroups(Collection<GroupPrincipal> denyGroups) {
+      this.denyGroups = sanitizeGroupSet(denyGroups);
       return this;
     }
 
