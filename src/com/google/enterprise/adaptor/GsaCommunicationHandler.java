@@ -88,6 +88,7 @@ public final class GsaCommunicationHandler {
    * new start() calls before stop() is done processing.
    */
   private final AtomicInteger shutdownCount = new AtomicInteger();
+  private ShutdownWaiter waiter;
   private final List<Filter> commonFilters = Arrays.asList(new Filter[] {
     new AbortImmediatelyFilter(),
     new LoggingFilter(),
@@ -148,6 +149,7 @@ public final class GsaCommunicationHandler {
     }
 
     scope = new HttpServerScope(server);
+    waiter = new ShutdownWaiter();
 
     docIdFullPusher = new OneAtATimeRunnable(
         new PushRunnable(), new AlreadyRunningRunnable());
@@ -261,7 +263,8 @@ public final class GsaCommunicationHandler {
 
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
-        config.getAdaptorFullListingSchedule(), docIdFullPusher);
+        config.getAdaptorFullListingSchedule(),
+        waiter.runnable(docIdFullPusher));
 
     if (adaptor instanceof PollingIncrementalAdaptor) {
       docIdIncrementalPusher = new OneAtATimeRunnable(
@@ -269,7 +272,7 @@ public final class GsaCommunicationHandler {
           new AlreadyRunningRunnable());
 
       backgroundExecutor.scheduleAtFixedRate(
-          docIdIncrementalPusher,
+          waiter.runnable(docIdIncrementalPusher),
           0,
           config.getAdaptorIncrementalPollPeriodMillis(),
           TimeUnit.MILLISECONDS);
@@ -449,9 +452,16 @@ public final class GsaCommunicationHandler {
       backgroundExecutor.shutdownNow();
       backgroundExecutor = null;
     }
-    // TODO(ejona): wait until all threads are actually done processing.
+    if (waiter != null) {
+      try {
+        waiter.shutdown(time, unit);
+      } catch (InterruptedException ex) {
+        Thread.currentThread().interrupt();
+      }
+    }
     sessionManager = null;
     adaptor.destroy();
+    waiter = null;
   }
 
   /**
@@ -487,6 +497,7 @@ public final class GsaCommunicationHandler {
   }
 
   HttpContext addFilters(HttpContext context) {
+    context.getFilters().add(waiter.filter());
     context.getFilters().addAll(commonFilters);
     return context;
   }
