@@ -474,56 +474,26 @@ public class Acl {
      * acl}.
      */
     public Builder(Acl acl) {
-      permitGroups = sanitizeGroupSet(acl.getPermitGroups());
-      denyGroups = sanitizeGroupSet(acl.getDenyGroups());
-      permitUsers = sanitizeUserSet(acl.getPermitUsers());
-      denyUsers = sanitizeUserSet(acl.getDenyUsers());
+      permitGroups = sanitizeSet(acl.getPermitGroups());
+      denyGroups = sanitizeSet(acl.getDenyGroups());
+      permitUsers = sanitizeSet(acl.getPermitUsers());
+      denyUsers = sanitizeSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
       inheritType = acl.getInheritanceType();
     }
 
-    private Set<UserPrincipal> sanitizeUserSet(Collection<UserPrincipal> set) {
+    private <P extends Principal> Set<P> sanitizeSet(Collection<P> set) {
       if (set.isEmpty()) {
         Collections.emptySet();
       }
       // Check all the values to make sure they are valid.
-      for (UserPrincipal item : set) {
+      for (P item : set) {
         if (item == null) {
           throw new NullPointerException("Entries in set may not be null");
         }
-        if (!item.getName().equals(item.getName().trim())) {
-          throw new IllegalArgumentException("Entries in set must not start or "
-                                             + "end with whitespace");
-        }
-        if ("".equals(item.getName())) {
-          throw new IllegalArgumentException("Entries in set must not be the "
-                                             + "empty string");
-        }
       }
       // Use TreeSets so that sets have predictable order when serializing.
-      return Collections.unmodifiableSet(new TreeSet<UserPrincipal>(set));
-    }
-
-    private Set<GroupPrincipal> sanitizeGroupSet(Collection<GroupPrincipal> set) {
-      if (set.isEmpty()) {
-        Collections.emptySet();
-      }
-      // Check all the values to make sure they are valid.
-      for (GroupPrincipal item : set) {
-        if (item == null) {
-          throw new NullPointerException("Entries in set may not be null");
-        }
-        if (!item.getName().equals(item.getName().trim())) {
-          throw new IllegalArgumentException("Entries in set must not start or "
-                                             + "end with whitespace");
-        }
-        if ("".equals(item.getName())) {
-          throw new IllegalArgumentException("Entries in set must not be the "
-                                             + "empty string");
-        }
-      }
-      // Use TreeSets so that sets have predictable order when serializing.
-      return Collections.unmodifiableSet(new TreeSet<GroupPrincipal>(set));
+      return Collections.unmodifiableSet(new TreeSet<P>(set));
     }
 
     /**
@@ -544,7 +514,7 @@ public class Acl {
      *     or a value that has leading or trailing whitespace
      */
     public Builder setPermitGroups(Collection<GroupPrincipal> permitGroups) {
-      this.permitGroups = sanitizeGroupSet(permitGroups);
+      this.permitGroups = sanitizeSet(permitGroups);
       return this;
     }
 
@@ -558,7 +528,7 @@ public class Acl {
      *     or a value that has leading or trailing whitespace
      */
     public Builder setDenyGroups(Collection<GroupPrincipal> denyGroups) {
-      this.denyGroups = sanitizeGroupSet(denyGroups);
+      this.denyGroups = sanitizeSet(denyGroups);
       return this;
     }
 
@@ -572,7 +542,7 @@ public class Acl {
      *     or a value that has leading or trailing whitespace
      */
     public Builder setPermitUsers(Collection<UserPrincipal> permitUsers) {
-      this.permitUsers = sanitizeUserSet(permitUsers);
+      this.permitUsers = sanitizeSet(permitUsers);
       return this;
     }
 
@@ -586,7 +556,7 @@ public class Acl {
      *     or a value that has leading or trailing whitespace
      */
     public Builder setDenyUsers(Collection<UserPrincipal> denyUsers) {
-      this.denyUsers = sanitizeUserSet(denyUsers);
+      this.denyUsers = sanitizeSet(denyUsers);
       return this;
     }
 
