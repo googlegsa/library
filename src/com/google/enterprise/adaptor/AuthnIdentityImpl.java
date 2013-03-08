@@ -57,7 +57,7 @@ class AuthnIdentityImpl implements AuthnIdentity {
 
   @Override
   public String toString() {
-    return "AuthnIdentityImpl(" + user + ","
+    return "AuthnIdentity(" + user + ","
         + (password == null ? "no password" : "contains password") + ","
         + "groups=" + groups + ")";
   }

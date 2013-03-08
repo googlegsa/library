@@ -154,10 +154,6 @@ class SamlIdentityProvider {
           inResponseTo);
     }
 
-    if (identity.getUser().getName().isEmpty()) {
-      throw new IllegalArgumentException("Username must not be empty");
-    }
-
     Attribute groupsAttribute = makeAttribute("member-of");
     Iterable<GroupPrincipal> groups = identity.getGroups();
     if (groups == null) {

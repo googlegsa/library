@@ -27,6 +27,12 @@ public class Principal implements Comparable<Principal> {
     if (null == n || null == ns) {
       throw new NullPointerException();
     }
+    if (n.isEmpty()) {
+      throw new IllegalArgumentException("name cannot be empty");
+    }
+    if (!n.trim().equals(n)) {
+      throw new IllegalArgumentException("name cannot start or end with space");
+    }
     name = n;
     namespace = ns;
   }
@@ -51,6 +57,7 @@ public class Principal implements Comparable<Principal> {
     return this instanceof GroupPrincipal;
   }
 
+  @Override
   public boolean equals(Object other) {
     boolean same = other instanceof Principal;
     if (same) {
@@ -61,10 +68,12 @@ public class Principal implements Comparable<Principal> {
     return same;
   }
 
+  @Override
   public int hashCode() {
     return Arrays.hashCode(new Object[]{ isUser(), name, namespace });
   }
 
+  @Override
   public String toString() {
     String type = isUser() ? "User" : "Group";
     return "Principal(" + type + "," + name + "," + namespace + ")";
@@ -74,7 +83,7 @@ public class Principal implements Comparable<Principal> {
    * Sorts by 1) namespace, 2) user or group, 3) name.
    */
   @Override
-  public int compareTo(Principal other){
+  public int compareTo(Principal other) {
     int spacecmp = namespace.compareTo(other.namespace);
     if (0 != spacecmp) {
       return spacecmp;

@@ -17,12 +17,12 @@ package com.google.enterprise.adaptor;
 /**
  * Represents user.
  */
-public class UserPrincipal extends Principal {
-  public UserPrincipal(String n, String ns) {
-    super(n, ns);
+public final class UserPrincipal extends Principal {
+  public UserPrincipal(String name, String namespace) {
+    super(name, namespace);
   }
 
-  public UserPrincipal(String n) {
-    super(n);
+  public UserPrincipal(String name) {
+    super(name);
   }
 }

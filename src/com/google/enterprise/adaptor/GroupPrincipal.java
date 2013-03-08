@@ -21,16 +21,16 @@ import java.util.TreeSet;
 /**
  * Represents group.
  */
-public class GroupPrincipal extends Principal {
-  public GroupPrincipal(String n, String ns) {
-    super(n, ns);
+public final class GroupPrincipal extends Principal {
+  public GroupPrincipal(String name, String namespace) {
+    super(name, namespace);
   }
 
-  public GroupPrincipal(String n) {
-    super(n);
+  public GroupPrincipal(String name) {
+    super(name);
   }
 
-  public static Set<GroupPrincipal> makeSet(Collection<String> names) {
+  static Set<GroupPrincipal> makeSet(Collection<String> names) {
     if (null == names) {
       return null;
     }
@@ -41,7 +41,7 @@ public class GroupPrincipal extends Principal {
     return groups;
   }
 
-  public static Set<GroupPrincipal> makeSet(Collection<String> names,
+  static Set<GroupPrincipal> makeSet(Collection<String> names,
       String namespace) {
     if (null == names) {
       return null;

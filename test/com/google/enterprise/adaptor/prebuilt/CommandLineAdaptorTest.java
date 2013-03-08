@@ -52,6 +52,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Tests for {@link CommandLineAdaptor}.
@@ -420,7 +421,9 @@ public class CommandLineAdaptorTest {
     // Test authorizer
     final UserPrincipal user = new UserPrincipal("user1");
     final String password = "password1";
-    final Set<GroupPrincipal> groups = GroupPrincipal.makeSet(Arrays.asList("group1", "group2"));
+    final Set<GroupPrincipal> groups = new TreeSet<GroupPrincipal>();
+    groups.add(new GroupPrincipal("group1"));
+    groups.add(new GroupPrincipal("group2"));
     AuthnIdentity authnIdentity = new AuthnIdentity() {
       @Override
       public UserPrincipal getUser() {

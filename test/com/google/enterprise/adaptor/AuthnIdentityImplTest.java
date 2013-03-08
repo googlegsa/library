@@ -34,19 +34,19 @@ public class AuthnIdentityImplTest {
     new AuthnIdentityImpl.Builder(null);
   }
 
-  private static Set<GroupPrincipal> makeGroups() {
-    return GroupPrincipal.makeSet(Collections.singleton("group"));
+  private static Set<GroupPrincipal> makeGroups(String name) {
+    return GroupPrincipal.makeSet(Collections.singleton(name));
   }
 
   @Test
   public void testSetAllConstruction() {
     AuthnIdentity identity = new AuthnIdentityImpl
         .Builder(new UserPrincipal("testing"))
-        .setPassword("pass").setGroups(makeGroups())
+        .setPassword("pass").setGroups(makeGroups("group"))
         .build();
     assertEquals("testing", identity.getUser().getName());
     assertEquals("pass", identity.getPassword());
-    assertEquals(makeGroups(), identity.getGroups());
+    assertEquals(makeGroups("group"), identity.getGroups());
   }
 
   @Test
@@ -60,11 +60,15 @@ public class AuthnIdentityImplTest {
 
   @Test
   public void testImmutable() {
-    Set<GroupPrincipal> groups = makeGroups();
+    Set<GroupPrincipal> groups = new TreeSet<GroupPrincipal>();
+    groups.add(new GroupPrincipal("group"));
+    Set<GroupPrincipal> groups2 = new TreeSet<GroupPrincipal>();
+    groups2.add(new GroupPrincipal("group"));
+
     AuthnIdentity identity = new AuthnIdentityImpl
         .Builder(new UserPrincipal("testing"))
         .setGroups(groups).build();
     groups.add(new GroupPrincipal("anotherGroup"));
-    assertEquals(makeGroups(), identity.getGroups());
+    assertEquals(groups2, identity.getGroups());
   }
 }

@@ -697,7 +697,7 @@ public class AclTest {
     assertEquals(AuthzStatus.DENY,
         callIsAuthorized(identity, new DocId("4"), retriever));
 
-    identity = createIdentity("", "qa");
+    identity = createIdentity("no-importante", "qa");
     assertEquals(AuthzStatus.DENY,
         callIsAuthorized(identity, new DocId("3"), retriever));
     assertEquals(AuthzStatus.DENY,
@@ -978,14 +978,9 @@ public class AclTest {
 
   private AuthnIdentity createIdentity(final String username,
       List<String> groups) {
-    return createIdentity(new UserPrincipal(username),
-        GroupPrincipal.makeSet(groups));
-  }
-
-  private AuthnIdentity createIdentity(final UserPrincipal user,
-      Set<GroupPrincipal> groups) {
-    final Set<GroupPrincipal> groupSet
-        = Collections.unmodifiableSet(new TreeSet<GroupPrincipal>(groups));
+    final UserPrincipal user = new UserPrincipal(username);
+    final Set<GroupPrincipal> groupSet = Collections.unmodifiableSet(
+        new TreeSet<GroupPrincipal>(GroupPrincipal.makeSet(groups)));
     return new AuthnIdentity() {
       @Override
       public UserPrincipal getUser() {

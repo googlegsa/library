@@ -22,7 +22,7 @@ import java.util.Set;
  */
 public interface AuthnIdentity {
   /**
-   * Gets the user. This value will always be available.
+   * Gets the user principal. This value will always be available.
    *
    * @return the user's identifier.
    */
