@@ -52,16 +52,18 @@ public class Acl {
   private final Set<UserPrincipal> denyUsers;
   private final DocId inheritFrom;
   private final InheritanceType inheritType;
+  private final boolean caseSensitive;
 
   private Acl(Set<GroupPrincipal> permitGroups, Set<GroupPrincipal> denyGroups,
       Set<UserPrincipal> permitUsers, Set<UserPrincipal> denyUsers,
-      DocId inheritFrom, InheritanceType inheritType) {
+      DocId inheritFrom, InheritanceType inheritType, boolean caseSensitive) {
     this.permitGroups = permitGroups;
     this.denyGroups = denyGroups;
     this.permitUsers = permitUsers;
     this.denyUsers = denyUsers;
     this.inheritFrom = inheritFrom;
     this.inheritType = inheritType;
+    this.caseSensitive = caseSensitive;
   }
 
   /**
@@ -112,6 +114,13 @@ public class Acl {
    */
   public InheritanceType getInheritanceType() {
     return inheritType;
+  }
+
+  /**
+   * Says whether letter casing differentiates names during authorization.
+   */
+  public boolean isCaseSensitive() {
+    return caseSensitive;
   }
 
   /**
@@ -404,7 +413,8 @@ public class Acl {
             || (inheritFrom != null && inheritFrom.equals(a.inheritFrom)))
         && permitGroups.equals(a.permitGroups)
         && denyGroups.equals(a.denyGroups)
-        && permitUsers.equals(a.permitUsers) && denyUsers.equals(a.denyUsers);
+        && permitUsers.equals(a.permitUsers) && denyUsers.equals(a.denyUsers)
+        && caseSensitive == a.caseSensitive;
   }
 
   /**
@@ -413,7 +423,8 @@ public class Acl {
   @Override
   public int hashCode() {
     return Arrays.hashCode(new Object[] {
-      permitGroups, denyGroups, permitUsers, denyUsers, inheritFrom, inheritType
+      permitGroups, denyGroups, permitUsers, denyUsers, inheritFrom, inheritType,
+      caseSensitive
     });
   }
 
@@ -423,7 +434,8 @@ public class Acl {
    */
   @Override
   public String toString() {
-    return "Acl(inheritFrom=" + inheritFrom + ", inheritType=" + inheritType
+    return "Acl(caseSensitive=" + caseSensitive
+        + ", inheritFrom=" + inheritFrom + ", inheritType=" + inheritType
         + ", permitGroups=" + permitGroups + ", denyGroups=" + denyGroups
         + ", permitUsers=" + permitUsers + ", denyUsers=" + denyUsers + ")";
   }
@@ -462,6 +474,7 @@ public class Acl {
     private Set<UserPrincipal> denyUsers = Collections.emptySet();
     private DocId inheritFrom;
     private InheritanceType inheritType = InheritanceType.LEAF_NODE;
+    private boolean caseSensitive = true;
 
     /**
      * Create new empty builder. All sets are empty, inheritFrom is {@code
@@ -480,6 +493,7 @@ public class Acl {
       denyUsers = sanitizeSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
       inheritType = acl.getInheritanceType();
+      caseSensitive = acl.isCaseSensitive();
     }
 
     private <P extends Principal> Set<P> sanitizeSet(Collection<P> set) {
@@ -501,7 +515,7 @@ public class Acl {
      */
     public Acl build() {
       return new Acl(permitGroups, denyGroups, permitUsers, denyUsers,
-                     inheritFrom, inheritType);
+                     inheritFrom, inheritType, caseSensitive);
     }
 
     /**
@@ -588,6 +602,16 @@ public class Acl {
         throw new NullPointerException();
       }
       this.inheritType = inheritType;
+      return this;
+    }
+
+    public Builder makeCaseSensitive() {
+      caseSensitive = true;
+      return this;
+    }
+
+    public Builder makeCaseInsensitive() {
+      caseSensitive = false;
       return this;
     }
   }

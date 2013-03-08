@@ -231,7 +231,8 @@ public class AclTest {
         .setInheritFrom(new DocId("something"))
         .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES).build();
 
-    assertEquals("Acl(inheritFrom=DocId(something), "
+    assertEquals("Acl(caseSensitive=true, "
+        + "inheritFrom=DocId(something), "
         + "inheritType=CHILD_OVERRIDES, "
         + "permitGroups=[Principal(Group,g3,Default), Principal(Group,pg1,Default), "
             + "Principal(Group,pg2,Default)], "
@@ -299,6 +300,16 @@ public class AclTest {
 
     assertEquals(base.hashCode(), base.hashCode());
     assertEquals(base.hashCode(), baseAgain.hashCode());
+
+    Acl withCase = builder.build();
+    Acl noCase = builder.makeCaseInsensitive().build(); 
+    Acl caseAgain = builder.makeCaseSensitive().build();
+    assertEquals(withCase, caseAgain);
+    assertFalse(withCase.equals(noCase));
+    assertFalse(caseAgain.equals(noCase));
+    assertEquals(withCase.hashCode(), caseAgain.hashCode());
+    assertFalse(withCase.hashCode() == noCase.hashCode());
+    assertFalse(caseAgain.hashCode() == noCase.hashCode());
   }
 
   @Test
@@ -993,6 +1004,19 @@ public class AclTest {
     assertEquals(AuthzStatus.INDETERMINATE,
         callIsAuthorized(identity, new DocId("1"), retriever));
 
+  }
+
+  @Test
+  public void testDefaultCaseSensitive() {
+    assertTrue(new Acl.Builder().build().isCaseSensitive());
+  }
+
+  @Test
+  public void testCanChangeCaseSensitivity() {
+    assertFalse(new Acl.Builder()
+        .makeCaseInsensitive().build().isCaseSensitive());
+    assertTrue(new Acl.Builder()
+        .makeCaseInsensitive().makeCaseSensitive().build().isCaseSensitive());
   }
 
   private AuthnIdentity createIdentity(String username, String... groups) {
