@@ -434,7 +434,6 @@ public final class GsaCommunicationHandler {
     sendDocIdsSchedId = null;
     if (scope != null) {
       scope.close();
-      scope = null;
     }
     // Stop sendDocIds before scheduler, because scheduler blocks until all
     // tasks are completed. We want to interrupt sendDocIds so that the
@@ -450,7 +449,6 @@ public final class GsaCommunicationHandler {
     }
     if (backgroundExecutor != null) {
       backgroundExecutor.shutdownNow();
-      backgroundExecutor = null;
     }
     if (waiter != null) {
       try {
@@ -459,9 +457,18 @@ public final class GsaCommunicationHandler {
         Thread.currentThread().interrupt();
       }
     }
-    sessionManager = null;
-    adaptor.destroy();
-    waiter = null;
+    try {
+      adaptor.destroy();
+    } finally {
+      // Wait until after adaptor.destroy() to set things to null, so that the
+      // AdaptorContext is usable until the very end.
+      scope = null;
+      docIdFullPusher = null;
+      dashboard = null;
+      backgroundExecutor = null;
+      waiter = null;
+      sessionManager = null;
+    }
   }
 
   /**
