@@ -46,6 +46,9 @@ public class Acl {
 
   private static final Logger log = Logger.getLogger(Acl.class.getName());
 
+  /** Locale used for case insensitivity related operations. */
+  private static final Locale CASE_LOCALE = Locale.ENGLISH;
+
   private final Set<GroupPrincipal> permitGroups;
   private final Set<GroupPrincipal> denyGroups;
   private final Set<UserPrincipal> permitUsers;
@@ -57,6 +60,12 @@ public class Acl {
   private Acl(Set<GroupPrincipal> permitGroups, Set<GroupPrincipal> denyGroups,
       Set<UserPrincipal> permitUsers, Set<UserPrincipal> denyUsers,
       DocId inheritFrom, InheritanceType inheritType, boolean caseSensitive) {
+    if (!caseSensitive) {
+      permitGroups = Collections.unmodifiableSet(cmpWrap(permitGroups));
+      denyGroups = Collections.unmodifiableSet(cmpWrap(denyGroups));
+      permitUsers = Collections.unmodifiableSet(cmpWrap(permitUsers));
+      denyUsers = Collections.unmodifiableSet(cmpWrap(denyUsers));
+    }
     this.permitGroups = permitGroups;
     this.denyGroups = denyGroups;
     this.permitUsers = permitUsers;
@@ -64,6 +73,34 @@ public class Acl {
     this.inheritFrom = inheritFrom;
     this.inheritType = inheritType;
     this.caseSensitive = caseSensitive;
+  }
+
+  private <P extends Principal> Set<P> cmpWrap(Set<P> unwrapped) {
+    Set<P> tmp = new TreeSet<P>(new CaseInsensitiveCmp<P>());
+    tmp.addAll(unwrapped);
+    return tmp;
+  }
+
+  private static class CaseInsensitiveCmp<P extends Principal>
+      implements Comparator<P> {
+    /** Does not differentiate between UserPrincipal and GroupPrincipal */
+    public int compare(P p1, P p2) {
+      String ns1 = p1.getNamespace().toLowerCase(CASE_LOCALE);
+      String ns2 = p2.getNamespace().toLowerCase(CASE_LOCALE);
+      int nscmp = ns1.compareTo(ns2);
+      if (0 != nscmp) {
+        return nscmp;
+      }
+      // OK, same namespace
+ 
+      String n1 = p1.getName().toLowerCase(CASE_LOCALE);
+      String n2 = p2.getName().toLowerCase(CASE_LOCALE);
+      return n1.compareTo(n2);
+    }
+
+    public boolean equals(Object o) {
+      return o instanceof CaseInsensitiveCmp;
+    }
   }
 
   /**
@@ -119,8 +156,15 @@ public class Acl {
   /**
    * Says whether letter casing differentiates names during authorization.
    */
-  public boolean isCaseSensitive() {
+  public boolean isEverythingCaseSensitive() {
     return caseSensitive;
+  }
+
+  /**
+   * Says whether letter casing doesn't matter during authorization.
+   */
+  public boolean isEverythingCaseInsensitive() {
+    return !caseSensitive;
   }
 
   /**
@@ -133,15 +177,26 @@ public class Acl {
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
     UserPrincipal userIdentifier = userIdentity.getUser();
-    Set<GroupPrincipal> commonGroups = new HashSet<GroupPrincipal>(denyGroups);
-    commonGroups.retainAll(userIdentity.getGroups());
+    Set<GroupPrincipal> commonGroups;
+    if (caseSensitive) {
+      commonGroups = new HashSet<GroupPrincipal>(denyGroups);
+    } else {
+      commonGroups = cmpWrap(denyGroups);
+    }
+
+    Set<GroupPrincipal> userGroups = userIdentity.getGroups();
+    if (!caseSensitive) {
+      userGroups = Collections.unmodifiableSet(cmpWrap(userGroups));
+    }
+
+    commonGroups.retainAll(userGroups);
     if (denyUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {
       return AuthzStatus.DENY;
     }
 
     commonGroups.clear();
     commonGroups.addAll(permitGroups);
-    commonGroups.retainAll(userIdentity.getGroups());
+    commonGroups.retainAll(userGroups);
     if (permitUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {
       return AuthzStatus.PERMIT;
     }
@@ -423,8 +478,8 @@ public class Acl {
   @Override
   public int hashCode() {
     return Arrays.hashCode(new Object[] {
-      permitGroups, denyGroups, permitUsers, denyUsers, inheritFrom, inheritType,
-      caseSensitive
+      permitGroups, denyGroups, permitUsers, denyUsers,
+      inheritFrom, inheritType, caseSensitive
     });
   }
 
@@ -493,7 +548,7 @@ public class Acl {
       denyUsers = sanitizeSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
       inheritType = acl.getInheritanceType();
-      caseSensitive = acl.isCaseSensitive();
+      caseSensitive = acl.isEverythingCaseSensitive();
     }
 
     private <P extends Principal> Set<P> sanitizeSet(Collection<P> set) {
@@ -605,12 +660,12 @@ public class Acl {
       return this;
     }
 
-    public Builder makeCaseSensitive() {
+    public Builder setEverythingCaseSensitive() {
       caseSensitive = true;
       return this;
     }
 
-    public Builder makeCaseInsensitive() {
+    public Builder setEverythingCaseInsensitive() {
       caseSensitive = false;
       return this;
     }

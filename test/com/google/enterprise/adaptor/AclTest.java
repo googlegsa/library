@@ -167,7 +167,8 @@ public class AclTest {
 
   @Test
   public void testDenyGroupsImmutability() {
-    Acl acl = new Acl.Builder().setDenyGroups(G("item")).build();
+    Acl acl = new Acl.Builder().setEverythingCaseInsensitive()
+        .setDenyGroups(G("item")).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getDenyGroups().clear();
   }
@@ -188,7 +189,8 @@ public class AclTest {
 
   @Test
   public void testPermitUsersImmutability() {
-    Acl acl = new Acl.Builder().setPermitUsers(U("item")).build();
+    Acl acl = new Acl.Builder().setEverythingCaseInsensitive()
+        .setPermitUsers(U("item")).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getPermitUsers().clear();
   }
@@ -301,13 +303,24 @@ public class AclTest {
     assertEquals(base.hashCode(), base.hashCode());
     assertEquals(base.hashCode(), baseAgain.hashCode());
 
+    builder.setPermitGroups(G("testing"));
+    builder.setDenyGroups(G("testing"));
+    builder.setPermitUsers(U("testing"));
+    builder.setDenyUsers(U("testing"));
     Acl withCase = builder.build();
-    Acl noCase = builder.makeCaseInsensitive().build(); 
-    Acl caseAgain = builder.makeCaseSensitive().build();
+    Acl noCase = builder.setEverythingCaseInsensitive().build(); 
+    Acl caseAgain = builder.setEverythingCaseSensitive().build();
+    builder.setEverythingCaseInsensitive();
+    Acl noCase2 = builder.setPermitUsers(U("TeSTiNg")).build(); 
+    Acl noCase3 = builder.setPermitUsers(U("tEstInG")).build(); 
     assertEquals(withCase, caseAgain);
+    assertEquals(noCase2, noCase);
+    assertEquals(noCase2, noCase3);
     assertFalse(withCase.equals(noCase));
     assertFalse(caseAgain.equals(noCase));
     assertEquals(withCase.hashCode(), caseAgain.hashCode());
+    /* It is conceivable that hashCode of different object matches.
+       So this test could fail in the future; it is unlikely. */
     assertFalse(withCase.hashCode() == noCase.hashCode());
     assertFalse(caseAgain.hashCode() == noCase.hashCode());
   }
@@ -1003,20 +1016,38 @@ public class AclTest {
     AuthnIdentity identity = createIdentity("adam");
     assertEquals(AuthzStatus.INDETERMINATE,
         callIsAuthorized(identity, new DocId("1"), retriever));
-
   }
 
   @Test
   public void testDefaultCaseSensitive() {
-    assertTrue(new Acl.Builder().build().isCaseSensitive());
+    assertTrue(new Acl.Builder().build().isEverythingCaseSensitive());
+    assertTrue(!new Acl.Builder().build().isEverythingCaseInsensitive());
   }
 
   @Test
   public void testCanChangeCaseSensitivity() {
-    assertFalse(new Acl.Builder()
-        .makeCaseInsensitive().build().isCaseSensitive());
+    assertFalse(new Acl.Builder().setEverythingCaseInsensitive()
+        .build().isEverythingCaseSensitive());
     assertTrue(new Acl.Builder()
-        .makeCaseInsensitive().makeCaseSensitive().build().isCaseSensitive());
+        .setEverythingCaseInsensitive().setEverythingCaseSensitive()
+        .build().isEverythingCaseSensitive());
+  }
+
+  @Test
+  public void testCaseInsensitiveUsage() {
+    Acl acl = new Acl.Builder()
+        .setPermitGroups(G("PermiTGroup"))
+        .setDenyGroups(G("DenYGroup"))
+        .setPermitUsers(U("PermiTUser", "BotHUser"))
+        .setDenyUsers(U("DenYUser", "BotHUser"))
+        .setEverythingCaseInsensitive()
+        .build();
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permitUser")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyUser")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("unknownUser")));
   }
 
   private AuthnIdentity createIdentity(String username, String... groups) {
