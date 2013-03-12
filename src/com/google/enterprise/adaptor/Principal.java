@@ -20,6 +20,8 @@ import java.util.Arrays;
  * Represents either a user or a group.
  */
 public class Principal implements Comparable<Principal> {
+  public static final String DEFAULT_NAMESPACE = "Default";
+
   private final String name;
   private final String namespace;
 
@@ -38,7 +40,7 @@ public class Principal implements Comparable<Principal> {
   }
 
   Principal(String n) {
-    this(n, "Default");
+    this(n, DEFAULT_NAMESPACE);
   }
 
   public String getName() {

@@ -142,31 +142,35 @@ class GsaFeedFileMaker {
       aclElement.setAttribute("inheritance-type",
           acl.getInheritanceType().getCommonForm());
     }
-    // TODO: Use Principals instead of just string name
+    boolean noCase = acl.isEverythingCaseInsensitive();
     for (UserPrincipal permitUser : acl.getPermitUsers()) {
-      String name = permitUser.getName();
-      constructPrincipal(doc, aclElement, "user", "permit", name);
+      constructPrincipal(doc, aclElement, "permit", permitUser, noCase);
     }
     for (GroupPrincipal permitGroup : acl.getPermitGroups()) {
-      String name = permitGroup.getName();
-      constructPrincipal(doc, aclElement, "group", "permit", name);
+      constructPrincipal(doc, aclElement, "permit", permitGroup, noCase);
     }
     for (UserPrincipal denyUser : acl.getDenyUsers()) {
-      String name = denyUser.getName();
-      constructPrincipal(doc, aclElement, "user", "deny", name);
+      constructPrincipal(doc, aclElement, "deny", denyUser, noCase);
     }
     for (GroupPrincipal denyGroup : acl.getDenyGroups()) {
-      String name = denyGroup.getName();
-      constructPrincipal(doc, aclElement, "group", "deny", name);
+      constructPrincipal(doc, aclElement, "deny", denyGroup, noCase);
     }
   }
 
-  private void constructPrincipal(Document doc, Element acl, String scope,
-      String access, String principal) {
+  private void constructPrincipal(Document doc, Element acl, String access,
+      Principal principal, boolean everythingCaseInsensitive) {
+    String scope = principal.isUser() ? "user" : "group";
     Element principalElement = doc.createElement("principal");
     principalElement.setAttribute("scope", scope);
     principalElement.setAttribute("access", access);
-    principalElement.appendChild(doc.createTextNode(principal));
+    if (!Principal.DEFAULT_NAMESPACE.equals(principal.getNamespace())) {
+      principalElement.setAttribute("namespace", principal.getNamespace());
+    }
+    if (everythingCaseInsensitive) {
+      principalElement.setAttribute(
+          "case-sensitivity-type", "everything-case-insensitive");
+    }
+    principalElement.appendChild(doc.createTextNode(principal.getName()));
     acl.appendChild(principalElement);
   }
 

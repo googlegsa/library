@@ -159,6 +159,11 @@ public class GsaFeedFileMakerTest {
         + "</acl>\n"
         + "<acl inherit-from=\"http://localhost/doc%20id4\""
         + " url=\"http://localhost/doc%20id3%22&amp;%3C\"/>\n"
+        + "<acl url=\"http://localhost/docid5\">\n"
+        + "<principal access=\"permit\""
+        + " case-sensitivity-type=\"everything-case-insensitive\""
+        + " namespace=\"my_namespace\" scope=\"user\">pu1</principal>\n"
+        + "</acl>\n"
         + "</group>\n"
         + "</gsafeed>\n";
 
@@ -180,6 +185,10 @@ public class GsaFeedFileMakerTest {
         .build()));
     acls.add(new DocIdSender.AclItem(new DocId("doc id3\"&<"), new Acl.Builder()
         .setInheritFrom(new DocId("doc id4"))
+        .build()));
+    acls.add(new DocIdSender.AclItem(new DocId("docid5"), new Acl.Builder()
+        .setEverythingCaseInsensitive()
+        .setPermitUsers(Arrays.asList(new UserPrincipal("pu1", "my_namespace")))
         .build()));
 
     String xml = meker.makeMetadataAndUrlXml("test", acls);
