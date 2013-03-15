@@ -23,12 +23,8 @@ import com.sun.net.httpserver.HttpsExchange;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.charset.Charset;
-import java.security.Principal;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -126,7 +122,7 @@ class DocumentHandler implements HttpHandler {
   private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {
     boolean trust;
     if (ex instanceof HttpsExchange) {
-      Principal principal;
+      java.security.Principal principal;
       try {
         principal = ((HttpsExchange) ex).getSSLSession().getPeerPrincipal();
       } catch (SSLPeerUnverifiedException e) {
@@ -321,8 +317,14 @@ class DocumentHandler implements HttpHandler {
       percentEncodeMapEntryPair(sb, "google:acldenygroups", name);
     }
     if (acl.getInheritFrom() != null) {
-      percentEncodeMapEntryPair(sb, "google:aclinheritfrom",
-          docIdEncoder.encodeDocId(acl.getInheritFrom()).toString());
+      URI uri = docIdEncoder.encodeDocId(acl.getInheritFrom());
+      try {
+        uri = new URI(uri.getScheme(), uri.getSchemeSpecificPart(),
+            acl.getInheritFromFragment());
+      } catch (URISyntaxException ex) {
+        throw new AssertionError(ex);
+      }
+      percentEncodeMapEntryPair(sb, "google:aclinheritfrom", uri.toString());
     }
     if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
       percentEncodeMapEntryPair(sb, "google:aclinheritancetype",
@@ -723,6 +725,7 @@ class DocumentHandler implements HttpHandler {
         // previous values.
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
                                     formMetadataHeader(metadata));
+        acl = checkAndWorkaroundGsa70Acl(acl);
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
                                     formAclHeader(acl, docIdEncoder));
         if (!anchorUris.isEmpty()) {
@@ -756,6 +759,54 @@ class DocumentHandler implements HttpHandler {
       }
       HttpExchanges.startResponse(
           ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
+    }
+
+    private Acl checkAndWorkaroundGsa70Acl(Acl acl) {
+      if (acl == null) {
+        return acl;
+      }
+      // Check to see if the ACL can be used as-is with X-Gsa-External-Metadata
+      if (acl.isEverythingCaseSensitive()
+          && allDefaultNamespace(acl.getPermitUsers())
+          && allDefaultNamespace(acl.getPermitGroups())
+          && allDefaultNamespace(acl.getDenyUsers())
+          && allDefaultNamespace(acl.getDenyGroups())) {
+        return acl;
+      }
+
+      // Workaround for GSA 7.0 support. Since GSA 7.0 supports namespaces and
+      // case insensitivity in feeds, we create a named resource with all the
+      // "real" ACL data and put a noop ACL on the document itself.
+      // Unfortunately, to do this trick with AND_BOTH_PERMIT requires using the
+      // 'everyone' group, which would require namespace support on the
+      // document's ACLs.
+
+      Acl.Builder namedResourceAcl = new Acl.Builder(acl);
+      if (Acl.InheritanceType.LEAF_NODE.equals(acl.getInheritanceType())) {
+        namedResourceAcl.setInheritanceType(
+            Acl.InheritanceType.PARENT_OVERRIDES);
+      } else if (Acl.InheritanceType.AND_BOTH_PERMIT.equals(
+          acl.getInheritanceType())) {
+        throw new RuntimeException("Unable to use AND_BOTH_PERMIT with "
+            + "advanced acls and GSA 7.0");
+      } else {
+        // CHILD_OVERRIDES and PARENT_OVERRIDES are fine as-is.
+      }
+      final String fragment = "generated";
+      pusher.asyncPushItem(
+          new DocIdSender.AclItem(docId, fragment, namedResourceAcl.build()));
+      return new Acl.Builder()
+          .setInheritanceType(acl.getInheritanceType())
+          .setInheritFrom(docId, fragment).build();
+    }
+
+    private boolean allDefaultNamespace(Iterable<? extends Principal> i) {
+      for (Principal p : i) {
+        if (!Principal.DEFAULT_NAMESPACE.equals(p.getNamespace())) {
+          return false;
+        }
+      }
+      return true;
     }
 
     private ByteArrayOutputStream transform(byte[] content) throws IOException {

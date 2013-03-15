@@ -17,6 +17,8 @@ package com.google.enterprise.adaptor;
 import org.w3c.dom.*;
 
 import java.io.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -130,12 +132,24 @@ class GsaFeedFileMaker {
       Document doc, Element group, DocIdSender.AclItem docAcl) {
     Element aclElement = doc.createElement("acl");
     group.appendChild(aclElement);
-    aclElement.setAttribute("url",
-        idEncoder.encodeDocId(docAcl.getDocId()).toString());
+    URI uri = idEncoder.encodeDocId(docAcl.getDocId());
+    try {
+      uri = new URI(uri.getScheme(), uri.getSchemeSpecificPart(),
+          docAcl.getDocIdFragment());
+    } catch (URISyntaxException ex) {
+      throw new AssertionError(ex);
+    }
+    aclElement.setAttribute("url", uri.toString());
     Acl acl = docAcl.getAcl();
     if (acl.getInheritFrom() != null) {
-      aclElement.setAttribute("inherit-from",
-          idEncoder.encodeDocId(acl.getInheritFrom()).toString());
+      URI inheritFrom = idEncoder.encodeDocId(acl.getInheritFrom());
+      try {
+        inheritFrom = new URI(inheritFrom.getScheme(),
+            inheritFrom.getSchemeSpecificPart(), acl.getInheritFromFragment());
+      } catch (URISyntaxException ex) {
+        throw new AssertionError(ex);
+      }
+      aclElement.setAttribute("inherit-from", inheritFrom.toString());
     }
     if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
       aclElement.setAttribute("inheritance-type",

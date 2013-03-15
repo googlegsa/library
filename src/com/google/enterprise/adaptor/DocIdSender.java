@@ -216,18 +216,28 @@ class DocIdSender extends AbstractDocIdPusher {
    */
   static final class AclItem implements Item {
     private DocId id;
+    private final String docIdFragment;
     private Acl acl;
 
     public AclItem(DocId id, Acl acl) {
+      this(id, null, acl);
+    }
+
+    public AclItem(DocId id, String docIdFragment, Acl acl) {
       if (id == null || acl == null) {
         throw new NullPointerException("DocId and Acl must not be null");
       }
       this.id = id;
+      this.docIdFragment = docIdFragment;
       this.acl = acl;
     }
 
     public DocId getDocId() {
       return id;
+    }
+
+    public String getDocIdFragment() {
+      return docIdFragment;
     }
 
     public Acl getAcl() {

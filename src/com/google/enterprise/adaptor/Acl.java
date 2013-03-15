@@ -54,12 +54,14 @@ public class Acl {
   private final Set<UserPrincipal> permitUsers;
   private final Set<UserPrincipal> denyUsers;
   private final DocId inheritFrom;
+  private final String inheritFromFragment;
   private final InheritanceType inheritType;
   private final boolean caseSensitive;
 
   private Acl(Set<GroupPrincipal> permitGroups, Set<GroupPrincipal> denyGroups,
       Set<UserPrincipal> permitUsers, Set<UserPrincipal> denyUsers,
-      DocId inheritFrom, InheritanceType inheritType, boolean caseSensitive) {
+      DocId inheritFrom, String inheritFromFragment,
+      InheritanceType inheritType, boolean caseSensitive) {
     if (!caseSensitive) {
       permitGroups = Collections.unmodifiableSet(cmpWrap(permitGroups));
       denyGroups = Collections.unmodifiableSet(cmpWrap(denyGroups));
@@ -71,6 +73,7 @@ public class Acl {
     this.permitUsers = permitUsers;
     this.denyUsers = denyUsers;
     this.inheritFrom = inheritFrom;
+    this.inheritFromFragment = inheritFromFragment;
     this.inheritType = inheritType;
     this.caseSensitive = caseSensitive;
   }
@@ -140,6 +143,10 @@ public class Acl {
    */
   public DocId getInheritFrom() {
     return inheritFrom;
+  }
+
+  String getInheritFromFragment() {
+    return inheritFromFragment;
   }
 
   /**
@@ -466,6 +473,9 @@ public class Acl {
         // Handle null case.
         && (inheritFrom == a.inheritFrom
             || (inheritFrom != null && inheritFrom.equals(a.inheritFrom)))
+        && (inheritFromFragment == a.inheritFromFragment
+            || (inheritFromFragment != null
+                && inheritFromFragment.equals(a.inheritFromFragment)))
         && permitGroups.equals(a.permitGroups)
         && denyGroups.equals(a.denyGroups)
         && permitUsers.equals(a.permitUsers) && denyUsers.equals(a.denyUsers)
@@ -479,7 +489,7 @@ public class Acl {
   public int hashCode() {
     return Arrays.hashCode(new Object[] {
       permitGroups, denyGroups, permitUsers, denyUsers,
-      inheritFrom, inheritType, caseSensitive
+      inheritFrom, inheritFromFragment, inheritType, caseSensitive
     });
   }
 
@@ -490,7 +500,9 @@ public class Acl {
   @Override
   public String toString() {
     return "Acl(caseSensitive=" + caseSensitive
-        + ", inheritFrom=" + inheritFrom + ", inheritType=" + inheritType
+        + ", inheritFrom=" + inheritFrom
+        + (inheritFromFragment == null ? "" : "#" + inheritFromFragment)
+        + ", inheritType=" + inheritType
         + ", permitGroups=" + permitGroups + ", denyGroups=" + denyGroups
         + ", permitUsers=" + permitUsers + ", denyUsers=" + denyUsers + ")";
   }
@@ -528,6 +540,7 @@ public class Acl {
     private Set<UserPrincipal> permitUsers = Collections.emptySet();
     private Set<UserPrincipal> denyUsers = Collections.emptySet();
     private DocId inheritFrom;
+    private String inheritFromFragment;
     private InheritanceType inheritType = InheritanceType.LEAF_NODE;
     private boolean caseSensitive = true;
 
@@ -547,6 +560,7 @@ public class Acl {
       permitUsers = sanitizeSet(acl.getPermitUsers());
       denyUsers = sanitizeSet(acl.getDenyUsers());
       inheritFrom = acl.getInheritFrom();
+      inheritFromFragment = acl.getInheritFromFragment();
       inheritType = acl.getInheritanceType();
       caseSensitive = acl.isEverythingCaseSensitive();
     }
@@ -570,7 +584,7 @@ public class Acl {
      */
     public Acl build() {
       return new Acl(permitGroups, denyGroups, permitUsers, denyUsers,
-                     inheritFrom, inheritType, caseSensitive);
+          inheritFrom, inheritFromFragment, inheritType, caseSensitive);
     }
 
     /**
@@ -639,6 +653,13 @@ public class Acl {
      */
     public Builder setInheritFrom(DocId inheritFrom) {
       this.inheritFrom = inheritFrom;
+      this.inheritFromFragment = null;
+      return this;
+    }
+
+    public Builder setInheritFrom(DocId inheritFrom, String fragment) {
+      this.inheritFrom = inheritFrom;
+      this.inheritFromFragment = fragment;
       return this;
     }
 

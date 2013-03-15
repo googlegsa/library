@@ -26,6 +26,7 @@ import java.io.*;
 import java.net.URI;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.security.auth.kerberos.KerberosPrincipal;
 import javax.security.auth.x500.X500Principal;
@@ -1032,6 +1033,149 @@ public class DocumentHandlerTest {
     assertEquals(200, ex.getResponseCode());
     assertEquals("secure",
         ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
+  }
+
+  @Test
+  public void testEmulatedAcls() throws Exception {
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    final AtomicReference<Acl> providedAcl = new AtomicReference<Acl>();
+    MockAdaptor adaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException {
+        response.setAcl(providedAcl.get());
+        response.getOutputStream();
+      }
+    };
+    DocumentHandlerBuilder builder = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp});
+    DocumentHandler handler;
+
+    providedAcl.set(new Acl.Builder()
+        .setPermitUsers(Arrays.asList(
+            new UserPrincipal("user2"), new UserPrincipal("user", "ns")))
+        .build());
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
+          @Override
+          public void asyncPushItem(DocIdSender.Item item) {
+            assertTrue(item instanceof DocIdSender.AclItem);
+            DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
+            assertEquals(defaultDocId, aclItem.getDocId());
+            assertEquals("generated", aclItem.getDocIdFragment());
+            assertEquals(new Acl.Builder(providedAcl.get())
+                .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+                .build(),
+                aclItem.getAcl());
+          }
+        })
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated"),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+
+    providedAcl.set(new Acl.Builder()
+        .setDenyUsers(Arrays.asList(new UserPrincipal("user", "ns")))
+        .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+        .build());
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
+          @Override
+          public void asyncPushItem(DocIdSender.Item item) {
+            assertTrue(item instanceof DocIdSender.AclItem);
+            DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
+            assertEquals(defaultDocId, aclItem.getDocId());
+            assertEquals("generated", aclItem.getDocIdFragment());
+            assertEquals(providedAcl.get(), aclItem.getAcl());
+          }
+        })
+        .build();
+    ex = new MockHttpExchange("GET", defaultPath, new MockHttpContext("/"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated,"
+          + "google%3Aaclinheritancetype=parent-overrides"),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+
+    providedAcl.set(new Acl.Builder()
+        .setPermitGroups(Arrays.asList(new GroupPrincipal("group", "ns")))
+        .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
+        .build());
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
+          @Override
+          public void asyncPushItem(DocIdSender.Item item) {
+            assertTrue(item instanceof DocIdSender.AclItem);
+            DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
+            assertEquals(defaultDocId, aclItem.getDocId());
+            assertEquals("generated", aclItem.getDocIdFragment());
+            assertEquals(providedAcl.get(), aclItem.getAcl());
+          }
+        })
+        .build();
+    ex = new MockHttpExchange("GET", defaultPath, new MockHttpContext("/"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated,"
+          + "google%3Aaclinheritancetype=child-overrides"),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+
+    providedAcl.set(new Acl.Builder()
+        .setDenyGroups(Arrays.asList(new GroupPrincipal("group", "ns")))
+        .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
+        .build());
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
+          @Override
+          public void asyncPushItem(DocIdSender.Item item) {
+            assertTrue(item instanceof DocIdSender.AclItem);
+            DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
+            assertEquals(defaultDocId, aclItem.getDocId());
+            assertEquals("generated", aclItem.getDocIdFragment());
+            assertEquals(providedAcl.get(), aclItem.getAcl());
+          }
+        })
+        .build();
+    ex = new MockHttpExchange("GET", defaultPath, new MockHttpContext("/"));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated,"
+          + "google%3Aaclinheritancetype=child-overrides"),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
+
+  }
+
+  @Test
+  public void testEmulatedAclsFail() throws Exception {
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    final Acl providedAcl = new Acl.Builder()
+        .setDenyGroups(Arrays.asList(new GroupPrincipal("group")))
+        .setInheritanceType(Acl.InheritanceType.AND_BOTH_PERMIT)
+        .setEverythingCaseInsensitive()
+        .build();
+    MockAdaptor adaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException {
+        response.setAcl(providedAcl);
+        response.getOutputStream();
+      }
+    };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setPusher(new DocumentHandler.AsyncPusher() {
+          @Override
+          public void asyncPushItem(DocIdSender.Item item) {
+            fail("Should not have been called");
+          }
+        })
+        .setFullAccessHosts(new String[] {remoteIp})
+        .build();
+    ex = new MockHttpExchange("GET", defaultPath, new MockHttpContext("/"));
+    thrown.expect(RuntimeException.class);
+    handler.handle(ex);
   }
 
   @Test
