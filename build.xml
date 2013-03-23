@@ -38,7 +38,6 @@
       <include name="xmltooling-1.2.2.jar"/>
       <include name="guava-11.0.2.jar"/>
       <include name="jsr305.jar"/>
-      <include name="cron4j-2.2.4.jar"/>
       <include name="gson-2.0.jar"/>
       <include name="velocity-1.5.jar"/>
     </fileset>

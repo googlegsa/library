@@ -23,9 +23,6 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsServer;
 
-import it.sauronsoftware.cron4j.InvalidPatternException;
-import it.sauronsoftware.cron4j.Scheduler;
-
 import org.opensaml.DefaultBootstrap;
 import org.opensaml.xml.ConfigurationException;
 
@@ -53,7 +50,7 @@ public final class GsaCommunicationHandler {
    * scheduling {@link docIdFullPusher}. Tasks should execute quickly, to allow
    * shutting down promptly.
    */
-  private Scheduler scheduler = new Scheduler();
+  private CronScheduler scheduler;
   /**
    * Runnable to be called for doing a full push of {@code DocId}s. It only
    * permits one invocation at a time. If multiple simultaneous invocations
@@ -69,7 +66,7 @@ public final class GsaCommunicationHandler {
   /**
    * Schedule identifier for {@link #sendDocIds}.
    */
-  private String sendDocIdsSchedId;
+  private Future<?> sendDocIdsFuture;
   private HttpServerScope scope;
   private SessionManager<HttpExchange> sessionManager;
   /**
@@ -284,8 +281,8 @@ public final class GsaCommunicationHandler {
     // and that is "okay." In addition, the HttpServer we were provided may not
     // have been started yet.
 
-    scheduler.start();
-    sendDocIdsSchedId = scheduler.schedule(
+    scheduler = new CronScheduler(scheduleExecutor);
+    sendDocIdsFuture = scheduler.schedule(
         config.getAdaptorFullListingSchedule(),
         waiter.runnable(new BackgroundRunnable(docIdFullPusher)));
 
@@ -453,13 +450,8 @@ public final class GsaCommunicationHandler {
   }
 
   private synchronized void realStop(long time, TimeUnit unit) {
-    scheduler.deschedule(sendDocIdsSchedId);
-    sendDocIdsSchedId = null;
     if (scope != null) {
       scope.close();
-    }
-    if (scheduler.isStarted()) {
-      scheduler.stop();
     }
     if (dashboard != null) {
       dashboard.stop();
@@ -482,6 +474,8 @@ public final class GsaCommunicationHandler {
     } finally {
       // Wait until after adaptor.destroy() to set things to null, so that the
       // AdaptorContext is usable until the very end.
+      sendDocIdsFuture = null;
+      scheduler = null;
       scope = null;
       dashboard = null;
       scheduleExecutor = null;
@@ -644,11 +638,11 @@ public final class GsaCommunicationHandler {
       Set<String> modifiedKeys = ev.getModifiedKeys();
       synchronized (GsaCommunicationHandler.this) {
         if (modifiedKeys.contains("adaptor.fullListingSchedule")
-            && sendDocIdsSchedId != null) {
+            && sendDocIdsFuture != null) {
           String schedule = ev.getNewConfig().getAdaptorFullListingSchedule();
           try {
-            scheduler.reschedule(sendDocIdsSchedId, schedule);
-          } catch (InvalidPatternException ex) {
+            scheduler.reschedule(sendDocIdsFuture, schedule);
+          } catch (IllegalArgumentException ex) {
             log.log(Level.WARNING, "Invalid schedule pattern", ex);
           }
         }
