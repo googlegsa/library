@@ -49,8 +49,9 @@ public final class GsaCommunicationHandler {
   private final Config config;
   private final Journal journal;
   /**
-   * Generic scheduler. Available for other uses, but necessary for running
-   * {@link docIdFullPusher}
+   * Cron-style scheduler. Available for other uses, but necessary for
+   * scheduling {@link docIdFullPusher}. Tasks should execute quickly, to allow
+   * shutting down promptly.
    */
   private Scheduler scheduler = new Scheduler();
   /**
@@ -58,7 +59,8 @@ public final class GsaCommunicationHandler {
    * permits one invocation at a time. If multiple simultaneous invocations
    * occur, all but the first will log a warning and return immediately.
    */
-  private OneAtATimeRunnable docIdFullPusher;
+  private final OneAtATimeRunnable docIdFullPusher = new OneAtATimeRunnable(
+      new PushRunnable(), new AlreadyRunningRunnable());
   /**
    * Runnable to be called for doing incremental feed pushes. It is only
    * set if the Adaptor supports incremental updates. Otherwise, it's null.
@@ -70,7 +72,24 @@ public final class GsaCommunicationHandler {
   private String sendDocIdsSchedId;
   private HttpServerScope scope;
   private SessionManager<HttpExchange> sessionManager;
-  private ScheduledExecutorService backgroundExecutor;
+  /**
+   * Executor for scheduling tasks in the future. These tasks <em>must</em>
+   * complete quickly, as the executor purposely is single-threaded.
+   *
+   * <p>The reason tasks must finish quickly is that the
+   * ScheduledExecutorService implementation provided by Java is a fixed-size
+   * thread pool. In addition, fixed-rate (as opposed to fixed-delay) events
+   * "pile up" when the runnable takes a long time to complete. Thus, using the
+   * scheduleExecutor for longer processing effectively requires a dedicated
+   * thread (because the pool is fixed-size) as well as runs into the event
+   * "pile up" issue.
+   */
+  private ScheduledExecutorService scheduleExecutor;
+  /**
+   * Executor for performing work in the background. This executor is general
+   * purpose and is commonly used in conjunction with {@link #scheduleExecutor}.
+   */
+  private ExecutorService backgroundExecutor;
   private final DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
   private Dashboard dashboard;
@@ -151,10 +170,13 @@ public final class GsaCommunicationHandler {
     scope = new HttpServerScope(server);
     waiter = new ShutdownWaiter();
 
-    docIdFullPusher = new OneAtATimeRunnable(
-        new PushRunnable(), new AlreadyRunningRunnable());
-
-    backgroundExecutor = Executors.newScheduledThreadPool(2,
+    scheduleExecutor = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("schedule")
+        .build());
+    // The cachedThreadPool implementation created here is considerably better
+    // than using ThreadPoolExecutor. ThreadPoolExecutor does not create threads
+    // as would be expected from a thread pool.
+    backgroundExecutor = Executors.newCachedThreadPool(
         new ThreadFactoryBuilder().setDaemon(true).setNameFormat("background")
         .build());
 
@@ -243,7 +265,7 @@ public final class GsaCommunicationHandler {
           adaptor, docIdCodec, metadata)));
     }
     Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
-        backgroundExecutor);
+        scheduleExecutor);
     addFilters(scope.createContext(config.getServerBaseUri().getPath()
         + config.getServerDocIdPath(),
         new DocumentHandler(docIdCodec, docIdCodec, journal, adaptor,
@@ -265,15 +287,15 @@ public final class GsaCommunicationHandler {
     scheduler.start();
     sendDocIdsSchedId = scheduler.schedule(
         config.getAdaptorFullListingSchedule(),
-        waiter.runnable(docIdFullPusher));
+        waiter.runnable(new BackgroundRunnable(docIdFullPusher)));
 
     if (adaptor instanceof PollingIncrementalAdaptor) {
       docIdIncrementalPusher = new OneAtATimeRunnable(
           new IncrementalPushRunnable((PollingIncrementalAdaptor) adaptor),
           new AlreadyRunningRunnable());
 
-      backgroundExecutor.scheduleAtFixedRate(
-          waiter.runnable(docIdIncrementalPusher),
+      scheduleExecutor.scheduleAtFixedRate(
+          waiter.runnable(new BackgroundRunnable(docIdIncrementalPusher)),
           0,
           config.getAdaptorIncrementalPollPeriodMillis(),
           TimeUnit.MILLISECONDS);
@@ -436,17 +458,14 @@ public final class GsaCommunicationHandler {
     if (scope != null) {
       scope.close();
     }
-    // Stop sendDocIds before scheduler, because scheduler blocks until all
-    // tasks are completed. We want to interrupt sendDocIds so that the
-    // scheduler stops within a reasonable amount of time.
-    if (docIdFullPusher != null) {
-      docIdFullPusher.stop();
-    }
     if (scheduler.isStarted()) {
       scheduler.stop();
     }
     if (dashboard != null) {
       dashboard.stop();
+    }
+    if (scheduleExecutor != null) {
+      scheduleExecutor.shutdownNow();
     }
     if (backgroundExecutor != null) {
       backgroundExecutor.shutdownNow();
@@ -464,8 +483,8 @@ public final class GsaCommunicationHandler {
       // Wait until after adaptor.destroy() to set things to null, so that the
       // AdaptorContext is usable until the very end.
       scope = null;
-      docIdFullPusher = null;
       dashboard = null;
+      scheduleExecutor = null;
       backgroundExecutor = null;
       waiter = null;
       sessionManager = null;
@@ -478,7 +497,14 @@ public final class GsaCommunicationHandler {
    * {@code false} otherwise.
    */
   public boolean checkAndScheduleImmediatePushOfDocIds() {
-    return docIdFullPusher.runInNewThread() != null;
+    if (docIdFullPusher.isRunning()) {
+      return false;
+    }
+    // This check-then-execute permits a race between checking and starting the
+    // runnable, but it shouldn't be a major issue since the caller wanted a
+    // push to start right now, and one "just started."
+    backgroundExecutor.execute(waiter.runnable(docIdFullPusher));
+    return true;
   }
 
   /**
@@ -491,7 +517,14 @@ public final class GsaCommunicationHandler {
           "This adaptor does not support incremental push");
     }
 
-    return docIdIncrementalPusher.runInNewThread() != null;
+    if (docIdIncrementalPusher.isRunning()) {
+      return false;
+    }
+    // This permits a race between checking and starting the runnable, but it
+    // shouldn't be a major issue since the caller wanted a push to start right
+    // now, and one "just started."
+    backgroundExecutor.execute(waiter.runnable(docIdIncrementalPusher));
+    return true;
   }
 
   boolean ensureLatestConfigLoaded() {
@@ -581,6 +614,27 @@ public final class GsaCommunicationHandler {
     public void run() {
       log.warning("Skipping scheduled push of docIds. The previous invocation "
                   + "is still running.");
+    }
+  }
+
+  /**
+   * Runnable that when invoked executes the delegate with {@link
+   * #backgroundExecutor} and then returns before completion. That implies that
+   * uses of this class must ensure they do not add an instance directly to
+   * {@link #backgroundExecutor}, otherwise an odd infinite loop will occur.
+   */
+  private class BackgroundRunnable implements Runnable {
+    private final Runnable delegate;
+
+    public BackgroundRunnable(Runnable delegate) {
+      this.delegate = delegate;
+    }
+
+    @Override
+    public void run() {
+      // Wrap with waiter.runnable() every time instead of in constructor to aid
+      // auditing the code for "ShutdownWaiter correctness."
+      backgroundExecutor.execute(waiter.runnable(delegate));
     }
   }
 

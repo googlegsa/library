@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 import org.junit.Test;
 
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Test cases for {@link OneAtATimeRunnable}.
@@ -29,6 +28,16 @@ public class OneAtATimeRunnableTest {
   private CountingRunnable alreadyRunning = new CountingRunnable();
   private OneAtATimeRunnable runnable
       = new OneAtATimeRunnable(mainRunnable, alreadyRunning);
+
+  @Test(expected = NullPointerException.class)
+  public void testNullRunnable() {
+    new OneAtATimeRunnable(null, alreadyRunning);
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testNullAlreadyRunningRunnable() {
+    new OneAtATimeRunnable(mainRunnable, null);
+  }
 
   @Test
   public void testMultipleSimultaneosInvocations() throws Exception {
@@ -48,70 +57,26 @@ public class OneAtATimeRunnableTest {
     while (alreadyRunning.getCounter() != 2) {
       Thread.yield();
     }
+    assertTrue(runnable.isRunning());
     thread1.interrupt();
     thread2.interrupt();
     thread3.interrupt();
     thread1.join();
     thread2.join();
     thread3.join();
+    assertFalse(runnable.isRunning());
     assertEquals(1, mainRunnable.getCounter());
     assertEquals(2, alreadyRunning.getCounter());
     assertSame(mainRunnable, runnable.getRunnable());
     assertSame(alreadyRunning, runnable.getAlreadyRunningRunnable());
 
-    thread1 = runnable.runInNewThread();
-    thread2 = runnable.runInNewThread();
-    assertNull(thread2);
-    thread3 = runnable.runInNewThread();
-    assertNull(thread3);
-    assertTrue(thread1.isAlive());
+    // Test to make sure later executions work as well.
+    thread1 = new Thread(runnable);
+    thread1.start();
     thread1.interrupt();
     thread1.join();
     assertEquals(2, mainRunnable.getCounter());
     assertEquals(2, alreadyRunning.getCounter());
-  }
-
-  @Test
-  public void testStop() throws Exception {
-    Thread thread = runnable.runInNewThread();
-    // We must wait for the thread to get running, otherwise the stop() later
-    // could happen first and cause alreadyRunning to be called instead of
-    // mainRunnable. We want to test that mainRunnable's thread is interrupted
-    // and not that it is prevented from running.
-    while (mainRunnable.getCounter() != 1) {
-      Thread.yield();
-    }
-    runnable.stop();
-    thread.join();
-    assertEquals(1, mainRunnable.getCounter());
-    assertEquals(0, alreadyRunning.getCounter());
-
-    // Stop a second time, just to test that it doesn't blow up.
-    runnable.stop();
-
-    thread = runnable.runInNewThread();
-    assertNull(thread);
-    assertEquals(1, mainRunnable.getCounter());
-    assertEquals(0, alreadyRunning.getCounter());
-
-    thread = new Thread(runnable);
-    thread.start();
-    thread.join();
-    assertEquals(1, mainRunnable.getCounter());
-    assertEquals(1, alreadyRunning.getCounter());
-  }
-
-  @Test
-  public void testStopThreadIsNotNull() throws Exception {
-    Thread thread = runnable.runInNewThread();
-    while (mainRunnable.getCounter() != 1) {
-      Thread.sleep(1);
-    }
-    runnable.stop();
-    thread.join();
-
-    thread = runnable.runInNewThread();
-    assertNull(thread);
   }
 
   /** Thread-safe. */
