@@ -16,9 +16,14 @@ package com.google.enterprise.adaptor;
 
 import static java.util.Map.Entry;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -28,7 +33,6 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.security.Principal;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -64,6 +68,7 @@ class DocumentHandler implements HttpHandler {
   private final int transformMaxBytes;
   private final boolean transformRequired;
   private final boolean useCompression;
+  private final boolean sendDocControls;
 
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
@@ -75,7 +80,7 @@ class DocumentHandler implements HttpHandler {
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
                          boolean transformRequired, boolean useCompression,
-                         Watchdog watchdog) {
+                         boolean sendDocControls, Watchdog watchdog) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || sessionManager == null || watchdog == null) {
       throw new NullPointerException();
@@ -90,6 +95,7 @@ class DocumentHandler implements HttpHandler {
     this.transformMaxBytes = transformMaxBytes;
     this.transformRequired = transformRequired;
     this.useCompression = useCompression;
+    this.sendDocControls = sendDocControls;
     this.watchdog = watchdog;
 
     initFullAccess(gsaHostname, fullAccessHosts);
@@ -123,7 +129,7 @@ class DocumentHandler implements HttpHandler {
   private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {
     boolean trust;
     if (ex instanceof HttpsExchange) {
-      Principal principal;
+      java.security.Principal principal;
       try {
         principal = ((HttpsExchange) ex).getSSLSession().getPeerPrincipal();
       } catch (SSLPeerUnverifiedException e) {
@@ -293,7 +299,8 @@ class DocumentHandler implements HttpHandler {
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
   }
 
-  static String formAclHeader(Acl acl, DocIdEncoder docIdEncoder) {
+  @VisibleForTesting
+  static String formUnqualifiedAclHeader(Acl acl, DocIdEncoder docIdEncoder) {
     if (acl == null) {
       return "";
     }
@@ -301,7 +308,6 @@ class DocumentHandler implements HttpHandler {
       acl = Acl.FAKE_EMPTY;
     }
     StringBuilder sb = new StringBuilder();
-    // TODO: Use Principals instead of just names
     for (UserPrincipal permitUser : acl.getPermitUsers()) {
       String name = permitUser.getName();
       percentEncodeMapEntryPair(sb, "google:aclusers", name);
@@ -327,6 +333,80 @@ class DocumentHandler implements HttpHandler {
           acl.getInheritanceType().getCommonForm());
     }
     return sb.substring(0, sb.length() - 1);
+  }
+
+  @VisibleForTesting
+  static String formNamespacedAclHeader(Acl acl, DocIdEncoder enc) {
+    if (null == acl) {
+      return "";
+    }
+    if (Acl.EMPTY.equals(acl)) {
+      acl = Acl.FAKE_EMPTY;
+    }
+    Map<String, Object> gsaAcl = makeGsaAclMap(acl, enc);
+    if (null == gsaAcl) {
+      return "";
+    } else {
+      return "acl=" + percentEncode("" + JSONObject.toJSONString(gsaAcl));
+    }
+  }
+
+  /** Gives null if there are no entires, no inherit-from and is LEAF_NODE. */
+  private static Map<String, Object> makeGsaAclMap(Acl acl, DocIdEncoder enc) {
+    boolean didPutSomething = false;
+    Map<String, Object> gsaAcl = new TreeMap<String, Object>();
+    List<Map<String, String>> gsaAclEntries = makeGsaAclEntries(acl);    
+    if (!gsaAclEntries.isEmpty()) {
+      gsaAcl.put("entries", gsaAclEntries);
+      didPutSomething = true;
+    }
+    if (null != acl.getInheritFrom()) {
+      URI from = enc.encodeDocId(acl.getInheritFrom());
+      gsaAcl.put("inherit-from", "" + from);
+      didPutSomething = true;
+    }
+    if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
+      String type = acl.getInheritanceType().getCommonForm();
+      gsaAcl.put("inheritance-type", "" + type);
+      didPutSomething = true;
+    }
+    if (didPutSomething) {
+      return gsaAcl;
+    } else {
+      return null;
+    }
+  }
+
+  private static List<Map<String, String>> makeGsaAclEntries(Acl acl) {
+    List<Map<String, String>> princ = new ArrayList<Map<String, String>>();
+    for (Principal p : acl.getPermitGroups()) {
+      princ.add(makeGsaAclEntry("permit", acl, p));
+    }
+    for (Principal p : acl.getDenyGroups()) {
+      princ.add(makeGsaAclEntry("deny", acl, p));
+    }
+    for (Principal p : acl.getPermitUsers()) {
+      princ.add(makeGsaAclEntry("permit", acl, p));
+    }
+    for (Principal p : acl.getDenyUsers()) {
+      princ.add(makeGsaAclEntry("deny", acl, p));
+    }
+    return princ;
+  }
+
+  private static Map<String, String> makeGsaAclEntry(String access,
+      Acl acl, Principal p) {
+    Map<String, String> gsaEntry = new TreeMap<String, String>();
+    gsaEntry.put("access", access);
+    gsaEntry.put("scope", p.isUser()? "user" : "group");
+    gsaEntry.put("name", p.getName());
+    if (!Principal.DEFAULT_NAMESPACE.equals(p.getNamespace())) {
+      gsaEntry.put("namespace", p.getNamespace());
+    }
+    if (!acl.isEverythingCaseSensitive()) {
+      gsaEntry.put("case-sensitivity-type", "" + acl.isEverythingCaseSensitive());
+    }
+    return gsaEntry;
   }
 
   /**
@@ -480,6 +560,8 @@ class DocumentHandler implements HttpHandler {
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
+    private boolean crawlOnce;
+    private boolean lock;
 
     public DocumentResponse(HttpExchange ex, DocId docId) {
       this.ex = ex;
@@ -600,6 +682,22 @@ class DocumentHandler implements HttpHandler {
     }
 
     @Override
+    public void setCrawlOnce(boolean crawlOnlyOnce) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.crawlOnce = crawlOnlyOnce;
+    }
+
+    @Override
+    public void setLock(boolean docLock) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.lock = docLock;
+    }
+
+    @Override
     public void setNoFollow(boolean noFollow) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
@@ -686,9 +784,20 @@ class DocumentHandler implements HttpHandler {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
-                                    formMetadataHeader(metadata));
-        ex.getResponseHeaders().add("X-Gsa-External-Metadata",
-                                    formAclHeader(acl, docIdEncoder));
+            formMetadataHeader(metadata));
+        if (!sendDocControls) {
+          ex.getResponseHeaders().add("X-Gsa-External-Metadata",
+              formUnqualifiedAclHeader(acl, docIdEncoder));
+        } else {
+          if (crawlOnce) {
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "crawl-once");
+          }
+          if (lock) {
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock");
+          }
+          ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
+              formNamespacedAclHeader(acl, docIdEncoder));
+        }
         if (!anchorUris.isEmpty()) {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
               formAnchorHeader(anchorUris, anchorTexts));

@@ -148,4 +148,20 @@ public interface Response {
    *     link in search results
    */
   public void setNoArchive(boolean noArchive);
+
+  /**
+   * Whether the GSA should crawl the document just one time and never again.
+   *
+   * @param crawlOnce {@code true} when doc should be crawled only once
+   */
+  public void setCrawlOnce(boolean crawlOnce);
+
+  /**
+   * Prevents the GSA from removing document from index.  For example
+   * in cases where GSA is at license limit and is crawling more documents
+   * the GSA is not allowed to remove locked documents.
+   *
+   * @param lock {@code true} when doc is be kept in index
+   */
+  public void setLock(boolean lock);
 }

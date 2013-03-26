@@ -294,6 +294,8 @@ public class CommandLineAdaptorTest {
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
+    private boolean crawlOnce;
+    private boolean lock;
 
     public ContentsResponseTestMock(OutputStream os) {
       this.os = os;
@@ -359,6 +361,16 @@ public class CommandLineAdaptorTest {
     @Override
     public void setNoArchive(boolean noArchive) {
       this.noArchive = noArchive;
+    }
+
+    @Override
+    public void setCrawlOnce(boolean crawlOnlyOnce) {
+      this.crawlOnce = crawlOnlyOnce;
+    }
+
+    @Override
+    public void setLock(boolean lockDoc) {
+      this.lock = lockDoc;
     }
 
     public String getContentType() {

@@ -54,7 +54,7 @@ public class DocumentHandlerTest {
     thrown.expect(NullPointerException.class);
     new DocumentHandler(null, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost", new String[0], handler,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+        sessionManager, null, 0, false, false, false, new MockWatchdog());
   }
 
   @Test
@@ -62,7 +62,7 @@ public class DocumentHandlerTest {
     thrown.expect(NullPointerException.class);
     new DocumentHandler(docIdCodec, null, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost", new String[0], handler,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+        sessionManager, null, 0, false, false, false, new MockWatchdog());
   }
 
   @Test
@@ -70,7 +70,7 @@ public class DocumentHandlerTest {
     thrown.expect(NullPointerException.class);
     new DocumentHandler(docIdCodec, docIdCodec, null, new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+        false, false, false, new MockWatchdog());
   }
 
   @Test
@@ -79,7 +79,7 @@ public class DocumentHandlerTest {
     new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), null,
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+        false, false, false, new MockWatchdog());
   }
 
   @Test
@@ -88,7 +88,7 @@ public class DocumentHandlerTest {
     new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, null, null, 0,
-        false, false, new MockWatchdog());
+        false, false, false, new MockWatchdog());
   }
 
   @Test
@@ -97,7 +97,7 @@ public class DocumentHandlerTest {
     new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, null);
+        false, false, false, null);
   }
 
   @Test
@@ -127,7 +127,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
         "localhost", new String[0], authnHandler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+        false, false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
   }
@@ -215,7 +215,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[] {remoteIp, " "}, null, sessionManager, null, 0, false,
-        false, new MockWatchdog());
+        false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -229,7 +229,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
@@ -246,7 +246,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         null));
@@ -260,7 +260,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new KerberosPrincipal("someuser@not-domain")));
@@ -274,7 +274,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("OU=Unknown, O=Unknown, C=Unknown")));
@@ -288,7 +288,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=nottrusted, OU=Unknown, O=Unknown, C=Unknown")));
@@ -303,7 +303,7 @@ public class DocumentHandlerTest {
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         new PrivateMockAdaptor(), remoteIp,
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -353,7 +353,8 @@ public class DocumentHandlerTest {
     };
     handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[0], null, sessionManager, null, 0, false, false, watchdog);
+        new String[0], null, sessionManager, null, 0, false, false, 
+        false, watchdog);
     try {
       thrown.expect(RuntimeException.class);
       handler.handle(ex);
@@ -369,7 +370,8 @@ public class DocumentHandlerTest {
     Watchdog watchdog = new Watchdog(100, executor);
     handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[0], null, sessionManager, null, 0, false, false, watchdog);
+        new String[0], null, sessionManager, null, 0, false, false, 
+        false, watchdog);
     try {
       handler.handle(ex);
     } finally {
@@ -408,7 +410,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 100,
-        false, false, new MockWatchdog());
+        false, false, false, new MockWatchdog());
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -449,7 +451,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 3, false,
-        false, new MockWatchdog());
+        false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
@@ -480,7 +482,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
         new String[] {remoteIp}, null, sessionManager, transform, 3, true,
-        false, new MockWatchdog());
+        false, false, new MockWatchdog());
     thrown.expect(IOException.class);
     try {
       handler.handle(ex);
@@ -844,7 +846,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
-        null, sessionManager, null, 0, false, false, new MockWatchdog());
+        null, sessionManager, null, 0, false, false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
@@ -876,7 +878,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+        sessionManager, null, 0, false, false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
@@ -886,7 +888,7 @@ public class DocumentHandlerTest {
     return new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), adaptor, "localhost",
         new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+        false, new MockWatchdog());
   }
 
   @Test
@@ -909,8 +911,16 @@ public class DocumentHandlerTest {
     return new UserPrincipal(name);
   }
 
+  private static UserPrincipal U(String name, String ns) {
+    return new UserPrincipal(name, ns);
+  }
+
   private static GroupPrincipal G(String name) {
     return new GroupPrincipal(name);
+  }
+
+  private static GroupPrincipal G(String name, String ns) {
+    return new GroupPrincipal(name, ns);
   }
 
   @Test
@@ -926,7 +936,7 @@ public class DocumentHandlerTest {
         // by percentEncode to give %2520.
         + "google%3Aaclinheritfrom=http%3A%2F%2Flocalhost%2Fsome%2520docId,"
         + "google%3Aaclinheritancetype=parent-overrides";
-    String result = DocumentHandler.formAclHeader(new Acl.Builder()
+    String result = DocumentHandler.formUnqualifiedAclHeader(new Acl.Builder()
         .setPermitUsers(Arrays.asList(U("pu1"), U("uid=pu2,dc=com")))
         .setPermitGroups(Arrays.asList(G("pg1"), G("gid=pg2,dc=com")))
         .setDenyUsers(Arrays.asList(U("du1"), U("uid=du2,dc=com")))
@@ -938,14 +948,125 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testFormAclHeaderNull() {
-    assertEquals("", DocumentHandler.formAclHeader(null, new MockDocIdCodec()));
+  public void testFormUnqualifiedAclHeaderNull() {
+    assertEquals("", DocumentHandler
+        .formUnqualifiedAclHeader(null, new MockDocIdCodec()));
   }
 
   @Test
-  public void testFormAclHeaderEmpty() {
+  public void testFormUnqualifiedAclHeaderEmpty() {
+    DocIdEncoder enc = new MockDocIdCodec();
     assertEquals("google%3Aacldenyusers=google%3AfakeUserToPreventMissingAcl",
-        DocumentHandler.formAclHeader(Acl.EMPTY, new MockDocIdCodec()));
+        DocumentHandler.formUnqualifiedAclHeader(Acl.EMPTY, enc));
+  }
+
+  @Test
+  public void testFormNamespacedAclHeaderNull() {
+    assertEquals("", DocumentHandler
+        .formNamespacedAclHeader(null, new MockDocIdCodec()));
+  }
+
+  @Test
+  public void testFormNamespacedAclHeaderEmpty() {
+    DocIdEncoder enc = new MockDocIdCodec();
+    String golden = "acl={\"entries\":[{"
+        + "\"access\":\"deny\""
+        + ","
+        + "\"name\":\"google:fakeUserToPreventMissingAcl\""
+        + ","
+        + "\"scope\":\"user\""
+        + "}]}";
+    String aclHeader = DocumentHandler.formNamespacedAclHeader(Acl.EMPTY, enc);
+    assertTrue(aclHeader.startsWith("acl="));
+    String aclValue = percentDecode(aclHeader.substring("acl=".length()));
+    assertEquals(golden, "acl=" + aclValue);
+  }
+
+  @Test
+  public void testFormNamespacedAclHeaderBusy() {
+    DocIdEncoder enc = new MockDocIdCodec();
+    String golden = "acl={"
+        + "\"entries\":["
+            + "{\"access\":\"permit\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"pg1@d.g\",\"scope\":\"group\"},"
+            + "{\"access\":\"permit\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"gid=pg2,dc=m\",\"namespace\":\"ns\","
+                + "\"scope\":\"group\"},"
+            + "{\"access\":\"deny\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"gid=dg2,dc=com\",\"scope\":\"group\"},"
+            + "{\"access\":\"deny\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"dg1@d.g\",\"namespace\":\"ns\","
+                + "\"scope\":\"group\"},"
+            + "{\"access\":\"permit\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"uid=pu2,dc=m\",\"scope\":\"user\"},"
+            + "{\"access\":\"permit\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"pu1@d.g\",\"namespace\":\"ns\","
+                + "\"scope\":\"user\"},"
+            + "{\"access\":\"deny\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"du1@d.g\",\"scope\":\"user\"},"
+            + "{\"access\":\"deny\",\"case-sensitivity-type\":\"false\","
+                + "\"name\":\"uid=du2,dc=com\",\"namespace\":\"ns\","
+                + "\"scope\":\"user\"}"
+        + "],"
+        + "\"inherit-from\":\"http:\\/\\/localhost\\/some%20docId\","
+        + "\"inheritance-type\":\"parent-overrides\""
+        + "}";
+
+    Acl busyAcl = new Acl.Builder()
+        .setPermitUsers(Arrays.asList(U("pu1@d.g", "ns"), U("uid=pu2,dc=m")))
+        .setPermitGroups(Arrays.asList(G("pg1@d.g"), G("gid=pg2,dc=m", "ns")))
+        .setDenyUsers(Arrays.asList(U("du1@d.g"), U("uid=du2,dc=com", "ns")))
+        .setDenyGroups(Arrays.asList(G("dg1@d.g", "ns"), G("gid=dg2,dc=com")))
+        .setInheritFrom(new DocId("some docId"))
+        .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+        .setEverythingCaseInsensitive()
+        .build();
+    String aclHeader = DocumentHandler.formNamespacedAclHeader(busyAcl, enc);
+    assertTrue(aclHeader.startsWith("acl="));
+    String aclValue = percentDecode(aclHeader.substring("acl=".length()));
+    assertEquals(golden, "acl=" + aclValue);
+  }
+
+  @Test
+  public void testLockSentIfTrue() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setLock(true);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = new DocumentHandler(
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
+        null, sessionManager, null, 0, false, false, true, new MockWatchdog());
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("lock",
+        ex.getResponseHeaders().getFirst("X-Gsa-Doc-Controls"));
+  }
+
+  @Test
+  public void testCrawlOnceSentIfTrue() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setCrawlOnce(true);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = new DocumentHandler(
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
+        null, sessionManager, null, 0, false, false, true, new MockWatchdog());
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("crawl-once",
+        ex.getResponseHeaders().getFirst("X-Gsa-Doc-Controls"));
   }
 
   @Test
@@ -974,6 +1095,75 @@ public class DocumentHandlerTest {
         }
         return Collections.unmodifiableMap(result);
       }
-    };
+  }
 
+  /** percentDecode method is defined in this test file */
+  @Test
+  public void testPercentDecoder() {
+    assertEquals("" + ((char)(10)), percentDecode("%0A"));
+    for (char c = 0; c < 256; c++) {
+      String encoded = DocumentHandler.percentEncode("" + c);
+      String decoded = percentDecode(encoded);
+      if (!decoded.equals("" + c)) {
+        int n = c;
+        throw new AssertionError("failed to encode/decode `" + n
+            + "' `" + c + "' `" + encoded + "' `" + decoded + "'");
+      }
+    }
+    String decoded = percentDecode("AaZz09-_.~"
+        + "%60%3D%2F%3F%2B%27%3B%5C%2F%22%21%40%23%24%25%5E%26"
+        + "%2A%28%29%5B%5D%7B%7D%C3%AB%01");
+    assertEquals("AaZz09-_.~`=/?+';\\/\"!@#$%^&*()[]{}ë\u0001", decoded);
+  }
+
+  private static int hexToInt(byte b) {
+    if (b >= '0' && b <= '9') {
+      return (byte)(b - '0');
+    } else if (b >= 'a' && b <= 'f') {
+      return (byte)(b - 'a') + 10;
+    } else if (b >= 'A' && b <= 'F') {
+      return (byte)(b - 'A') + 10;
+    } else {
+      throw new IllegalArgumentException("invalid hex byte: " + b);
+    }
+  }
+
+  private static String percentDecode(String encoded) {
+    try {
+      byte bytes[] = encoded.getBytes("ASCII");
+      ByteArrayOutputStream decoded = percentDecode(bytes);
+      return decoded.toString("UTF-8"); 
+    } catch (UnsupportedEncodingException uee) {
+      throw new RuntimeException(uee);
+    }
+  }
+
+  private static ByteArrayOutputStream percentDecode(byte encoded[]) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    int i = 0;
+    while (i < encoded.length) {
+      byte b = encoded[i];
+      if (b == '%') {
+        int iNeeded = i + 2;  // need two more bytes
+        if (iNeeded >= encoded.length) {
+          throw new IllegalArgumentException("ends too early");
+        }
+        int highOrder = hexToInt(encoded[i + 1]);
+        int lowOrder = hexToInt(encoded[i + 2]);
+        int byteInInt = (highOrder << 4) | lowOrder;
+        b = (byte) byteInInt;  // chops top bytes; could make negative
+        i += 3;
+      } else if ((b >= 'a' && b <= 'z')
+          || (b >= 'A' && b <= 'Z')
+          || (b >= '0' && b <= '9')
+          || b == '-' || b == '_' || b == '.' || b == '~') {
+        // pass through
+        i++; 
+      } else {
+        throw new IllegalArgumentException("not percent encoded");
+      }
+      out.write(b);
+    }
+    return out;
+  }
 }
