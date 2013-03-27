@@ -253,9 +253,7 @@ public final class GsaCommunicationHandler {
                             createTransformPipeline(),
                             config.getTransformMaxDocumentBytes(),
                             config.isTransformRequired(),
-                            config.isServerToUseCompression(),
-                            config.sendDocControlsHeader(),
-                            watchdog)));
+                            config.isServerToUseCompression(), watchdog)));
 
     // Start communicating with other services. As a general rule, by this time
     // we want all services we provide to be up and running. However, note that

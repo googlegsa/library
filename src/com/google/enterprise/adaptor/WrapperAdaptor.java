@@ -162,16 +162,6 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setNoArchive(boolean noArchive) {
       response.setNoArchive(noArchive);
     }
-
-    @Override
-    public void setCrawlOnce(boolean crawlOnce) {
-      response.setCrawlOnce(crawlOnce);
-    }
-
-    @Override
-    public void setLock(boolean lock) {
-      response.setLock(lock);
-    }
   }
 
   /**
@@ -221,8 +211,6 @@ abstract class WrapperAdaptor implements Adaptor {
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
-    private boolean crawlOnce;
-    private boolean lock;
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -287,16 +275,6 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void setNoArchive(boolean noArchive) {
       this.noArchive = noArchive;
-    }
-
-    @Override
-    public void setCrawlOnce(boolean crawlOnlyOnce) {
-      this.crawlOnce = crawlOnlyOnce;
-    }
-
-    @Override
-    public void setLock(boolean lockDoc) {
-      this.lock = lockDoc;
     }
 
     public String getContentType() {
