@@ -964,7 +964,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = new DocumentHandler(
         docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
         adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
-        null, sessionManager, null, 0, false, false, false, new MockWatchdog());
+        null, sessionManager, null, 0, false, false, new MockWatchdog());
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("secure",
