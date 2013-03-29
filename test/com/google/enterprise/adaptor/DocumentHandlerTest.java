@@ -949,6 +949,29 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testAclMeansServeSecurity() throws Exception {
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setAcl(new Acl.Builder()
+                .setInheritFrom(new DocId("testing")).build());
+            response.setSecure(false);
+            response.getOutputStream();
+          }
+        };
+    DocumentHandler handler = new DocumentHandler(
+        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
+        adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
+        null, sessionManager, null, 0, false, false, false, new MockWatchdog());
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("secure",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
+  }
+
+  @Test
   public void testFormAnchorHeaderEmpty() {
     assertEquals("", DocumentHandler.formAnchorHeader(
         Collections.<URI>emptyList(), Collections.<String>emptyList()));

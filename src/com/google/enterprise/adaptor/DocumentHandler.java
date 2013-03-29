@@ -693,12 +693,14 @@ class DocumentHandler implements HttpHandler {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
               formAnchorHeader(anchorUris, anchorTexts));
         }
-        // Specify the security, even if public, because the default varies.
-        // For instance, requesting the client certificate of the GSA can mark
-        // documents secure, but it can also leave them as public, depending on
-        // a GSA configuration setting.
+        // (1) Always specify the security, either secure or public, because
+        // the default varies. For instance, requesting the client certificate
+        // of the GSA can mark documents secure, but it can also leave them as
+        // public, depending on a GSA configuration setting.
+        // (2) If document has ACL, then send secure. That helps the GSA
+        // and prevents confusion of having ACLs and public label juxtaposed.
         ex.getResponseHeaders().add("X-Gsa-Serve-Security",
-            secure ? "secure" : "public");
+            (secure || (null != acl)) ? "secure" : "public");
         if (noIndex) {
           ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
         }

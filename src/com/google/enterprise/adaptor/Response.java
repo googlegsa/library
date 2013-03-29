@@ -102,6 +102,8 @@ public interface Response {
    * is public if there are no ACLs. ACLs should be used, if possible, instead
    * of setting this option to {@code true}. When {@code true}, the GSA needs to
    * be correctly configured to issue a SAML request to the Adaptor.
+   * Setting ACLs to non-null will override setSecure and send secure indicator
+   * to GSA.
    */
   public void setSecure(boolean secure);
 
