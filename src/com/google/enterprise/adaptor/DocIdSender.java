@@ -124,9 +124,6 @@ class DocIdSender extends AbstractDocIdPusher {
   @Override
   public Record pushRecords(Iterable<Record> items, PushErrorHandler handler)
       throws InterruptedException {
-    if (handler == null) {
-      handler = defaultErrorHandler;
-    }
     return pushItems(items.iterator(), handler);
   }
 
@@ -134,9 +131,6 @@ class DocIdSender extends AbstractDocIdPusher {
   public DocId pushNamedResources(Map<DocId, Acl> resources,
                                   PushErrorHandler handler)
       throws InterruptedException {
-    if (handler == null) {
-      handler = defaultErrorHandler;
-    }
     List<AclItem> acls = new ArrayList<AclItem>(resources.size());
     for (Map.Entry<DocId, Acl> me : resources.entrySet()) {
       acls.add(new AclItem(me.getKey(), me.getValue()));
@@ -145,9 +139,12 @@ class DocIdSender extends AbstractDocIdPusher {
     return acl == null ? null : acl.getDocId();
   }
 
-  private <T extends Item> T pushItems(Iterator<T> items,
+  <T extends Item> T pushItems(Iterator<T> items,
       PushErrorHandler handler) throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
+    if (handler == null) {
+      handler = defaultErrorHandler;
+    }
     final int max = config.getFeedMaxUrls();
     while (items.hasNext()) {
       List<T> batch = new ArrayList<T>();

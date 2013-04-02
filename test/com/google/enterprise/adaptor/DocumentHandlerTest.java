@@ -733,6 +733,51 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testSetDisplayUrlLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setDisplayUrl(null);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
+    handler.handle(ex);
+  }
+
+  @Test
+  public void testSetCrawlOnceLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setCrawlOnce(true);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
+    handler.handle(ex);
+  }
+
+  @Test
+  public void testSetLockLate() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.setLock(true);
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
+    handler.handle(ex);
+  }
+
+  @Test
   public void testSetNoIndexFollowArchiveFalse() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -867,7 +912,8 @@ public class DocumentHandlerTest {
         .setAdaptor(new MockAdaptor())
         .setGsaHostname("localhost")
         .setSessionManager(sessionManager)
-        .setWatchdog(new MockWatchdog());
+        .setWatchdog(new MockWatchdog())
+        .setPusher(new MockPusher());
   }
 
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
@@ -934,6 +980,38 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testEmulatedFields() throws Exception {
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    MockAdaptor adaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException {
+        response.setDisplayUrl(URI.create("http://example.com"));
+        response.setCrawlOnce(true);
+        response.setLock(true);
+        response.getOutputStream();
+      }
+    };
+    DocumentHandler.AsyncPusher pusher = new DocumentHandler.AsyncPusher() {
+      @Override
+      public void asyncPushItem(DocIdSender.Item item) {
+        assertTrue(item instanceof DocIdPusher.Record);
+        DocIdPusher.Record record = (DocIdPusher.Record) item;
+        assertEquals(URI.create("http://example.com"), record.getResultLink());
+        assertTrue(record.isToBeCrawledOnce());
+        assertTrue(record.isToBeLocked());
+      }
+    };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setPusher(pusher)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+
+  @Test
   public void testAclMeansServeSecurity() throws Exception {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     MockAdaptor adaptor = new MockAdaptor() {
@@ -946,10 +1024,10 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
-        null, sessionManager, null, 0, false, false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("secure",
@@ -984,6 +1062,13 @@ public class DocumentHandlerTest {
       }
     };
 
+  private static class MockPusher implements DocumentHandler.AsyncPusher {
+    @Override
+    public void asyncPushItem(DocIdSender.Item item) {
+      fail("Should not have been called");
+    }
+  }
+
   private static class DocumentHandlerBuilder {
     private DocIdDecoder docIdDecoder;
     private DocIdEncoder docIdEncoder;
@@ -998,6 +1083,7 @@ public class DocumentHandlerTest {
     private boolean transformRequired;
     private boolean useCompression;
     private Watchdog watchdog;
+    private DocumentHandler.AsyncPusher pusher;
 
     public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
       this.docIdDecoder = docIdDecoder;
@@ -1066,10 +1152,17 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setPusher(
+        DocumentHandler.AsyncPusher pusher) {
+      this.pusher = pusher;
+      return this;
+    }
+
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           gsaHostname, fullAccessHosts, authnHandler, sessionManager, transform,
-          transformMaxBytes, transformRequired, useCompression, watchdog);
+          transformMaxBytes, transformRequired, useCompression, watchdog,
+          pusher);
     }
   }
 }

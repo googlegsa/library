@@ -150,4 +150,33 @@ public interface Response {
    *     link in search results
    */
   public void setNoArchive(boolean noArchive);
+
+  /**
+   * Set the URI to be displayed in search results. If {@code null}, then the
+   * crawl URI representing the {@code DocId} is used. The default is {@code
+   * null}.
+   *
+   * @param displayUrl URI to be used for this document in search results
+   */
+  public void setDisplayUrl(URI displayUrl);
+
+  /**
+   * Instruct the GSA to not recrawl the document after the initial
+   * retrieval. The default is {@code false}.
+   *
+   * @param crawlOnce if {@code true}, the document does not need to be
+   *     recrawled periodically
+   */
+  public void setCrawlOnce(boolean crawlOnce);
+
+  /**
+   * Instruct the GSA to "lock" the document into its index. When the license
+   * limit is reached on the GSA, it deletes unlocked documents before locked
+   * documents while making room for new documents. The default is {@code
+   * false}.
+   *
+   * @param lock if {@code true}, keep this document in the index in preference
+   *     to unlocked documents
+   */
+  public void setLock(boolean lock);
 }

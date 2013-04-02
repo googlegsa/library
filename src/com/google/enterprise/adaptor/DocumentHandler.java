@@ -48,6 +48,7 @@ class DocumentHandler implements HttpHandler {
   private final Journal journal;
   private final Adaptor adaptor;
   private final Watchdog watchdog;
+  private final AsyncPusher pusher;
   /**
    * List of Common Names of Subjects that are provided full access when in
    * secure mode. All entries should be lower case.
@@ -75,9 +76,10 @@ class DocumentHandler implements HttpHandler {
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
                          boolean transformRequired, boolean useCompression,
-                         Watchdog watchdog) {
+                         Watchdog watchdog, AsyncPusher pusher) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
-        || adaptor == null || sessionManager == null || watchdog == null) {
+        || adaptor == null || sessionManager == null || watchdog == null
+        || pusher == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
@@ -91,6 +93,7 @@ class DocumentHandler implements HttpHandler {
     this.transformRequired = transformRequired;
     this.useCompression = useCompression;
     this.watchdog = watchdog;
+    this.pusher = pusher;
 
     initFullAccess(gsaHostname, fullAccessHosts);
   }
@@ -301,7 +304,6 @@ class DocumentHandler implements HttpHandler {
       acl = Acl.FAKE_EMPTY;
     }
     StringBuilder sb = new StringBuilder();
-    // TODO: Use Principals instead of just names
     for (UserPrincipal permitUser : acl.getPermitUsers()) {
       String name = permitUser.getName();
       percentEncodeMapEntryPair(sb, "google:aclusers", name);
@@ -480,6 +482,9 @@ class DocumentHandler implements HttpHandler {
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
+    private URI displayUrl;
+    private boolean crawlOnce;
+    private boolean lock;
 
     public DocumentResponse(HttpExchange ex, DocId docId) {
       this.ex = ex;
@@ -615,6 +620,30 @@ class DocumentHandler implements HttpHandler {
       this.noArchive = noArchive;
     }
 
+    @Override
+    public void setDisplayUrl(URI displayUrl) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.displayUrl = displayUrl;
+    }
+
+    @Override
+    public void setCrawlOnce(boolean crawlOnce) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.crawlOnce = crawlOnce;
+    }
+
+    @Override
+    public void setLock(boolean lock) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.lock = lock;
+    }
+
     private long getWrittenContentSize() {
       return countingOs == null ? 0 : countingOs.getBytesWritten();
     }
@@ -683,6 +712,13 @@ class DocumentHandler implements HttpHandler {
 
     private void startSending(boolean hasContent) throws IOException {
       if (requestIsFromFullyTrustedClient(ex)) {
+        if (displayUrl != null || crawlOnce || lock) {
+          // Emulate these crawl-time values by sending them in feeds since they
+          // aren't supported at crawl-time on GSA 7.0.
+          pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
+              .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
+              .build());
+        }
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
@@ -865,5 +901,9 @@ class DocumentHandler implements HttpHandler {
       // Write to buffer.
       buffer.write(b, off, len);
     }
+  }
+
+  interface AsyncPusher {
+    public void asyncPushItem(DocIdSender.Item item);
   }
 }

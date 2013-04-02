@@ -61,9 +61,9 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record displayurl=\"\" mimetype=\"text/plain\""
+        + "<record mimetype=\"text/plain\""
         + " url=\"http://localhost/E11\"/>\n"
-        + "<record displayurl=\"\" mimetype=\"text/plain\""
+        + "<record mimetype=\"text/plain\""
         + " url=\"http://localhost/elefenta\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
@@ -97,9 +97,9 @@ public class GsaFeedFileMakerTest {
         + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
         + " mimetype=\"text/plain\" url=\"http://localhost/gone\"/>\n"
         + "<record crawl-immediately=\"true\" crawl-once=\"true\""
-        + " displayurl=\"\" lock=\"true\" mimetype=\"text/plain\""
+        + " lock=\"true\" mimetype=\"text/plain\""
         + " url=\"http://localhost/flagson\"/>\n"
-        + "<record action=\"delete\" displayurl=\"\" mimetype=\"text/plain\""
+        + "<record action=\"delete\" mimetype=\"text/plain\""
         + " url=\"http://localhost/deleted\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";
@@ -217,7 +217,7 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record displayurl=\"\" mimetype=\"text/plain\""
+        + "<record mimetype=\"text/plain\""
         + " url=\"http://localhost/docid1\"> </record>\n"
         + "</group>\n"
         + "</gsafeed>\n";
@@ -243,7 +243,7 @@ public class GsaFeedFileMakerTest {
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group>\n"
-        + "<record authmethod=\"httpsso\" displayurl=\"\""
+        + "<record authmethod=\"httpsso\""
         + " mimetype=\"text/plain\" url=\"http://localhost/docid1\"/>\n"
         + "</group>\n"
         + "</gsafeed>\n";

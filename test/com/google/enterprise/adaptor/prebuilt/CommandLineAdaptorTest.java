@@ -16,10 +16,10 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
 
+import static java.util.Map.Entry;
+
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-
-import static java.util.Map.Entry;
 
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Adaptor;
@@ -27,11 +27,10 @@ import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.Metadata;
-import com.google.enterprise.adaptor.Principal;
-import com.google.enterprise.adaptor.UserPrincipal;
-import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
+import com.google.enterprise.adaptor.UserPrincipal;
+import com.google.enterprise.adaptor.GroupPrincipal;
 
 import org.junit.Test;
 
@@ -48,7 +47,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -294,6 +292,9 @@ public class CommandLineAdaptorTest {
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
+    private URI displayUrl;
+    private boolean crawlOnce;
+    private boolean lock;
 
     public ContentsResponseTestMock(OutputStream os) {
       this.os = os;
@@ -361,6 +362,21 @@ public class CommandLineAdaptorTest {
       this.noArchive = noArchive;
     }
 
+    @Override
+    public void setDisplayUrl(URI displayUrl) {
+      this.displayUrl = displayUrl;
+    }
+
+    @Override
+    public void setCrawlOnce(boolean crawlOnce) {
+      this.crawlOnce = crawlOnce;
+    }
+
+    @Override
+    public void setLock(boolean lock) {
+      this.lock = lock;
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -396,6 +412,18 @@ public class CommandLineAdaptorTest {
 
     public boolean isNoArchive() {
       return noArchive;
+    }
+
+    public URI getDisplayUrl() {
+      return displayUrl;
+    }
+
+    public boolean isCrawlOnce() {
+      return crawlOnce;
+    }
+
+    public boolean isLock() {
+      return lock;
     }
   }
 

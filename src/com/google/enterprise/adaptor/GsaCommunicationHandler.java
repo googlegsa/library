@@ -253,7 +253,8 @@ public final class GsaCommunicationHandler {
                             createTransformPipeline(),
                             config.getTransformMaxDocumentBytes(),
                             config.isTransformRequired(),
-                            config.isServerToUseCompression(), watchdog)));
+                            config.isServerToUseCompression(), watchdog,
+                            new AsyncPusherImpl())));
 
     // Start communicating with other services. As a general rule, by this time
     // we want all services we provide to be up and running. However, note that
@@ -704,6 +705,23 @@ public final class GsaCommunicationHandler {
         }
       }
       return nsSession;
+    }
+  }
+
+  private class AsyncPusherImpl implements DocumentHandler.AsyncPusher {
+    @Override
+    public void asyncPushItem(final DocIdSender.Item item) {
+      backgroundExecutor.execute(new Runnable() {
+        @Override
+        public void run() {
+          try {
+            docIdSender.pushItems(Arrays.asList(item).iterator(), null);
+          } catch (InterruptedException ex) {
+            log.log(Level.INFO, "Interrupted during feed push", ex);
+            Thread.currentThread().interrupt();
+          }
+        }
+      });
     }
   }
 }

@@ -86,12 +86,11 @@ class GsaFeedFileMaker {
     Element record = doc.createElement("record");
     group.appendChild(record);
     record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
+    // We are no longer automatically clearing the displayurl if unset. We are
+    // moving the setting of displayurl to crawl-time and we don't want a lister
+    // and retriever to fight.
     if (null != docRecord.getResultLink()) {
       record.setAttribute("displayurl", "" + docRecord.getResultLink());
-    } else {
-      // Explicitly clear the displayurl. Sending no displayurl attribute causes
-      // a previous displayurl to be maintained.
-      record.setAttribute("displayurl", "");
     }
     if (docRecord.isToBeDeleted()) {
       record.setAttribute("action", "delete");
