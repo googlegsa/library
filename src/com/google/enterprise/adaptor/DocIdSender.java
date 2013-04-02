@@ -20,7 +20,8 @@ import java.util.logging.*;
 /**
  * All logic for sending DocIds to the GSA from an adaptor.
  */
-class DocIdSender extends AbstractDocIdPusher {
+class DocIdSender extends AbstractDocIdPusher
+    implements AsyncDocIdSender.ItemPusher {
   private static final Logger log
       = Logger.getLogger(DocIdSender.class.getName());
 
@@ -139,7 +140,8 @@ class DocIdSender extends AbstractDocIdPusher {
     return acl == null ? null : acl.getDocId();
   }
 
-  <T extends Item> T pushItems(Iterator<T> items,
+  @Override
+  public <T extends Item> T pushItems(Iterator<T> items,
       PushErrorHandler handler) throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
     if (handler == null) {
