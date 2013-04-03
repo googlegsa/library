@@ -50,54 +50,44 @@ public class DocumentHandlerTest {
       new MockHttpContext("/"));
 
   @Test
+  public void testSuccessBuilder() {
+    createHandlerBuilder().build();
+  }
+
+  @Test
   public void testNullDocIdDecoder() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler(null, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost", new String[0], handler,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+    createHandlerBuilder().setDocIdDecoder(null).build();
   }
 
   @Test
   public void testNullDocIdEncoder() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler(docIdCodec, null, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost", new String[0], handler,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+    createHandlerBuilder().setDocIdEncoder(null).build();
   }
 
   @Test
   public void testNullJournal() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler(docIdCodec, docIdCodec, null, new PrivateMockAdaptor(),
-        "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+    createHandlerBuilder().setJournal(null).build();
   }
 
   @Test
   public void testNullAdaptor() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), null,
-        "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+    createHandlerBuilder().setAdaptor(null).build();
   }
 
   @Test
   public void testNullSessionManager() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
-        "localhost", new String[0], handler, null, null, 0,
-        false, false, new MockWatchdog());
+    createHandlerBuilder().setSessionManager(null).build();
   }
 
   @Test
   public void testNullWatchdog() {
     thrown.expect(NullPointerException.class);
-    new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
-        "localhost", new String[0], handler, sessionManager, null, 0,
-        false, false, null);
+    createHandlerBuilder().setWatchdog(null).build();
   }
 
   @Test
@@ -124,10 +114,9 @@ public class DocumentHandlerTest {
         HttpExchanges.cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
       }
     };
-    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), new PrivateMockAdaptor(),
-        "localhost", new String[0], authnHandler, sessionManager, null, 0,
-        false, false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(new PrivateMockAdaptor())
+        .setAuthnHandler(authnHandler).build();
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
   }
@@ -211,11 +200,10 @@ public class DocumentHandlerTest {
   @Test
   public void testSecurityFromGsa() throws Exception {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost",
-        new String[] {remoteIp, " "}, null, sessionManager, null, 0, false,
-        false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(new PrivateMockAdaptor())
+        .setFullAccessHosts(new String[] {remoteIp, " "})
+        .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -225,11 +213,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecuritySecureFromGsa() throws Exception {
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
@@ -242,11 +227,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecuritySecureNoCertificate() throws Exception {
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         null));
@@ -256,11 +238,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecuritySecureNotX500Principal() throws Exception {
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new KerberosPrincipal("someuser@not-domain")));
@@ -270,11 +249,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecuritySecureNoCommonName() throws Exception {
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("OU=Unknown, O=Unknown, C=Unknown")));
@@ -284,11 +260,8 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecuritySecureNotWhitelisted() throws Exception {
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), "localhost",
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    DocumentHandler handler = createDefaultHandlerForAdaptor(
+        new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=nottrusted, OU=Unknown, O=Unknown, C=Unknown")));
@@ -299,11 +272,10 @@ public class DocumentHandlerTest {
   @Test
   public void testSecurityFromGsaAutoAddWhitelist() throws Exception {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        new PrivateMockAdaptor(), remoteIp,
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(new PrivateMockAdaptor())
+        .setGsaHostname(remoteIp)
+        .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(mockAdaptor.documentBytes, ex.getResponseBytes());
@@ -351,9 +323,10 @@ public class DocumentHandlerTest {
         super.getDocContent(request, response);
       }
     };
-    handler = new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[0], null, sessionManager, null, 0, false, false, watchdog);
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setWatchdog(watchdog)
+        .build();
     try {
       thrown.expect(RuntimeException.class);
       handler.handle(ex);
@@ -367,9 +340,9 @@ public class DocumentHandlerTest {
     ScheduledExecutorService executor
         = Executors.newSingleThreadScheduledExecutor();
     Watchdog watchdog = new Watchdog(100, executor);
-    handler = new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[0], null, sessionManager, null, 0, false, false, watchdog);
+    DocumentHandler handler = createHandlerBuilder()
+        .setWatchdog(watchdog)
+        .build();
     try {
       handler.handle(ex);
     } finally {
@@ -405,10 +378,12 @@ public class DocumentHandlerTest {
       }
     };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[] {remoteIp}, null, sessionManager, transform, 100,
-        false, false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .setTransformMaxBytes(100)
+        .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -446,10 +421,12 @@ public class DocumentHandlerTest {
       }
     };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[] {remoteIp}, null, sessionManager, transform, 3, false,
-        false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .setTransformMaxBytes(3)
+        .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertArrayEquals(golden, ex.getResponseBytes());
@@ -477,10 +454,13 @@ public class DocumentHandlerTest {
     };
     CheckFailAdaptor mockAdaptor = new CheckFailAdaptor();
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), mockAdaptor, "localhost",
-        new String[] {remoteIp}, null, sessionManager, transform, 3, true,
-        false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .setTransformMaxBytes(3)
+        .setTransformRequired(true)
+        .build();
     thrown.expect(IOException.class);
     try {
       handler.handle(ex);
@@ -841,10 +821,10 @@ public class DocumentHandlerTest {
           }
         };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        adaptor, "localhost", new String[] {remoteIp, "someUnknownHost!@#$"},
-        null, sessionManager, null, 0, false, false, new MockWatchdog());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("test=ing", "google%3Aaclinheritfrom="
@@ -873,20 +853,25 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    DocumentHandler handler = new DocumentHandler(
-        docIdCodec, docIdCodec, new Journal(new MockTimeProvider()),
-        adaptor, "localhost", new String[0], null,
-        sessionManager, null, 0, false, false, new MockWatchdog());
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
   }
 
+  private DocumentHandlerBuilder createHandlerBuilder() {
+    return new DocumentHandlerBuilder()
+        .setDocIdDecoder(docIdCodec)
+        .setDocIdEncoder(docIdCodec)
+        .setJournal(new Journal(new MockTimeProvider()))
+        .setAdaptor(new MockAdaptor())
+        .setGsaHostname("localhost")
+        .setSessionManager(sessionManager)
+        .setWatchdog(new MockWatchdog());
+  }
+
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
-    return new DocumentHandler(docIdCodec, docIdCodec,
-        new Journal(new MockTimeProvider()), adaptor, "localhost",
-        new String[0], null, sessionManager, null, 0, false, false,
-        new MockWatchdog());
+    return createHandlerBuilder().setAdaptor(adaptor).build();
   }
 
   @Test
@@ -999,4 +984,92 @@ public class DocumentHandlerTest {
       }
     };
 
+  private static class DocumentHandlerBuilder {
+    private DocIdDecoder docIdDecoder;
+    private DocIdEncoder docIdEncoder;
+    private Journal journal;
+    private Adaptor adaptor;
+    private String gsaHostname;
+    private String[] fullAccessHosts = new String[0];
+    private HttpHandler authnHandler;
+    private SessionManager<HttpExchange> sessionManager;
+    private TransformPipeline transform;
+    private int transformMaxBytes;
+    private boolean transformRequired;
+    private boolean useCompression;
+    private Watchdog watchdog;
+
+    public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
+      this.docIdDecoder = docIdDecoder;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setDocIdEncoder(DocIdEncoder docIdEncoder) {
+      this.docIdEncoder = docIdEncoder;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setJournal(Journal journal) {
+      this.journal = journal;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setAdaptor(Adaptor adaptor) {
+      this.adaptor = adaptor;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setGsaHostname(String gsaHostname) {
+      this.gsaHostname = gsaHostname;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setFullAccessHosts(String[] fullAccessHosts) {
+      this.fullAccessHosts = fullAccessHosts;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setAuthnHandler(HttpHandler authnHandler) {
+      this.authnHandler = authnHandler;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setSessionManager(
+        SessionManager<HttpExchange> sessionManager) {
+      this.sessionManager = sessionManager;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setTransform(TransformPipeline transform) {
+      this.transform = transform;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setTransformMaxBytes(int transformMaxBytes) {
+      this.transformMaxBytes = transformMaxBytes;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setTransformRequired(
+        boolean transformRequired) {
+      this.transformRequired = transformRequired;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setUseCompression(boolean useCompression) {
+      this.useCompression = useCompression;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setWatchdog(Watchdog watchdog) {
+      this.watchdog = watchdog;
+      return this;
+    }
+
+    public DocumentHandler build() {
+      return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
+          gsaHostname, fullAccessHosts, authnHandler, sessionManager, transform,
+          transformMaxBytes, transformRequired, useCompression, watchdog);
+    }
+  }
 }
