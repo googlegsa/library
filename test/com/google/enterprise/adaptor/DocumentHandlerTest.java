@@ -24,6 +24,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.*;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
@@ -941,8 +942,16 @@ public class DocumentHandlerTest {
     return new UserPrincipal(name);
   }
 
+  private static UserPrincipal U(String name, String ns) {
+    return new UserPrincipal(name, ns);
+  }
+
   private static GroupPrincipal G(String name) {
     return new GroupPrincipal(name);
+  }
+
+  private static GroupPrincipal G(String name, String ns) {
+    return new GroupPrincipal(name, ns);
   }
 
   @Test
@@ -958,7 +967,7 @@ public class DocumentHandlerTest {
         // by percentEncode to give %2520.
         + "google%3Aaclinheritfrom=http%3A%2F%2Flocalhost%2Fsome%2520docId,"
         + "google%3Aaclinheritancetype=parent-overrides";
-    String result = DocumentHandler.formAclHeader(new Acl.Builder()
+    String result = DocumentHandler.formUnqualifiedAclHeader(new Acl.Builder()
         .setPermitUsers(Arrays.asList(U("pu1"), U("uid=pu2,dc=com")))
         .setPermitGroups(Arrays.asList(G("pg1"), G("gid=pg2,dc=com")))
         .setDenyUsers(Arrays.asList(U("du1"), U("uid=du2,dc=com")))
@@ -970,14 +979,186 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testFormAclHeaderNull() {
-    assertEquals("", DocumentHandler.formAclHeader(null, new MockDocIdCodec()));
+  public void testFormUnqualifiedAclHeaderNull() {
+    assertEquals("", DocumentHandler
+        .formUnqualifiedAclHeader(null, new MockDocIdCodec()));
+   }
+
+  @Test
+  public void testFormUnqualifiedAclHeaderEmpty() {
+    DocIdEncoder enc = new MockDocIdCodec();
+    assertEquals("google%3Aacldenyusers=google%3AfakeUserToPreventMissingAcl",
+        DocumentHandler.formUnqualifiedAclHeader(Acl.EMPTY, enc));
   }
 
   @Test
-  public void testFormAclHeaderEmpty() {
-    assertEquals("google%3Aacldenyusers=google%3AfakeUserToPreventMissingAcl",
-        DocumentHandler.formAclHeader(Acl.EMPTY, new MockDocIdCodec()));
+  public void testFormNamespacedAclHeaderNull() {
+    assertEquals("", DocumentHandler
+        .formNamespacedAclHeader(null, new MockDocIdCodec()));
+  }
+
+  @Test
+  public void testFormNamespacedAclHeaderEmpty() {
+    DocIdEncoder enc = new MockDocIdCodec();
+    String golden = "{\"entries\":[{"
+        + "\"access\":\"deny\""
+        + ","
+        + "\"name\":\"google:fakeUserToPreventMissingAcl\""
+        + ","
+        + "\"scope\":\"user\""
+        + "}]}";
+    String aclHeader = DocumentHandler.formNamespacedAclHeader(Acl.EMPTY, enc);
+    assertEquals(golden, aclHeader);
+  }
+
+  @Test
+  public void testFormNamespacedAclHeaderBusy() {
+    DocIdEncoder enc = new MockDocIdCodec();
+    String golden = "{"
+        + "\"entries\":["
+            + "{\"access\":\"permit\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"pg1@d.g\",\"scope\":\"group\"},"
+            + "{\"access\":\"permit\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"gid=pg2,dc=m\",\"namespace\":\"ns\","
+                + "\"scope\":\"group\"},"
+            + "{\"access\":\"deny\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"gid=dg2,dc=com\",\"scope\":\"group\"},"
+            + "{\"access\":\"deny\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"dg1@d.g\",\"namespace\":\"ns\","
+                + "\"scope\":\"group\"},"
+            + "{\"access\":\"permit\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"uid=pu2,dc=m\",\"scope\":\"user\"},"
+            + "{\"access\":\"permit\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"pu1@d.g\",\"namespace\":\"ns\","
+                + "\"scope\":\"user\"},"
+            + "{\"access\":\"deny\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"du1@d.g\",\"scope\":\"user\"},"
+            + "{\"access\":\"deny\","
+                + "\"case_sensitivity_type\":\"everything_case_insensitive\","
+                + "\"name\":\"uid=du2,dc=com\",\"namespace\":\"ns\","
+                + "\"scope\":\"user\"}"
+        + "],"
+        + "\"inherit_from\":\"http:\\/\\/localhost\\/some%20docId\","
+        + "\"inheritance_type\":\"PARENT_OVERRIDES\""
+        + "}";
+
+    Acl busyAcl = new Acl.Builder()
+        .setPermitUsers(Arrays.asList(U("pu1@d.g", "ns"), U("uid=pu2,dc=m")))
+        .setPermitGroups(Arrays.asList(G("pg1@d.g"), G("gid=pg2,dc=m", "ns")))
+        .setDenyUsers(Arrays.asList(U("du1@d.g"), U("uid=du2,dc=com", "ns")))
+        .setDenyGroups(Arrays.asList(G("dg1@d.g", "ns"), G("gid=dg2,dc=com")))
+        .setInheritFrom(new DocId("some docId"))
+        .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+        .setEverythingCaseInsensitive()
+        .build();
+    String aclHeader = DocumentHandler.formNamespacedAclHeader(busyAcl, enc);
+    assertEquals(golden, aclHeader);
+  }
+
+  @Test
+  public void testDisplayUrlHeader() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            try {
+              response.setDisplayUrl(new URI("http://www.google.com"));
+            } catch (URISyntaxException urie) {
+              throw new RuntimeException(urie);
+            }
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("display_url=http%3A%2F%2Fwww.google.com"));
+  }
+
+/*
+  TODO: enable once sending lock is possible at crawl time
+  @Test
+  public void testLockHeaderSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setLock(true);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("lock=true"));
+  }
+*/
+
+/*
+  TODO: enable once sending crawl-once is possible at crawl time
+  @Test
+  public void testCrawlOnceHeaderSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setCrawlOnce(true);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("crawl-once=true"));
+  }
+*/
+
+  @Test
+  public void testAclMeansServeSecurity() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setAcl(new Acl.Builder()
+                .setInheritFrom(new DocId("testing")).build());
+            response.setSecure(false);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("secure",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
   }
 
   @Test
@@ -1010,29 +1191,6 @@ public class DocumentHandlerTest {
         .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-  }
-
-  @Test
-  public void testAclMeansServeSecurity() throws Exception {
-    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    MockAdaptor adaptor = new MockAdaptor() {
-          @Override
-          public void getDocContent(Request request, Response response)
-              throws IOException {
-            response.setAcl(new Acl.Builder()
-                .setInheritFrom(new DocId("testing")).build());
-            response.setSecure(false);
-            response.getOutputStream();
-          }
-        };
-    DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
-        .build();
-    handler.handle(ex);
-    assertEquals(200, ex.getResponseCode());
-    assertEquals("secure",
-        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
   }
 
   @Test
@@ -1228,6 +1386,7 @@ public class DocumentHandlerTest {
     private boolean useCompression;
     private Watchdog watchdog;
     private DocumentHandler.AsyncPusher pusher;
+    private boolean sendDocControls;
 
     public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
       this.docIdDecoder = docIdDecoder;
@@ -1302,11 +1461,86 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setSendDocControls(boolean sendDocControls) {
+      this.sendDocControls = sendDocControls;
+      return this;
+    }
+
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           gsaHostname, fullAccessHosts, authnHandler, sessionManager, transform,
           transformMaxBytes, transformRequired, useCompression, watchdog,
-          pusher);
+          pusher, sendDocControls);
     }
+  }
+
+  /** percentDecode method is defined in this test file */
+  @Test
+  public void testPercentDecoder() {
+    assertEquals("" + ((char)(10)), percentDecode("%0A"));
+    for (char c = 0; c < 256; c++) {
+      String encoded = DocumentHandler.percentEncode("" + c);
+      String decoded = percentDecode(encoded);
+      if (!decoded.equals("" + c)) {
+        int n = c;
+        throw new AssertionError("failed to encode/decode `" + n
+            + "' `" + c + "' `" + encoded + "' `" + decoded + "'");
+      }
+    }
+    String decoded = percentDecode("AaZz09-_.~"
+        + "%60%3D%2F%3F%2B%27%3B%5C%2F%22%21%40%23%24%25%5E%26"
+        + "%2A%28%29%5B%5D%7B%7D%C3%AB%01");
+    assertEquals("AaZz09-_.~`=/?+';\\/\"!@#$%^&*()[]{}ë\u0001", decoded);
+  }
+ 
+  private static int hexToInt(byte b) {
+    if (b >= '0' && b <= '9') {
+      return (byte)(b - '0');
+    } else if (b >= 'a' && b <= 'f') {
+      return (byte)(b - 'a') + 10;
+    } else if (b >= 'A' && b <= 'F') {
+      return (byte)(b - 'A') + 10;
+    } else {
+      throw new IllegalArgumentException("invalid hex byte: " + b);
+    }
+  }
+
+  private static String percentDecode(String encoded) {
+    try {
+      byte bytes[] = encoded.getBytes("ASCII");
+      ByteArrayOutputStream decoded = percentDecode(bytes);
+      return decoded.toString("UTF-8"); 
+    } catch (UnsupportedEncodingException uee) {
+      throw new RuntimeException(uee);
+    }
+  }
+
+  private static ByteArrayOutputStream percentDecode(byte encoded[]) {
+    ByteArrayOutputStream out = new ByteArrayOutputStream();
+    int i = 0;
+    while (i < encoded.length) {
+      byte b = encoded[i];
+      if (b == '%') {
+        int iNeeded = i + 2;  // need two more bytes
+        if (iNeeded >= encoded.length) {
+          throw new IllegalArgumentException("ends too early");
+        }
+        int highOrder = hexToInt(encoded[i + 1]);
+        int lowOrder = hexToInt(encoded[i + 2]);
+        int byteInInt = (highOrder << 4) | lowOrder;
+        b = (byte) byteInInt;  // chops top bytes; could make negative
+        i += 3;
+      } else if ((b >= 'a' && b <= 'z')
+          || (b >= 'A' && b <= 'Z')
+          || (b >= '0' && b <= '9')
+          || b == '-' || b == '_' || b == '.' || b == '~') {
+        // pass through
+        i++; 
+      } else {
+        throw new IllegalArgumentException("not percent encoded");
+      }
+      out.write(b);
+    }
+    return out;
   }
 }

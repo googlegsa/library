@@ -263,17 +263,20 @@ public final class GsaCommunicationHandler {
     }
     Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
         scheduleExecutor);
-    addFilters(scope.createContext(config.getServerBaseUri().getPath()
-        + config.getServerDocIdPath(),
-        new DocumentHandler(docIdCodec, docIdCodec, journal, adaptor,
-                            config.getGsaHostname(),
-                            config.getServerFullAccessHosts(),
-                            authnHandler, sessionManager,
-                            createTransformPipeline(),
-                            config.getTransformMaxDocumentBytes(),
-                            config.isTransformRequired(),
-                            config.isServerToUseCompression(), watchdog,
-                            new AsyncPusherImpl())));
+    DocumentHandler docHandler = new DocumentHandler(
+        docIdCodec, docIdCodec, journal, adaptor,
+        config.getGsaHostname(),
+        config.getServerFullAccessHosts(),
+        authnHandler, sessionManager,
+        createTransformPipeline(),
+        config.getTransformMaxDocumentBytes(),
+        config.isTransformRequired(),
+        config.isServerToUseCompression(), watchdog,
+        new AsyncPusherImpl(), 
+        config.sendDocControlsHeader());
+    String handlerPath = config.getServerBaseUri().getPath()
+        + config.getServerDocIdPath();
+    addFilters(scope.createContext(handlerPath, docHandler));
 
     // Start communicating with other services. As a general rule, by this time
     // we want all services we provide to be up and running. However, note that

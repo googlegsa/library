@@ -16,9 +16,14 @@ package com.google.enterprise.adaptor;
 
 import static java.util.Map.Entry;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
+
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -61,6 +66,7 @@ class DocumentHandler implements HttpHandler {
   private final int transformMaxBytes;
   private final boolean transformRequired;
   private final boolean useCompression;
+  private final boolean sendDocControls;
 
   /**
    * {@code authnHandler} and {@code transform} may be {@code null}.
@@ -72,7 +78,8 @@ class DocumentHandler implements HttpHandler {
                          SessionManager<HttpExchange> sessionManager,
                          TransformPipeline transform, int transformMaxBytes,
                          boolean transformRequired, boolean useCompression,
-                         Watchdog watchdog, AsyncPusher pusher) {
+                         Watchdog watchdog, AsyncPusher pusher,
+                         boolean sendDocControls) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || sessionManager == null || watchdog == null
         || pusher == null) {
@@ -90,6 +97,7 @@ class DocumentHandler implements HttpHandler {
     this.useCompression = useCompression;
     this.watchdog = watchdog;
     this.pusher = pusher;
+    this.sendDocControls = sendDocControls;
 
     initFullAccess(gsaHostname, fullAccessHosts);
   }
@@ -292,7 +300,8 @@ class DocumentHandler implements HttpHandler {
     return (sb.length() == 0) ? "" : sb.substring(0, sb.length() - 1);
   }
 
-  static String formAclHeader(Acl acl, DocIdEncoder docIdEncoder) {
+  @VisibleForTesting
+  static String formUnqualifiedAclHeader(Acl acl, DocIdEncoder docIdEncoder) {
     if (acl == null) {
       return "";
     }
@@ -331,6 +340,62 @@ class DocumentHandler implements HttpHandler {
           acl.getInheritanceType().getCommonForm());
     }
     return sb.substring(0, sb.length() - 1);
+  }
+
+  @VisibleForTesting
+  static String formNamespacedAclHeader(Acl acl, DocIdEncoder enc) {
+    if (null == acl) {
+      return "";
+    }
+    if (Acl.EMPTY.equals(acl)) {
+      acl = Acl.FAKE_EMPTY;
+    }
+    Map<String, Object> gsaAcl = new TreeMap<String, Object>();
+    List<Map<String, String>> gsaAclEntries = makeGsaAclEntries(acl);    
+    if (!gsaAclEntries.isEmpty()) {
+      gsaAcl.put("entries", gsaAclEntries);
+    }
+    if (null != acl.getInheritFrom()) {
+      URI from = enc.encodeDocId(acl.getInheritFrom());
+      gsaAcl.put("inherit_from", "" + from);
+    }
+    if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
+      String type = "" + acl.getInheritanceType();
+      gsaAcl.put("inheritance_type", "" + type);
+    }
+    return JSONObject.toJSONString(gsaAcl);
+  }
+
+  private static List<Map<String, String>> makeGsaAclEntries(Acl acl) {
+    List<Map<String, String>> princ = new ArrayList<Map<String, String>>();
+    for (Principal p : acl.getPermitGroups()) {
+      princ.add(makeGsaAclEntry("permit", acl, p));
+    }
+    for (Principal p : acl.getDenyGroups()) {
+      princ.add(makeGsaAclEntry("deny", acl, p));
+    }
+    for (Principal p : acl.getPermitUsers()) {
+      princ.add(makeGsaAclEntry("permit", acl, p));
+    }
+    for (Principal p : acl.getDenyUsers()) {
+      princ.add(makeGsaAclEntry("deny", acl, p));
+    }
+    return princ;
+  }
+
+  private static Map<String, String> makeGsaAclEntry(String access,
+      Acl acl, Principal p) {
+    Map<String, String> gsaEntry = new TreeMap<String, String>();
+    gsaEntry.put("access", access);
+    gsaEntry.put("scope", p.isUser() ? "user" : "group");
+    gsaEntry.put("name", p.getName());
+    if (!Principal.DEFAULT_NAMESPACE.equals(p.getNamespace())) {
+      gsaEntry.put("namespace", p.getNamespace());
+    }
+    if (!acl.isEverythingCaseSensitive()) {
+      gsaEntry.put("case_sensitivity_type", "everything_case_insensitive");
+    }
+    return gsaEntry;
   }
 
   /**
@@ -714,20 +779,39 @@ class DocumentHandler implements HttpHandler {
 
     private void startSending(boolean hasContent) throws IOException {
       if (requestIsFromFullyTrustedClient(ex)) {
-        if (displayUrl != null || crawlOnce || lock) {
-          // Emulate these crawl-time values by sending them in feeds since they
-          // aren't supported at crawl-time on GSA 7.0.
-          pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
-              .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
-              .build());
-        }
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
-                                    formMetadataHeader(metadata));
-        acl = checkAndWorkaroundGsa70Acl(acl);
-        ex.getResponseHeaders().add("X-Gsa-External-Metadata",
-                                    formAclHeader(acl, docIdEncoder));
+             formMetadataHeader(metadata));
+        if (sendDocControls) {
+          ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "acl="
+              + percentEncode(formNamespacedAclHeader(acl, docIdEncoder)));
+          if (null != displayUrl) {
+            String link = "display_url=" + percentEncode("" + displayUrl);
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls", link);
+          }
+          /*
+            TODO(ejona): enable once sending crawl-once at crawl time is possible
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
+                "crawl-once=" + crawlOnce);
+          */
+          /*
+            TODO(ejona): enable once sending lock at crawl time is possible
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock=" + lock);
+          */
+        } else {
+          acl = checkAndWorkaroundGsa70Acl(acl);
+          ex.getResponseHeaders().add("X-Gsa-External-Metadata",
+              formUnqualifiedAclHeader(acl, docIdEncoder));
+          if (displayUrl != null || crawlOnce || lock) {
+            // Emulate these crawl-time values by sending them in feeds
+            // since they aren't supported at crawl-time on GSA 7.0.
+            pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
+                .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
+                .build());
+            // TODO: figure out how to notice that a true went false
+          }
+        }
         if (!anchorUris.isEmpty()) {
           ex.getResponseHeaders().add("X-Gsa-External-Anchor",
               formAnchorHeader(anchorUris, anchorTexts));

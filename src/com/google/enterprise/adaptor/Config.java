@@ -36,6 +36,10 @@ import java.util.logging.*;
  *     <td><b>name</b></td><td><b>meaning</b></td>
  * <tr><td> </td><td>adaptor.autoUnzip </td><td> expand zip files and send
  *     each file inside   separatly.  Defaults to false
+ * <tr><td> </td><td>adaptor.sendDocControlsHeader </td><td>use 
+ *      X-Gsa-Doc-Controls HTTP header with namespaced ACLs.
+ *      Otherwise ACLs are sent without namespace and as metadata.
+ *      Defaults to false
  * <tr><td> </td><td>adaptor.fullListingSchedule </td><td> when to invoke 
  *     {@link Adaptor#getDocIds Adaptor.getDocIds}, in cron format (minute,
  *     hour,  day of month, month, day of week).  Defaults to 0 3 * * *
@@ -207,6 +211,7 @@ public class Config {
     addKey("transform.maxDocumentBytes", "1048576");
     addKey("transform.required", "false");
     addKey("journal.reducedMem", "true");
+    addKey("adaptor.sendDocControlsHeader", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -392,6 +397,10 @@ public class Config {
 
   public boolean isServerToUseCompression() {
     return Boolean.parseBoolean(getValue("server.useCompression"));
+  }
+
+  public boolean sendDocControlsHeader() {
+    return Boolean.parseBoolean(getValue("adaptor.sendDocControlsHeader"));
   }
 
   /**
