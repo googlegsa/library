@@ -263,6 +263,11 @@ public final class GsaCommunicationHandler {
     }
     Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
         scheduleExecutor);
+    AsyncDocIdSender asyncDocIdSender = new AsyncDocIdSender(docIdSender,
+        config.getFeedMaxUrls() /* batch size */,
+        5 /* max latency */, TimeUnit.MINUTES,
+        2 * config.getFeedMaxUrls() /* queue size */);
+    backgroundExecutor.execute(waiter.runnable(asyncDocIdSender.worker()));
     DocumentHandler docHandler = new DocumentHandler(
         docIdCodec, docIdCodec, journal, adaptor,
         config.getGsaHostname(),
@@ -272,7 +277,7 @@ public final class GsaCommunicationHandler {
         config.getTransformMaxDocumentBytes(),
         config.isTransformRequired(),
         config.isServerToUseCompression(), watchdog,
-        new AsyncPusherImpl(), 
+        asyncDocIdSender, 
         config.sendDocControlsHeader());
     String handlerPath = config.getServerBaseUri().getPath()
         + config.getServerDocIdPath();
@@ -756,23 +761,6 @@ public final class GsaCommunicationHandler {
         }
       }
       return nsSession;
-    }
-  }
-
-  private class AsyncPusherImpl implements DocumentHandler.AsyncPusher {
-    @Override
-    public void asyncPushItem(final DocIdSender.Item item) {
-      backgroundExecutor.execute(new Runnable() {
-        @Override
-        public void run() {
-          try {
-            docIdSender.pushItems(Arrays.asList(item).iterator(), null);
-          } catch (InterruptedException ex) {
-            log.log(Level.INFO, "Interrupted during feed push", ex);
-            Thread.currentThread().interrupt();
-          }
-        }
-      });
     }
   }
 }
