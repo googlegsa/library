@@ -74,7 +74,7 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
       str = "I have a child named 7007";
       resp.setAcl(makeAclFor7007Parent());
       // Add custom meta items.
-      resp.addMetadata("my-day", "parent's day");
+      resp.addMetadata("math is fun", "2 + 7 = 11");
     } else if ("8008".equals(id.getUniqueId())) {
       str = "Document 8008 says hello and banana strawberry";
       // Must add metadata before getting OutputStream
