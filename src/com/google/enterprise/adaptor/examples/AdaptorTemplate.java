@@ -59,6 +59,7 @@ public class AdaptorTemplate extends AbstractAdaptor {
       resp.respondNotFound();
       return;
     }
+    resp.setContentType("text/plain; charset=utf-8");
     OutputStream os = resp.getOutputStream();
     os.write(str.getBytes(encoding));
   }
