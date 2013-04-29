@@ -256,4 +256,30 @@ public class GsaFeedFileMakerTest {
     xml = xml.replace("\r\n", "\n");
     assertEquals(golden, xml);
   }
+
+  @Test
+  public void testAclFragment() {
+    String golden
+        = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<header>\n"
+        + "<datasource>test</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group>\n"
+        + "<acl inherit-from=\"http://localhost/docid2?generated\""
+        + " url=\"http://localhost/docid1?generated\"/>\n"
+        + "</group>\n"
+        + "</gsafeed>\n";
+
+    DocIdSender.AclItem acl
+        = new DocIdSender.AclItem(new DocId("docid1"), "generated",
+          new Acl.Builder()
+            .setInheritFrom(new DocId("docid2"), "generated").build());
+    String xml = meker.makeMetadataAndUrlXml("test", Arrays.asList(acl));
+    xml = xml.replace("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
 }

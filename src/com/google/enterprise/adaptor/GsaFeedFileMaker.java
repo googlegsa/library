@@ -134,8 +134,11 @@ class GsaFeedFileMaker {
     group.appendChild(aclElement);
     URI uri = idEncoder.encodeDocId(docAcl.getDocId());
     try {
-      uri = new URI(uri.getScheme(), uri.getSchemeSpecificPart(),
-          docAcl.getDocIdFragment());
+      // Although it is named "fragment", we put the docIdFragment in the query
+      // portion of the URI because the GSA removes fragments when it
+      // "normalizes" the identifier.
+      uri = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(),
+          docAcl.getDocIdFragment(), null);
     } catch (URISyntaxException ex) {
       throw new AssertionError(ex);
     }
@@ -144,8 +147,11 @@ class GsaFeedFileMaker {
     if (acl.getInheritFrom() != null) {
       URI inheritFrom = idEncoder.encodeDocId(acl.getInheritFrom());
       try {
+        // Although it is named "fragment", we use a query parameter because the
+        // GSA "normalizes" away fragments.
         inheritFrom = new URI(inheritFrom.getScheme(),
-            inheritFrom.getSchemeSpecificPart(), acl.getInheritFromFragment());
+            inheritFrom.getAuthority(), inheritFrom.getPath(),
+            acl.getInheritFromFragment(), null);
       } catch (URISyntaxException ex) {
         throw new AssertionError(ex);
       }

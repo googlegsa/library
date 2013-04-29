@@ -327,8 +327,10 @@ class DocumentHandler implements HttpHandler {
     if (acl.getInheritFrom() != null) {
       URI uri = docIdEncoder.encodeDocId(acl.getInheritFrom());
       try {
-        uri = new URI(uri.getScheme(), uri.getSchemeSpecificPart(),
-            acl.getInheritFromFragment());
+        // Although it is named "fragment", we use a query parameter because the
+        // GSA "normalizes" away fragments.
+        uri = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(),
+            acl.getInheritFromFragment(), null);
       } catch (URISyntaxException ex) {
         throw new AssertionError(ex);
       }

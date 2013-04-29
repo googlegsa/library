@@ -1231,7 +1231,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
-          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated"),
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%3Fgenerated"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
     providedAcl.set(new Acl.Builder()
@@ -1253,7 +1253,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
-          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated,"
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%3Fgenerated,"
           + "google%3Aaclinheritancetype=parent-overrides"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
@@ -1276,7 +1276,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
-          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated,"
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%3Fgenerated,"
           + "google%3Aaclinheritancetype=child-overrides"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
@@ -1299,7 +1299,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals(Arrays.asList("", "google%3Aaclinheritfrom="
-          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%23generated,"
+          + "http%3A%2F%2Flocalhost%2Ftest%2520docId%3Fgenerated,"
           + "google%3Aaclinheritancetype=child-overrides"),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
