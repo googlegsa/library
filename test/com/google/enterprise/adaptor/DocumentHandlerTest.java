@@ -938,19 +938,19 @@ public class DocumentHandlerTest {
     assertEquals("", header);
   }
 
-  private static UserPrincipal U(String name) {
+  private static UserPrincipal u(String name) {
     return new UserPrincipal(name);
   }
 
-  private static UserPrincipal U(String name, String ns) {
+  private static UserPrincipal u(String name, String ns) {
     return new UserPrincipal(name, ns);
   }
 
-  private static GroupPrincipal G(String name) {
+  private static GroupPrincipal g(String name) {
     return new GroupPrincipal(name);
   }
 
-  private static GroupPrincipal G(String name, String ns) {
+  private static GroupPrincipal g(String name, String ns) {
     return new GroupPrincipal(name, ns);
   }
 
@@ -968,10 +968,10 @@ public class DocumentHandlerTest {
         + "google%3Aaclinheritfrom=http%3A%2F%2Flocalhost%2Fsome%2520docId,"
         + "google%3Aaclinheritancetype=parent-overrides";
     String result = DocumentHandler.formUnqualifiedAclHeader(new Acl.Builder()
-        .setPermitUsers(Arrays.asList(U("pu1"), U("uid=pu2,dc=com")))
-        .setPermitGroups(Arrays.asList(G("pg1"), G("gid=pg2,dc=com")))
-        .setDenyUsers(Arrays.asList(U("du1"), U("uid=du2,dc=com")))
-        .setDenyGroups(Arrays.asList(G("dg1"), G("gid=dg2,dc=com")))
+        .setPermitUsers(Arrays.asList(u("pu1"), u("uid=pu2,dc=com")))
+        .setPermitGroups(Arrays.asList(g("pg1"), g("gid=pg2,dc=com")))
+        .setDenyUsers(Arrays.asList(u("du1"), u("uid=du2,dc=com")))
+        .setDenyGroups(Arrays.asList(g("dg1"), g("gid=dg2,dc=com")))
         .setInheritFrom(new DocId("some docId"))
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
         .build(), new MockDocIdCodec());
@@ -1050,10 +1050,10 @@ public class DocumentHandlerTest {
         + "}";
 
     Acl busyAcl = new Acl.Builder()
-        .setPermitUsers(Arrays.asList(U("pu1@d.g", "ns"), U("uid=pu2,dc=m")))
-        .setPermitGroups(Arrays.asList(G("pg1@d.g"), G("gid=pg2,dc=m", "ns")))
-        .setDenyUsers(Arrays.asList(U("du1@d.g"), U("uid=du2,dc=com", "ns")))
-        .setDenyGroups(Arrays.asList(G("dg1@d.g", "ns"), G("gid=dg2,dc=com")))
+        .setPermitUsers(Arrays.asList(u("pu1@d.g", "ns"), u("uid=pu2,dc=m")))
+        .setPermitGroups(Arrays.asList(g("pg1@d.g"), g("gid=pg2,dc=m", "ns")))
+        .setDenyUsers(Arrays.asList(u("du1@d.g"), u("uid=du2,dc=com", "ns")))
+        .setDenyGroups(Arrays.asList(g("dg1@d.g", "ns"), g("gid=dg2,dc=com")))
         .setInheritFrom(new DocId("some docId"))
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
         .setEverythingCaseInsensitive()
@@ -1477,7 +1477,7 @@ public class DocumentHandlerTest {
   /** percentDecode method is defined in this test file */
   @Test
   public void testPercentDecoder() {
-    assertEquals("" + ((char)(10)), percentDecode("%0A"));
+    assertEquals("" + ((char) 10), percentDecode("%0A"));
     for (char c = 0; c < 256; c++) {
       String encoded = DocumentHandler.percentEncode("" + c);
       String decoded = percentDecode(encoded);
@@ -1495,11 +1495,11 @@ public class DocumentHandlerTest {
  
   private static int hexToInt(byte b) {
     if (b >= '0' && b <= '9') {
-      return (byte)(b - '0');
+      return (byte) (b - '0');
     } else if (b >= 'a' && b <= 'f') {
-      return (byte)(b - 'a') + 10;
+      return (byte) (b - 'a') + 10;
     } else if (b >= 'A' && b <= 'F') {
-      return (byte)(b - 'A') + 10;
+      return (byte) (b - 'A') + 10;
     } else {
       throw new IllegalArgumentException("invalid hex byte: " + b);
     }

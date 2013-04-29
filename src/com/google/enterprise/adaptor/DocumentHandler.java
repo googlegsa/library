@@ -22,7 +22,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -809,7 +808,7 @@ class DocumentHandler implements HttpHandler {
             pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
                 .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
                 .build());
-            // TODO: figure out how to notice that a true went false
+            // TODO(ejona): figure out how to notice that a true went false
           }
         }
         if (!anchorUris.isEmpty()) {
