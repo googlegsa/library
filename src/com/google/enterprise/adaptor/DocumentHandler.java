@@ -22,7 +22,6 @@ import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpsExchange;
 
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
 import java.io.ByteArrayOutputStream;
@@ -328,8 +327,10 @@ class DocumentHandler implements HttpHandler {
     if (acl.getInheritFrom() != null) {
       URI uri = docIdEncoder.encodeDocId(acl.getInheritFrom());
       try {
-        uri = new URI(uri.getScheme(), uri.getSchemeSpecificPart(),
-            acl.getInheritFromFragment());
+        // Although it is named "fragment", we use a query parameter because the
+        // GSA "normalizes" away fragments.
+        uri = new URI(uri.getScheme(), uri.getAuthority(), uri.getPath(),
+            acl.getInheritFromFragment(), null);
       } catch (URISyntaxException ex) {
         throw new AssertionError(ex);
       }
@@ -803,7 +804,7 @@ class DocumentHandler implements HttpHandler {
             pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
                 .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
                 .build());
-            // TODO: figure out how to notice that a true went false
+            // TODO(ejona): figure out how to notice that a true went false
           }
         }
         if (!anchorUris.isEmpty()) {
