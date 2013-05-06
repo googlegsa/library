@@ -19,6 +19,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -52,7 +53,7 @@ public class ShutdownWaiterTest {
     long timeTakenUs = TimeUnit.MICROSECONDS.convert(
         System.nanoTime() - start, TimeUnit.NANOSECONDS);
     assertFalse(Thread.currentThread().isInterrupted());
-    assertTrue("shutdown took " + timeTakenUs + "µs", timeTakenUs < 1000);
+    assertTrue("shutdown took " + timeTakenUs + "µs", timeTakenUs < 1300);
   }
 
   @Test
@@ -91,6 +92,7 @@ public class ShutdownWaiterTest {
   @Test
   public void testInterruptNonfullWait() throws Exception {
     final AtomicBoolean completed = new AtomicBoolean();
+    final CountDownLatch latch = new CountDownLatch(1);
     Thread testThread = new Thread() {
       @Override
       public void run() {
@@ -100,6 +102,7 @@ public class ShutdownWaiterTest {
           throw new RuntimeException(e);
         }
         try {
+          latch.countDown();
           Thread.sleep(1000);
         } catch (InterruptedException ex) {
           completed.set(true);
@@ -109,8 +112,8 @@ public class ShutdownWaiterTest {
       }
     };
     testThread.start();
-    // Give time to testThread to get started.
-    Thread.sleep(1);
+    // Wait until testThread gets started.
+    latch.await();
     long start = System.nanoTime();
     // This will need to interrupt and wait for the thread to stop, but should
     // not need tons of time.
