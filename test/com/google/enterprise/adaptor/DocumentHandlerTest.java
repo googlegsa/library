@@ -1088,10 +1088,8 @@ public class DocumentHandlerTest {
         .contains("display_url=http%3A%2F%2Fwww.google.com"));
   }
 
-/*
-  TODO: enable once sending lock is possible at crawl time
   @Test
-  public void testLockHeaderSent() throws Exception {
+  public void testLockHeaderTrueSent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
           public void getDocContent(Request request, Response response)
@@ -1111,12 +1109,31 @@ public class DocumentHandlerTest {
     assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
         .contains("lock=true"));
   }
-*/
 
-/*
-  TODO: enable once sending crawl-once is possible at crawl time
   @Test
-  public void testCrawlOnceHeaderSent() throws Exception {
+  public void testLockHeaderFalseSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setLock(false);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("lock=false"));
+  }
+
+  @Test
+  public void testCrawlOnceHeaderTrueSent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
           public void getDocContent(Request request, Response response)
@@ -1134,9 +1151,30 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
-        .contains("crawl-once=true"));
+        .contains("crawl_once=true"));
   }
-*/
+
+  @Test
+  public void testCrawlOnceHeaderFalseSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setCrawlOnce(false);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("crawl_once=false"));
+  }
 
   @Test
   public void testAclMeansServeSecurity() throws Exception {

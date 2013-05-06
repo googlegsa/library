@@ -790,15 +790,9 @@ class DocumentHandler implements HttpHandler {
             String link = "display_url=" + percentEncode("" + displayUrl);
             ex.getResponseHeaders().add("X-Gsa-Doc-Controls", link);
           }
-          /*
-            TODO(ejona): enable once sending crawl-once at crawl time is possible
-            ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
-                "crawl-once=" + crawlOnce);
-          */
-          /*
-            TODO(ejona): enable once sending lock at crawl time is possible
-            ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock=" + lock);
-          */
+          ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
+              "crawl_once=" + crawlOnce);
+          ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock=" + lock);
         } else {
           acl = checkAndWorkaroundGsa70Acl(acl);
           ex.getResponseHeaders().add("X-Gsa-External-Metadata",
