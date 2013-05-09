@@ -73,6 +73,9 @@ import java.util.logging.*;
  *     in feed files. Defaults to  UTF-8
  * <tr><td align="center"> yes </td><td>gsa.hostname </td><td> machine to
  *     send feed files to.  Process errors if not provided 
+ * <tr><td> </td><td>gsa.samlEntityId </td><td> The SAML Entity ID that
+ *     identifies the GSA. Defaults to
+ *     http://google.com/enterprise/gsa/security-manager
  * <tr><td> </td><td>journal.reducedMem </td><td> avoid tracking per URL 
  *     information in RAM; suggested with over five hundred thousand documents.
  *     Defaults to true
@@ -185,6 +188,8 @@ public class Config {
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("gsa.614FeedWorkaroundEnabled", "false");
     addKey("gsa.70AuthMethodWorkaroundEnabled", "false");
+    addKey("gsa.samlEntityId",
+        "http://google.com/enterprise/gsa/security-manager");
     addKey("docId.isUrl", "false");
     addKey("feed.name", "GENERATE", new ValueComputer() {
           public String compute(String rawValue) {
@@ -516,6 +521,10 @@ public class Config {
 
   public boolean isGsa70AuthMethodWorkaroundEnabled() {
     return Boolean.parseBoolean(getValue("gsa.70AuthMethodWorkaroundEnabled"));
+  }
+
+  public String getGsaSamlEntityId() {
+    return getValue("gsa.samlEntityId");
   }
 
   /**

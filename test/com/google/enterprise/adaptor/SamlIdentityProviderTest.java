@@ -37,7 +37,8 @@ public class SamlIdentityProviderTest {
 
   private SamlMetadata metadata = new SamlMetadata(
       "bruteforce.mtv.corp.google.com", 5678,
-      "entyo36.hot.corp.google.com");
+      "entyo36.hot.corp.google.com",
+      "http://google.com/enterprise/gsa/security-manager");
   private UserPrincipal user = new UserPrincipal("user1");
   private Set<GroupPrincipal> groups = GroupPrincipal.makeSet(Arrays.asList(
       "group1", "group2"));

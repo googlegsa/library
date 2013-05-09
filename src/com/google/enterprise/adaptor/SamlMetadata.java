@@ -41,9 +41,10 @@ class SamlMetadata {
   private final XMLObjectBuilderFactory objectBuilderFactory =
       Configuration.getBuilderFactory();
 
-  public SamlMetadata(String hostname, int port, String gsaHostname) {
+  public SamlMetadata(String hostname, int port, String gsaHostname,
+      String gsaEntityId) {
     localEntity = createLocalEntity(hostname, port);
-    peerEntity = createPeerEntity(gsaHostname);
+    peerEntity = createPeerEntity(gsaHostname, gsaEntityId);
   }
 
   private EntityDescriptor createLocalEntity(String hostname, int port) {
@@ -77,12 +78,10 @@ class SamlMetadata {
     return ed;
   }
 
-  private EntityDescriptor createPeerEntity(String gsaHostname) {
+  private EntityDescriptor createPeerEntity(String gsaHostname,
+      String gsaEntityId) {
     EntityDescriptor ed = makeSamlObject(EntityDescriptor.DEFAULT_ELEMENT_NAME);
-    // This entity-id is in the form of the GSA's real id, but is just a filler,
-    // and should not be used for any verification.
-    ed.setEntityID(
-        "http://google.com/enterprise/gsa/security-manager");
+    ed.setEntityID(gsaEntityId);
 
     IDPSSODescriptor idpsso = makeSamlObject(
         IDPSSODescriptor.DEFAULT_ELEMENT_NAME);
