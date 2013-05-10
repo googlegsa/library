@@ -539,6 +539,11 @@ public final class GsaCommunicationHandler {
     }
   }
 
+  /** The adaptor instance being used. */
+  public Adaptor getAdaptor() {
+    return adaptor;
+  }
+
   HttpContext addFilters(HttpContext context) {
     context.getFilters().add(waiter.filter());
     context.getFilters().addAll(commonFilters);

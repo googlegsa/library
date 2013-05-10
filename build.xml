@@ -40,6 +40,7 @@
       <include name="jsr305.jar"/>
       <include name="gson-2.0.jar"/>
       <include name="velocity-1.5.jar"/>
+      <include name="commons-daemon-1.0.15.jar"/>
     </fileset>
   </path>
 
