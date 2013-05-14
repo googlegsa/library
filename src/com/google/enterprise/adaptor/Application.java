@@ -95,11 +95,6 @@ public final class Application {
    */
   void daemonStart() throws IOException, InterruptedException {
     gsa.start(primaryServer, dashboardServer);
-
-    if (config.isAdaptorPushDocIdsOnStartup()) {
-      log.info("Pushing once at program start");
-      gsa.checkAndScheduleImmediatePushOfDocIds();
-    }
   }
 
   /**

@@ -293,6 +293,10 @@ public final class GsaCommunicationHandler {
     sendDocIdsFuture = scheduler.schedule(
         config.getAdaptorFullListingSchedule(),
         waiter.runnable(new BackgroundRunnable(docIdFullPusher)));
+    if (config.isAdaptorPushDocIdsOnStartup()) {
+      log.info("Pushing once at program start");
+      checkAndScheduleImmediatePushOfDocIds();
+    }
 
     if (adaptor instanceof PollingIncrementalAdaptor) {
       docIdIncrementalPusher = new OneAtATimeRunnable(
