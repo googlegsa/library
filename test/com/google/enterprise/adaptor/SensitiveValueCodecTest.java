@@ -74,11 +74,7 @@ public class SensitiveValueCodecTest {
     final String golden = "";
     for (SecurityLevel security : SecurityLevel.values()) {
       String encoded = codec.encodeValue(golden, security);
-      if (security == SecurityLevel.PLAIN_TEXT) {
-        assertEquals(golden, encoded);
-      } else {
-        assertFalse(golden.equals(encoded));
-      }
+      assertFalse(golden.equals(encoded));
       assertEquals(golden, codec.decodeValue(encoded));
     }
   }

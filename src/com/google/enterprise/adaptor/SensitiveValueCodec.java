@@ -84,14 +84,11 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
     String encoded;
     switch (security) {
       case PLAIN_TEXT:
+        // We always apply the prefix, even if it isn't strictly necessary. This
+        // is to make it obvious that the process actually did something to the
+        // user and makes them more aware of the pl: prefix if they need to use
+        // it.
         encoded = readable;
-        if (!encoded.contains(":")) {
-          // If the string contains something that may be a prefix, then we want
-          // to go through the normal process of adding a the prefix. Otherwise,
-          // there should be little chance it will be mis-interpreted and the
-          // user gets to use a simplier format.
-          return encoded;
-        }
         break;
 
       case OBFUSCATED:
