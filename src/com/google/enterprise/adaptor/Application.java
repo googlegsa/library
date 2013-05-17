@@ -60,17 +60,40 @@ public final class Application {
    */
   public void start() throws IOException, InterruptedException {
     synchronized (this) {
-      if (primaryServer != null) {
-        throw new IllegalStateException("Already started");
-      }
+      daemonInit();
+
+      // The shutdown hook is purposefully not part of the deamon methods,
+      // because it should only be done when running from the command line.
       shutdownHook = new Thread(new ShutdownHook(), "gsacomm-shutdown");
       Runtime.getRuntime().addShutdownHook(shutdownHook);
-
-      primaryServer = createHttpServer();
-      dashboardServer = createDashboardHttpServer();
-      primaryServer.start();
-      dashboardServer.start();
     }
+
+    daemonStart();
+  }
+
+  /**
+   * Reserves resources for later use. This may be run with different
+   * permissions (like as root), to reserve ports or other things that need
+   * elevated privileges.
+   */
+  synchronized void daemonInit() throws IOException {
+    if (primaryServer != null) {
+      throw new IllegalStateException("Already started");
+    }
+    primaryServer = createHttpServer(config);
+    dashboardServer = createDashboardHttpServer(config);
+    // Because once stopped the server can't be reused, we can't reuse its
+    // bind()ed socket if we stop it. So although ideally we would start/stop in
+    // daemonStart/daemonStop, we instead must do it in
+    // daemonInit/daemonDestroy.
+    primaryServer.start();
+    dashboardServer.start();
+  }
+
+  /**
+   * Really start. This must be called after a successful {@link #daemonInit}.
+   */
+  void daemonStart() throws IOException, InterruptedException {
     gsa.start(primaryServer, dashboardServer);
   }
 
@@ -79,9 +102,8 @@ public final class Application {
    * shutdown.
    */
   public synchronized void stop(long time, TimeUnit unit) {
-    if (primaryServer == null) {
-      throw new IllegalStateException("Already stopped");
-    }
+    daemonStop(time, unit);
+    daemonDestroy(time, unit);
     if (shutdownHook != null) {
       try {
         Runtime.getRuntime().removeShutdownHook(shutdownHook);
@@ -90,26 +112,42 @@ public final class Application {
       }
       shutdownHook = null;
     }
+  }
 
+  /**
+   * Stop all the services we provide. This is the opposite of {@link
+   * #daemonStart}.
+   */
+  synchronized void daemonStop(long time, TimeUnit unit) {
+    if (primaryServer == null) {
+      throw new IllegalStateException("Already stopped");
+    }
     gsa.stop(time, unit);
-    SleepHandler sleepHandler = new SleepHandler(100 /* millis */);
-    // Workaround Java Bug 7105369.
-    primaryServer.createContext(SLEEP_PATH, sleepHandler);
-    issueSleepGetRequest(config.getServerPort());
+  }
 
-    primaryServer.stop((int) unit.toSeconds(time));
+  /**
+   * Release reserved resources. This is the opposite of {@link
+   * #daemonInit}.
+   */
+  synchronized void daemonDestroy(long time, TimeUnit unit) {
+    httpServerShutdown(primaryServer, time, unit);
     log.finer("Completed primary server stop");
-    ((ExecutorService) primaryServer.getExecutor()).shutdownNow();
     primaryServer = null;
 
-    // Workaround Java Bug 7105369.
-    dashboardServer.createContext(SLEEP_PATH, sleepHandler);
-    issueSleepGetRequest(config.getServerDashboardPort());
-
-    dashboardServer.stop((int) unit.toSeconds(time));
-    ((ExecutorService) dashboardServer.getExecutor()).shutdownNow();
+    httpServerShutdown(dashboardServer, time, unit);
     log.finer("Completed dashboard stop");
     dashboardServer = null;
+  }
+
+  private static void httpServerShutdown(HttpServer server, long time,
+      TimeUnit unit) {
+    // Workaround Java Bug 7105369.
+    SleepHandler sleepHandler = new SleepHandler(100 /* millis */);
+    server.createContext(SLEEP_PATH, sleepHandler);
+    issueSleepGetRequest(server.getAddress(), server instanceof HttpsServer);
+
+    server.stop((int) unit.toSeconds(time));
+    ((ExecutorService) server.getExecutor()).shutdownNow();
   }
 
   /**
@@ -127,11 +165,12 @@ public final class Application {
    * before calling stop(). In the event everything goes as planned, the request
    * completes after stop() has been called and allows stop() to exit quickly.
    */
-  private void issueSleepGetRequest(int port) {
+  private static void issueSleepGetRequest(InetSocketAddress address,
+      boolean isHttps) {
     URL url;
     try {
-      url = new URL(config.isServerSecure() ? "https" : "http",
-          config.getServerHostname(), port, SLEEP_PATH);
+      url = new URL(isHttps ? "https" : "http",
+          address.getAddress().getHostAddress(), address.getPort(), SLEEP_PATH);
     } catch (MalformedURLException ex) {
       log.log(Level.WARNING,
           "Unexpected error. Shutting down will be slow.", ex);
@@ -165,7 +204,7 @@ public final class Application {
     }).start();
   }
 
-  private HttpServer createHttpServer() throws IOException {
+  private static HttpServer createHttpServer(Config config) throws IOException {
     HttpServer server;
     if (!config.isServerSecure()) {
       server = HttpServer.create();
@@ -206,7 +245,8 @@ public final class Application {
     return server;
   }
 
-  private HttpServer createDashboardHttpServer() throws IOException {
+  private static HttpServer createDashboardHttpServer(Config config)
+      throws IOException {
     boolean secure = config.isServerSecure();
     HttpServer server;
     if (!secure) {
@@ -247,6 +287,11 @@ public final class Application {
     return gsa;
   }
 
+  /** Returns the {@link Config} used by this instance. */
+  public Config getConfig() {
+    return config;
+  }
+
   /**
    * Main for adaptors to utilize when wanting to act as an application. This
    * method primarily parses arguments and creates an application instance
@@ -255,14 +300,7 @@ public final class Application {
    * @return the application instance in use
    */
   public static Application main(Adaptor adaptor, String[] args) {
-    Config config = new Config();
-    adaptor.initConfig(config);
-    config.autoConfig(args);
-
-    if (config.useAdaptorAutoUnzip()) {
-      adaptor = new AutoUnzipAdaptor(adaptor);
-    }
-    Application app = new Application(adaptor, config);
+    Application app = daemonMain(adaptor, args);
 
     // Setup providing content.
     try {
@@ -274,12 +312,22 @@ public final class Application {
       throw new RuntimeException("could not start serving", e);
     }
 
-    if (config.isAdaptorPushDocIdsOnStartup()) {
-      log.info("Pushing once at program start");
-      app.getGsaCommunicationHandler().checkAndScheduleImmediatePushOfDocIds();
-    }
-
     return app;
+  }
+
+  /**
+   * Performs basic bootstrapping like normal {@link #main}, but does not start
+   * the application.
+   */
+  static Application daemonMain(Adaptor adaptor, String[] args) {
+    Config config = new Config();
+    adaptor.initConfig(config);
+    config.autoConfig(args);
+
+    if (config.useAdaptorAutoUnzip()) {
+      adaptor = new AutoUnzipAdaptor(adaptor);
+    }
+    return new Application(adaptor, config);
   }
 
   private class ShutdownHook implements Runnable {

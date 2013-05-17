@@ -130,6 +130,7 @@ public class GsaCommunicationHandlerTest {
   @Test
   public void testFullPushAfterReload() throws Exception {
     NullAdaptor adaptor = new NullAdaptor();
+    config.setValue("adaptor.pushDocIdsOnStartup", "false");
     gsa = new GsaCommunicationHandler(adaptor, config);
     gsa.start(mockServer, mockServer);
     gsa.stop(1, TimeUnit.SECONDS);

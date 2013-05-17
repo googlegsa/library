@@ -83,6 +83,7 @@ public class ShutdownWaiterTest {
     assertFalse(waiter.shutdown(1, TimeUnit.MILLISECONDS));
     long timeTakenUs = TimeUnit.MICROSECONDS.convert(
         System.nanoTime() - start, TimeUnit.NANOSECONDS);
+    testThread.join();
     assertTrue(interrupted.get());
     waiter.processingCompleted(testThread);
     assertTrue("shutdown took " + timeTakenUs + "µs",
