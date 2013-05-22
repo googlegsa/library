@@ -105,6 +105,9 @@ import java.util.logging.*;
  * <tr><td> </td><td>server.reverseProxyProtocol </td><td> either http or https,
  *     depending on  proxy traffic.  Defaults to https in secure
  *     mode and http otherwise
+ * <tr><td> </td><td>server.samlEntityId </td><td> The SAML Entity ID that the
+ *     Adaptor will use to identity itself. Defaults to
+ *     http://google.com/enterprise/gsa/adaptor
  * <tr><td> </td><td>server.secure </td><td> enables https and certificate
  *     checking. Defaults to false
  * <tr><td> </td><td>server.useCompression </td><td> compress retrieval
@@ -184,6 +187,7 @@ public class Config {
     // for each request.
     addKey("server.queueCapacity", "160");
     addKey("server.useCompression", "true");
+    addKey("server.samlEntityId", "http://google.com/enterprise/gsa/adaptor");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("gsa.614FeedWorkaroundEnabled", "false");
@@ -398,6 +402,10 @@ public class Config {
    */
   public int getServerQueueCapacity() {
     return Integer.parseInt(getValue("server.queueCapacity"));
+  }
+
+  public String getServerSamlEntityId() {
+    return getValue("server.samlEntityId");
   }
 
   public boolean isServerToUseCompression() {

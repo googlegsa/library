@@ -39,7 +39,8 @@ public class SamlAssertionConsumerHandlerTest {
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
           new SessionManager.HttpExchangeClientStore(), 1000, 1000);
   private SamlMetadata metadata = new SamlMetadata("localhost", 80,
-      "thegsa", "http://google.com/enterprise/gsa/security-manager");
+      "thegsa", "http://google.com/enterprise/gsa/security-manager",
+      "http://google.com/enterprise/gsa/adaptor");
   private SamlAssertionConsumerHandler handler
       = new SamlAssertionConsumerHandler(sessionManager);
   private MockHttpExchange ex

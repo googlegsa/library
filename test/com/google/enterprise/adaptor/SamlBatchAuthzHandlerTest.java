@@ -37,7 +37,8 @@ public class SamlBatchAuthzHandlerTest {
 
   private MockAdaptor adaptor = new MockAdaptor();
   private SamlMetadata samlMetadata = new SamlMetadata("localhost", 80,
-      "localhost", "http://google.com/enterprise/gsa/security-manager");
+      "localhost", "http://google.com/enterprise/gsa/security-manager",
+      "http://google.com/enterprise/gsa/adaptor");
   private SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
       adaptor, new MockDocIdCodec(), samlMetadata);
   private MockHttpExchange ex = new MockHttpExchange("POST", "/",

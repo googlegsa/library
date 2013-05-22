@@ -44,7 +44,8 @@ public class AuthnHandlerTest {
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
           new SessionManager.HttpExchangeClientStore(), 1000, 1000);
   private SamlMetadata metadata = new SamlMetadata("localhost", 80,
-      "thegsa", "http://google.com/enterprise/gsa/security-manager");
+      "thegsa", "http://google.com/enterprise/gsa/security-manager",
+      "http://google.com/enterprise/gsa/adaptor");
   private HttpClientAdapter httpClient = new HttpClientAdapter();
   private AuthnHandler handler = new AuthnHandler(sessionManager, metadata,
       httpClient, null);

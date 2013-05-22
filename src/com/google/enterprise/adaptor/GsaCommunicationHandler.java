@@ -243,7 +243,7 @@ public final class GsaCommunicationHandler {
       bootstrapOpenSaml();
       SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
           config.getServerPort(), config.getGsaHostname(),
-          config.getGsaSamlEntityId());
+          config.getGsaSamlEntityId(), config.getServerSamlEntityId());
 
       if (adaptor instanceof AuthnAdaptor) {
         log.config("Adaptor is an AuthnAdaptor; enabling adaptor-based "

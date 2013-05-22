@@ -42,15 +42,15 @@ class SamlMetadata {
       Configuration.getBuilderFactory();
 
   public SamlMetadata(String hostname, int port, String gsaHostname,
-      String gsaEntityId) {
-    localEntity = createLocalEntity(hostname, port);
+      String gsaEntityId, String adaptorEntityId) {
+    localEntity = createLocalEntity(hostname, port, adaptorEntityId);
     peerEntity = createPeerEntity(gsaHostname, gsaEntityId);
   }
 
-  private EntityDescriptor createLocalEntity(String hostname, int port) {
+  private EntityDescriptor createLocalEntity(String hostname, int port,
+      String adaptorEntityId) {
     EntityDescriptor ed = makeSamlObject(EntityDescriptor.DEFAULT_ELEMENT_NAME);
-    // TODO(ejona): It may be useful to make this instance-specific.
-    ed.setEntityID("http://google.com/enterprise/gsa/adaptor");
+    ed.setEntityID(adaptorEntityId);
 
     SPSSODescriptor spsso = makeSamlObject(
         SPSSODescriptor.DEFAULT_ELEMENT_NAME);
