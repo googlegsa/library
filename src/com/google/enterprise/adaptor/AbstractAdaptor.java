@@ -30,7 +30,7 @@ public abstract class AbstractAdaptor implements Adaptor {
   /**
    * {@inheritDoc}
    *
-   * <p>This implementation provides {@link AuthzStatus#PERMIT} for all {@code
+   * <p>This implementation provides {@link AuthzStatus#DENY} for all {@code
    * DocId}s in an unmodifiable map.
    */
   @Override
@@ -39,7 +39,7 @@ public abstract class AbstractAdaptor implements Adaptor {
     Map<DocId, AuthzStatus> result
         = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
     for (DocId id : ids) {
-      result.put(id, AuthzStatus.PERMIT);
+      result.put(id, AuthzStatus.DENY);
     }
     return Collections.unmodifiableMap(result);
   }

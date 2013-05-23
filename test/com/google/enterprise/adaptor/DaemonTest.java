@@ -119,7 +119,7 @@ public class DaemonTest {
    * Adaptor with a single document. Marked public so that it can be loaded by
    * Daemon.
    */
-  public static class SingleDocAdaptor extends AbstractAdaptor {
+  public static class SingleDocAdaptor extends MockAdaptor {
     private volatile boolean inited;
 
     @Override
@@ -130,11 +130,6 @@ public class DaemonTest {
     @Override
     public void destroy() {
       inited = false;
-    }
-
-    @Override
-    public void getDocIds(DocIdPusher pusher) {
-      throw new UnsupportedOperationException();
     }
 
     @Override

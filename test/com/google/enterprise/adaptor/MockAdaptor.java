@@ -15,9 +15,10 @@
 package com.google.enterprise.adaptor;
 
 import java.io.IOException;
+import java.util.*;
 
 /**
- * Mock of {@link Adaptor}.
+ * Mock of {@link Adaptor}. All documents authz as PERMIT.
  */
 class MockAdaptor extends AbstractAdaptor {
   public byte[] documentBytes = new byte[] {1, 2, 3};
@@ -32,5 +33,16 @@ class MockAdaptor extends AbstractAdaptor {
   public void getDocContent(Request request, Response response)
       throws IOException, InterruptedException {
     response.getOutputStream().write(documentBytes);
+  }
+
+  @Override
+  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
+      Collection<DocId> ids) {
+    Map<DocId, AuthzStatus> result
+        = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
+    for (DocId id : ids) {
+      result.put(id, AuthzStatus.PERMIT);
+    }
+    return Collections.unmodifiableMap(result);
   }
 }
