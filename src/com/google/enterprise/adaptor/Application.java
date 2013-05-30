@@ -14,14 +14,18 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.*;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -36,6 +40,8 @@ import javax.net.ssl.SSLParameters;
  */
 public final class Application {
   private static final String SLEEP_PATH = "/sleep";
+  private static final String DEFAULT_CONFIG_FILE
+      = "adaptor-config.properties";
 
   private static final Logger log
       = Logger.getLogger(Application.class.getName());
@@ -293,6 +299,51 @@ public final class Application {
   }
 
   /**
+   * Load default configuration file and parse command line options.
+   *
+   * @return unused command line arguments
+   * @throws IllegalStateException when not all configuration keys have values
+   */
+  @VisibleForTesting
+  static String[] autoConfig(Config config, String[] args, File configFile) {
+    int i;
+    for (i = 0; i < args.length; i++) {
+      if (!args[i].startsWith("-D")) {
+        break;
+      }
+      String arg = args[i].substring(2);
+      String[] parts = arg.split("=", 2);
+      if (parts.length < 2) {
+        break;
+      }
+      config.setValue(parts[0], parts[1]);
+    }
+    loadConfigFile(config, configFile);
+    config.validate();
+    if (i == 0) {
+      return args;
+    } else {
+      return Arrays.copyOfRange(args, i, args.length);
+    }
+  }
+
+  /**
+   * Loads the provided config file, if it exists. It squelches any errors so
+   * that you are free to call it without error handling, since this is
+   * typically non-fatal.
+   */
+  private static void loadConfigFile(Config config, File configFile) {
+    if (configFile.exists() && configFile.isFile()) {
+      try {
+        config.load(configFile);
+      } catch (IOException ex) {
+        System.err.println("Exception when reading " + configFile);
+        ex.printStackTrace(System.err);
+      }
+    }
+  }
+
+  /**
    * Main for adaptors to utilize when wanting to act as an application. This
    * method primarily parses arguments and creates an application instance
    * before calling it's {@link #start}.
@@ -322,7 +373,7 @@ public final class Application {
   static Application daemonMain(Adaptor adaptor, String[] args) {
     Config config = new Config();
     adaptor.initConfig(config);
-    config.autoConfig(args);
+    autoConfig(config, args, new File(DEFAULT_CONFIG_FILE));
 
     if (config.useAdaptorAutoUnzip()) {
       adaptor = new AutoUnzipAdaptor(adaptor);

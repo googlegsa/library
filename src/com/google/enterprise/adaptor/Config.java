@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import java.io.*;
 import java.net.InetAddress;
 import java.net.URI;
@@ -121,9 +119,6 @@ import java.util.logging.*;
  * </table>
  */
 public class Config {
-  private static final String DEFAULT_CONFIG_FILE
-      = "adaptor-config.properties";
-
   private static final Logger log = Logger.getLogger(Config.class.getName());
 
   /** Configuration keys whose default value is {@code null}. */
@@ -134,9 +129,6 @@ public class Config {
   // Reads require no additional locks, but modifications require lock on 'this'
   // to prevent lost updates.
   private volatile Properties config = new Properties(defaultConfig);
-  /** Default configuration to use in {@link #loadDefaultConfigFile}. */
-  @VisibleForTesting
-  File defaultConfigFile = new File(DEFAULT_CONFIG_FILE);
   /**
    * The actual config file in use, or {@code null} if none have been loaded.
    */
@@ -641,23 +633,6 @@ public class Config {
     return differentKeys;
   }
 
-  /**
-   * Loads {@code adaptor-config.properties} in the current directory, if it
-   * exists. It squelches any errors so that you are free to call it without
-   * error handling, since this is typically non-fatal.
-   */
-  public void loadDefaultConfigFile() {
-    configFile = defaultConfigFile;
-    if (configFile.exists() && configFile.isFile()) {
-      try {
-        load(configFile);
-      } catch (IOException ex) {
-        System.err.println("Exception when reading " + configFile);
-        ex.printStackTrace(System.err);
-      }
-    }
-  }
-
   public void validate() {
     validate(config);
   }
@@ -671,34 +646,6 @@ public class Config {
     }
     if (unset.size() != 0) {
       throw new IllegalStateException("Missing configuration values: " + unset);
-    }
-  }
-
-  /**
-   * Load default configuration file and parse command line options.
-   *
-   * @return unused command line arguments
-   * @throws IllegalStateException when not all configuration keys have values
-   */
-  public String[] autoConfig(String[] args) {
-    int i;
-    for (i = 0; i < args.length; i++) {
-      if (!args[i].startsWith("-D")) {
-        break;
-      }
-      String arg = args[i].substring(2);
-      String[] parts = arg.split("=", 2);
-      if (parts.length < 2) {
-        break;
-      }
-      setValue(parts[0], parts[1]);
-    }
-    loadDefaultConfigFile();
-    validate();
-    if (i == 0) {
-      return args;
-    } else {
-      return Arrays.copyOfRange(args, i, args.length);
     }
   }
 

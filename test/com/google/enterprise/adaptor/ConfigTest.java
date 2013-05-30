@@ -30,28 +30,13 @@ public class ConfigTest {
   public ExpectedException thrown = ExpectedException.none();
 
   private MockFile configFile = new MockFile("non-existent-file");
-  private Config config = new ModifiedConfig(configFile);
+  private Config config = new ModifiedConfig();
 
   @Test
   public void testNoInputLoad() {
-    configFile.setExists(false);
     // Requires gsa.hostname to be set
     thrown.expect(IllegalStateException.class);
-    config.autoConfig(new String[0]);
-  }
-
-  @Test
-  public void testCommandLine() {
-    configFile.setExists(false);
-    config.autoConfig(new String[] {"-Dgsa.hostname=notreal"});
-    assertEquals("notreal", config.getGsaHostname());
-  }
-
-  @Test
-  public void testConfigFile() {
-    configFile.setFileContents("gsa.hostname=notreal\n");
-    config.autoConfig(new String[0]);
-    assertEquals("notreal", config.getGsaHostname());
+    config.validate();
   }
 
   @Test
@@ -83,7 +68,8 @@ public class ConfigTest {
   @Test
   public void testConfigModificationDetection() throws Exception {
     configFile.setFileContents("adaptor.fullListingSchedule=1\n");
-    config.autoConfig(new String[] {"-Dgsa.hostname=notreal"});
+    config.setValue("gsa.hostname", "notreal");
+    config.load(configFile);
     assertEquals("notreal", config.getGsaHostname());
     assertEquals("1", config.getAdaptorFullListingSchedule());
 
@@ -197,56 +183,9 @@ public class ConfigTest {
   }
 
   private static class ModifiedConfig extends Config {
-    public ModifiedConfig(MockFile file) {
-      this.defaultConfigFile = file;
-    }
-
     @Override
     protected Reader createReader(File file) throws IOException {
       return ((MockFile) file).createReader();
-    }
-  }
-
-  private static class MockFile extends File {
-    private String fileContents = "";
-    private long lastModified;
-    private boolean exists = true;
-
-    public MockFile(String name) {
-      super(name);
-    }
-
-    public Reader createReader() {
-      return new StringReader(fileContents);
-    }
-
-    public void setFileContents(String fileContents) {
-      this.fileContents = fileContents;
-    }
-
-    @Override
-    public long lastModified() {
-      return lastModified;
-    }
-
-    @Override
-    public boolean setLastModified(long time) {
-      this.lastModified = time;
-      return true;
-    }
-
-    @Override
-    public boolean exists() {
-      return exists;
-    }
-
-    public void setExists(boolean exists) {
-      this.exists = exists;
-    }
-
-    @Override
-    public boolean isFile() {
-      return true;
     }
   }
 }

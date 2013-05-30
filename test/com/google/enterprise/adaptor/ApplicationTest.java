@@ -19,7 +19,7 @@ import static org.junit.Assert.*;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
+import java.io.*;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.TimeUnit;
@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class ApplicationTest {
   private Config config;
   private NullAdaptor adaptor = new NullAdaptor();
+  private MockFile configFile = new MockFile("non-existent-file");
   private Application app;
 
   @Rule
@@ -35,7 +36,7 @@ public class ApplicationTest {
 
   @Before
   public void setup() {
-    config = new Config();
+    config = new ModifiedConfig();
     config.setValue("gsa.hostname", "localhost");
     // Let the OS choose the port
     config.setValue("server.port", "0");
@@ -52,6 +53,23 @@ public class ApplicationTest {
         app.stop(0, TimeUnit.SECONDS);
       }
     }).start();
+  }
+
+  @Test
+  public void testCommandLine() {
+    config = new ModifiedConfig();
+    configFile.setExists(false);
+    Application.autoConfig(config, new String[] {"-Dgsa.hostname=notreal"},
+        configFile);
+    assertEquals("notreal", config.getGsaHostname());
+  }
+
+  @Test
+  public void testConfigFile() {
+    config = new ModifiedConfig();
+    configFile.setFileContents("gsa.hostname=notreal\n");
+    Application.autoConfig(config, new String[0], configFile);
+    assertEquals("notreal", config.getGsaHostname());
   }
 
   @Test
@@ -144,6 +162,13 @@ public class ApplicationTest {
     @Override
     public void getDocContent(Request req, Response resp) throws IOException {
       throw new UnsupportedOperationException();
+    }
+  }
+
+  private static class ModifiedConfig extends Config {
+    @Override
+    Reader createReader(File file) throws IOException {
+      return ((MockFile) file).createReader();
     }
   }
 }
