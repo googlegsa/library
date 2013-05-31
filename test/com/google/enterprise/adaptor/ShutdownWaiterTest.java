@@ -80,14 +80,16 @@ public class ShutdownWaiterTest {
     waiter.processingStarting(testThread);
     long start = System.nanoTime();
     // This will need to wait the entire allocated time.
-    assertFalse(waiter.shutdown(1, TimeUnit.MILLISECONDS));
+    assertFalse(waiter.shutdown(50, TimeUnit.MILLISECONDS));
     long timeTakenUs = TimeUnit.MICROSECONDS.convert(
         System.nanoTime() - start, TimeUnit.NANOSECONDS);
     testThread.join();
     assertTrue(interrupted.get());
     waiter.processingCompleted(testThread);
+    // Because the test blocks, it causes noticeable variation occasionally.
+    // Thus the high amount of slop.
     assertTrue("shutdown took " + timeTakenUs + "µs",
-        timeTakenUs > 800 && timeTakenUs < 1800);
+        timeTakenUs > 48000 && timeTakenUs < 58000);
   }
 
   @Test
