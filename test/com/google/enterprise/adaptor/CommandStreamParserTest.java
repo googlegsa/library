@@ -28,6 +28,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -159,7 +161,17 @@ public class CommandStreamParserTest {
         "id=123\n" +
         "up-to-date\n" +
         "UNKNOWN_COMMAND=abcdefghi\n" +
-        "meta-name=project\nmeta-value=plexi\ncontent\n2468";
+        "meta-name=project\nmeta-value=plexi\n" +
+        "last-modified=15\n" +
+        "secure=true\n" +
+        "anchor-uri=http://example.com/doc\nanchor-text=It is an example\n" +
+        "no-index=true\n" +
+        "no-follow=true\n" +
+        "no-archive=true\n" +
+        "display-url=http://example.com/thisDoc\n" +
+        "crawl-once=true\n" +
+        "lock=true\n" +
+        "content\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -174,6 +186,16 @@ public class CommandStreamParserTest {
     assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
     Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
+    assertEquals(new Date(15 * 1000), response.getLastModified());
+    assertEquals(true, response.isSecure());
+    assertEquals(Arrays.asList(URI.create("http://example.com/doc")), response.getAnchorUris());
+    assertEquals(Arrays.asList("It is an example"), response.getAnchorTexts());
+    assertEquals(true, response.isNoIndex());
+    assertEquals(true, response.isNoFollow());
+    assertEquals(true, response.isNoArchive());
+    assertEquals(URI.create("http://example.com/thisDoc"), response.getDisplayUrl());
+    assertEquals(true, response.isCrawlOnce());
+    assertEquals(true, response.isLock());
     assertEquals("plexi", metadata.getOneValue("project"));
   }
 

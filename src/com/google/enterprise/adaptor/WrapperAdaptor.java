@@ -314,6 +314,10 @@ abstract class WrapperAdaptor implements Adaptor {
       return contentType;
     }
 
+    public Date getLastModified() {
+      return lastModified;
+    }
+
     /** Returns reference to modifiable accumulated metadata. */
     public Metadata getMetadata() {
       return metadata;
@@ -321,6 +325,10 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public Acl getAcl() {
       return acl;
+    }
+
+    public boolean isSecure() {
+      return secure;
     }
 
     public List<URI> getAnchorUris() {

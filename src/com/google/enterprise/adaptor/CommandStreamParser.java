@@ -121,11 +121,43 @@ import java.util.regex.Pattern;
  * "mime-type=" -- specifies the document's mime-type. If unspecified then the GSA will
  * automatically assign a type to the document. <p>
  *
+ * "meta-name=" -- specifies a metadata key, to be followed by a metadata-value<p>
+ *
  * "meta-value=" -- specifies a metadata value associated with
  * immediately preceding metadata-name<p>
  *
  * "content" -- signals the beginning of binary content which
  * continues to the end of the file or stream<p>
+ *
+ * "last-modified=" -- specifies the last time the document or its metadata has changed.
+ * The argument is a number representing the number of seconds since the standard base
+ * time known as the epoch", namely January 1, 1970, 00:00:00 GMT.<p>
+ *
+ * "secure=" -- specifies whether the document is non-public. The argument is either 'true' or
+ * 'false'.<p>
+ *
+ * "anchor-uri=" -- specifies an anchor URI, to be followed by anchor-text.<p>
+ *
+ * "anchor-text=" -- specifies the text associated with an anchor-uri.<p>
+ *
+ * "no-index=" -- specifies whether the document should be indexed by the GSA. The argument is
+ * either 'true' or 'false'.<p>
+ *
+ * "no-follow=" -- specifies whether the document's links should be followed by the GSA. The
+ * argument is either 'true' or 'false'.<p>
+ *
+ * "no-archive=" -- specifies whether GSA document will allow the user to see a cached version of
+ * the document. The argument is either 'true' or 'false'.<p>
+ *
+ * "display-url=" -- specifies an alternative link to be displayed in the search results.
+ * This must be a properly formed URL.<p>
+ *
+ * "crawl-once=" -- specifies that the document will be crawled by the
+ * GSA one time but then never re-crawled. The argument should be 'true' or 'false'.<p>
+ *
+ * "lock=" -- Causes the document to remain in the index unless explicitly removed.
+ * If every document in the GSA is locked then locked document may be forced out when maximum
+ * capacity is reached.<p>
  *
  * <h1>Authorizer Commands:</h1>
  *
@@ -224,6 +256,13 @@ public class CommandStreamParser {
     META_VALUE("meta-value"),
     CONTENT("content"),
     AUTHZ_STATUS("authz-status"),
+    SECURE("secure"),
+    ANCHOR_URI("anchor-uri"),
+    ANCHOR_TEXT("anchor-text"),
+    NO_INDEX("no-index"),
+    NO_FOLLOW("no-follow"),
+    NO_ARCHIVE("no-archive"),
+    DISPLAY_URL("display-url"),
     ;
 
     private final String commandName;
@@ -382,6 +421,39 @@ public class CommandStreamParser {
           log.log(Level.FINEST, "Retriever: {0} has mime-type {1}",
               new Object[] {docId.getUniqueId(), command.getArgument()});
           response.setContentType(command.getArgument());
+          break;
+        case LAST_MODIFIED:
+          // Convert seconds to milliseconds for Date constructor.
+          response.setLastModified(new Date(Long.parseLong(command.getArgument()) * 1000));
+          break;
+        case SECURE:
+          response.setSecure(Boolean.parseBoolean(command.getArgument()));
+          break;
+        case ANCHOR_URI:
+          URI anchorUri = URI.create(command.getArgument());
+          command = readCommand();
+          if (command == null || command.getOperation() != Operation.ANCHOR_TEXT) {
+            throw new IOException("anchor-uri must be immediately followed by anchor-text");
+          }
+          response.addAnchor(anchorUri, command.getArgument());
+          break;
+        case NO_INDEX:
+          response.setNoIndex(Boolean.parseBoolean(command.getArgument()));
+          break;
+        case NO_FOLLOW:
+          response.setNoFollow(Boolean.parseBoolean(command.getArgument()));
+          break;
+        case NO_ARCHIVE:
+          response.setNoArchive(Boolean.parseBoolean(command.getArgument()));
+          break;
+        case DISPLAY_URL:
+          response.setDisplayUrl(URI.create(command.getArgument()));
+          break;
+        case CRAWL_ONCE:
+          response.setCrawlOnce(Boolean.parseBoolean(command.getArgument()));
+          break;
+        case LOCK:
+          response.setLock(Boolean.parseBoolean(command.getArgument()));
           break;
         default:
           throw new IOException("Retriever Error: invalid operation: '" + command.getOperation() +
