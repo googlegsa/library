@@ -27,6 +27,9 @@ class MockFile extends File {
   }
 
   public Reader createReader() {
+    if (!exists) {
+      throw new IllegalStateException("File does not exist");
+    }
     return new StringReader(fileContents);
   }
 
@@ -36,13 +39,16 @@ class MockFile extends File {
 
   @Override
   public long lastModified() {
+    if (!exists) {
+      return 0;
+    }
     return lastModified;
   }
 
   @Override
   public boolean setLastModified(long time) {
     this.lastModified = time;
-    return true;
+    return exists;
   }
 
   @Override
@@ -56,6 +62,7 @@ class MockFile extends File {
 
   @Override
   public boolean isFile() {
-    return true;
+    // This only mocks files, not directories and the like.
+    return exists;
   }
 }
