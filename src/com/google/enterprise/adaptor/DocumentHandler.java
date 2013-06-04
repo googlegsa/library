@@ -193,7 +193,7 @@ class DocumentHandler implements HttpHandler {
     if ("GET".equals(requestMethod) || "HEAD".equals(requestMethod)) {
       /* Call into adaptor developer code to get document bytes. */
       DocId docId = docIdDecoder.decodeDocId(HttpExchanges.getRequestUri(ex));
-      log.fine("id: " + docId.getUniqueId());
+      log.log(Level.FINE, "DocId: {0}", docId.getUniqueId());
 
       if (!authzed(ex, docId)) {
         return;
