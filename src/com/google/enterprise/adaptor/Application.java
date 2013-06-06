@@ -374,10 +374,6 @@ public final class Application {
     Config config = new Config();
     adaptor.initConfig(config);
     autoConfig(config, args, new File(DEFAULT_CONFIG_FILE));
-
-    if (config.useAdaptorAutoUnzip()) {
-      adaptor = new AutoUnzipAdaptor(adaptor);
-    }
     return new Application(adaptor, config);
   }
 

@@ -32,8 +32,6 @@ import java.util.logging.*;
  * <table>
  * <tr><td align=center><b>required?</b></td>
  *     <td><b>name</b></td><td><b>meaning</b></td>
- * <tr><td> </td><td>adaptor.autoUnzip </td><td> expand zip files and send
- *     each file inside   separatly.  Defaults to false
  * <tr><td> </td><td>adaptor.sendDocControlsHeader </td><td>use 
  *      X-Gsa-Doc-Controls HTTP header with namespaced ACLs.
  *      Otherwise ACLs are sent without namespace and as metadata.
@@ -201,7 +199,6 @@ public class Config {
     //addKey("feed.noFollowBitEnabled", "false");
     addKey("feed.maxUrls", "5000");
     addKey("adaptor.pushDocIdsOnStartup", "true");
-    addKey("adaptor.autoUnzip", "false");
     // 3:00 AM every day.
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
     // 15 minutes.
@@ -432,14 +429,6 @@ public class Config {
   boolean isAdaptorPushDocIdsOnStartup() {
     return Boolean.parseBoolean(getValue("adaptor.pushDocIdsOnStartup"));
   }
-
-  /**
-   * Automatically unzips and {@code DocId}s ending in {@code .zip} and provides
-   * them to the GSA.
-   */
-  boolean useAdaptorAutoUnzip() {
-    return Boolean.parseBoolean(getValue("adaptor.autoUnzip"));
-  } 
 
   /**
    * Cron-style format for describing when the adaptor should perform full

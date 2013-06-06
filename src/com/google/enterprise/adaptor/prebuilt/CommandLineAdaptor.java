@@ -60,9 +60,6 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     config.addKey("commandline.lister.cmd", null);
     config.addKey("commandline.retriever.cmd", null);
     config.addKey("commandline.authorizer.delimeter", "\0");
-    // Change the default to automatically provide unzipped zip contents to the
-    // GSA.
-    config.overrideKey("adaptor.autoUnzip", "true");
   }
 
 

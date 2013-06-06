@@ -44,9 +44,6 @@ public class FileSystemAdaptor extends AbstractAdaptor {
     // Create a new configuration key for letting the user configure this
     // adaptor.
     config.addKey("filesystemadaptor.src", ".");
-    // Change the default to automatically provide unzipped zip contents to the
-    // GSA.
-    config.overrideKey("adaptor.autoUnzip", "true");
   }
 
   @Override
