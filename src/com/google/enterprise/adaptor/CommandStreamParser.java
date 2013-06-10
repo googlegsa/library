@@ -41,6 +41,11 @@ import java.util.regex.Pattern;
  * coming back from the command line adaptor implementation. The format supports a mixture of
  * character and binary data. All character data must be encoded in UTF-8.<p>
  *
+ * Character data technically supports a 'modified UTF-8'. The modified UTF-8 encoding allows
+ * newlines and the null character to be encoded as 2-bytes instead of one. Instead of byte 0x00,
+ * the null character \0 can be encoded as 0xC0 0x80. Instead of byte 0x0a, the line feed character
+ * \n can be encoded as 0xC0 0x8a.<p>
+ *
  * <h3>Header Format</h3>
  *
  * Communications (via either file or stream) begin with the header:<p>
@@ -59,7 +64,9 @@ import java.util.regex.Pattern;
  * is likely to be the null character (the character with a value of zero). This character is
  * unlikely to be present in existing names, paths, metadata, etc. Another possible choice is the
  * newline character, though in many systems it is possible for this character to be present in
- * document names and document paths, etc. If in doubt, the null character is recommended. A
+ * document names and document paths, etc. If in doubt, the null character is recommended. Because
+ * modified UTF-8 is supported, newlines or null characters in document IDs, metadata, and the like
+ * can be encoded in their 2-byte form which which will not be confused with the delimiter. A
  * delimiter can be made up of more than one character so it is possible to have a delimiter that is
  * <CR><LF> or a highly unique string (such as a GUID) that has an exceptionally low probability of
  * occurring in the data.<p>
@@ -788,6 +795,54 @@ public class CommandStreamParser {
     if (bytes == null) {
       return null;
     }
+    bytes = convertModifiedUtf8ToStandardUtf8(bytes);
     return CHARSET.newDecoder().decode(ByteBuffer.wrap(bytes)).toString();
+  }
+
+  /**
+   * Converts modified UTF-8 that supports 2-byte \n and \0 to standard UTF-8. It replaces
+   * 0xC0 0x80 with 0x00 and 0xC0 0x8a with 0x0a.
+   */
+  private static byte[] convertModifiedUtf8ToStandardUtf8(byte[] bytes) throws IOException {
+    // Byte 0xC0 is always invalid in standard UTF-8, so its presence implies modified UTF-8.
+    int numberOfByteC0 = 0;
+    for (int i = 0; i < bytes.length; i++) {
+      if (bytes[i] == (byte) 0xC0) {
+        numberOfByteC0++;
+      }
+    }
+    if (numberOfByteC0 == 0) {
+      return bytes;
+    }
+    // In UTF-8 if byte 0xC0 was valid, it would mean the code point is stored in two bytes.
+    // In modified UTF-8, it means that we have stored \0 or \n in two bytes.
+    byte[] newBytes = new byte[bytes.length - numberOfByteC0];
+    boolean lastByteWasC0 = false;
+    for (int i = 0, j = 0; i < bytes.length; i++) {
+      if (!lastByteWasC0) {
+        if (bytes[i] == (byte) 0xC0) {
+          lastByteWasC0 = true;
+          // Don't copy C0, because we will encode the character as one byte.
+        } else {
+          newBytes[j++] = bytes[i];
+        }
+      } else {
+        lastByteWasC0 = false;
+        if (bytes[i] == (byte) 0x80) {
+          // Null character
+          newBytes[j++] = 0x00;
+        } else if (bytes[i] == (byte) 0x8a) {
+          // Newline
+          newBytes[j++] = 0x0a;
+        } else {
+          throw new IOException(
+              "Invalid modified UTF-8 byte sequence: 192 " + (bytes[i] & 0xff));
+        }
+      }
+    }
+    if (lastByteWasC0) {
+      throw new IOException("Invalid modified UTF-8 byte sequence: trailing 192");
+    }
+    return newBytes;
   }
 }

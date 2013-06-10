@@ -384,6 +384,58 @@ public class CommandStreamParserTest {
   }
 
   @Test
+  public void testModifiedUtf8() throws IOException {
+    byte[] source;
+    {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      baos.write("GSA Adaptor Data Version 1 [\n]\n".getBytes("UTF-8"));
+      baos.write("id=123".getBytes("UTF-8"));
+      baos.write(0xc0);
+      baos.write(0x8a);
+      baos.write(0xc0);
+      baos.write(0x80);
+      baos.write("\nup-to-date\n".getBytes("UTF-8"));
+      source = baos.toByteArray();
+    }
+
+    InputStream inputStream = new ByteArrayInputStream(source);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+    parser.readFromRetriever(new DocId("123\n\0"), response);
+    assertTrue(response.isNotModified());
+  }
+
+  @Test
+  public void testInvalidModifiedUtf8() throws IOException {
+    byte[] source;
+    {
+      ByteArrayOutputStream baos = new ByteArrayOutputStream();
+      baos.write("GSA Adaptor Data Version 1 [\n]\n".getBytes("UTF-8"));
+      baos.write("id=123\n".getBytes("UTF-8"));
+      baos.write("result-link=".getBytes("UTF-8"));
+      baos.write(0xc0);
+      baos.write(0x8b); // This is an invalid byte sequence.
+      baos.write("\n".getBytes("UTF-8"));
+      baos.write("\nup-to-date\n".getBytes("UTF-8"));
+      source = baos.toByteArray();
+    }
+
+    InputStream inputStream = new ByteArrayInputStream(source);
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+    thrown.expect(IOException.class);
+    parser.readFromRetriever(new DocId("123"), response);
+  }
+
+  @Test
   public void testReadContentAllBytes() throws IOException {
     String commandSource = "GSA Adaptor Data Version 1 [\n]\nid=5\ncontent\n";
 
