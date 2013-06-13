@@ -39,9 +39,6 @@ public class DocumentHandlerTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private SessionManager<HttpExchange> sessionManager
-      = new SessionManager<HttpExchange>(
-          new SessionManager.HttpExchangeClientStore(), 1000, 1000);
   private MockAdaptor mockAdaptor = new MockAdaptor();
   private MockDocIdCodec docIdCodec = new MockDocIdCodec();
   private DocumentHandler handler = createDefaultHandlerForAdaptor(mockAdaptor);
@@ -81,12 +78,6 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testNullSessionManager() {
-    thrown.expect(NullPointerException.class);
-    createHandlerBuilder().setSessionManager(null).build();
-  }
-
-  @Test
   public void testNullWatchdog() {
     thrown.expect(NullPointerException.class);
     createHandlerBuilder().setWatchdog(null).build();
@@ -109,53 +100,28 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecurityDenyWithAuthnHandler() throws Exception {
-    HttpHandler authnHandler = new HttpHandler() {
+    SamlServiceProvider samlServiceProvider = new MockSamlServiceProvider() {
       @Override
-      public void handle(HttpExchange ex) throws IOException {
+      public void handleAuthentication(HttpExchange ex) throws IOException {
         // Translation.HTTP_NOT_FOUND was randomly chosen.
         HttpExchanges.cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
       }
     };
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(new PrivateMockAdaptor())
-        .setAuthnHandler(authnHandler).build();
+        .setSamlServiceProvider(samlServiceProvider).build();
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
   }
 
   @Test
-  public void testSecurityDenySession() throws Exception {
-    // Create a new session for this HttpExchange.
-    Session session = sessionManager.getSession(ex, true);
-    DocumentHandler handler = createDefaultHandlerForAdaptor(
-        new UserPrivateMockAdaptor());
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-  }
-
-  @Test
-  public void testSecurityDenyUnauthSession() throws Exception {
-    // Create a new unauthenticated session for this HttpExchange.
-    Session session = sessionManager.getSession(ex, true);
-    AuthnState authn = new AuthnState();
-    session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    DocumentHandler handler = createDefaultHandlerForAdaptor(
-        new UserPrivateMockAdaptor());
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-  }
-
-  @Test
   public void testSecurityPermit() throws Exception {
-    // Create a new authenticated session for this HttpExchange.
-    Session session = sessionManager.getSession(ex, true);
-    AuthnState authn = new AuthnState();
-    session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    AuthnIdentity identity = new AuthnIdentityImpl
-        .Builder(new UserPrincipal("test")).build();
-    authn.authenticated(identity, Long.MAX_VALUE);
-    DocumentHandler handler = createDefaultHandlerForAdaptor(
-        new UserPrivateMockAdaptor());
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(new UserPrivateMockAdaptor())
+        .setSamlServiceProvider(samlServiceProvider).build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
   }
@@ -186,15 +152,12 @@ public class DocumentHandlerTest {
 
   @Test
   public void testSecurityDisallowedUser() throws Exception {
-    // Create a new authenticated session for this HttpExchange.
-    Session session = sessionManager.getSession(ex, true);
-    AuthnState authn = new AuthnState();
-    session.setAttribute(AuthnState.SESSION_ATTR_NAME, authn);
-    AuthnIdentity identity = new AuthnIdentityImpl
-        .Builder(new UserPrincipal("test")).build();
-    authn.authenticated(identity, Long.MAX_VALUE);
-    DocumentHandler handler = createDefaultHandlerForAdaptor(
-        new PrivateMockAdaptor());
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build());
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(new PrivateMockAdaptor())
+        .setSamlServiceProvider(samlServiceProvider).build();
     handler.handle(ex);
     assertEquals(403, ex.getResponseCode());
   }
@@ -913,7 +876,6 @@ public class DocumentHandlerTest {
         .setJournal(new Journal(new MockTimeProvider()))
         .setAdaptor(new MockAdaptor())
         .setGsaHostname("localhost")
-        .setSessionManager(sessionManager)
         .setWatchdog(new MockWatchdog())
         .setPusher(new MockPusher());
   }
@@ -1409,6 +1371,38 @@ public class DocumentHandlerTest {
     }
   }
 
+  private static class MockSamlServiceProvider extends SamlServiceProvider {
+    private AuthnIdentity identity;
+
+    public MockSamlServiceProvider() {
+      super(new SessionManager<HttpExchange>(
+            new SessionManager.HttpExchangeClientStore(), 1000, 1000),
+          new SamlMetadata("localhost", 80,
+            "thegsa", "http://google.com/enterprise/gsa/security-manager",
+            "http://google.com/enterprise/gsa/adaptor"),
+          null);
+    }
+
+    @Override
+    public HttpHandler getAssertionConsumer() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public AuthnIdentity getUserIdentity(HttpExchange ex) {
+      return identity;
+    }
+
+    public void setUserIdentity(AuthnIdentity identity) {
+      this.identity = identity;
+    }
+
+    @Override
+    public void handleAuthentication(HttpExchange ex) throws IOException {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   private static class DocumentHandlerBuilder {
     private DocIdDecoder docIdDecoder;
     private DocIdEncoder docIdEncoder;
@@ -1416,8 +1410,7 @@ public class DocumentHandlerTest {
     private Adaptor adaptor;
     private String gsaHostname;
     private String[] fullAccessHosts = new String[0];
-    private HttpHandler authnHandler;
-    private SessionManager<HttpExchange> sessionManager;
+    private SamlServiceProvider samlServiceProvider;
     private TransformPipeline transform;
     private int transformMaxBytes;
     private boolean transformRequired;
@@ -1456,14 +1449,9 @@ public class DocumentHandlerTest {
       return this;
     }
 
-    public DocumentHandlerBuilder setAuthnHandler(HttpHandler authnHandler) {
-      this.authnHandler = authnHandler;
-      return this;
-    }
-
-    public DocumentHandlerBuilder setSessionManager(
-        SessionManager<HttpExchange> sessionManager) {
-      this.sessionManager = sessionManager;
+    public DocumentHandlerBuilder setSamlServiceProvider(
+        SamlServiceProvider samlServiceProvider) {
+      this.samlServiceProvider = samlServiceProvider;
       return this;
     }
 
@@ -1506,7 +1494,7 @@ public class DocumentHandlerTest {
 
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
-          gsaHostname, fullAccessHosts, authnHandler, sessionManager, transform,
+          gsaHostname, fullAccessHosts, samlServiceProvider, transform,
           transformMaxBytes, transformRequired, useCompression, watchdog,
           pusher, sendDocControls);
     }

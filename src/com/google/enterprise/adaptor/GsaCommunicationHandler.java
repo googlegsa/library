@@ -238,7 +238,7 @@ public final class GsaCommunicationHandler {
           (ConfigModificationListener) adaptor);
     }*/
 
-    AuthnHandler authnHandler = null;
+    SamlServiceProvider samlServiceProvider = null;
     if (secure) {
       bootstrapOpenSaml();
       SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
@@ -256,9 +256,10 @@ public final class GsaCommunicationHandler {
         log.config("Adaptor is not an AuthnAdaptor; not enabling adaptor-based "
             + "authentication");
       }
+      samlServiceProvider
+          = new SamlServiceProvider(sessionManager, metadata, key);
       addFilters(scope.createContext("/samlassertionconsumer",
-          new SamlAssertionConsumerHandler(sessionManager)));
-      authnHandler = new AuthnHandler(sessionManager, metadata, key);
+          samlServiceProvider.getAssertionConsumer()));
       addFilters(scope.createContext("/saml-authz", new SamlBatchAuthzHandler(
           adaptor, docIdCodec, metadata)));
     }
@@ -273,8 +274,7 @@ public final class GsaCommunicationHandler {
         docIdCodec, docIdCodec, journal, adaptor,
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
-        authnHandler, sessionManager,
-        createTransformPipeline(),
+        samlServiceProvider, createTransformPipeline(),
         config.getTransformMaxDocumentBytes(),
         config.isTransformRequired(),
         config.isServerToUseCompression(), watchdog,

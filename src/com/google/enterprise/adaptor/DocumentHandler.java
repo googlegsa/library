@@ -59,8 +59,7 @@ class DocumentHandler implements HttpHandler {
    */
   private final Set<InetAddress> fullAccessAddresses
       = new HashSet<InetAddress>();
-  private final HttpHandler authnHandler;
-  private final SessionManager<HttpExchange> sessionManager;
+  private final SamlServiceProvider samlServiceProvider;
   private final TransformPipeline transform;
   private final int transformMaxBytes;
   private final boolean transformRequired;
@@ -68,28 +67,25 @@ class DocumentHandler implements HttpHandler {
   private final boolean sendDocControls;
 
   /**
-   * {@code authnHandler} and {@code transform} may be {@code null}.
+   * {@code samlServiceProvider} and {@code transform} may be {@code null}.
    */
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
                          String gsaHostname, String[] fullAccessHosts,
-                         HttpHandler authnHandler,
-                         SessionManager<HttpExchange> sessionManager,
+                         SamlServiceProvider samlServiceProvider,
                          TransformPipeline transform, int transformMaxBytes,
                          boolean transformRequired, boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
                          boolean sendDocControls) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
-        || adaptor == null || sessionManager == null || watchdog == null
-        || pusher == null) {
+        || adaptor == null || watchdog == null || pusher == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
     this.docIdEncoder = docIdEncoder;
     this.journal = journal;
     this.adaptor = adaptor;
-    this.authnHandler = authnHandler;
-    this.sessionManager = sessionManager;
+    this.samlServiceProvider = samlServiceProvider;
     this.transform = transform;
     this.transformMaxBytes = transformMaxBytes;
     this.transformRequired = transformRequired;
@@ -248,13 +244,8 @@ class DocumentHandler implements HttpHandler {
       // Default to anonymous.
       AuthnIdentity identity = null;
 
-      Session session = sessionManager.getSession(ex, false);
-      if (session != null) {
-        AuthnState authnState
-            = (AuthnState) session.getAttribute(AuthnState.SESSION_ATTR_NAME);
-        if (authnState != null && authnState.isAuthenticated()) {
-          identity = authnState.getIdentity();
-        }
+      if (samlServiceProvider != null) {
+        identity = samlServiceProvider.getUserIdentity(ex);
       }
 
       Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(identity,
@@ -273,10 +264,10 @@ class DocumentHandler implements HttpHandler {
             Translation.HTTP_NOT_FOUND);
         return false;
       } else if (status == AuthzStatus.DENY) {
-        if (identity == null && authnHandler != null) {
+        if (identity == null && samlServiceProvider != null) {
           // User was anonymous and document is not public, so try to authn
           // user.
-          authnHandler.handle(ex);
+          samlServiceProvider.handleAuthentication(ex);
           return false;
         } else {
           HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,

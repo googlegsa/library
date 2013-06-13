@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc. All Rights Reserved.
+// Copyright 2013 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,24 +16,35 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
+import com.google.enterprise.adaptor.SamlServiceProvider.AuthnState;
 import com.google.enterprise.secmgr.http.HttpClientInterface;
 import com.google.enterprise.secmgr.modules.SamlClient;
+import com.google.enterprise.secmgr.saml.OpenSamlUtil;
 
 import com.sun.net.httpserver.HttpExchange;
 
 import org.junit.*;
+import org.junit.rules.ExpectedException;
 
+import org.opensaml.common.binding.SAMLMessageContext;
 import org.opensaml.common.xml.SAMLConstants;
+import org.opensaml.saml2.binding.decoding.HTTPRedirectDeflateDecoder;
+import org.opensaml.saml2.binding.encoding.HTTPSOAP11Encoder;
+import org.opensaml.saml2.core.AuthnRequest;
+import org.opensaml.saml2.core.NameID;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
- * Test cases for {@link SamlAssertionConsumerHandler}.
+ * Test cases for {@link SamlServiceProvider}.
  */
-public class SamlAssertionConsumerHandlerTest {
+public class SamlServiceProviderTest {
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
+
   private Charset charset = Charset.forName("UTF-8");
   private SessionManager<HttpExchange> sessionManager
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
@@ -41,9 +52,12 @@ public class SamlAssertionConsumerHandlerTest {
   private SamlMetadata metadata = new SamlMetadata("localhost", 80,
       "thegsa", "http://google.com/enterprise/gsa/security-manager",
       "http://google.com/enterprise/gsa/adaptor");
-  private SamlAssertionConsumerHandler handler
-      = new SamlAssertionConsumerHandler(sessionManager);
-  private MockHttpExchange ex
+  private HttpClientAdapter httpClient = new HttpClientAdapter();
+  private SamlServiceProvider serviceProvider = new SamlServiceProvider(
+      sessionManager, metadata, null, httpClient);
+  private MockHttpExchange ex = new MockHttpExchange("GET", "/",
+      new MockHttpContext("/"));
+  private MockHttpExchange exArtifact
       = new MockHttpExchange("GET", "/?SAMLart=1234someid5678",
           new MockHttpContext("/"));
   private MockHttpExchange initialEx
@@ -71,14 +85,104 @@ public class SamlAssertionConsumerHandlerTest {
       +   "</soap11:Body>"
       + "</soap11:Envelope>";
 
-
   @BeforeClass
   public static void initSaml() {
     GsaCommunicationHandler.bootstrapOpenSaml();
   }
 
   @Test
-  public void testNormal() throws Exception {
+  public void testHandleAuthenticationNewSession() throws Exception {
+    String goldenResponse
+        = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+        + "<soap11:Envelope "
+        +   "xmlns:soap11=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+        +   "<soap11:Body>"
+        +     "<saml2p:AuthnRequest "
+        +       "Destination=\"https://thegsa/security-manager/samlauthn\" "
+        +       "ID=\"someid\" "
+        +       "IsPassive=\"false\" "
+        +       "IssueInstant=\"sometime\" "
+        +       "ProviderName=\"GSA Adaptor\" "
+        +       "Version=\"2.0\" "
+        +       "xmlns:saml2p=\"urn:oasis:names:tc:SAML:2.0:protocol\">"
+        +       "<saml2:Issuer "
+        +         "xmlns:saml2=\"urn:oasis:names:tc:SAML:2.0:assertion\">"
+        +         "http://google.com/enterprise/gsa/adaptor"
+        +       "</saml2:Issuer>"
+        +     "</saml2p:AuthnRequest>"
+        +   "</soap11:Body>"
+        + "</soap11:Envelope>";
+
+    serviceProvider.handleAuthentication(ex);
+
+    //
+    // We have run the method, now we need to look over the results...
+    //
+    assertEquals(307, ex.getResponseCode());
+    URI uri = new URI(ex.getResponseHeaders().getFirst("Location"));
+    assertEquals("https", uri.getScheme());
+    assertEquals("thegsa", uri.getHost());
+    assertEquals("/security-manager/samlauthn", uri.getPath());
+    assertTrue(!isAuthned(ex));
+
+    // Act like we are the receiving end of the communication.
+    MockHttpExchange remoteEx = new MockHttpExchange("GET", uri.toString(),
+        new MockHttpContext("/security-manager/samlauthn"));
+
+    SAMLMessageContext<AuthnRequest, AuthnRequest, NameID> context
+        = OpenSamlUtil.makeSamlMessageContext();
+    OpenSamlUtil.initializeLocalEntity(context, metadata.getPeerEntity(),
+        metadata.getPeerEntity().getIDPSSODescriptor(SAMLConstants.SAML20P_NS));
+    context.setInboundMessageTransport(new EnhancedInTransport(remoteEx));
+    context.setOutboundMessageTransport(
+        new HttpExchangeOutTransportAdapter(remoteEx));
+
+    HTTPRedirectDeflateDecoder decoder = new RedirectDecoder();
+    decoder.decode(context);
+    context.setOutboundSAMLMessage(context.getInboundSAMLMessage());
+
+    HTTPSOAP11Encoder encoder = new HTTPSOAP11Encoder();
+    encoder.encode(context);
+
+    String response = new String(remoteEx.getResponseBytes(), "UTF-8");
+    response = massageMessage(response);
+    assertEquals(goldenResponse, response);
+  }
+
+  @Test
+  public void testHandleAuthenticationAlreadyAuthned() throws Exception {
+    // Create a new authenticated session for this HttpExchange.
+    Session session = sessionManager.getSession(ex, true);
+    AuthnState authn = new AuthnState();
+    session.setAttribute(SamlServiceProvider.SESSION_STATE_ATTR_NAME, authn);
+    AuthnIdentity identity = new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build();
+    authn.authenticated(identity, Long.MAX_VALUE);
+    serviceProvider.handleAuthentication(ex);
+    // Still should cause them to go through authn
+    assertEquals(307, ex.getResponseCode());
+    assertTrue(!isAuthned(ex));
+  }
+
+  @Test
+  public void testHandleAuthenticationHead() throws Exception {
+    MockHttpExchange ex = new MockHttpExchange("HEAD", "/",
+                                               new MockHttpContext("/"));
+    serviceProvider.handleAuthentication(ex);
+    assertEquals(307, ex.getResponseCode());
+    assertTrue(!isAuthned(ex));
+  }
+
+  @Test
+  public void testHandleAuthenticationBadMethod() throws Exception {
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
+                                               new MockHttpContext("/"));
+    serviceProvider.handleAuthentication(ex);
+    assertEquals(405, ex.getResponseCode());
+  }
+
+  @Test
+  public void testAssertionConsumerNormal() throws Exception {
     SamlHttpClient httpClient = new SamlHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -149,21 +253,19 @@ public class SamlAssertionConsumerHandlerTest {
     };
     SamlClient samlClient = createSamlClient(httpClient);
     httpClient.setSamlClient(samlClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
-    handler.handle(ex);
-    assertEquals(303, ex.getResponseCode());
-    assertTrue(isAuthned(sessionManager.getSession(ex)));
-    AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
-        .getAttribute(AuthnState.SESSION_ATTR_NAME);
-    AuthnIdentity identity = authnState.getIdentity();
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(303, exArtifact.getResponseCode());
+    assertTrue(isAuthned(exArtifact));
+    AuthnIdentity identity = serviceProvider.getUserIdentity(exArtifact);
     assertEquals("CN=Polly Hedra", identity.getUser().getName());
     assertNull(identity.getGroups());
     assertNull(identity.getPassword());
   }
 
   @Test
-  public void testNormalWithExtension() throws Exception {
+  public void testAssertionConsumerNormalWithExtension() throws Exception {
     SamlHttpClient httpClient = new SamlHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -310,14 +412,12 @@ public class SamlAssertionConsumerHandlerTest {
     };
     SamlClient samlClient = createSamlClient(httpClient);
     httpClient.setSamlClient(samlClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
-    handler.handle(ex);
-    assertEquals(303, ex.getResponseCode());
-    assertTrue(isAuthned(sessionManager.getSession(ex)));
-    AuthnState authnState = (AuthnState) sessionManager.getSession(ex)
-        .getAttribute(AuthnState.SESSION_ATTR_NAME);
-    AuthnIdentity identity = authnState.getIdentity();
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(303, exArtifact.getResponseCode());
+    assertTrue(isAuthned(exArtifact));
+    AuthnIdentity identity = serviceProvider.getUserIdentity(exArtifact);
     assertEquals("CN=Polly Hedra", identity.getUser().getName());
     // Make sure that the information from the extensions was parsed out and
     // made available for later use.
@@ -329,7 +429,7 @@ public class SamlAssertionConsumerHandlerTest {
   }
 
   @Test
-  public void testAuthnFailure() throws Exception {
+  public void testAssertionConsumerAuthnFailure() throws Exception {
     SamlHttpClient httpClient = new SamlHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -372,15 +472,15 @@ public class SamlAssertionConsumerHandlerTest {
     };
     SamlClient samlClient = createSamlClient(httpClient);
     httpClient.setSamlClient(samlClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(403, exArtifact.getResponseCode());
+    assertTrue(!isAuthned(exArtifact));
   }
 
   @Test
-  public void testNoAuthnResponse() throws Exception {
+  public void testAssertionConsumerNoAuthnResponse() throws Exception {
     SamlHttpClient httpClient = new SamlHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -414,15 +514,15 @@ public class SamlAssertionConsumerHandlerTest {
     };
     SamlClient samlClient = createSamlClient(httpClient);
     httpClient.setSamlClient(samlClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(403, exArtifact.getResponseCode());
+    assertTrue(!isAuthned(exArtifact));
   }
 
   @Test
-  public void testWrongResponse() throws Exception {
+  public void testAssertionConsumerWrongResponse() throws Exception {
     SamlHttpClient httpClient = new SamlHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -494,15 +594,15 @@ public class SamlAssertionConsumerHandlerTest {
     };
     SamlClient samlClient = createSamlClient(httpClient);
     httpClient.setSamlClient(samlClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(403, exArtifact.getResponseCode());
+    assertTrue(!isAuthned(exArtifact));
   }
 
   @Test
-  public void testWrongIssuer() throws Exception {
+  public void testAssertionConsumerWrongIssuer() throws Exception {
     SamlHttpClient httpClient = new SamlHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -575,15 +675,15 @@ public class SamlAssertionConsumerHandlerTest {
     };
     SamlClient samlClient = createSamlClient(httpClient);
     httpClient.setSamlClient(samlClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
-    handler.handle(ex);
-    assertEquals(403, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(403, exArtifact.getResponseCode());
+    assertTrue(!isAuthned(exArtifact));
   }
 
   @Test
-  public void testAlreadyAuthned() throws Exception {
+  public void testAssertionConsumerAlreadyAuthned() throws Exception {
     MockHttpClient httpClient = new MockHttpClient() {
       @Override
       protected void handleExchange(ClientExchange ex) {
@@ -591,47 +691,47 @@ public class SamlAssertionConsumerHandlerTest {
       }
     };
     SamlClient samlClient = createSamlClient(httpClient);
-    issueRequest(ex, initialEx, samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
 
     // Authenticate the session.
-    Session session = sessionManager.getSession(ex, false);
+    Session session = sessionManager.getSession(exArtifact, false);
     AuthnState authn = (AuthnState) session
-        .getAttribute(AuthnState.SESSION_ATTR_NAME);
+        .getAttribute(SamlServiceProvider.SESSION_STATE_ATTR_NAME);
     AuthnIdentity identity = new AuthnIdentityImpl
        .Builder(new UserPrincipal("test")).build();
     authn.authenticated(identity, Long.MAX_VALUE);
 
-    handler.handle(ex);
-    assertEquals(409, ex.getResponseCode());
-    assertTrue(isAuthned(sessionManager.getSession(ex)));
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(409, exArtifact.getResponseCode());
+    assertTrue(isAuthned(exArtifact));
   }
 
   @Test
-  public void testNoSession() throws Exception {
-    handler.handle(ex);
-    assertEquals(409, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+  public void testAssertionConsumerNoSession() throws Exception {
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(409, exArtifact.getResponseCode());
+    assertTrue(!isAuthned(exArtifact));
   }
 
   @Test
-  public void testUnrequestedAuthnResponse() throws Exception {
+  public void testAssertionConsumerUnrequestedAuthnResponse() throws Exception {
     AuthnState authnState = new AuthnState();
-    sessionManager.getSession(ex).setAttribute(AuthnState.SESSION_ATTR_NAME,
-                                               authnState);
+    sessionManager.getSession(exArtifact).setAttribute(
+        SamlServiceProvider.SESSION_STATE_ATTR_NAME, authnState);
 
-    handler.handle(ex);
-    assertEquals(500, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(500, exArtifact.getResponseCode());
+    assertTrue(!isAuthned(exArtifact));
   }
 
   @Test
-  public void testPost() throws Exception {
+  public void testAssertionConsumerPost() throws Exception {
     MockHttpExchange ex
         = new MockHttpExchange("POST", "/?SAMLart=1234someid5678",
                                new MockHttpContext("/"));
-    handler.handle(ex);
+    serviceProvider.getAssertionConsumer().handle(ex);
     assertEquals(405, ex.getResponseCode());
-    assertTrue(!isAuthned(sessionManager.getSession(ex)));
+    assertTrue(!isAuthned(ex));
   }
 
   private SamlClient createSamlClient(HttpClientInterface httpClient) {
@@ -643,24 +743,77 @@ public class SamlAssertionConsumerHandlerTest {
                             SamlClient samlClient) throws IOException {
     AuthnState authnState = new AuthnState();
     authnState.startAttempt(samlClient, ex.getRequestURI());
-    sessionManager.getSession(ex).setAttribute(AuthnState.SESSION_ATTR_NAME,
-                                               authnState);
+    sessionManager.getSession(ex).setAttribute(
+        SamlServiceProvider.SESSION_STATE_ATTR_NAME, authnState);
     // Used to generate a request id.
     samlClient.sendAuthnRequest(new HttpExchangeOutTransportAdapter(initialEx));
   }
 
-  private boolean isAuthned(Session session) {
-    AuthnState authnState = (AuthnState) session
-        .getAttribute(AuthnState.SESSION_ATTR_NAME);
-    if (authnState == null) {
-      return false;
-    }
-    return authnState.isAuthenticated();
+  private boolean isAuthned(HttpExchange ex) {
+    return serviceProvider.getUserIdentity(ex) != null;
   }
 
   private String massageMessage(String message) {
     return message.replaceAll("ID=\"[^\"]+\"", "ID=\"someid\"")
         .replaceAll("IssueInstant=\"[^\"]+\"", "IssueInstant=\"sometime\"");
+  }
+
+  private static class EnhancedInTransport
+      extends HttpExchangeInTransportAdapter {
+    private Map<String, List<String>> parameters;
+
+    public EnhancedInTransport(HttpExchange ex) {
+      super(ex);
+      parameters = parseParameters();
+    }
+
+    private Map<String, List<String>> parseParameters() {
+      Map<String, List<String>> params = new HashMap<String, List<String>>();
+      String query = ex.getRequestURI().getQuery();
+      if (query == null) {
+        return params;
+      }
+      // This is not fully correct, but good enough for the test case.
+      for (String param : query.split("&")) {
+        String[] split = query.split("=", 2);
+        if (!params.containsKey(split[0])) {
+          params.put(split[0], new LinkedList<String>());
+        }
+        params.get(split[0]).add(split.length == 2 ? split[1] : "");
+      }
+      return params;
+    }
+
+    @Override
+    public String getParameterValue(String name) {
+      List<String> values = getParameterValues(name);
+      return values.size() == 0 ? null : values.get(0);
+    }
+
+    @Override
+    public List<String> getParameterValues(String name) {
+      if (parameters.containsKey(name)) {
+        return parameters.get(name);
+      } else {
+        return Collections.emptyList();
+      }
+    }
+
+    public HttpExchange getExchange() {
+      return ex;
+    }
+  }
+
+  private static class RedirectDecoder extends HTTPRedirectDeflateDecoder {
+    @Override
+    protected String getActualReceiverEndpointURI(
+        SAMLMessageContext messageContext) {
+      EnhancedInTransport inTransport = (EnhancedInTransport) messageContext
+          .getInboundMessageTransport();
+      String requestUri = inTransport.getExchange().getRequestURI().toString();
+      // Remove query from URI
+      return requestUri.split("\\?", 2)[0];
+    }
   }
 
   private abstract static class SamlHttpClient extends MockHttpClient {
