@@ -25,13 +25,18 @@
   <h3>Running the Adaptor Template, as an initial test</h3>
   <ol>
     <li>You should have already installed JDK 6 or higher and gotten a plexi
-      release. Specifically, you will need {@code adaptor.jar} and {@code
-      adaptor-examples.jar}.   If instead of working from a release you are
+      release (download from https://code.google.com/p/plexi/). From the 
+      downloaded release zip file, use the extracted adaptor jar 
+      (eg: {@code adaptor-20130612-withlib.jar}) and extracted adaptor 
+      examples jar (eg: {@code examples/adaptor-20130612-examples.jar}). 
+      If instead of working from a release you are
       working from source code you can build the required jars by running:
       <pre>ant dist
 cd dist</pre>
-      The needed {@code adaptor.jar} and {@code adaptor-examples.jar} will be
-      within the current directory.
+      <p>The needed jars will be in a zip file 
+      within the current directory (eg: adaptor-20130612-bin.zip will have  
+      adaptor-20130612-withlib.jar and examples/adaptor-20130612-examples.jar). 
+      </p>
     <li>Create an <code>adaptor-config.properties</code> text file in the
       current directory that looks like:
       <pre>gsa.hostname=mygsahostname</pre>
@@ -47,10 +52,11 @@ feed.name=mydocfeedtogsa</pre>
       <pre>server.hostname=yourcomputershostname</pre>
       <p>For a list and explanation of available configruation options view 
         {@link com.google.enterprise.adaptor.Config}.
-    <li>Start the Adaptor Template. For Windows:
-      <pre>java -cp adaptor.jar;adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
+    <li>Start the Adaptor Template. Note that the jar files you have may have a
+      different date in their names. For Windows:
+      <pre>java -cp adaptor-20130612-withlib.jar;examples/adaptor-20130612-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
       For all other OSes:
-      <pre>java -cp adaptor.jar:adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
+      <pre>java -cp adaptor-20130612-withlib.jar:examples/adaptor-20130612-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
     <li> Ensure crawling is enabled on your GSA.
       <p>
       Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
@@ -71,12 +77,14 @@ feed.name=mydocfeedtogsa</pre>
   <ol>
     <li>Review JavaDoc for {@link com.google.enterprise.adaptor.Adaptor}
       and {@link com.google.enterprise.adaptor.AbstractAdaptor}.
-    <li>From {@code adaptor-src.zip}, make a copy of {@code
+    <li>From the zip file (eg:{@code adaptor-20130612-src.zip}), 
+      make a copy of {@code
       src/com/google/enterprise/adaptor/examples/AdaptorTemplate.java}
       to your own package and name. You will need to modify the contents
       appropriately for the new package and name.
     <li>Compile, run, and verify the copied adaptor using your favorite IDE. You
-      will only need {@code adaptor.jar} in your classpath.
+      will only need {@code adaptor-20130612-withlib.jar} in your classpath.
+      Note that the date may be different.
     <li>Modify it further for your own repository.
     <li>Declare success for getting content from your custom repository to the
       GSA.
@@ -97,7 +105,9 @@ feed.name=mydocfeedtogsa</pre>
     of the form "-Dconfigkey=configvalue". When providing a value on the command
     line, it overrides the default value and the value (if any) in the
     configuration file. For example:
-    <pre>java -cp adaptor.jar:adaptor-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname -Dserver.port=6677</pre>
+    <pre>java -cp adaptor-20130612-withlib.jar:examples/adaptor-20130612-examples.jar 
+    com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname 
+    -Dserver.port=6677</pre>
 
   <h3>Enabling Security</h3>
   <p>Security is not enabled by default because it requires a reasonable amount
@@ -194,7 +204,7 @@ feed.name=mydocfeedtogsa</pre>
     -Djavax.net.ssl.trustStore=cacerts.jks \
     -Djavax.net.ssl.trustStoreType=jks \
     -Djavax.net.ssl.trustStorePassword=changeit \
-    -classpath 'adaptor.jar:adaptor-examples.jar' \
+    -classpath 'adaptor-20130612-withlib.jar:examples/adaptor-20130612-examples.jar' \
     com.google.enterprise.adaptor.examples.AdaptorWithCrawlTimeMetadataTemplate
   </pre>
 
