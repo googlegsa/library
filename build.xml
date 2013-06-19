@@ -382,6 +382,7 @@
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath refid="secmgr.build.classpath"/>
       <classpath refid="examples.build.classpath"/>
+      <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="http://download.oracle.com/javase/6/docs/api/"/>
       <arg value="-quiet"/>
