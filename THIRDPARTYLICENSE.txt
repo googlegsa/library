@@ -1,4 +1,15 @@
 Do not translate.  Do not localize.
+Set of licenses in alphabetical order:
+Apache2
+BouncyCastle
+BSD-JSR305
+BSD-Junit
+CDDL1
+CDDL1+GPL2
+MIT-jqPlot
+MIT-jquery
+MIT-slf4j
+
 xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 
 Third-party file path
