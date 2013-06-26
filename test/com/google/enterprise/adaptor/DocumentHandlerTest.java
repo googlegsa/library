@@ -318,17 +318,11 @@ public class DocumentHandlerTest {
 
   @Test
   public void testTransform() throws Exception {
-    final byte[] golden = new byte[] {2, 3, 4};
     final String key = "testing key";
     List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
     transforms.add(new AbstractDocumentTransform() {
       @Override
-      public void transform(ByteArrayOutputStream contentIn,
-                            OutputStream contentOut,
-                            Metadata metadata,
-                            Map<String, String> params) throws IOException {
-        assertArrayEquals(mockAdaptor.documentBytes, contentIn.toByteArray());
-        contentOut.write(golden);
+      public void transform(Metadata metadata, Map<String, String> params) {
         metadata.set(key, metadata.getOneValue(key).toUpperCase());
         metadata.set("docid", params.get("DocId"));
       }
@@ -347,91 +341,12 @@ public class DocumentHandlerTest {
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
         .setTransform(transform)
-        .setTransformMaxBytes(100)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(golden, ex.getResponseBytes());
     assertEquals("docid=test%20docId,testing%20key=TESTING%20VALUE",
                  ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
-  }
-
-  @Test
-  public void testTransformDocumentTooLarge() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new AbstractDocumentTransform() {
-      @Override
-      public void transform(ByteArrayOutputStream contentIn,
-                            OutputStream contentOut,
-                            Metadata metadata,
-                            Map<String, String> params) throws IOException {
-        // This is not the content we are looking for.
-        contentOut.write(new byte[] {2, 3, 4});
-      }
-    });
-    TransformPipeline transform = new TransformPipeline(transforms);
-    final byte[] golden = new byte[] {-1, 2, -3, 4, 5};
-    mockAdaptor = new MockAdaptor() {
-      @Override
-      public void getDocContent(Request request, Response response)
-          throws IOException {
-        OutputStream os = response.getOutputStream();
-        // Just for the heck of it, test using the single byte version.
-        os.write(golden[0]);
-        os.write(golden[1]);
-        // Write out too much content for the buffer to hold here.
-        os.write(golden, 2, golden.length - 2 - 1);
-        os.write(golden, golden.length - 1, 1);
-      }
-    };
-    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(mockAdaptor)
-        .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
-        .setTransformMaxBytes(3)
-        .build();
-    handler.handle(ex);
-    assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(golden, ex.getResponseBytes());
-    assertEquals(Arrays.asList("", ""),
-        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
-  }
-
-  @Test
-  public void testTransformDocumentTooLargeButRequired() throws Exception {
-    TransformPipeline transform = new TransformPipeline(
-        Collections.<DocumentTransform>emptyList());
-    class CheckFailAdaptor extends MockAdaptor {
-      public boolean failedAtCorrectTime = false;
-
-      @Override
-      public void getDocContent(Request request, Response response)
-          throws IOException {
-        OutputStream os = response.getOutputStream();
-        os.write(new byte[] {-1, 2, -3});
-        failedAtCorrectTime = true;
-        // Write out too much content for the buffer to hold here.
-        os.write(4);
-        failedAtCorrectTime = false;
-      }
-    };
-    CheckFailAdaptor mockAdaptor = new CheckFailAdaptor();
-    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
-    DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(mockAdaptor)
-        .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
-        .setTransformMaxBytes(3)
-        .setTransformRequired(true)
-        .build();
-    thrown.expect(IOException.class);
-    try {
-      handler.handle(ex);
-    } finally {
-      assertTrue(mockAdaptor.failedAtCorrectTime);
-    }
   }
 
   @Test
@@ -1460,17 +1375,6 @@ public class DocumentHandlerTest {
       return this;
     }
 
-    public DocumentHandlerBuilder setTransformMaxBytes(int transformMaxBytes) {
-      this.transformMaxBytes = transformMaxBytes;
-      return this;
-    }
-
-    public DocumentHandlerBuilder setTransformRequired(
-        boolean transformRequired) {
-      this.transformRequired = transformRequired;
-      return this;
-    }
-
     public DocumentHandlerBuilder setUseCompression(boolean useCompression) {
       this.useCompression = useCompression;
       return this;
@@ -1495,8 +1399,7 @@ public class DocumentHandlerTest {
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           gsaHostname, fullAccessHosts, samlServiceProvider, transform,
-          transformMaxBytes, transformRequired, useCompression, watchdog,
-          pusher, sendDocControls);
+          useCompression, watchdog, pusher, sendDocControls);
     }
   }
 }

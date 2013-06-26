@@ -81,11 +81,8 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   }
 
   @Override
-  public void transform(ByteArrayOutputStream contentIn,
-                        OutputStream contentOut,
-                        Metadata metadata,
-                        Map<String, String> params)
-      throws TransformException, IOException {
+  public void transform(Metadata metadata, Map<String, String> params)
+      throws TransformException {
     if (transformCommand == null) {
       throw new NullPointerException("transformCommand must not be null");
     }
@@ -107,7 +104,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
       Command command = new Command();
       try {
-        command.exec(commandLine, workingDirectory, contentIn.toByteArray());
+        command.exec(commandLine, workingDirectory);
       } catch (InterruptedException ex) {
         throw new TransformException(ex);
       }
@@ -126,12 +123,13 @@ public class CommandLineTransform extends AbstractDocumentTransform {
         log.log(Level.INFO, "Stderr: {0}", new Object[] {errorOutput});
       }
 
-      contentOut.write(command.getStdout());
       if (commandAcceptsParameters) {
         metadata.set(readSetFromFile(metadataFile));
         params.clear();
         params.putAll(readMapFromFile(paramsFile));
       }
+    } catch (IOException ioe) {
+      throw new TransformException(ioe);
     } finally {
       if (metadataFile != null) {
         metadataFile.delete();
@@ -247,11 +245,6 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   @Override
   public void setName(String name) {
     super.setName(name);
-  }
-
-  @Override
-  public void setRequired(boolean required) {
-    super.setRequired(required);
   }
 
   public static CommandLineTransform create(Map<String, String> config) {

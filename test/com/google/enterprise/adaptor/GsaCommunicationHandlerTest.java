@@ -382,11 +382,7 @@ public class GsaCommunicationHandlerTest {
 
   static class IdentityTransform extends AbstractDocumentTransform {
     @Override
-    public void transform(ByteArrayOutputStream contentIn,
-                          OutputStream contentOut,
-                          Metadata metadata,
-                          Map<String, String> params) throws IOException {
-      contentIn.writeTo(contentOut);
+    public void transform(Metadata metadata, Map<String, String> params) {
     }
   }
 

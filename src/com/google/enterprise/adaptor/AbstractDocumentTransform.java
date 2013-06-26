@@ -24,34 +24,27 @@ import java.util.Map;
  */
 public abstract class AbstractDocumentTransform implements DocumentTransform {
   private String name = getClass().getName();
-  private boolean required = true;
 
   public AbstractDocumentTransform() {}
 
   /**
    * If {@code name} is {@code null}, the default is used.
    */
-  public AbstractDocumentTransform(String name, boolean required) {
+  public AbstractDocumentTransform(String name) {
     if (name != null) {
       this.name = name;
     }
-    this.required = required;
   }
 
   /**
-   * Configure this instance with provided {@code config}. Accepts keys {@code
-   * "name"} and {@code "required"}. Unknown keys are ignored. This method is
+   * Configure this instance with provided {@code config}. Accepts key {@code
+   * "name"}. Unknown keys are ignored. This method is
    * intended as a convenience for use in a static factory method.
    */
   protected void configure(Map<String, String> config) {
     String name = config.get("name");
     if (name != null) {
       this.name = name;
-    }
-
-    String required = config.get("required");
-    if (required != null) {
-      this.required = Boolean.parseBoolean(required);
     }
   }
 
@@ -65,14 +58,5 @@ public abstract class AbstractDocumentTransform implements DocumentTransform {
   @Override
   public String getName() {
     return name;
-  }
-
-  protected void setRequired(boolean required) {
-    this.required = required;
-  }
-
-  @Override
-  public boolean isRequired() {
-    return required;
   }
 }

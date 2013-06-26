@@ -108,12 +108,8 @@ import java.util.logging.*;
  *     checking. Defaults to false
  * <tr><td> </td><td>server.useCompression </td><td> compress retrieval
  *     responses. Defaults to true
- * <tr><td> </td><td>transform.maxDocumentBytes </td><td> max size of
- *     document that will get transformed.  Defaults to 1048576
  * <tr><td> </td><td>transform.pipeline </td><td> sequence of
  *     transformation steps.  Defaults to no-pipeline
- * <tr><td> </td><td>transform.required </td><td> fail retrieval if document is
- *     over maxDocumentBytes.  Defaults to false
  * </table>
  */
 public class Config {
@@ -205,9 +201,6 @@ public class Config {
     addKey("adaptor.incrementalPollPeriodSecs", "900");
     addKey("adaptor.docContentTimeoutSecs", "30");
     addKey("transform.pipeline", "");
-    // 1 MiB.
-    addKey("transform.maxDocumentBytes", "1048576");
-    addKey("transform.required", "false");
     addKey("journal.reducedMem", "true");
     addKey("adaptor.sendDocControlsHeader", "false");
   }
@@ -378,9 +371,7 @@ public class Config {
 
   /**
    * The maximum number of worker threads to use to respond to document
-   * requests. The main reason to limit the number of threads is that each can
-   * be using a transform pipeline and will have multiple complete copies of the
-   * response in memory at the same time.
+   * requests. 
    */
   int getServerMaxWorkerThreads() {
     return Integer.parseInt(getValue("server.maxWorkerThreads"));
@@ -473,14 +464,6 @@ public class Config {
       transforms.add(params);
     }
     return transforms;
-  }
-
-  int getTransformMaxDocumentBytes() {
-    return Integer.parseInt(getValue("transform.maxDocumentBytes"));
-  }
-
-  boolean isTransformRequired() {
-    return Boolean.parseBoolean(getValue("transform.required"));
   }
 
   boolean isJournalReducedMem() {

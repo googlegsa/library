@@ -27,7 +27,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Modify content and metadata using multiple serial transforms. The transforms
+ * Modify metadata using multiple serial transforms. The transforms
  * are arranged into a serial pipeline where the output of one becomes the
  * input for the next in the series.
  *
@@ -44,62 +44,26 @@ public class TransformPipeline {
   }
 
   /**
-   * Transform {@code contentIn} and {@code metadata}. {@code ContentIn} is
-   * guaranteed to remain unchanged; the rest of the parameters are expected to
-   * change.
+   * Transform {@code metadata}.
    */
-  public void transform(byte[] contentIn,
-                        OutputStream contentOut,
-                        Metadata metadata,
-                        Map<String, String> params) throws TransformException, IOException {
+  public void transform(Metadata metadata, Map<String, String> params)
+      throws TransformException {
     if (transformList.isEmpty()) {
-      contentOut.write(contentIn);
       return;
     }
 
-    ByteArrayOutputStream contentInTransit = new ByteArrayOutputStream(contentIn.length);
-    ByteArrayOutputStream contentOutTransit = new ByteArrayOutputStream(contentIn.length);
     Metadata metadataInTransit = new Metadata(metadata);
     Map<String, String> paramsInTransit = Collections.checkedMap(
-        new HashMap<String, String>(params.size() * 2), String.class, String.class);
-    Map<String, String> paramsOutTransit = Collections.checkedMap(
-        new HashMap<String, String>(params.size() * 2), String.class, String.class);
-
-    contentInTransit.write(contentIn);
-    paramsInTransit.putAll(params);
+        new HashMap<String, String>(params), String.class, String.class);
 
     for (DocumentTransform transform : transformList) {
-      contentOutTransit.reset();
-      // Invariant: metadataInTransit changes after good transform only.
-      Metadata metadataOutTransit = new Metadata(metadataInTransit);
-      paramsOutTransit.clear();
-      paramsOutTransit.putAll(paramsInTransit);
-
       try {
-        transform.transform(new UnmodifiableWrapperByteArrayOutputStream(contentInTransit),
-                            contentOutTransit, metadataOutTransit, paramsOutTransit);
+        transform.transform(metadataInTransit, paramsInTransit);
       } catch (TransformException e) {
-        if (transform.isRequired()) {
-          log.log(Level.WARNING, "Transform Exception. Aborting '"
-                  + transform.getName() + "'", e);
-          throw e;
-        } else {
-          log.log(Level.WARNING, "Transform Exception. Ignoring transform '"
-                  + transform.getName() + "'", e);
-          continue;
-        }
+        throw new TransformException("Aborting " + transform.getName(), e);
       }
-      metadataInTransit = metadataOutTransit;
-      metadataOutTransit = null;
-      // Swap input and output. The input is reused as the output for effeciency.
-      ByteArrayOutputStream tmp = contentInTransit;
-      contentInTransit = contentOutTransit;
-      contentOutTransit = tmp;
-      Map<String, String> tmpMap = paramsInTransit;
-      paramsInTransit = paramsOutTransit;
-      paramsOutTransit = tmpMap;
     }
-    contentInTransit.writeTo(contentOut);
+
     metadata.set(metadataInTransit);
     params.clear();
     params.putAll(paramsInTransit);
@@ -110,53 +74,5 @@ public class TransformPipeline {
    */
   public List<DocumentTransform> getDocumentTransforms() {
     return transformList;
-  }
-
-  private static class UnmodifiableWrapperByteArrayOutputStream extends ByteArrayOutputStream {
-    private ByteArrayOutputStream os;
-
-    public UnmodifiableWrapperByteArrayOutputStream(ByteArrayOutputStream os) {
-      this.os = os;
-    }
-
-    @Override
-    public void reset() {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int size() {
-      return os.size();
-    }
-
-    @Override
-    public byte[] toByteArray() {
-      return os.toByteArray();
-    }
-
-    @Override
-    public String toString() {
-      return os.toString();
-    }
-
-    @Override
-    public String toString(String charsetName) throws UnsupportedEncodingException {
-      return os.toString(charsetName);
-    }
-
-    @Override
-    public void write(byte[] b, int off, int len) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void write(int b) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void writeTo(OutputStream out) throws IOException {
-      os.writeTo(out);
-    }
   }
 }

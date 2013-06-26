@@ -36,8 +36,6 @@ public class CommandLineTransformTest {
     TestHelper.assumeOsIsNotWindows();
 
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    // The newline causes the test to work with both BSD and GNU sed.
-    String testStr = "testing\n";
     Metadata metadata = new Metadata();
     metadata.add("metaKey1", "metaValue1");
     Map<String, String> params = new HashMap<String, String>();
@@ -47,9 +45,8 @@ public class CommandLineTransformTest {
     cmd.setTransformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.setCommandAcceptsParameters(false);
     TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
+    pipeline.transform(metadata, params);
 
-    assertEquals(testStr.replace("i", "1"), contentOut.toString());
     assertEquals("metaValue1", metadata.getOneValue("metaKey1"));
     assertEquals(1, metadata.getKeys().size());
     assertEquals("value1", params.get("key1"));
@@ -60,9 +57,6 @@ public class CommandLineTransformTest {
   public void testSedWithMetadata() throws IOException, TransformException {
     TestHelper.assumeOsIsNotWindows();
 
-    ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
-    // The newline causes the test to work with both BSD and GNU sed.
-    String testStr = "testing\n";
     Metadata metadata = new Metadata();
     metadata.add("metaKey1", "metaValue1");
     Map<String, String> params = new HashMap<String, String>();
@@ -70,8 +64,8 @@ public class CommandLineTransformTest {
 
     CommandLineTransform cmd = new CommandLineTransform();
     cmd.setTransformCommand(Arrays.asList(new String[] {"/bin/sh", "-c",
-      // Process content.
-      "sed s/i/1/; META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(mktemp /tmp/adaptor.test.XXXXXXXX);"
+      // Setup variables and temp space.
+      " META=\"$0\"; PARAM=\"$1\"; TMPFILE=$(mktemp /tmp/adaptor.test.XXXXXXXX);"
       // Process metadata.
       + "(sed s/1/2/g < \"$META\" > \"$TMPFILE\"; cp \"$TMPFILE\" \"$META\") >&2;"
       // Process params.
@@ -81,9 +75,8 @@ public class CommandLineTransformTest {
     }));
     cmd.setCommandAcceptsParameters(true);
     TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(testStr.getBytes(), contentOut, metadata, params);
+    pipeline.transform(metadata, params);
 
-    assertEquals(testStr.replace("i", "1"), contentOut.toString());
     assertEquals(1, metadata.getKeys().size());
     assertEquals("metaValue2", metadata.getOneValue("metaKey2"));
     assertEquals("value3", params.get("key3"));

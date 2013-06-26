@@ -61,8 +61,6 @@ class DocumentHandler implements HttpHandler {
       = new HashSet<InetAddress>();
   private final SamlServiceProvider samlServiceProvider;
   private final TransformPipeline transform;
-  private final int transformMaxBytes;
-  private final boolean transformRequired;
   private final boolean useCompression;
   private final boolean sendDocControls;
 
@@ -73,8 +71,8 @@ class DocumentHandler implements HttpHandler {
                          Journal journal, Adaptor adaptor,
                          String gsaHostname, String[] fullAccessHosts,
                          SamlServiceProvider samlServiceProvider,
-                         TransformPipeline transform, int transformMaxBytes,
-                         boolean transformRequired, boolean useCompression,
+                         TransformPipeline transform,
+                         boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
                          boolean sendDocControls) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
@@ -87,8 +85,6 @@ class DocumentHandler implements HttpHandler {
     this.adaptor = adaptor;
     this.samlServiceProvider = samlServiceProvider;
     this.transform = transform;
-    this.transformMaxBytes = transformMaxBytes;
-    this.transformRequired = transformRequired;
     this.useCompression = useCompression;
     this.watchdog = watchdog;
     this.pusher = pusher;
@@ -501,12 +497,7 @@ class DocumentHandler implements HttpHandler {
     /** Must not respond with content, but otherwise act like normal. */
     HEAD,
     /** No need to buffer contents before sending. */
-    NO_TRANSFORM,
-    /**
-     * Buffer "small" contents. Large file contents will be written without
-     * transformation or cause an exception (depending on transformRequired).
-     */
-    TRANSFORM,
+    SEND_BODY,
   }
 
   /**
@@ -524,7 +515,7 @@ class DocumentHandler implements HttpHandler {
     private State state = State.SETUP;
     private HttpExchange ex;
     // Whether ex.getResponseBody().close() has been called while we are in the
-    // NO_TRANSFORM state. This isn't used for much internal code that calls
+    // SEND_BODY state. This isn't used for much internal code that calls
     // close on the stream since it is obvious in those states that we won't
     // ever attempt to flush or close the stream a second time.
     private boolean responseBodyClosed;
@@ -573,8 +564,7 @@ class DocumentHandler implements HttpHandler {
           // We will need to make an OutputStream.
           break;
         case HEAD:
-        case NO_TRANSFORM:
-        case TRANSFORM:
+        case SEND_BODY:
           // Already called before. Provide saved OutputStream.
           return os;
         case NOT_MODIFIED:
@@ -588,17 +578,9 @@ class DocumentHandler implements HttpHandler {
         state = State.HEAD;
         os = new SinkOutputStream();
       } else {
-        if (transform != null) {
-          state = State.TRANSFORM;
-          OutputStream innerOs = transformRequired
-              ? new CantUseOutputStream() : new LazyContentOutputStream();
-          countingOs = new CountingOutputStream(innerOs);
-          os = new MaxBufferOutputStream(countingOs, transformMaxBytes);
-        } else {
-          state = State.NO_TRANSFORM;
-          countingOs = new CountingOutputStream(new LazyContentOutputStream());
-          os = countingOs;
-        }
+        state = State.SEND_BODY;
+        countingOs = new CountingOutputStream(new LazyContentOutputStream());
+        os = countingOs;
       }
       return os;
     }
@@ -722,22 +704,7 @@ class DocumentHandler implements HttpHandler {
               Translation.HTTP_NOT_FOUND);
           break;
 
-        case TRANSFORM:
-          MaxBufferOutputStream mbos = (MaxBufferOutputStream) os;
-          byte[] buffer = mbos.getBufferedContent();
-          if (buffer == null) {
-            log.info("Not transforming document because document is too large");
-          } else {
-            ByteArrayOutputStream baos = transform(buffer);
-            buffer = null;
-            startSending(true);
-            baos.writeTo(ex.getResponseBody());
-          }
-          ex.getResponseBody().flush();
-          ex.getResponseBody().close();
-          break;
-
-        case NO_TRANSFORM:
+        case SEND_BODY:
           if (!responseBodyClosed) {
             // The Adaptor didn't close the stream, so close it for them, making
             // sure to flush any existing contents. We choose to use the same
@@ -770,6 +737,9 @@ class DocumentHandler implements HttpHandler {
     }
 
     private void startSending(boolean hasContent) throws IOException {
+      if (transform != null) {
+        transform();  
+      } 
       if (requestIsFromFullyTrustedClient(ex)) {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
@@ -879,18 +849,16 @@ class DocumentHandler implements HttpHandler {
       return true;
     }
 
-    private ByteArrayOutputStream transform(byte[] content) throws IOException {
-      ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
+    private void transform() {
       Map<String, String> params = new HashMap<String, String>();
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
       try {
-        transform.transform(content, contentOut, metadata, params);
+        transform.transform(metadata, params);
       } catch (TransformException e) {
-        throw new IOException(e);
+        throw new RuntimeException("transform failed", e);
       }
       contentType = params.get("Content-Type");
-      return contentOut;
     }
 
     /**
@@ -907,17 +875,6 @@ class DocumentHandler implements HttpHandler {
       public void close() throws IOException {
         responseBodyClosed = true;
         super.close();
-      }
-    }
-    
-    /**
-     * Used when transform pipeline is circumvented, but the pipeline is
-     * required.
-     */
-    private class CantUseOutputStream extends AbstractLazyOutputStream {
-      protected OutputStream retrieveOs() throws IOException {
-        throw new IOException("Transform pipeline is required, but document is "
-                              + "too large");
       }
     }
   }

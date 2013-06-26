@@ -275,8 +275,6 @@ public final class GsaCommunicationHandler {
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
         samlServiceProvider, createTransformPipeline(),
-        config.getTransformMaxDocumentBytes(),
-        config.isTransformRequired(),
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
         config.sendDocControlsHeader());

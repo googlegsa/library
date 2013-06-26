@@ -24,23 +24,19 @@ import java.util.Map;
  *
  * <p>Implementations should also typically have a static factory method with a
  * single {@code Map<String, String>} argument for creating instances based on
- * configuration. Implementations are encouraged to accept "name" and
- * "required" as configuration keys.
+ * configuration. Implementations are encouraged to accept "name" as a 
+ * configuration key.
  */
 public interface DocumentTransform {
   /**
-   * Read data from {@code contentIn}, transform it, and write it to {@code
-   * contentOut}. Any changes to {@code metadata} and {@code params} will be
+   * Any changes to {@code metadata} and {@code params} will be
    * passed on to subsequent transforms. This method must be thread-safe.
    *
    * @throws TransformException
    * @throws IOException
    */
-  public void transform(ByteArrayOutputStream contentIn,
-                        OutputStream contentOut,
-                        Metadata metadata,
-                        Map<String, String> params)
-      throws TransformException, IOException;
+  public void transform(Metadata metadata, Map<String, String> params)
+      throws TransformException;
 
   /**
    * The name of this transform instance, typically provided by the user. It
@@ -48,15 +44,4 @@ public interface DocumentTransform {
    * if no name has been provided.
    */
   public String getName();
-
-  /**
-   * If this property is true, a failure of this transform will cause the entire
-   * transform pipeline to abort. This is useful in the case where a particular
-   * transform is required in order to server data. For example, a transform
-   * tasked with redacting or filtering document content.
-   *
-   * If this is false and a error occurs, this transform is treated as a
-   * identity transform.
-   */
-  public boolean isRequired();
 }
