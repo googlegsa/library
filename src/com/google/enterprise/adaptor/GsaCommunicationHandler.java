@@ -263,8 +263,7 @@ public final class GsaCommunicationHandler {
       addFilters(scope.createContext("/saml-authz", new SamlBatchAuthzHandler(
           adaptor, docIdCodec, metadata)));
     }
-    Watchdog watchdog = new Watchdog(config.getAdaptorDocContentTimeoutMillis(),
-        scheduleExecutor);
+    Watchdog watchdog = new Watchdog(scheduleExecutor);
     AsyncDocIdSender asyncDocIdSender = new AsyncDocIdSender(docIdSender,
         config.getFeedMaxUrls() /* batch size */,
         5 /* max latency */, TimeUnit.MINUTES,
@@ -279,7 +278,9 @@ public final class GsaCommunicationHandler {
         config.isTransformRequired(),
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
-        config.sendDocControlsHeader());
+        config.sendDocControlsHeader(),
+        config.getAdaptorDocHeaderTimeoutMillis(),
+        config.getAdaptorDocContentTimeoutMillis());
     String handlerPath = config.getServerBaseUri().getPath()
         + config.getServerDocIdPath();
     addFilters(scope.createContext(handlerPath, docHandler));

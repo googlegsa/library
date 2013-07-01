@@ -33,24 +33,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 class Watchdog {
   private final ScheduledExecutorService executor;
-  /** Allowed duration in milliseconds */
-  private final long timeout;
   private final ThreadLocal<FutureInfo> inProcess
       = new ThreadLocal<FutureInfo>();
 
   /**
-   * @param timeout maximum allowed duration in milliseconds
    * @param executor executor to schedule tasks
    */
-  public Watchdog(long timeout, ScheduledExecutorService executor) {
+  public Watchdog(ScheduledExecutorService executor) {
     if (executor == null) {
       throw new NullPointerException();
     }
-    this.timeout = timeout;
     this.executor = executor;
   }
 
-  public void processingStarting() {
+  /**
+   * @param timeout maximum allowed duration in milliseconds
+   */
+  public void processingStarting(long timeout) {
     if (inProcess.get() != null) {
       throw new IllegalStateException("Processing is already occuring on the "
           + "thread");
