@@ -279,7 +279,7 @@ public class DocumentHandlerTest {
   public void testWatchdogInterruption() throws Exception {
     ScheduledExecutorService executor
         = Executors.newSingleThreadScheduledExecutor();
-    Watchdog watchdog = new Watchdog(1, executor);
+    Watchdog watchdog = new Watchdog(executor);
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
@@ -291,6 +291,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setWatchdog(watchdog)
+        .setHeaderTimeoutMillis(1)
         .build();
     try {
       thrown.expect(RuntimeException.class);
@@ -304,9 +305,11 @@ public class DocumentHandlerTest {
   public void testWatchdogNoInterruption() throws Exception {
     ScheduledExecutorService executor
         = Executors.newSingleThreadScheduledExecutor();
-    Watchdog watchdog = new Watchdog(100, executor);
+    Watchdog watchdog = new Watchdog(executor);
     DocumentHandler handler = createHandlerBuilder()
         .setWatchdog(watchdog)
+        .setHeaderTimeoutMillis(100)
+        .setContentTimeoutMillis(100)
         .build();
     try {
       handler.handle(ex);
@@ -1333,6 +1336,8 @@ public class DocumentHandlerTest {
     private Watchdog watchdog;
     private DocumentHandler.AsyncPusher pusher;
     private boolean sendDocControls;
+    private long headerTimeoutMillis = 30 * 1000;
+    private long contentTimeoutMillis = 180 * 1000;
 
     public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
       this.docIdDecoder = docIdDecoder;
@@ -1396,10 +1401,23 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setHeaderTimeoutMillis(
+        long headerTimeoutMillis) {
+      this.headerTimeoutMillis = headerTimeoutMillis;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setContentTimeoutMillis(
+        long contentTimeoutMillis) {
+      this.contentTimeoutMillis = contentTimeoutMillis;
+      return this;
+    }
+
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           gsaHostname, fullAccessHosts, samlServiceProvider, transform,
-          useCompression, watchdog, pusher, sendDocControls);
+          useCompression, watchdog, pusher, sendDocControls,
+          headerTimeoutMillis, contentTimeoutMillis);
     }
   }
 }

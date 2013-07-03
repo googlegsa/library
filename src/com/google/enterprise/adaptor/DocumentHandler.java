@@ -63,6 +63,8 @@ class DocumentHandler implements HttpHandler {
   private final TransformPipeline transform;
   private final boolean useCompression;
   private final boolean sendDocControls;
+  private final long headerTimeoutMillis;
+  private final long contentTimeoutMillis;
 
   /**
    * {@code samlServiceProvider} and {@code transform} may be {@code null}.
@@ -74,7 +76,8 @@ class DocumentHandler implements HttpHandler {
                          TransformPipeline transform,
                          boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
-                         boolean sendDocControls) {
+                         boolean sendDocControls, long headerTimeoutMillis,
+                         long contentTimeoutMillis) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || watchdog == null || pusher == null) {
       throw new NullPointerException();
@@ -89,6 +92,8 @@ class DocumentHandler implements HttpHandler {
     this.watchdog = watchdog;
     this.pusher = pusher;
     this.sendDocControls = sendDocControls;
+    this.headerTimeoutMillis = headerTimeoutMillis;
+    this.contentTimeoutMillis = contentTimeoutMillis;
 
     initFullAccess(gsaHostname, fullAccessHosts);
   }
@@ -194,7 +199,7 @@ class DocumentHandler implements HttpHandler {
       DocumentRequest request = new DocumentRequest(ex, docId);
       DocumentResponse response = new DocumentResponse(ex, docId);
       journal.recordRequestProcessingStart();
-      watchdog.processingStarting();
+      watchdog.processingStarting(headerTimeoutMillis);
       try {
         adaptor.getDocContent(request, response);
       } catch (InterruptedException e) {
@@ -797,6 +802,10 @@ class DocumentHandler implements HttpHandler {
       if (lastModified != null) {
         HttpExchanges.setLastModified(ex, lastModified);
       }
+      // There are separate timeouts for sending headers and sending content.
+      // Here we stop the headers timer and start the content timer.
+      watchdog.processingCompleted();
+      watchdog.processingStarting(contentTimeoutMillis);
       HttpExchanges.startResponse(
           ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
     }

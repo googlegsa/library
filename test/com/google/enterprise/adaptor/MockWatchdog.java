@@ -29,11 +29,11 @@ class MockWatchdog extends Watchdog {
         new ThreadFactoryBuilder().setDaemon(true).build());
 
   public MockWatchdog() {
-    super(1, executor);
+    super(executor);
   }
 
   @Override
-  public void processingStarting() {
+  public void processingStarting(long timeout) {
   }
 
   @Override

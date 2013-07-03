@@ -40,13 +40,13 @@ public class WatchdogTest {
   @Test
   public void testNullExecutor() {
     thrown.expect(NullPointerException.class);
-    new Watchdog(1, null);
+    new Watchdog(null);
   }
 
   @Test
   public void testInterruption() throws InterruptedException {
-    watchdog = new Watchdog(1, executor);
-    watchdog.processingStarting();
+    watchdog = new Watchdog(executor);
+    watchdog.processingStarting(1);
     try {
       thrown.expect(InterruptedException.class);
       Thread.sleep(100);
@@ -57,8 +57,8 @@ public class WatchdogTest {
 
   @Test
   public void testNoInterruption() throws InterruptedException {
-    watchdog = new Watchdog(5, executor);
-    watchdog.processingStarting();
+    watchdog = new Watchdog(executor);
+    watchdog.processingStarting(5);
     try {
       Thread.sleep(1);
     } finally {
@@ -69,11 +69,11 @@ public class WatchdogTest {
 
   @Test
   public void testDoubleAdd() {
-    watchdog = new Watchdog(1000, executor);
-    watchdog.processingStarting();
+    watchdog = new Watchdog(executor);
+    watchdog.processingStarting(1000);
     try {
       thrown.expect(IllegalStateException.class);
-      watchdog.processingStarting();
+      watchdog.processingStarting(1000);
     } finally {
       watchdog.processingCompleted();
     }
@@ -81,15 +81,15 @@ public class WatchdogTest {
 
   @Test
   public void testRemoveButNoAdd() {
-    watchdog = new Watchdog(1000, executor);
+    watchdog = new Watchdog(executor);
     thrown.expect(IllegalStateException.class);
     watchdog.processingCompleted();
   }
 
   @Test
   public void testDoubleRemove() {
-    watchdog = new Watchdog(1000, executor);
-    watchdog.processingStarting();
+    watchdog = new Watchdog(executor);
+    watchdog.processingStarting(1000);
     watchdog.processingCompleted();
     thrown.expect(IllegalStateException.class);
     watchdog.processingCompleted();
