@@ -991,6 +991,28 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testScoringTypeSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setSendDocControls(true)
+        .setScoringType("guess!")
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("scoring=guess!"));
+  }
+
+  @Test
   public void testLockHeaderFalseSent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -1338,6 +1360,7 @@ public class DocumentHandlerTest {
     private boolean sendDocControls;
     private long headerTimeoutMillis = 30 * 1000;
     private long contentTimeoutMillis = 180 * 1000;
+    private String scoring = "content";
 
     public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
       this.docIdDecoder = docIdDecoder;
@@ -1413,11 +1436,16 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setScoringType(String scoringType) {
+      this.scoring = scoringType;
+      return this;
+    }
+
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           gsaHostname, fullAccessHosts, samlServiceProvider, transform,
           useCompression, watchdog, pusher, sendDocControls,
-          headerTimeoutMillis, contentTimeoutMillis);
+          headerTimeoutMillis, contentTimeoutMillis, scoring);
     }
   }
 }

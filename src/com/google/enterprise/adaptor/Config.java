@@ -78,6 +78,9 @@ import java.util.logging.*;
  * <tr><td> </td><td>journal.reducedMem </td><td> avoid tracking per URL 
  *     information in RAM; suggested with over five hundred thousand documents.
  *     Defaults to true
+ * <tr><td> </td><td>gsa.scoringType</td><td> type of relevance algorithm
+ *      GSA utilizes to rank documents.  Either content or web.  Is sent
+ *      when adaptor.sendDocControlHeader is true.  Defaults to content
  * <tr><td> </td><td>server.dashboardPort </td><td> port on adaptor's
  *     machine for accessing adaptor's dashboard.   Defaults to  5679
  * <tr><td> </td><td>server.docIdPath </td><td> part of URL preceding
@@ -183,6 +186,7 @@ public class Config {
     addKey("gsa.70AuthMethodWorkaroundEnabled", "false");
     addKey("gsa.samlEntityId",
         "http://google.com/enterprise/gsa/security-manager");
+    addKey("gsa.scoringType", "content");
     addKey("docId.isUrl", "false");
     addKey("feed.name", "GENERATE", new ValueComputer() {
           public String compute(String rawValue) {
@@ -513,6 +517,14 @@ public class Config {
    */
   int getFeedMaxUrls() {
     return Integer.parseInt(getValue("feed.maxUrls"));
+  }
+
+  /**
+   * Provides the type of algorithm GSA is to use to rank documents sent by
+   * adaptor.
+   */
+  String getScoringType() {
+    return getValue("gsa.scoringType");
   }
 
   /**

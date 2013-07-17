@@ -65,6 +65,7 @@ class DocumentHandler implements HttpHandler {
   private final boolean sendDocControls;
   private final long headerTimeoutMillis;
   private final long contentTimeoutMillis;
+  private final String scoring;
 
   /**
    * {@code samlServiceProvider} and {@code transform} may be {@code null}.
@@ -77,9 +78,10 @@ class DocumentHandler implements HttpHandler {
                          boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
                          boolean sendDocControls, long headerTimeoutMillis,
-                         long contentTimeoutMillis) {
+                         long contentTimeoutMillis, String scoringType) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
-        || adaptor == null || watchdog == null || pusher == null) {
+        || adaptor == null || watchdog == null || pusher == null
+        || scoringType == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
@@ -94,6 +96,7 @@ class DocumentHandler implements HttpHandler {
     this.sendDocControls = sendDocControls;
     this.headerTimeoutMillis = headerTimeoutMillis;
     this.contentTimeoutMillis = contentTimeoutMillis;
+    this.scoring = scoringType;
 
     initFullAccess(gsaHostname, fullAccessHosts);
   }
@@ -760,6 +763,8 @@ class DocumentHandler implements HttpHandler {
           ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
               "crawl_once=" + crawlOnce);
           ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock=" + lock);
+          ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
+              "scoring=" + scoring);
         } else {
           acl = checkAndWorkaroundGsa70Acl(acl);
           ex.getResponseHeaders().add("X-Gsa-External-Metadata",

@@ -278,7 +278,8 @@ public final class GsaCommunicationHandler {
         asyncDocIdSender, 
         config.sendDocControlsHeader(),
         config.getAdaptorDocHeaderTimeoutMillis(),
-        config.getAdaptorDocContentTimeoutMillis());
+        config.getAdaptorDocContentTimeoutMillis(),
+        config.getScoringType());
     String handlerPath = config.getServerBaseUri().getPath()
         + config.getServerDocIdPath();
     addFilters(scope.createContext(handlerPath, docHandler));
