@@ -163,21 +163,25 @@ class GsaFeedFileMaker {
     }
     boolean noCase = acl.isEverythingCaseInsensitive();
     for (UserPrincipal permitUser : acl.getPermitUsers()) {
-      constructPrincipal(doc, aclElement, "permit", permitUser, noCase);
+      constructMetadataAndUrlPrincipal(doc, aclElement, "permit",
+          permitUser, noCase);
     }
     for (GroupPrincipal permitGroup : acl.getPermitGroups()) {
-      constructPrincipal(doc, aclElement, "permit", permitGroup, noCase);
+      constructMetadataAndUrlPrincipal(doc, aclElement, "permit",
+          permitGroup, noCase);
     }
     for (UserPrincipal denyUser : acl.getDenyUsers()) {
-      constructPrincipal(doc, aclElement, "deny", denyUser, noCase);
+      constructMetadataAndUrlPrincipal(doc, aclElement, "deny",
+          denyUser, noCase);
     }
     for (GroupPrincipal denyGroup : acl.getDenyGroups()) {
-      constructPrincipal(doc, aclElement, "deny", denyGroup, noCase);
+      constructMetadataAndUrlPrincipal(doc, aclElement, "deny",
+          denyGroup, noCase);
     }
   }
 
-  private void constructPrincipal(Document doc, Element acl, String access,
-      Principal principal, boolean everythingCaseInsensitive) {
+  private void constructMetadataAndUrlPrincipal(Document doc, Element acl,
+      String access, Principal principal, boolean everythingCaseInsensitive) {
     String scope = principal.isUser() ? "user" : "group";
     Element principalElement = doc.createElement("principal");
     principalElement.setAttribute("scope", scope);
@@ -244,12 +248,82 @@ class GsaFeedFileMaker {
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
   public String makeMetadataAndUrlXml(String srcName,
-                                      List<? extends DocIdSender.Item> items) {
+      List<? extends DocIdSender.Item> items) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
       constructMetadataAndUrlFeedFile(doc, srcName, items);
+      String xmlString = documentToString(doc); 
+      return xmlString;
+    } catch (TransformerConfigurationException tce) {
+      throw new IllegalStateException(tce);
+    } catch (TransformerException te) {
+      throw new IllegalStateException(te);
+    } catch (ParserConfigurationException pce) {
+      throw new IllegalStateException(pce);
+    }
+  }
+
+  /** Creates single group definition of group principal key and members. */
+  private void constructSingleMembership(Document doc, Element root,
+      GroupPrincipal groupPrincipal, List<Principal> members,
+      boolean caseSensitiveMembers) {
+    Element groupWithDef = doc.createElement("membership");
+    root.appendChild(groupWithDef);
+    Element groupKey = doc.createElement("principal");
+    groupWithDef.appendChild(groupKey);
+    groupKey.setAttribute("namespace", groupPrincipal.getNamespace());
+    groupKey.appendChild(doc.createTextNode(groupPrincipal.getName()));
+    Element groupDef = doc.createElement("members");
+    groupWithDef.appendChild(groupDef);
+    for (Principal member : members) {
+      Element groupDefElement = doc.createElement("principal");
+      groupDefElement.setAttribute("namespace", member.getNamespace());
+      String scope = member.isUser() ? "USER" : "GROUP";
+      groupDefElement.setAttribute("scope", scope);
+      if (caseSensitiveMembers) {
+        groupDefElement.setAttribute(
+            "case-sensitivity-type", "EVERYTHING_CASE_SENSITIVE");
+      } else {
+        groupDefElement.setAttribute(
+            "case-sensitivity-type", "EVERYTHING_CASE_INSENSITIVE");
+      }
+      groupDefElement.appendChild(doc.createTextNode(member.getName()));
+      groupDef.appendChild(groupDefElement);
+    }
+  }
+
+  /** Adds all the groups' definitions into body. */
+  private void constructGroupsDefinitionsFileBody(Document doc,
+      Element root, Map<GroupPrincipal, List<Principal>> items,
+      boolean caseSensitiveMembers) {
+    for (Map.Entry<GroupPrincipal, List<Principal>> group : items.entrySet()) {
+      constructSingleMembership(doc, root, group.getKey(), group.getValue(),
+          caseSensitiveMembers);
+    }
+  }
+
+  /** Puts all groups' definitions into document. */
+  private void constructGroupsDefinitionsFeedFile(Document doc,
+      Map<GroupPrincipal, List<Principal>> items,
+      boolean caseSensitiveMembers) {
+    Element root = doc.createElement("xmlgroups");
+    doc.appendChild(root);
+    Comment comment = doc.createComment("GSA EasyConnector");
+    root.appendChild(comment);
+    constructGroupsDefinitionsFileBody(doc, root, items, caseSensitiveMembers);
+  }
+
+  /** Makes feed file with groups and their definitions. */
+  public String makeGroupsDefinitionsXml(
+      Map<GroupPrincipal, List<Principal>> items,
+      boolean caseSensitiveMembers) {
+    try {
+      DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
+      DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
+      Document doc = docBuilder.newDocument();
+      constructGroupsDefinitionsFeedFile(doc, items, caseSensitiveMembers);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {

@@ -31,7 +31,7 @@ public class GsaFeedFileMakerTest {
   private GsaFeedFileMaker meker = new GsaFeedFileMaker(encoder);
 
   @Test
-  public void testEmpty() {
+  public void testEmptyMetadataAndUrl() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -50,7 +50,7 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testSimple() {
+  public void testSimpleMetadataAndUrl() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -76,7 +76,8 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testPushAttributes() throws java.net.URISyntaxException {
+  public void testPushAttributesMetadataAndUrl()
+      throws java.net.URISyntaxException {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -134,7 +135,7 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testNamedResources() {
+  public void testNamedResourcesMetadataAndUrl() {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -197,7 +198,7 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testUnsupportedDocIdSenderItem() {
+  public void testUnsupportedDocIdSenderItemMetadataAndUrl() {
     class UnsupportedItem implements DocIdSender.Item {};
     List<UnsupportedItem> items = new ArrayList<UnsupportedItem>();
     items.add(new UnsupportedItem());
@@ -258,7 +259,7 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testAclFragment() {
+  public void testAclFragmentMetadataAndUrl() {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -280,6 +281,135 @@ public class GsaFeedFileMakerTest {
             .setInheritFrom(new DocId("docid2"), "generated").build());
     String xml = meker.makeMetadataAndUrlXml("test", Arrays.asList(acl));
     xml = xml.replace("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testEmptyGroupsDefinitions() {
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<xmlgroups>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "</xmlgroups>\n";
+    String xml = meker.makeGroupsDefinitionsXml(
+        new TreeMap<GroupPrincipal, List<Principal>>(), true);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testSimpleGroupsDefinitions() {
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<xmlgroups>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<membership>\n"
+        + "<principal namespace=\"Default\">immortals</principal>\n"
+        + "<members>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\""
+        + " scope=\"USER\""
+        + ">MacLeod\\Duncan</principal>\n"
+        + "</members>\n"
+        + "</membership>\n"
+        + "</xmlgroups>\n";
+    Map<GroupPrincipal, List<Principal>> groupDefs
+        = new TreeMap<GroupPrincipal, List<Principal>>();
+    List<Principal> members = new ArrayList<Principal>();
+    members.add(new UserPrincipal("MacLeod\\Duncan"));
+    groupDefs.put(new GroupPrincipal("immortals"), members);
+    String xml = meker.makeGroupsDefinitionsXml(groupDefs, false);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testMultipleGroupsDefinitions() {
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<xmlgroups>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<membership>\n"
+        + "<principal namespace=\"Default\">immortals</principal>\n"
+        + "<members>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\""
+        + " scope=\"USER\""
+        + ">MacLeod\\Duncan</principal>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\""
+        + " scope=\"USER\""
+        + ">Methos</principal>\n"
+        + "</members>\n"
+        + "</membership>\n"
+        + "<membership>\n"
+        + "<principal namespace=\"Default\">sounds</principal>\n"
+        + "<members>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\""
+        + " scope=\"USER\""
+        + ">splat</principal>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\""
+        + " scope=\"USER\""
+        + ">plump</principal>\n"
+        + "</members>\n"
+        + "</membership>\n"
+        + "</xmlgroups>\n";
+    Map<GroupPrincipal, List<Principal>> groupDefs
+        = new TreeMap<GroupPrincipal, List<Principal>>();
+    List<Principal> members = new ArrayList<Principal>();
+    members.add(new UserPrincipal("MacLeod\\Duncan"));
+    members.add(new UserPrincipal("Methos"));
+    groupDefs.put(new GroupPrincipal("immortals"), members);
+    List<Principal> members2 = new ArrayList<Principal>();
+    members2.add(new UserPrincipal("splat"));
+    members2.add(new UserPrincipal("plump"));
+    groupDefs.put(new GroupPrincipal("sounds"), members2);
+    String xml = meker.makeGroupsDefinitionsXml(groupDefs, false);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testNestedGroupsDefinitions() {
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<xmlgroups>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<membership>\n"
+        + "<principal namespace=\"Default\">immortals</principal>\n"
+        + "<members>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_SENSITIVE\""
+        + " namespace=\"goodguys\""
+        + " scope=\"USER\""
+        + ">MacLeod\\Duncan</principal>\n"
+        + "<principal" 
+        + " case-sensitivity-type=\"EVERYTHING_CASE_SENSITIVE\""
+        + " namespace=\"3vil\""
+        + " scope=\"GROUP\""
+        + ">badguys</principal>\n"
+        + "</members>\n"
+        + "</membership>\n"
+        + "</xmlgroups>\n";
+    Map<GroupPrincipal, List<Principal>> groupDefs
+        = new TreeMap<GroupPrincipal, List<Principal>>();
+    List<Principal> members = new ArrayList<Principal>();
+    members.add(new UserPrincipal("MacLeod\\Duncan", "goodguys"));
+    members.add(new GroupPrincipal("badguys", "3vil"));
+    groupDefs.put(new GroupPrincipal("immortals"), members);
+    String xml = meker.makeGroupsDefinitionsXml(groupDefs, true);
+    xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 }
