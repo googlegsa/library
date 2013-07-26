@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
+import com.google.common.collect.Sets;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -163,6 +164,22 @@ public class AclTest {
     assertEquals(goldenPermitUsers, acl.getPermitUsers());
     assertEquals(goldenInheritFrom, acl.getInheritFrom());
     assertEquals(goldenInheritType, acl.getInheritanceType());
+  }
+
+  @Test
+  public void testTypeAgnosticAccessors() {
+    Acl acl = new Acl.Builder()
+        .setPermitUsers(U("todelete1")).setDenyUsers(U("todelete2"))
+        .setPermitGroups(G("todelete3")).setDenyGroups(G("todelete4"))
+        .setPermits(Sets.union(U("good1"), G("good2")))
+        .setDenies(Sets.union(U("good3"), G("good4")))
+        .build();
+    assertEquals(new Acl.Builder()
+        .setPermitUsers(U("good1")).setDenyUsers(U("good3"))
+        .setPermitGroups(G("good2")).setDenyGroups(G("good4"))
+        .build(), acl);
+    assertEquals(Sets.union(U("good1"), G("good2")), acl.getPermits());
+    assertEquals(Sets.union(U("good3"), G("good4")), acl.getDenies());
   }
 
   @Test

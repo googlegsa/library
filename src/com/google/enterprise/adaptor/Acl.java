@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.collect.Sets;
+
 import java.io.IOException;
 import java.util.*;
 import java.util.logging.*;
@@ -132,6 +134,20 @@ public class Acl {
    */
   public Set<UserPrincipal> getDenyUsers() {
     return denyUsers;
+  }
+
+  /**
+   * Returns immutable set of permitted users and groups.
+   */
+  public Set<Principal> getPermits() {
+    return Sets.union(permitUsers, permitGroups);
+  }
+
+  /**
+   * Returns immutable set of denied users and groups;
+   */
+  public Set<Principal> getDenies() {
+    return Sets.union(denyUsers, denyGroups);
   }
 
   /**
@@ -640,6 +656,58 @@ public class Acl {
      */
     public Builder setDenyUsers(Collection<UserPrincipal> denyUsers) {
       this.denyUsers = sanitizeSet(denyUsers);
+      return this;
+    }
+
+    /**
+     * Replace existing permit users and groups.
+     *
+     * @return the same instance of the builder, for chaining calls
+     * @throws NullPointerException if the collection is {@code null} or
+     *     contains {@code null}
+     * @throws IllegalArgumentException if the collection contains {@code ""}
+     *     or a value that has leading or trailing whitespace
+     */
+    public Builder setPermits(Collection<Principal> permits) {
+      Collection<GroupPrincipal> groups = new ArrayList<GroupPrincipal>();
+      Collection<UserPrincipal> users = new ArrayList<UserPrincipal>();
+      for (Principal principal : permits) {
+        if (principal.isGroup()) {
+          groups.add((GroupPrincipal) principal);
+        } else {
+          users.add((UserPrincipal) principal);
+        }
+      }
+      Set<GroupPrincipal> sanitizedGroups = sanitizeSet(groups);
+      Set<UserPrincipal> sanitizedUsers = sanitizeSet(users);
+      this.permitGroups = sanitizedGroups;
+      this.permitUsers = sanitizedUsers;
+      return this;
+    }
+
+    /**
+     * Replace existing deny users and groups.
+     *
+     * @return the same instance of the builder, for chaining calls
+     * @throws NullPointerException if the collection is {@code null} or
+     *     contains {@code null}
+     * @throws IllegalArgumentException if the collection contains {@code ""}
+     *     or a value that has leading or trailing whitespace
+     */
+    public Builder setDenies(Collection<Principal> denies) {
+      Collection<GroupPrincipal> groups = new ArrayList<GroupPrincipal>();
+      Collection<UserPrincipal> users = new ArrayList<UserPrincipal>();
+      for (Principal principal : denies) {
+        if (principal.isGroup()) {
+          groups.add((GroupPrincipal) principal);
+        } else {
+          users.add((UserPrincipal) principal);
+        }
+      }
+      Set<GroupPrincipal> sanitizedGroups = sanitizeSet(groups);
+      Set<UserPrincipal> sanitizedUsers = sanitizeSet(users);
+      this.denyGroups = sanitizedGroups;
+      this.denyUsers = sanitizedUsers;
       return this;
     }
 
