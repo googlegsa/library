@@ -21,6 +21,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Test cases for {@link DocIdSender}.
@@ -217,6 +218,49 @@ public class DocIdSenderTest {
 
     docIdSender.pushDocIds(ids, errorHandler);
     assertEquals(1, errorHandler.failedReadingReply);
+  }
+
+  @Test
+  public void testPushInterruptedFirstBatch() throws Exception {
+    fileSender = new MockGsaFeedFileSender() {
+      @Override
+      public void sendMetadataAndUrl(String host, String datasource,
+                                     String xmlString, boolean useCompression)
+          throws FailedReadingReply {
+        throw new FailedReadingReply(new IOException());
+      }
+    };
+    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
+                                  adaptor);
+    List<DocId> ids = Arrays.asList(new DocId("test"), new DocId("test2"));
+
+    Thread.currentThread().interrupt();
+    thrown.expect(InterruptedException.class);
+    docIdSender.pushDocIds(ids);
+  }
+
+  @Test
+  public void testPushInterruptedLaterBatch() throws Exception {
+    final AtomicLong batchCount = new AtomicLong();
+    fileSender = new MockGsaFeedFileSender() {
+      @Override
+      public void sendMetadataAndUrl(String host, String datasource,
+                                     String xmlString, boolean useCompression)
+          throws FailedReadingReply {
+        long count = batchCount.incrementAndGet();
+        if (count >= 2) {
+          throw new FailedReadingReply(new IOException());
+        }
+      }
+    };
+    config.setValue("feed.maxUrls", "1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
+                                  adaptor);
+    List<DocId> ids = Arrays.asList(new DocId("test"), new DocId("test2"));
+
+    Thread.currentThread().interrupt();
+    assertEquals(new DocId("test2"), docIdSender.pushDocIds(ids));
+    assertTrue(Thread.currentThread().isInterrupted());
   }
 
   @Test

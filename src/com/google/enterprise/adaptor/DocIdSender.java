@@ -147,6 +147,7 @@ class DocIdSender extends AbstractDocIdPusher
     if (handler == null) {
       handler = defaultErrorHandler;
     }
+    boolean firstBatch = true;
     final int max = config.getFeedMaxUrls();
     while (items.hasNext()) {
       List<T> batch = new ArrayList<T>();
@@ -157,11 +158,25 @@ class DocIdSender extends AbstractDocIdPusher
         batch.add(items.next());
       }
       log.log(Level.INFO, "Pushing group of {0} DocIds", batch.size());
-      T failedId = pushSizedBatchOfRecords(batch, handler);
+      T failedId;
+      try {
+        failedId = pushSizedBatchOfRecords(batch, handler);
+      } catch (InterruptedException ex) {
+        if (firstBatch) {
+          throw ex;
+        } else {
+          // If this is not the first batch, then some items have already been
+          // sent. Thus, return gracefully instead of throwing an exception so
+          // that the caller can discover what was sent.
+          Thread.currentThread().interrupt();
+          return batch.get(0);
+        }
+      }
       if (failedId != null) {
         log.info("Failed to push all ids. Failed on docId: " + failedId);
         return failedId;
       }
+      firstBatch = false;
       journal.recordDocIdPush(batch);
     }
     log.info("Pushed DocIds");

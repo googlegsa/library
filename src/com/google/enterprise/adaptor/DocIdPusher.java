@@ -33,6 +33,7 @@ public interface DocIdPusher {
    * #pushRecords(Iterable)} with default values for each {@code Record}.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
+   * @throws InterruptedException if interrupted and no DocIds were sent
    * @see #pushDocIds(Iterable, PushErrorHandler)
    */
   public DocId pushDocIds(Iterable<DocId> docIds)
@@ -50,6 +51,7 @@ public interface DocIdPusher {
    * with default values for each {@code Record}.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
+   * @throws InterruptedException if interrupted and no DocIds were sent
    */
   public DocId pushDocIds(Iterable<DocId> docIds, PushErrorHandler handler)
       throws InterruptedException;
@@ -63,6 +65,7 @@ public interface DocIdPusher {
    * <p>Equivalent to {@code pushRecords(records, null)}.
    *
    * @return {@code null} on success, otherwise the first Record to fail
+   * @throws InterruptedException if interrupted and no Records were sent
    * @see #pushRecords(Iterable, PushErrorHandler)
    */
   public Record pushRecords(Iterable<Record> records)
@@ -77,6 +80,7 @@ public interface DocIdPusher {
    * <p>If handler is {@code null}, then a default error handler is used.
    *
    * @return {@code null} on success, otherwise the first Record to fail
+   * @throws InterruptedException if interrupted and no Records were sent
    */
   public Record pushRecords(Iterable<Record> records, PushErrorHandler handler)
       throws InterruptedException;
@@ -97,6 +101,7 @@ public interface DocIdPusher {
    * <p>Equivalent to {@code pushNamedResources(resources, null)}.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
+   * @throws InterruptedException if interrupted and no resources were sent
    * @see #pushNamedResources(Map, PushErrorHandler)
    */
   public DocId pushNamedResources(Map<DocId, Acl> resources)
@@ -118,6 +123,7 @@ public interface DocIdPusher {
    * <p>If handler is {@code null}, then a default error handler is used.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
+   * @throws InterruptedException if interrupted and no resources were sent
    */
   public DocId pushNamedResources(Map<DocId, Acl> resources,
                                   PushErrorHandler handler)
