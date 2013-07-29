@@ -67,7 +67,7 @@ public interface Adaptor {
    *
    * <p>If you experience a fatal error, feel free to throw an {@link
    * IOException} or {@link RuntimeException}. In the case of an error, the
-   * {@link GetDocIdsErrorHandler} in use in {@link AdaptorContext} will
+   * {@link ExceptionHandler} in use in {@link AdaptorContext} will
    * determine if and when to retry.
    */
   public void getDocIds(DocIdPusher pusher) throws IOException,

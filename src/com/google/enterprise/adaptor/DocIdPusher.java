@@ -34,7 +34,7 @@ public interface DocIdPusher {
    *
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no DocIds were sent
-   * @see #pushDocIds(Iterable, PushErrorHandler)
+   * @see #pushDocIds(Iterable, ExceptionHandler)
    */
   public DocId pushDocIds(Iterable<DocId> docIds)
       throws InterruptedException;
@@ -47,13 +47,13 @@ public interface DocIdPusher {
    *
    * <p>If handler is {@code null}, then a default error handler is used.
    *
-   * <p>Equivalent to {@link #pushRecords(Iterable, PushErrorHandler)}
+   * <p>Equivalent to {@link #pushRecords(Iterable, ExceptionHandler)}
    * with default values for each {@code Record}.
    *
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no DocIds were sent
    */
-  public DocId pushDocIds(Iterable<DocId> docIds, PushErrorHandler handler)
+  public DocId pushDocIds(Iterable<DocId> docIds, ExceptionHandler handler)
       throws InterruptedException;
 
   /**
@@ -66,7 +66,7 @@ public interface DocIdPusher {
    *
    * @return {@code null} on success, otherwise the first Record to fail
    * @throws InterruptedException if interrupted and no Records were sent
-   * @see #pushRecords(Iterable, PushErrorHandler)
+   * @see #pushRecords(Iterable, ExceptionHandler)
    */
   public Record pushRecords(Iterable<Record> records)
       throws InterruptedException;
@@ -82,7 +82,7 @@ public interface DocIdPusher {
    * @return {@code null} on success, otherwise the first Record to fail
    * @throws InterruptedException if interrupted and no Records were sent
    */
-  public Record pushRecords(Iterable<Record> records, PushErrorHandler handler)
+  public Record pushRecords(Iterable<Record> records, ExceptionHandler handler)
       throws InterruptedException;
 
   /**
@@ -102,7 +102,7 @@ public interface DocIdPusher {
    *
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no resources were sent
-   * @see #pushNamedResources(Map, PushErrorHandler)
+   * @see #pushNamedResources(Map, ExceptionHandler)
    */
   public DocId pushNamedResources(Map<DocId, Acl> resources)
       throws InterruptedException;
@@ -126,7 +126,7 @@ public interface DocIdPusher {
    * @throws InterruptedException if interrupted and no resources were sent
    */
   public DocId pushNamedResources(Map<DocId, Acl> resources,
-                                  PushErrorHandler handler)
+                                  ExceptionHandler handler)
       throws InterruptedException;
 
   /**

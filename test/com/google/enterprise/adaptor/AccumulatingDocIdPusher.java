@@ -25,8 +25,7 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
       = new ArrayList<DocIdPusher.Record>();
 
   @Override
-  public Record pushRecords(Iterable<Record> records,
-                          PushErrorHandler handler)
+  public Record pushRecords(Iterable<Record> records, ExceptionHandler handler)
       throws InterruptedException {
     for (Record record : records) {
       this.records.add(record);
@@ -50,8 +49,7 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
 
   @Override
   public DocId pushNamedResources(Map<DocId, Acl> resources,
-                                  PushErrorHandler hanlder)
-      throws InterruptedException {
+      ExceptionHandler handler) throws InterruptedException {
     throw new UnsupportedOperationException();
   }
 }

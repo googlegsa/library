@@ -86,7 +86,7 @@ public class AsyncDocIdSenderTest {
 
     @Override
     public <T extends DocIdSender.Item> T pushItems(Iterator<T> items,
-        PushErrorHandler handler) throws InterruptedException {
+        ExceptionHandler handler) throws InterruptedException {
       while (items.hasNext()) {
         this.items.add(items.next());
       }

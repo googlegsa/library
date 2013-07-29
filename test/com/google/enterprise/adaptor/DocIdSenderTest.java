@@ -34,8 +34,8 @@ public class DocIdSenderTest {
   private DocIdsMockAdaptor adaptor = new DocIdsMockAdaptor();
   private DocIdSender docIdSender
       = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
-  private GetDocIdsErrorHandler runtimeExceptionHandler
-      = new RuntimeExceptionGetDocIdsErrorHandler();
+  private ExceptionHandler runtimeExceptionHandler
+      = new RuntimeExceptionExceptionHandler();
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -123,15 +123,15 @@ public class DocIdSenderTest {
       }
     }
 
-    class TryTwiceGetDocIdsErrorHandler implements GetDocIdsErrorHandler {
+    class TryTwiceExceptionHandler implements ExceptionHandler {
       @Override
-      public boolean handleFailedToGetDocIds(Exception ex, int ntries) {
+      public boolean handleException(Exception ex, int ntries) {
         return ntries < 2;
       }
     }
 
     FailureAdaptor adaptor = new FailureAdaptor();
-    GetDocIdsErrorHandler errorHandler = new TryTwiceGetDocIdsErrorHandler();
+    ExceptionHandler errorHandler = new TryTwiceExceptionHandler();
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
                                   adaptor);
     docIdSender.pushFullDocIdsFromAdaptor(errorHandler);
@@ -139,85 +139,46 @@ public class DocIdSenderTest {
   }
 
   @Test
-  public void testPushSizedBatchFailedToConnect() throws Exception {
+  public void testPushSizedBatchFailed() throws Exception {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       public void sendMetadataAndUrl(String host, String datasource,
                                      String xmlString, boolean useCompression)
-          throws FailedToConnect {
-        throw new FailedToConnect(new IOException());
+          throws IOException {
+        throw new IOException();
       }
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
                                   adaptor);
     List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
-    NeverRetryPushErrorHandler errorHandler = new NeverRetryPushErrorHandler();
+    NeverRetryExceptionHandler errorHandler = new NeverRetryExceptionHandler();
 
     docIdSender.pushDocIds(ids, errorHandler);
-    assertEquals(1, errorHandler.failedToConnect);
+    assertEquals(1, errorHandler.failed);
   }
 
-  @Test
-  public void testPushSizedBatchFailedWriting() throws Exception {
-    fileSender = new MockGsaFeedFileSender() {
-      @Override
-      public void sendMetadataAndUrl(String host, String datasource,
-                                     String xmlString, boolean useCompression)
-          throws FailedWriting {
-        throw new FailedWriting(new IOException());
-      }
-    };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
-    List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
-    NeverRetryPushErrorHandler errorHandler = new NeverRetryPushErrorHandler();
-
-    docIdSender.pushDocIds(ids, errorHandler);
-    assertEquals(1, errorHandler.failedWriting);
-  }
-
-  @Test
   public void testPushSizedBatchRetrying() throws Exception {
     fileSender = new MockGsaFeedFileSender() {
       @Override
       public void sendMetadataAndUrl(String host, String datasource,
                                      String xmlString, boolean useCompression)
-          throws FailedWriting {
-        throw new FailedWriting(new IOException());
+          throws IOException {
+        throw new IOException();
       }
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
                                   adaptor);
     List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
-    NeverRetryPushErrorHandler errorHandler = new NeverRetryPushErrorHandler() {
+    NeverRetryExceptionHandler errorHandler = new NeverRetryExceptionHandler() {
       @Override
-      public boolean handleFailedWriting(Exception ex, int ntries) {
-        super.handleFailedWriting(ex, ntries);
+      public boolean handleException(Exception ex, int ntries) {
+        super.handleException(ex, ntries);
         return ntries < 2;
       }
     };
 
     docIdSender.pushDocIds(ids, errorHandler);
-    assertEquals(2, errorHandler.failedWriting);
-  }
-
-  @Test
-  public void testPushSizedBatchFailedReadingReply() throws Exception {
-    fileSender = new MockGsaFeedFileSender() {
-      @Override
-      public void sendMetadataAndUrl(String host, String datasource,
-                                     String xmlString, boolean useCompression)
-          throws FailedReadingReply {
-        throw new FailedReadingReply(new IOException());
-      }
-    };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
-    List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
-    NeverRetryPushErrorHandler errorHandler = new NeverRetryPushErrorHandler();
-
-    docIdSender.pushDocIds(ids, errorHandler);
-    assertEquals(1, errorHandler.failedReadingReply);
+    assertEquals(2, errorHandler.failed);
   }
 
   @Test
@@ -226,8 +187,8 @@ public class DocIdSenderTest {
       @Override
       public void sendMetadataAndUrl(String host, String datasource,
                                      String xmlString, boolean useCompression)
-          throws FailedReadingReply {
-        throw new FailedReadingReply(new IOException());
+          throws IOException {
+        throw new IOException();
       }
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
@@ -246,10 +207,10 @@ public class DocIdSenderTest {
       @Override
       public void sendMetadataAndUrl(String host, String datasource,
                                      String xmlString, boolean useCompression)
-          throws FailedReadingReply {
+          throws IOException {
         long count = batchCount.incrementAndGet();
         if (count >= 2) {
-          throw new FailedReadingReply(new IOException());
+          throw new IOException();
         }
       }
     };
@@ -268,7 +229,7 @@ public class DocIdSenderTest {
     config.setValue("feed.name", "testing");
     assertNull(docIdSender.pushNamedResources(
         Collections.singletonMap(new DocId("test"), Acl.EMPTY),
-        new NeverRetryPushErrorHandler()));
+        new NeverRetryExceptionHandler()));
     assertEquals(1, fileSender.hosts.size());
   }
 
@@ -278,8 +239,8 @@ public class DocIdSenderTest {
       @Override
       public void sendMetadataAndUrl(String host, String datasource,
                                      String xmlString, boolean useCompression)
-          throws FailedReadingReply {
-        throw new FailedReadingReply(new IOException());
+          throws IOException {
+        throw new IOException();
       }
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
@@ -289,7 +250,7 @@ public class DocIdSenderTest {
     resources.put(new DocId("aaa"), Acl.EMPTY);
     resources.put(new DocId("bbb"), Acl.EMPTY);
     assertEquals(new DocId("aaa"), docIdSender.pushNamedResources(resources,
-        new NeverRetryPushErrorHandler()));
+        new NeverRetryExceptionHandler()));
   }
 
   @Test
@@ -337,17 +298,17 @@ public class DocIdSenderTest {
     @Override
     public void sendMetadataAndUrl(String host, String datasource,
                                    String xmlString, boolean useCompression)
-        throws FailedToConnect, FailedWriting, FailedReadingReply {
+        throws IOException {
       hosts.add(host);
       datasources.add(datasource);
       xmlStrings.add(xmlString);
     }
   }
 
-  private static class RuntimeExceptionGetDocIdsErrorHandler
-      implements GetDocIdsErrorHandler {
+  private static class RuntimeExceptionExceptionHandler
+      implements ExceptionHandler {
     @Override
-    public boolean handleFailedToGetDocIds(Exception ex, int ntries) {
+    public boolean handleException(Exception ex, int ntries) {
       throw new TriggeredException(ex);
     }
 
@@ -358,26 +319,12 @@ public class DocIdSenderTest {
     }
   }
 
-  private static class NeverRetryPushErrorHandler implements PushErrorHandler {
-    private int failedToConnect;
-    private int failedWriting;
-    private int failedReadingReply;
+  private static class NeverRetryExceptionHandler implements ExceptionHandler {
+    private int failed;
 
     @Override
-    public boolean handleFailedToConnect(Exception ex, int ntries) {
-      failedToConnect++;
-      return false;
-    }
-
-    @Override
-    public boolean handleFailedWriting(Exception ex, int ntries) {
-      failedWriting++;
-      return false;
-    }
-
-    @Override
-    public boolean handleFailedReadingReply(Exception ex, int ntries) {
-      failedReadingReply++;
+    public boolean handleException(Exception ex, int ntries) {
+      failed++;
       return false;
     }
   }

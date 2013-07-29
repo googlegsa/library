@@ -384,14 +384,14 @@ abstract class WrapperAdaptor implements Adaptor {
 
     @Override
     public DocIdPusher.Record pushRecords(
-        Iterable<DocIdPusher.Record> records, PushErrorHandler handler)
+        Iterable<DocIdPusher.Record> records, ExceptionHandler handler)
         throws InterruptedException {
       return pusher.pushRecords(records, handler);
     }
 
     @Override
     public DocId pushNamedResources(Map<DocId, Acl> resources,
-        PushErrorHandler handler) throws InterruptedException {
+        ExceptionHandler handler) throws InterruptedException {
       return pusher.pushNamedResources(resources, handler);
     }
   }
@@ -429,23 +429,23 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void setGetDocIdsFullErrorHandler(GetDocIdsErrorHandler handler) {
+    public void setGetDocIdsFullErrorHandler(ExceptionHandler handler) {
       context.setGetDocIdsFullErrorHandler(handler);
     }
 
     @Override
-    public GetDocIdsErrorHandler getGetDocIdsFullErrorHandler() {
+    public ExceptionHandler getGetDocIdsFullErrorHandler() {
       return context.getGetDocIdsFullErrorHandler();
     }
 
     @Override
     public void setGetDocIdsIncrementalErrorHandler(
-        GetDocIdsErrorHandler handler) {
+        ExceptionHandler handler) {
       context.setGetDocIdsIncrementalErrorHandler(handler);
     }
 
     @Override
-    public GetDocIdsErrorHandler getGetDocIdsIncrementalErrorHandler() {
+    public ExceptionHandler getGetDocIdsIncrementalErrorHandler() {
       return context.getGetDocIdsIncrementalErrorHandler();
     }
 

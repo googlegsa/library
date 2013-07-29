@@ -194,21 +194,18 @@ public class GsaFeedFileSenderTest {
     sender.sendMetadataAndUrl("localhost", "9badsource", "<payload/>", false);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testMetadataAndUrlBadHost() throws Exception {
-    thrown.expect(GsaFeedFileSender.FailedToConnect.class);
     sender.sendMetadataAndUrl("fakehost!@#", "datasource", "<payload/>", false);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testMetadataAndUrlPortNotOpen() throws Exception {
-    thrown.expect(GsaFeedFileSender.FailedToConnect.class);
     sender.sendMetadataAndUrl("localhost", "datasource", "<payload/>", false);
   }
 
-  @Test
+  @Test(expected = IOException.class)
   public void testMetadataAndUrlInvalidUrl() throws Exception {
-    thrown.expect(GsaFeedFileSender.FailedToConnect.class);
     sender.sendMetadataAndUrl("badname:", "datasource", "<payload/>", false);
   }
 
@@ -228,10 +225,10 @@ public class GsaFeedFileSenderTest {
       sb.append(longMsg);
     }
     // This payload has to be enough to exhaust output buffers, otherwise the
-    // exception turns into a FailedReading exception.
+    // exception will be noticed when reading the response.
     String longPayload = sb.toString();
     sb = null;
-    thrown.expect(GsaFeedFileSender.FailedWriting.class);
+    thrown.expect(IOException.class);
     sender.sendMetadataAndUrl(messageAndUrlUrl, "datasource", longPayload, false);
   }
 
@@ -256,7 +253,7 @@ public class GsaFeedFileSenderTest {
       }
     });
 
-    thrown.expect(GsaFeedFileSender.FailedReadingReply.class);
+    thrown.expect(IOException.class);
     sender.sendMetadataAndUrl(messageAndUrlUrl, "datasource", "<payload/>", false);
   }
 

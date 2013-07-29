@@ -76,10 +76,11 @@ public class GsaCommunicationHandlerTest {
           assertNotNull(context.getDocIdPusher());
           assertNotNull(context.getDocIdEncoder());
           assertNotNull(context.getSensitiveValueDecoder());
-          GetDocIdsErrorHandler originalHandler
+          ExceptionHandler originalHandler
               = context.getGetDocIdsFullErrorHandler();
-          GetDocIdsErrorHandler replacementHandler
-              = new DefaultGetDocIdsErrorHandler();
+          ExceptionHandler replacementHandler
+              = ExceptionHandlers.exponentialBackoffHandler(
+                  1, 1, TimeUnit.SECONDS);
           assertNotNull(originalHandler);
           context.setGetDocIdsFullErrorHandler(replacementHandler);
           assertSame(replacementHandler,

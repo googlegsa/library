@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.logging.*;
 
@@ -30,8 +31,8 @@ class DocIdSender extends AbstractDocIdPusher
   private final Journal journal;
   private final Config config;
   private final Adaptor adaptor;
-  private final PushErrorHandler defaultErrorHandler
-      = new DefaultPushErrorHandler();
+  private final ExceptionHandler defaultErrorHandler
+      = ExceptionHandlers.defaultHandler();
 
   public DocIdSender(GsaFeedFileMaker fileMaker, GsaFeedFileSender fileSender,
                      Journal journal, Config config, Adaptor adaptor) {
@@ -46,7 +47,7 @@ class DocIdSender extends AbstractDocIdPusher
    * Calls {@link Adaptor#getDocIds}. This method blocks until all DocIds are
    * sent or retrying failed.
    */
-  public void pushFullDocIdsFromAdaptor(GetDocIdsErrorHandler handler)
+  public void pushFullDocIdsFromAdaptor(ExceptionHandler handler)
       throws InterruptedException {
     if (handler == null) {
       throw new NullPointerException();
@@ -65,7 +66,7 @@ class DocIdSender extends AbstractDocIdPusher
         throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
-        keepGoing = handler.handleFailedToGetDocIds(ex, ntries);
+        keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
@@ -83,7 +84,7 @@ class DocIdSender extends AbstractDocIdPusher
    * Calls {@link Adaptor#getModifiedDocIds}. This method blocks until all
    * DocIds are sent or retrying failed.
    */
-  public void pushIncrementalDocIdsFromAdaptor(GetDocIdsErrorHandler handler)
+  public void pushIncrementalDocIdsFromAdaptor(ExceptionHandler handler)
       throws InterruptedException {
     if (handler == null) {
       throw new NullPointerException();
@@ -102,7 +103,7 @@ class DocIdSender extends AbstractDocIdPusher
         throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
-        keepGoing = handler.handleFailedToGetDocIds(ex, ntries);
+        keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
@@ -123,14 +124,14 @@ class DocIdSender extends AbstractDocIdPusher
    * This method blocks until all DocIds are sent or retrying failed.
    */
   @Override
-  public Record pushRecords(Iterable<Record> items, PushErrorHandler handler)
+  public Record pushRecords(Iterable<Record> items, ExceptionHandler handler)
       throws InterruptedException {
     return pushItems(items.iterator(), handler);
   }
 
   @Override
   public DocId pushNamedResources(Map<DocId, Acl> resources,
-                                  PushErrorHandler handler)
+                                  ExceptionHandler handler)
       throws InterruptedException {
     List<AclItem> acls = new ArrayList<AclItem>(resources.size());
     for (Map.Entry<DocId, Acl> me : resources.entrySet()) {
@@ -142,7 +143,7 @@ class DocIdSender extends AbstractDocIdPusher
 
   @Override
   public <T extends Item> T pushItems(Iterator<T> items,
-      PushErrorHandler handler) throws InterruptedException {
+      ExceptionHandler handler) throws InterruptedException {
     log.log(Level.INFO, "Pushing DocIds");
     if (handler == null) {
       handler = defaultErrorHandler;
@@ -184,7 +185,7 @@ class DocIdSender extends AbstractDocIdPusher
   }
 
   private <T extends Item> T pushSizedBatchOfRecords(List<T> items,
-                                         PushErrorHandler handler)
+                                         ExceptionHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
     String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(feedSourceName, items);
@@ -199,18 +200,9 @@ class DocIdSender extends AbstractDocIdPusher
                                       config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;
-      } catch (GsaFeedFileSender.FailedToConnect ftc) {
-        log.log(Level.WARNING, "Unable to connect to the GSA", ftc);
-        keepGoing = handler.handleFailedToConnect(
-            (Exception) ftc.getCause(), ntries);
-      } catch (GsaFeedFileSender.FailedWriting fw) {
-        log.log(Level.WARNING, "Unable to write request to the GSA", fw);
-        keepGoing = handler.handleFailedWriting(
-            (Exception) fw.getCause(), ntries);
-      } catch (GsaFeedFileSender.FailedReadingReply fr) {
-        log.log(Level.WARNING, "Unable to read reply from GSA", fr);
-        keepGoing = handler.handleFailedReadingReply(
-            (Exception) fr.getCause(), ntries);
+      } catch (IOException ex) {
+        log.log(Level.WARNING, "Failed to send feed", ex);
+        keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);

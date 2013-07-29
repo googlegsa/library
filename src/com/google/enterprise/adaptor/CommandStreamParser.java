@@ -470,7 +470,7 @@ public class CommandStreamParser {
    *
    * @return {@code null} on success, otherwise the first Record to fail
    */
-  public DocIdPusher.Record readFromLister(DocIdPusher pusher, PushErrorHandler handler)
+  public DocIdPusher.Record readFromLister(DocIdPusher pusher, ExceptionHandler handler)
       throws IOException, InterruptedException {
     ArrayList<DocIdPusher.Record> result = new ArrayList<DocIdPusher.Record>();
     DocIdPusher.Record.Builder builder = null;

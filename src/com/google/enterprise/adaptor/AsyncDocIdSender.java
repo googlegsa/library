@@ -97,6 +97,6 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
      *     all items were sent
      */
     public <T extends DocIdSender.Item> T pushItems(Iterator<T> items,
-        PushErrorHandler handler) throws InterruptedException;
+        ExceptionHandler handler) throws InterruptedException;
   }
 }

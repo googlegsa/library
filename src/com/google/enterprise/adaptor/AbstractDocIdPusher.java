@@ -30,12 +30,12 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
   }
 
   /**
-   * Calls {@link #pushRecords(Iterable, Adaptor.PushErrorHandler)} with empty
+   * Calls {@link #pushRecords(Iterable, Adaptor.ExceptionHandler)} with empty
    * metadata for each {@code Record}.
    */
   @Override
   public DocId pushDocIds(Iterable<DocId> docIds,
-                          PushErrorHandler handler)
+                          ExceptionHandler handler)
       throws InterruptedException {
     List<Record> records = new ArrayList<Record>();
     for (DocId docId : docIds) {

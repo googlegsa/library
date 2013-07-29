@@ -16,7 +16,6 @@ package com.google.enterprise.adaptor;
 
 import java.io.*;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -31,28 +30,6 @@ class GsaFeedFileSender {
       = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
   private static final Pattern GROUPSOURCE_FORMAT
       = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]{0,9}");
-
-  /** Indicates failure creating connection to GSA. */
-  static class FailedToConnect extends Exception {
-    public FailedToConnect(IOException e) {
-      super(e);
-    }
-    // TODO(pjo): Add corrective tips.
-  }
-  /** Indicates failure to send XML feed file to GSA. */
-  static class FailedWriting extends Exception {
-    public FailedWriting(IOException e) {
-      super(e);
-    }
-    // TODO(pjo): Add corrective tips.
-  }
-  /** Indicates failure to read response to sent XML feed file. */
-  static class FailedReadingReply extends Exception {
-    public FailedReadingReply(IOException e) {
-      super(e);
-    }
-    // TODO(pjo): Add corrective tips.
-  }
 
   /** Configuration for GSA's encoding and whether to use HTTPS. */
   private final Config config;
@@ -182,17 +159,13 @@ class GsaFeedFileSender {
    */
   void sendMetadataAndUrl(String host, String datasource,
                           String xmlString, boolean useCompression)
-      throws FailedToConnect, FailedWriting, FailedReadingReply {
+      throws IOException {
     URL feedUrl;
-    try {
-      // TODO(pjo): move URL costruction to GsaCommunicationsHandler
-      if (config.isServerSecure()) {
-        feedUrl = new URL("https://" + host + ":19902/xmlfeed");
-      } else {
-        feedUrl = new URL("http://" + host + ":19900/xmlfeed");
-      }
-    } catch (MalformedURLException ex) {
-      throw new FailedToConnect(ex);
+    // TODO(pjo): move URL costruction to GsaCommunicationsHandler
+    if (config.isServerSecure()) {
+      feedUrl = new URL("https://" + host + ":19902/xmlfeed");
+    } else {
+      feedUrl = new URL("http://" + host + ":19900/xmlfeed");
     }
     sendMetadataAndUrl(feedUrl, datasource, xmlString, useCompression);
   }
@@ -202,18 +175,13 @@ class GsaFeedFileSender {
    * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
    */
   void sendGroups(String host, String groupsource,
-                  String xmlString, boolean useCompression)
-      throws FailedToConnect, FailedWriting, FailedReadingReply {
+                  String xmlString, boolean useCompression) throws IOException {
     URL feedUrl;
-    try {
-      // TODO(pjo): move URL costruction to GsaCommunicationsHandler
-      if (config.isServerSecure()) {
-        feedUrl = new URL("https://" + host + ":19902/xmlgroups");
-      } else {
-        feedUrl = new URL("http://" + host + ":19900/xmlgroups");
-      }
-    } catch (MalformedURLException ex) {
-      throw new FailedToConnect(ex);
+    // TODO(pjo): move URL costruction to GsaCommunicationsHandler
+    if (config.isServerSecure()) {
+      feedUrl = new URL("https://" + host + ":19902/xmlgroups");
+    } else {
+      feedUrl = new URL("http://" + host + ":19900/xmlgroups");
     }
     sendGroups(feedUrl, groupsource, xmlString, useCompression);
   }
@@ -224,7 +192,7 @@ class GsaFeedFileSender {
    */
   void sendMetadataAndUrl(URL feedUrl, String datasource,
                           String xmlString, boolean useCompression)
-      throws FailedToConnect, FailedWriting, FailedReadingReply {
+      throws IOException {
     if (!DATASOURCE_FORMAT.matcher(datasource).matches()) {
       throw new IllegalArgumentException("Data source contains illegal "
           + "characters: " + datasource);
@@ -243,8 +211,7 @@ class GsaFeedFileSender {
    * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
    */
   void sendGroups(URL feedUrl, String groupsource,
-                  String xmlString, boolean useCompression)
-      throws FailedToConnect, FailedWriting, FailedReadingReply {
+                  String xmlString, boolean useCompression) throws IOException {
     if (!GROUPSOURCE_FORMAT.matcher(groupsource).matches()) {
       throw new IllegalArgumentException("Group source is invalid: "
           + groupsource);
@@ -258,26 +225,16 @@ class GsaFeedFileSender {
   }
 
   private void sendMessage(URL dest, byte msg[], boolean useCompression)
-      throws FailedToConnect, FailedWriting, FailedReadingReply {
-    HttpURLConnection uc;
-    try {
-      uc = setupConnection(dest, msg.length, useCompression);
-      uc.connect();
-    } catch (IOException ioe) {
-      throw new FailedToConnect(ioe);
-    }
+      throws IOException {
+    HttpURLConnection uc = setupConnection(dest, msg.length, useCompression);
+    uc.connect();
     try {
       writeToGsa(uc, msg, useCompression);
-    } catch (IOException ioe) {
-      uc.disconnect();
-      throw new FailedWriting(ioe);
-    }
-    try {
       String reply = readGsaReply(uc);
       handleGsaReply(reply);
     } catch (IOException ioe) {
       uc.disconnect();
-      throw new FailedReadingReply(ioe);
+      throw ioe;
     }
   }
 }
