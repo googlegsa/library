@@ -43,14 +43,16 @@ public class GsaFeedFileSenderTest {
   private Config config = new Config();
   private GsaFeedFileSender sender = new GsaFeedFileSender(config);
   private int port;
-  private URL feedUrl;
+  private URL messageAndUrlUrl;  // url of metadata-and-url acceptor
+  private URL groupsUrl;  // url of group definitions acceptor
   private HttpServer server;
   private Charset charset = Charset.forName("UTF-8");
 
   private void startup() throws IOException {
     server = HttpServer.create(new InetSocketAddress(0), 0);
     port = server.getAddress().getPort();
-    feedUrl = new URL("http://localhost:" + port + "/xmlfeed");
+    messageAndUrlUrl = new URL("http://localhost:" + port + "/xmlfeed");
+    groupsUrl = new URL("http://localhost:" + port + "/xmlgroups");
     server.start();
   }
 
@@ -62,7 +64,7 @@ public class GsaFeedFileSenderTest {
   }
 
   @Test
-  public void testSuccess() throws Exception {
+  public void testMetadataAndUrlSuccess() throws Exception {
     final String payload = "<someXmlString/>";
     final String datasource = "test-DataSource_09AZaz";
     final String goldenResponse
@@ -88,7 +90,7 @@ public class GsaFeedFileSenderTest {
         = new MockHttpHandler(200, "Success".getBytes(charset));
     server.createContext("/xmlfeed", handler);
 
-    sender.sendMetadataAndUrl(feedUrl, datasource, payload, false);
+    sender.sendMetadataAndUrl(messageAndUrlUrl, datasource, payload, false);
     assertEquals("POST", handler.getRequestMethod());
     assertEquals(URI.create("/xmlfeed"), handler.getRequestUri());
     assertEquals("multipart/form-data; boundary=<<",
@@ -98,7 +100,7 @@ public class GsaFeedFileSenderTest {
   }
 
   @Test
-  public void testHttpsSuccess() throws Exception {
+  public void testMetadataAndUrlHttpsSuccess() throws Exception {
     final String payload = "<someXmlString/>";
     final String datasource = "testDataSource";
     final String goldenResponse
@@ -140,7 +142,7 @@ public class GsaFeedFileSenderTest {
   }
 
   @Test
-  public void testSuccessGzipped() throws Exception {
+  public void testMetadataAndUrlSuccessGzipped() throws Exception {
     final String payload = "<someXmlString/>";
     final String datasource = "testDataSource";
     final String goldenResponse
@@ -166,7 +168,7 @@ public class GsaFeedFileSenderTest {
         = new MockHttpHandler(200, "Success".getBytes(charset));
     server.createContext("/xmlfeed", handler);
 
-    sender.sendMetadataAndUrl(feedUrl, datasource, payload, true);
+    sender.sendMetadataAndUrl(messageAndUrlUrl, datasource, payload, true);
     assertEquals("POST", handler.getRequestMethod());
     assertEquals(URI.create("/xmlfeed"), handler.getRequestUri());
     assertEquals("multipart/form-data; boundary=<<",
@@ -181,37 +183,37 @@ public class GsaFeedFileSenderTest {
   }
 
   @Test
-  public void testInvalidDataSource() throws Exception {
+  public void testMetadataAndUrlInvalidDataSource() throws Exception {
     thrown.expect(IllegalArgumentException.class);
     sender.sendMetadataAndUrl("localhost", "bad#source", "<payload/>", false);
   }
 
   @Test
-  public void testInvalidDataSource2() throws Exception {
+  public void testMetadataAndUrlInvalidDataSource2() throws Exception {
     thrown.expect(IllegalArgumentException.class);
     sender.sendMetadataAndUrl("localhost", "9badsource", "<payload/>", false);
   }
 
   @Test
-  public void testBadHost() throws Exception {
+  public void testMetadataAndUrlBadHost() throws Exception {
     thrown.expect(GsaFeedFileSender.FailedToConnect.class);
     sender.sendMetadataAndUrl("fakehost!@#", "datasource", "<payload/>", false);
   }
 
   @Test
-  public void testPortNotOpen() throws Exception {
+  public void testMetadataAndUrlPortNotOpen() throws Exception {
     thrown.expect(GsaFeedFileSender.FailedToConnect.class);
     sender.sendMetadataAndUrl("localhost", "datasource", "<payload/>", false);
   }
 
   @Test
-  public void testInvalidUrl() throws Exception {
+  public void testMetadataAndUrlInvalidUrl() throws Exception {
     thrown.expect(GsaFeedFileSender.FailedToConnect.class);
     sender.sendMetadataAndUrl("badname:", "datasource", "<payload/>", false);
   }
 
   @Test
-  public void testFailureWriting() throws Exception {
+  public void testMetadataAndUrlFailureWriting() throws Exception {
     startup();
     server.createContext("/xmlfeed", new HttpHandler() {
       @Override
@@ -230,22 +232,22 @@ public class GsaFeedFileSenderTest {
     String longPayload = sb.toString();
     sb = null;
     thrown.expect(GsaFeedFileSender.FailedWriting.class);
-    sender.sendMetadataAndUrl(feedUrl, "datasource", longPayload, false);
+    sender.sendMetadataAndUrl(messageAndUrlUrl, "datasource", longPayload, false);
   }
 
   @Test
-  public void testGsaReturnedFailure() throws Exception {
+  public void testMetadataAndUrlGsaReturnedFailure() throws Exception {
     startup();
     MockHttpHandler handler
         = new MockHttpHandler(200, "Some failure".getBytes(charset));
     server.createContext("/xmlfeed", handler);
 
     thrown.expect(IllegalStateException.class);
-    sender.sendMetadataAndUrl(feedUrl, "datasource", "<payload/>", false);
+    sender.sendMetadataAndUrl(messageAndUrlUrl, "datasource", "<payload/>", false);
   }
 
   @Test
-  public void testCantReadResponse() throws Exception {
+  public void testMetadataAndUrlCantReadResponse() throws Exception {
     startup();
     server.createContext("/xmlfeed", new HttpHandler() {
       @Override
@@ -255,7 +257,48 @@ public class GsaFeedFileSenderTest {
     });
 
     thrown.expect(GsaFeedFileSender.FailedReadingReply.class);
-    sender.sendMetadataAndUrl(feedUrl, "datasource", "<payload/>", false);
+    sender.sendMetadataAndUrl(messageAndUrlUrl, "datasource", "<payload/>", false);
+  }
+
+  @Test
+  public void testGroupsSuccess() throws Exception {
+    final String payload = "<someXmlString/>";
+    final String groupsource = "docspot";
+    final String goldenResponse
+        = "--<<\r\n"
+        + "Content-Disposition: form-data; name=\"groupsource\"\r\n"
+        + "Content-Type: text/plain\r\n"
+        + "\r\n"
+        + groupsource + "\r\n"
+        + "--<<\r\n"
+        + "Content-Disposition: form-data; name=\"data\"\r\n"
+        + "Content-Type: text/xml\r\n"
+        + "\r\n"
+        + payload + "\r\n"
+        + "--<<--\r\n";
+    startup();
+    MockHttpHandler handler
+        = new MockHttpHandler(200, "Success".getBytes(charset));
+    server.createContext("/xmlgroups", handler);
+    sender.sendGroups(groupsUrl, groupsource, payload, false);
+    assertEquals("POST", handler.getRequestMethod());
+    assertEquals(URI.create("/xmlgroups"), handler.getRequestUri());
+    assertEquals("multipart/form-data; boundary=<<",
+        handler.getRequestHeaders().getFirst("Content-Type"));
+    assertEquals(goldenResponse,
+        new String(handler.getRequestBytes(), charset));
+  }
+
+  @Test
+  public void testGroupsInvalidGroupSource() throws Exception {
+    thrown.expect(IllegalArgumentException.class);
+    sender.sendGroups("localhost", "bad#source", "<payload/>", false);
+  }
+
+  @Test
+  public void testGroupsInvalidGroupSource2() throws Exception {
+    thrown.expect(IllegalArgumentException.class);
+    sender.sendGroups("localhost", "iamtoolongnow", "<payload/>", false);
   }
 
   private static class MockHttpHandler implements HttpHandler {

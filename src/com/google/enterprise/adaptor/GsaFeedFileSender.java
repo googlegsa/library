@@ -29,6 +29,8 @@ class GsaFeedFileSender {
       = Logger.getLogger(GsaFeedFileSender.class.getName());
   private static final Pattern DATASOURCE_FORMAT
       = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
+  private static final Pattern GROUPSOURCE_FORMAT
+      = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]{0,9}");
 
   /** Indicates failure creating connection to GSA. */
   static class FailedToConnect extends Exception {
@@ -81,11 +83,20 @@ class GsaFeedFileSender {
     sb.append(CRLF).append(value).append(CRLF);
   }
 
-  private byte[] buildMessage(String datasource, String feedtype,
-      String xmlDocument) {
+  private byte[] buildMetadataAndUrlMessage(String datasource,
+      String feedtype, String xmlDocument) {
     StringBuilder sb = new StringBuilder();
     buildPostParameter(sb, "datasource", "text/plain", datasource);
     buildPostParameter(sb, "feedtype", "text/plain", feedtype);
+    buildPostParameter(sb, "data", "text/xml", xmlDocument);
+    sb.append("--").append(BOUNDARY).append("--").append(CRLF);
+    return toEncodedBytes("" + sb);
+  }
+
+  private byte[] buildGroupsXmlMessage(String groupsource,
+      String xmlDocument) {
+    StringBuilder sb = new StringBuilder();
+    buildPostParameter(sb, "groupsource", "text/plain", groupsource);
     buildPostParameter(sb, "data", "text/xml", xmlDocument);
     sb.append("--").append(BOUNDARY).append("--").append(CRLF);
     return toEncodedBytes("" + sb);
@@ -166,14 +177,15 @@ class GsaFeedFileSender {
   }
 
   /**
-   * Sends XML with provided datasource name and feedtype "metadata-and-url".
-   * Datasource name is limited to [a-zA-Z0-9_].
+   * Sends XML with provided datasource name as feedtype "metadata-and-url".
+   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
    */
   void sendMetadataAndUrl(String host, String datasource,
                           String xmlString, boolean useCompression)
       throws FailedToConnect, FailedWriting, FailedReadingReply {
     URL feedUrl;
     try {
+      // TODO(pjo): move URL costruction to GsaCommunicationsHandler
       if (config.isServerSecure()) {
         feedUrl = new URL("https://" + host + ":19902/xmlfeed");
       } else {
@@ -183,6 +195,27 @@ class GsaFeedFileSender {
       throw new FailedToConnect(ex);
     }
     sendMetadataAndUrl(feedUrl, datasource, xmlString, useCompression);
+  }
+
+  /**
+   * Sends XML with provided groupsource name to xmlgroups recipient.
+   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
+   */
+  void sendGroups(String host, String groupsource,
+                  String xmlString, boolean useCompression)
+      throws FailedToConnect, FailedWriting, FailedReadingReply {
+    URL feedUrl;
+    try {
+      // TODO(pjo): move URL costruction to GsaCommunicationsHandler
+      if (config.isServerSecure()) {
+        feedUrl = new URL("https://" + host + ":19902/xmlgroups");
+      } else {
+        feedUrl = new URL("http://" + host + ":19900/xmlgroups");
+      }
+    } catch (MalformedURLException ex) {
+      throw new FailedToConnect(ex);
+    }
+    sendGroups(feedUrl, groupsource, xmlString, useCompression);
   }
 
   /**
@@ -197,15 +230,38 @@ class GsaFeedFileSender {
           + "characters: " + datasource);
     }
     String feedtype = "metadata-and-url";
-    byte msg[] = buildMessage(datasource, feedtype, xmlString);
+    byte msg[] = buildMetadataAndUrlMessage(datasource, feedtype, xmlString);
     // GSA only allows request content up to 1 MB to be compressed
     if (msg.length >= 1 * 1024 * 1024) {
       useCompression = false;
     }
+    sendMessage(feedUrl, msg, useCompression);
+  }
 
+  /**
+   * Sends XML with provided groupsource name to xmlgroups recipient.
+   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
+   */
+  void sendGroups(URL feedUrl, String groupsource,
+                  String xmlString, boolean useCompression)
+      throws FailedToConnect, FailedWriting, FailedReadingReply {
+    if (!GROUPSOURCE_FORMAT.matcher(groupsource).matches()) {
+      throw new IllegalArgumentException("Group source is invalid: "
+          + groupsource);
+    }
+    byte msg[] = buildGroupsXmlMessage(groupsource, xmlString);
+    // GSA only allows request content up to 1 MB to be compressed
+    if (msg.length >= 1 * 1024 * 1024) {
+      useCompression = false;
+    }
+    sendMessage(feedUrl, msg, useCompression);
+  }
+
+  private void sendMessage(URL dest, byte msg[], boolean useCompression)
+      throws FailedToConnect, FailedWriting, FailedReadingReply {
     HttpURLConnection uc;
     try {
-      uc = setupConnection(feedUrl, msg.length, useCompression);
+      uc = setupConnection(dest, msg.length, useCompression);
       uc.connect();
     } catch (IOException ioe) {
       throw new FailedToConnect(ioe);
