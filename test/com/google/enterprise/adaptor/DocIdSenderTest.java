@@ -20,6 +20,9 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -78,9 +81,6 @@ public class DocIdSenderTest {
       Arrays.asList(new DocIdPusher.Record[] {records[5]}),
     }), fileMaker.recordses);
 
-    assertEquals(Arrays.asList(new String[] {
-      "localhost", "localhost", "localhost", "localhost",
-    }), fileSender.hosts);
     assertEquals(Arrays.asList(new String[] {
       "testing", "testing", "testing", "testing",
     }), fileSender.datasources);
@@ -142,7 +142,7 @@ public class DocIdSenderTest {
   public void testPushSizedBatchFailed() throws Exception {
     fileSender = new MockGsaFeedFileSender() {
       @Override
-      public void sendMetadataAndUrl(String host, String datasource,
+      public void sendMetadataAndUrl(String datasource,
                                      String xmlString, boolean useCompression)
           throws IOException {
         throw new IOException();
@@ -160,7 +160,7 @@ public class DocIdSenderTest {
   public void testPushSizedBatchRetrying() throws Exception {
     fileSender = new MockGsaFeedFileSender() {
       @Override
-      public void sendMetadataAndUrl(String host, String datasource,
+      public void sendMetadataAndUrl(String datasource,
                                      String xmlString, boolean useCompression)
           throws IOException {
         throw new IOException();
@@ -185,7 +185,7 @@ public class DocIdSenderTest {
   public void testPushInterruptedFirstBatch() throws Exception {
     fileSender = new MockGsaFeedFileSender() {
       @Override
-      public void sendMetadataAndUrl(String host, String datasource,
+      public void sendMetadataAndUrl(String datasource,
                                      String xmlString, boolean useCompression)
           throws IOException {
         throw new IOException();
@@ -205,7 +205,7 @@ public class DocIdSenderTest {
     final AtomicLong batchCount = new AtomicLong();
     fileSender = new MockGsaFeedFileSender() {
       @Override
-      public void sendMetadataAndUrl(String host, String datasource,
+      public void sendMetadataAndUrl(String datasource,
                                      String xmlString, boolean useCompression)
           throws IOException {
         long count = batchCount.incrementAndGet();
@@ -230,14 +230,13 @@ public class DocIdSenderTest {
     assertNull(docIdSender.pushNamedResources(
         Collections.singletonMap(new DocId("test"), Acl.EMPTY),
         new NeverRetryExceptionHandler()));
-    assertEquals(1, fileSender.hosts.size());
   }
 
   @Test
   public void testNamedResourcesFailed() throws Exception {
     fileSender = new MockGsaFeedFileSender() {
       @Override
-      public void sendMetadataAndUrl(String host, String datasource,
+      public void sendMetadataAndUrl(String datasource,
                                      String xmlString, boolean useCompression)
           throws IOException {
         throw new IOException();
@@ -287,19 +286,17 @@ public class DocIdSenderTest {
   }
 
   private static class MockGsaFeedFileSender extends GsaFeedFileSender {
-    List<String> hosts = new ArrayList<String>();
     List<String> datasources = new ArrayList<String>();
     List<String> xmlStrings = new ArrayList<String>();
 
     public MockGsaFeedFileSender() {
-      super(new Config());
+      super("localhost", /*secure=*/ false, Charset.forName("UTF-8"));
     }
 
     @Override
-    public void sendMetadataAndUrl(String host, String datasource,
+    public void sendMetadataAndUrl(String datasource,
                                    String xmlString, boolean useCompression)
         throws IOException {
-      hosts.add(host);
       datasources.add(datasource);
       xmlStrings.add(xmlString);
     }

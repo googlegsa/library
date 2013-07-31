@@ -195,8 +195,7 @@ class DocIdSender extends AbstractDocIdPusher
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("Sending feed to GSA host name: " + config.getGsaHostname());
-        fileSender.sendMetadataAndUrl(config.getGsaHostname(), feedSourceName,
-                                      xmlFeedFile,
+        fileSender.sendMetadataAndUrl(feedSourceName, xmlFeedFile,
                                       config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;

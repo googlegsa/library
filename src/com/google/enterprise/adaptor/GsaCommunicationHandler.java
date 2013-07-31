@@ -184,7 +184,9 @@ public final class GsaCommunicationHandler {
 
     config.addConfigModificationListener(new GsaConfigModListener());
 
-    GsaFeedFileSender fileSender = new GsaFeedFileSender(config);
+    GsaFeedFileSender fileSender = new GsaFeedFileSender(
+        config.getGsaHostname(), config.isServerSecure(),
+        config.getGsaCharacterEncoding());
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec,
         config.isGsa614FeedWorkaroundEnabled(),
         config.isGsa70AuthMethodWorkaroundEnabled());

@@ -14,9 +14,13 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import java.io.*;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.Charset;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPOutputStream;
@@ -31,22 +35,49 @@ class GsaFeedFileSender {
   private static final Pattern GROUPSOURCE_FORMAT
       = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]{0,9}");
 
-  /** Configuration for GSA's encoding and whether to use HTTPS. */
-  private final Config config;
-
   // Feed file XML will not contain "<<".
   private static final String BOUNDARY = "<<";
 
   // Another frequently used constant of sent message.
   private static final String CRLF = "\r\n";
 
-  public GsaFeedFileSender(Config config) {
-    this.config = config;
+  private Charset gsaCharEncoding;
+  private URL feedDest;
+  private URL groupsDest;
+
+  private static URL makeHandlerUrl(String host, boolean secure, String path) {
+    if (null == host || null == path) {
+      throw new NullPointerException();
+    }
+    try {
+      if (secure) {
+        return new URL("https://" + host + ":19902/" + path);
+      } else {
+        return new URL("http://" + host + ":19900/" + path);
+      }
+    } catch(MalformedURLException mue) {
+      throw new IllegalArgumentException("invalid url", mue);
+    }
+  }
+
+  GsaFeedFileSender(String host, boolean secure, Charset gsaCharSet) {
+    this(makeHandlerUrl(host, secure, "xmlfeed"),
+        makeHandlerUrl(host, secure, "xmlgroups"), gsaCharSet);
+  }
+
+  @VisibleForTesting
+  GsaFeedFileSender(URL feedUrl, URL groupsUrl, Charset gsaCharSet) {
+    if (null == gsaCharSet) {
+      throw new NullPointerException();
+    }
+    feedDest = feedUrl;
+    groupsDest = groupsUrl;
+    gsaCharEncoding = gsaCharSet;
   }
 
   // Get bytes of string in communication's encoding.
   private byte[] toEncodedBytes(String s) {
-    return s.getBytes(config.getGsaCharacterEncoding());
+    return s.getBytes(gsaCharEncoding);
   }
 
   /** Helper method for creating a multipart/form-data HTTP post.
@@ -80,10 +111,10 @@ class GsaFeedFileSender {
   }
 
   /** Tries to get in touch with our GSA. */
-  private HttpURLConnection setupConnection(URL feedUrl, int len,
+  private HttpURLConnection setupConnection(URL url, int len,
                                             boolean useCompression)
       throws IOException {
-    HttpURLConnection uc = (HttpURLConnection) feedUrl.openConnection();
+    HttpURLConnection uc = (HttpURLConnection) url.openConnection();
     uc.setDoInput(true);
     uc.setDoOutput(true);
     if (useCompression) {
@@ -126,8 +157,7 @@ class GsaFeedFileSender {
     InputStream inputStream = uc.getInputStream();
     String reply;
     try {
-      reply = IOHelper.readInputStreamToString(inputStream,
-          config.getGsaCharacterEncoding());
+      reply = IOHelper.readInputStreamToString(inputStream, gsaCharEncoding);
     } finally {
       inputStream.close();
     }
@@ -154,45 +184,11 @@ class GsaFeedFileSender {
   }
 
   /**
-   * Sends XML with provided datasource name as feedtype "metadata-and-url".
-   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
-   */
-  void sendMetadataAndUrl(String host, String datasource,
-                          String xmlString, boolean useCompression)
-      throws IOException {
-    URL feedUrl;
-    // TODO(pjo): move URL costruction to GsaCommunicationsHandler
-    if (config.isServerSecure()) {
-      feedUrl = new URL("https://" + host + ":19902/xmlfeed");
-    } else {
-      feedUrl = new URL("http://" + host + ":19900/xmlfeed");
-    }
-    sendMetadataAndUrl(feedUrl, datasource, xmlString, useCompression);
-  }
-
-  /**
-   * Sends XML with provided groupsource name to xmlgroups recipient.
-   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
-   */
-  void sendGroups(String host, String groupsource,
-                  String xmlString, boolean useCompression) throws IOException {
-    URL feedUrl;
-    // TODO(pjo): move URL costruction to GsaCommunicationsHandler
-    if (config.isServerSecure()) {
-      feedUrl = new URL("https://" + host + ":19902/xmlgroups");
-    } else {
-      feedUrl = new URL("http://" + host + ":19900/xmlgroups");
-    }
-    sendGroups(feedUrl, groupsource, xmlString, useCompression);
-  }
-
-  /**
    * Sends XML with provided datasource name and feedtype "metadata-and-url".
    * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
    */
-  void sendMetadataAndUrl(URL feedUrl, String datasource,
-                          String xmlString, boolean useCompression)
-      throws IOException {
+  void sendMetadataAndUrl(String datasource, String xmlString,
+      boolean useCompression) throws IOException {
     if (!DATASOURCE_FORMAT.matcher(datasource).matches()) {
       throw new IllegalArgumentException("Data source contains illegal "
           + "characters: " + datasource);
@@ -203,15 +199,15 @@ class GsaFeedFileSender {
     if (msg.length >= 1 * 1024 * 1024) {
       useCompression = false;
     }
-    sendMessage(feedUrl, msg, useCompression);
+    sendMessage(feedDest, msg, useCompression);
   }
 
   /**
    * Sends XML with provided groupsource name to xmlgroups recipient.
    * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
    */
-  void sendGroups(URL feedUrl, String groupsource,
-                  String xmlString, boolean useCompression) throws IOException {
+  void sendGroups(String groupsource, String xmlString,
+      boolean useCompression) throws IOException {
     if (!GROUPSOURCE_FORMAT.matcher(groupsource).matches()) {
       throw new IllegalArgumentException("Group source is invalid: "
           + groupsource);
@@ -221,12 +217,12 @@ class GsaFeedFileSender {
     if (msg.length >= 1 * 1024 * 1024) {
       useCompression = false;
     }
-    sendMessage(feedUrl, msg, useCompression);
+    sendMessage(groupsDest, msg, useCompression);
   }
 
-  private void sendMessage(URL dest, byte msg[], boolean useCompression)
+  private void sendMessage(URL destUrl, byte msg[], boolean useCompression)
       throws IOException {
-    HttpURLConnection uc = setupConnection(dest, msg.length, useCompression);
+    HttpURLConnection uc = setupConnection(destUrl, msg.length, useCompression);
     uc.connect();
     try {
       writeToGsa(uc, msg, useCompression);

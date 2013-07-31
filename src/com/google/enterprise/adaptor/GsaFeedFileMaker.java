@@ -274,6 +274,7 @@ class GsaFeedFileMaker {
     Element groupKey = doc.createElement("principal");
     groupWithDef.appendChild(groupKey);
     groupKey.setAttribute("namespace", groupPrincipal.getNamespace());
+    groupKey.setAttribute("scope", "GROUP");
     groupKey.appendChild(doc.createTextNode(groupPrincipal.getName()));
     Element groupDef = doc.createElement("members");
     groupWithDef.appendChild(groupDef);
