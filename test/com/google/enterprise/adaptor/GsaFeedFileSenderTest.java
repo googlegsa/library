@@ -194,8 +194,8 @@ public class GsaFeedFileSenderTest {
     sender.sendMetadataAndUrl("9badsource", "<payload/>", false);
   }
 
-  @Test(expected = IllegalArgumentException.class)	
-  public void testMetadataAndUrlInvalidUrl() throws Exception {	
+  @Test(expected = IllegalArgumentException.class)
+  public void testMetadataAndUrlInvalidUrl() throws Exception {
     new GsaFeedFileSender("badname:", false, charset);
   }
 

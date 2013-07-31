@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
@@ -127,6 +128,45 @@ public interface DocIdPusher {
    */
   public DocId pushNamedResources(Map<DocId, Acl> resources,
                                   ExceptionHandler handler)
+      throws InterruptedException;
+
+  /**
+   * Blocking call to push group definitions to GSA ends in success or
+   * when default error handler gives up.  Can take significant time
+   * if errors arise.
+   * 
+   * <p>A group definition consists of a group being defined
+   * and members, which is a list of users and groups.
+   *
+   * <p>If you plan on using the return code, then the provided map should have
+   * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * @return {@code null} on success, otherwise the first GroupPrincipal to fail
+   * @throws InterruptedException if interrupted
+   */
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive) throws InterruptedException;
+
+  /**
+   * Blocking call to push group definitions to GSA ends in success or
+   * when provided error handler gives up.  Can take significant time
+   * if errors arise.
+   * 
+   * <p>A group definition consists of a group being defined
+   * and members, which is a list of users and groups.
+   *
+   * <p>If you plan on using the return code, then the provided map should have
+   * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>If handler is {@code null}, then a default error handler is used.
+   *
+   * @return {@code null} on success, otherwise the first GroupPrincipal to fail
+   * @throws InterruptedException if interrupted
+   */
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException;
 
   /**

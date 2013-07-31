@@ -267,7 +267,7 @@ class GsaFeedFileMaker {
 
   /** Creates single group definition of group principal key and members. */
   private void constructSingleMembership(Document doc, Element root,
-      GroupPrincipal groupPrincipal, List<Principal> members,
+      GroupPrincipal groupPrincipal, Collection<Principal> members,
       boolean caseSensitiveMembers) {
     Element groupWithDef = doc.createElement("membership");
     root.appendChild(groupWithDef);
@@ -297,9 +297,10 @@ class GsaFeedFileMaker {
 
   /** Adds all the groups' definitions into body. */
   private void constructGroupsDefinitionsFileBody(Document doc,
-      Element root, Map<GroupPrincipal, List<Principal>> items,
+      Element root, Map<GroupPrincipal, ? extends Collection<Principal>> items,
       boolean caseSensitiveMembers) {
-    for (Map.Entry<GroupPrincipal, List<Principal>> group : items.entrySet()) {
+    for (Map.Entry<GroupPrincipal, ? extends Collection<Principal>> group
+        : items.entrySet()) {
       constructSingleMembership(doc, root, group.getKey(), group.getValue(),
           caseSensitiveMembers);
     }
@@ -307,7 +308,7 @@ class GsaFeedFileMaker {
 
   /** Puts all groups' definitions into document. */
   private void constructGroupsDefinitionsFeedFile(Document doc,
-      Map<GroupPrincipal, List<Principal>> items,
+      Map<GroupPrincipal, ? extends Collection<Principal>> items,
       boolean caseSensitiveMembers) {
     Element root = doc.createElement("xmlgroups");
     doc.appendChild(root);
@@ -318,7 +319,7 @@ class GsaFeedFileMaker {
 
   /** Makes feed file with groups and their definitions. */
   public String makeGroupsDefinitionsXml(
-      Map<GroupPrincipal, List<Principal>> items,
+      Map<GroupPrincipal, ? extends Collection<Principal>> items,
       boolean caseSensitiveMembers) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();

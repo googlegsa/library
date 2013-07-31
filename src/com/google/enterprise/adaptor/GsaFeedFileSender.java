@@ -33,7 +33,7 @@ class GsaFeedFileSender {
   private static final Pattern DATASOURCE_FORMAT
       = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
   private static final Pattern GROUPSOURCE_FORMAT
-      = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]{0,9}");
+      = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
 
   // Feed file XML will not contain "<<".
   private static final String BOUNDARY = "<<";
@@ -55,7 +55,7 @@ class GsaFeedFileSender {
       } else {
         return new URL("http://" + host + ":19900/" + path);
       }
-    } catch(MalformedURLException mue) {
+    } catch (MalformedURLException mue) {
       throw new IllegalArgumentException("invalid url", mue);
     }
   }
@@ -154,7 +154,12 @@ class GsaFeedFileSender {
 
   /** Get GSA's response. */
   private String readGsaReply(HttpURLConnection uc) throws IOException {
-    InputStream inputStream = uc.getInputStream();
+    InputStream inputStream;
+    try {
+      inputStream = uc.getInputStream();
+    } catch (IOException ioe) {
+      inputStream = uc.getErrorStream();
+    }
     String reply;
     try {
       reply = IOHelper.readInputStreamToString(inputStream, gsaCharEncoding);
@@ -204,7 +209,7 @@ class GsaFeedFileSender {
 
   /**
    * Sends XML with provided groupsource name to xmlgroups recipient.
-   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]{0,9}.
+   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-].
    */
   void sendGroups(String groupsource, String xmlString,
       boolean useCompression) throws IOException {

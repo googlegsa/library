@@ -15,14 +15,18 @@
 package com.google.enterprise.adaptor;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   private List<DocId> ids = new ArrayList<DocId>();
   private List<DocIdPusher.Record> records
       = new ArrayList<DocIdPusher.Record>();
+  private Map<GroupPrincipal, Collection<Principal>> groups
+      = new TreeMap<GroupPrincipal, Collection<Principal>>();
 
   @Override
   public Record pushRecords(Iterable<Record> records, ExceptionHandler handler)
@@ -51,5 +55,14 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   public DocId pushNamedResources(Map<DocId, Acl> resources,
       ExceptionHandler handler) throws InterruptedException {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, ExceptionHandler handler)
+      throws InterruptedException {
+    groups.putAll(defs); 
+    return null;
   }
 }

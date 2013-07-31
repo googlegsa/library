@@ -184,6 +184,48 @@ class DocIdSender extends AbstractDocIdPusher
     return null;
   }
 
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, ExceptionHandler handler) 
+      throws InterruptedException {
+    if (defs.isEmpty()) {
+      return null;
+    }
+    if (null == handler) {
+      handler = defaultErrorHandler;
+    }
+    String groupsDefXml
+        = fileMaker.makeGroupsDefinitionsXml(defs, caseSensitive);
+    boolean keepGoing = true;
+    boolean success = false;
+    log.log(Level.INFO, "pushing groups");
+    for (int ntries = 1; keepGoing; ntries++) {
+      try {
+        log.info("sending groups to GSA host name: " + config.getGsaHostname());
+        fileSender.sendGroups(config.getFeedName(),
+            groupsDefXml, config.isServerToUseCompression());
+        keepGoing = false;  // Sent.
+        success = true;
+      } catch (IOException ex) {
+        log.log(Level.WARNING, "failed to send groups", ex);
+        keepGoing = handler.handleException(ex, ntries);
+      }
+      if (keepGoing) {
+        log.log(Level.INFO, "trying again... number of attemps: {0}", ntries);
+      }
+    }
+    GroupPrincipal last = null;
+    if (success) {
+      log.info("pushing groups succeeded");
+    } else {
+      log.log(Level.WARNING, "gave up pushing groups");
+      last = defs.entrySet().iterator().next().getKey();  // checked on entry
+    }
+    log.info("finished pushing groups");
+    return last;
+  }
+
+
   private <T extends Item> T pushSizedBatchOfRecords(List<T> items,
                                          ExceptionHandler handler)
       throws InterruptedException {
