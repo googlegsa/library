@@ -278,12 +278,6 @@ public class GsaFeedFileSenderTest {
     sender.sendGroups("bad#source", "<payload/>", false);
   }
 
-  @Test
-  public void testGroupsInvalidGroupSource2() throws Exception {
-    thrown.expect(IllegalArgumentException.class);
-    sender.sendGroups("iamtoolongnow", "<payload/>", false);
-  }
-
   private static class MockHttpHandler implements HttpHandler {
     private final int responseCode;
     private final byte[] responseBytes;

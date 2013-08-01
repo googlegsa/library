@@ -160,6 +160,9 @@ class GsaFeedFileSender {
     } catch (IOException ioe) {
       inputStream = uc.getErrorStream();
     }
+    if (null == inputStream) {
+      return null;
+    }
     String reply;
     try {
       reply = IOHelper.readInputStreamToString(inputStream, gsaCharEncoding);
@@ -169,23 +172,18 @@ class GsaFeedFileSender {
     return reply;
   }
 
-  private void handleGsaReply(String reply) {
-    if ("Success".equals(reply)) {
-      log.info("success message received");
+  private void handleGsaReply(String reply, int responseCode) {
+    if ("Success".equals(reply) || "success".equals(reply)) {
+      log.info("success message received. code:" + responseCode);
+    } else if ("Error - Unauthorized Request".equals(reply)) {
+      throw new IllegalStateException("Unathorized request. "
+          + "Perhaps add this machine's IP to GSA's Feeds' list "
+          + "of trusted IP addresses. code:" + responseCode);
     } else {
-      throw new IllegalStateException("GSA reply: " + reply);
+      String msg = "HTTP code: " + responseCode + " body: " + reply;
+      throw new IllegalStateException(msg);
     }
-
-    /* TODO(pjo): Recognize additional replies.
-    if ("Error - Unauthorized Request".equals(reply)) {
-        // TODO(pjo): Improve message with Admin Console details.
-        throw new IllegalStateException("GSA is not configured "
-            + "to accept feeds from this IP.  Please add <IP> "
-            + "to permitted machines.");
-      }
-    if ("Internal Error".equals(reply))
-    if ("".equals(reply))
-    */
+    // if ("Internal Error".equals(reply))
   }
 
   /**
@@ -209,7 +207,7 @@ class GsaFeedFileSender {
 
   /**
    * Sends XML with provided groupsource name to xmlgroups recipient.
-   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-].
+   * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
    */
   void sendGroups(String groupsource, String xmlString,
       boolean useCompression) throws IOException {
@@ -232,7 +230,7 @@ class GsaFeedFileSender {
     try {
       writeToGsa(uc, msg, useCompression);
       String reply = readGsaReply(uc);
-      handleGsaReply(reply);
+      handleGsaReply(reply, uc.getResponseCode());
     } catch (IOException ioe) {
       uc.disconnect();
       throw ioe;

@@ -52,7 +52,7 @@ class DocIdSender extends AbstractDocIdPusher
     if (handler == null) {
       throw new NullPointerException();
     }
-    log.info("Beginning full push of DocIds");
+    log.info("Beginning getDocIds");
     journal.recordFullPushStarted();
     for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
@@ -62,22 +62,22 @@ class DocIdSender extends AbstractDocIdPusher
       } catch (InterruptedException ex) {
         // Stop early.
         journal.recordFullPushInterrupted();
-        log.info("Interrupted. Aborted full push of DocIds");
+        log.info("Interrupted. Aborted getDocIds");
         throw ex;
       } catch (Exception ex) {
-        log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
+        log.log(Level.WARNING, "Exception during getDocIds", ex);
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       } else {
         journal.recordFullPushFailed();
-        log.warning("Gave up. Failed full push of DocIds");
+        log.warning("Gave up. Failed getDocIds");
         return; // Bail
       }
     }
     journal.recordFullPushSuccessful();
-    log.info("Completed full pushing DocIds");
+    log.info("Completed getDocIds");
   }
 
   /**
@@ -89,7 +89,7 @@ class DocIdSender extends AbstractDocIdPusher
     if (handler == null) {
       throw new NullPointerException();
     }
-    log.info("Beginning incremental push of DocIds");
+    log.info("Beginning getModifiedDocIds");
     journal.recordIncrementalPushStarted();
     for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
@@ -99,22 +99,22 @@ class DocIdSender extends AbstractDocIdPusher
       } catch (InterruptedException ex) {
         // Stop early.
         journal.recordIncrementalPushInterrupted();
-        log.info("Interrupted. Aborted incremental push of DocIds");
+        log.info("Interrupted. Aborted getModifiedDocIds");
         throw ex;
       } catch (Exception ex) {
-        log.log(Level.WARNING, "Unable to retrieve DocIds from adaptor", ex);
+        log.log(Level.WARNING, "Exception during getModifiedDocIds", ex);
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
       } else {
         journal.recordIncrementalPushFailed();
-        log.warning("Gave up. Failed incremental push of DocIds");
+        log.warning("Gave up. Failed getModifiedDocIds");
         return; // Bail
       }
     }
     journal.recordIncrementalPushSuccessful();
-    log.info("Completed incremental pushing DocIds");
+    log.info("Completed getModifiedDocIds");
   }
 
   /**
@@ -144,7 +144,7 @@ class DocIdSender extends AbstractDocIdPusher
   @Override
   public <T extends Item> T pushItems(Iterator<T> items,
       ExceptionHandler handler) throws InterruptedException {
-    log.log(Level.INFO, "Pushing DocIds");
+    log.log(Level.INFO, "Pushing items");
     if (handler == null) {
       handler = defaultErrorHandler;
     }
@@ -158,7 +158,7 @@ class DocIdSender extends AbstractDocIdPusher
         }
         batch.add(items.next());
       }
-      log.log(Level.INFO, "Pushing group of {0} DocIds", batch.size());
+      log.log(Level.INFO, "Pushing group of {0} items", batch.size());
       T failedId;
       try {
         failedId = pushSizedBatchOfRecords(batch, handler);
@@ -174,13 +174,13 @@ class DocIdSender extends AbstractDocIdPusher
         }
       }
       if (failedId != null) {
-        log.info("Failed to push all ids. Failed on docId: " + failedId);
+        log.info("Failed to push all items. Failed on: " + failedId);
         return failedId;
       }
       firstBatch = false;
       journal.recordDocIdPush(batch);
     }
-    log.info("Pushed DocIds");
+    log.info("Pushed items");
     return null;
   }
 
@@ -233,16 +233,16 @@ class DocIdSender extends AbstractDocIdPusher
     String xmlFeedFile = fileMaker.makeMetadataAndUrlXml(feedSourceName, items);
     boolean keepGoing = true;
     boolean success = false;
-    log.log(Level.INFO, "Pushing batch of {0} DocIds to GSA", items.size());
+    log.log(Level.INFO, "Pushing batch of {0} items to GSA", items.size());
     for (int ntries = 1; keepGoing; ntries++) {
       try {
-        log.info("Sending feed to GSA host name: " + config.getGsaHostname());
+        log.info("Sending items to GSA host: " + config.getGsaHostname());
         fileSender.sendMetadataAndUrl(feedSourceName, xmlFeedFile,
                                       config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;
       } catch (IOException ex) {
-        log.log(Level.WARNING, "Failed to send feed", ex);
+        log.log(Level.WARNING, "Failed to send items", ex);
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
@@ -254,7 +254,7 @@ class DocIdSender extends AbstractDocIdPusher
     } else {
       log.log(Level.WARNING, "Gave up. First item in list: {0}", items.get(0));
     }
-    log.info("Finished pushing batch");
+    log.info("Finished pushing batch of items");
     return success ? null : items.get(0);
   }
 
