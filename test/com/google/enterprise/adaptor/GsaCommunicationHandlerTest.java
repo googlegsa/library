@@ -23,6 +23,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.*;
 import java.net.*;
+import java.nio.charset.Charset;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -57,6 +58,8 @@ public class GsaCommunicationHandlerTest {
     // Let the OS choose the port
     config.setValue("server.port", "0");
     config.setValue("server.dashboardPort", "0");
+    // As hard-coded in MockHttpExchange
+    config.setValue("server.fullAccessHosts", "127.0.0.3");
     gsa = new GsaCommunicationHandler(adaptor, config);
   }
 
@@ -220,6 +223,37 @@ public class GsaCommunicationHandlerTest {
     tryFetch.join();
 
     assertEquals(false, adaptor.getCalledBeforeInitFinished.get());
+  }
+
+  @Test
+  public void testMultiInstance() throws Exception {
+    final Charset charset = Charset.forName("UTF-8");
+    Adaptor adaptor = new NullAdaptor() {
+      @Override
+      public void getDocContent(Request req, Response resp)
+          throws IOException {
+        resp.getOutputStream().write(
+            req.getDocId().getUniqueId().getBytes(charset));
+      }
+    };
+    config.setValue("adaptor.pushDocIdsOnStartup", "false");
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    gsa.start(mockServer, mockServer, "/path");
+    GsaCommunicationHandler gsa2 = new GsaCommunicationHandler(adaptor, config);
+    gsa2.start(mockServer, mockServer, "/path2");
+
+    try {
+      MockHttpExchange ex = mockServer.createExchange("GET", "/path/doc/1");
+      mockServer.handle(ex);
+      assertEquals("1", new String(ex.getResponseBytes(), charset));
+      ex = mockServer.createExchange("GET", "/path2/doc/2");
+      mockServer.handle(ex);
+      assertEquals("2", new String(ex.getResponseBytes(), charset));
+    } finally {
+      gsa2.stop(0, TimeUnit.SECONDS);
+      // gsa.stop() is called in @After, so no need for second finally for
+      // shutting 'gsa' down.
+    }
   }
 
   @Test

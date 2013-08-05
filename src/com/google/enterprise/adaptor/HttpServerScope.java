@@ -24,18 +24,19 @@ import java.util.*;
 /**
  * Provides a scope within an HttpServer. The current implementation simply
  * allows adding contexts and having them be cleaned up during {@link #close},
- * but future iterations may scope the contexts with a prefix and perform other
- * such aids.
+ * as well as namespacing the contexts with a prefix.
  *
  * <p>After {@link #close}d, instance may not be reused.
  */
 class HttpServerScope implements Closeable {
   private final HttpServer server;
+  private final String contextPrefix;
   private final List<HttpContext> contexts = new ArrayList<HttpContext>();
   private boolean closed;
 
-  public HttpServerScope(HttpServer server) {
+  public HttpServerScope(HttpServer server, String contextPrefix) {
     this.server = server;
+    this.contextPrefix = contextPrefix;
   }
 
   public synchronized HttpContext createContext(
@@ -43,7 +44,7 @@ class HttpServerScope implements Closeable {
     if (closed) {
       throw new IllegalStateException("Closed");
     }
-    HttpContext context = server.createContext(path, handler);
+    HttpContext context = server.createContext(contextPrefix + path, handler);
     contexts.add(context);
     return context;
   }

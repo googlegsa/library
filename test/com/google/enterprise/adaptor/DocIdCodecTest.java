@@ -24,8 +24,14 @@ import java.net.*;
  * Test cases for {@link DocIdCodec}.
  */
 public class DocIdCodecTest {
-  private Config config = new Config();
-  private DocIdCodec codec = new DocIdCodec(config);
+  private URI baseUri = URI.create("http://localhost/doc/");
+  private DocIdCodec codec = new DocIdCodec(baseUri, false);
+
+  @Test
+  public void testPrettyUri() {
+    final URI golden = URI.create("http://localhost/doc/some/docid1");
+    assertEquals(golden, codec.encodeDocId(new DocId("some/docid1")));
+  }
 
   @Test
   public void testRelativeDot() {
@@ -102,7 +108,7 @@ public class DocIdCodecTest {
     final DocId docId = new DocId(docIdStr);
     final URI uri = new URI(docIdStr);
 
-    config.setValue("docId.isUrl", "true");
+    codec = new DocIdCodec(baseUri, true);
     assertEquals(uri, codec.encodeDocId(docId));
     assertEquals(docId, codec.decodeDocId(uri));
   }

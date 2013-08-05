@@ -87,7 +87,7 @@ public final class GsaCommunicationHandler {
    * purpose and is commonly used in conjunction with {@link #scheduleExecutor}.
    */
   private ExecutorService backgroundExecutor;
-  private final DocIdCodec docIdCodec;
+  private DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
   private Dashboard dashboard;
   private SensitiveValueCodec secureValueCodec;
@@ -116,17 +116,30 @@ public final class GsaCommunicationHandler {
     this.config = config;
 
     journal = new Journal(config.isJournalReducedMem());
-    docIdCodec = new DocIdCodec(config);
   }
 
-  /** Starts listening for communications from GSA. */
+  /**
+   * Starts listening for communications from GSA. {@code contextPrefix}
+   */
   public synchronized void start(HttpServer server, HttpServer dashboardServer)
       throws IOException, InterruptedException {
+    start(server, dashboardServer, null);
+  }
+
+  /**
+   * Starts listening for communications from GSA. {@code ""} is used for
+   * {@code contextPrefix} if the passed value is {@code null}.
+   */
+  public synchronized void start(HttpServer server, HttpServer dashboardServer,
+      String contextPrefix) throws IOException, InterruptedException {
     if (this.scope != null) {
       throw new IllegalStateException("Already listening");
     }
     if (server == null || dashboardServer == null) {
       throw new NullPointerException();
+    }
+    if (contextPrefix == null) {
+      contextPrefix = "";
     }
     if (server instanceof HttpsServer
         != dashboardServer instanceof HttpsServer) {
@@ -164,7 +177,7 @@ public final class GsaCommunicationHandler {
         config.setValue("server.port", "" + port);
     }
 
-    scope = new HttpServerScope(server);
+    scope = new HttpServerScope(server, contextPrefix);
     waiter = new ShutdownWaiter();
 
     scheduleExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -184,6 +197,15 @@ public final class GsaCommunicationHandler {
 
     config.addConfigModificationListener(new GsaConfigModListener());
 
+    URI baseUri = config.getServerBaseUri();
+    URI docUri;
+    try {
+      docUri = new URI(null, null, contextPrefix + config.getServerDocIdPath(),
+          null);
+    } catch (URISyntaxException ex) {
+      throw new IllegalArgumentException("Invalid prefix or docIdPath", ex);
+    }
+    docIdCodec = new DocIdCodec(baseUri.resolve(docUri), config.isDocIdUrl());
     GsaFeedFileSender fileSender = new GsaFeedFileSender(
         config.getGsaHostname(), config.isServerSecure(),
         config.getGsaCharacterEncoding());
@@ -313,7 +335,7 @@ public final class GsaCommunicationHandler {
           TimeUnit.MILLISECONDS);
     }
 
-    dashboard.start(dashboardServer);
+    dashboard.start(dashboardServer, contextPrefix);
 
     shuttingDownLatch = null;
   }
@@ -497,6 +519,7 @@ public final class GsaCommunicationHandler {
       backgroundExecutor = null;
       waiter = null;
       sessionManager = null;
+      docIdCodec = null;
     }
   }
 

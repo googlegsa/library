@@ -69,8 +69,9 @@ class Dashboard {
   }
 
   /** Starts listening for connections to the dashboard. */
-  public void start(HttpServer dashboardServer) throws IOException {
-    this.scope = new HttpServerScope(dashboardServer);
+  public void start(HttpServer dashboardServer, String contextPrefix)
+      throws IOException {
+    this.scope = new HttpServerScope(dashboardServer, contextPrefix);
     int dashboardPort = dashboardServer.getAddress().getPort();
     if (dashboardPort != config.getServerDashboardPort()) {
         config.setValue("server.dashboardPort", "" + dashboardPort);

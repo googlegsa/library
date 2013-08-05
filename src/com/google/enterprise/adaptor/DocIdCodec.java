@@ -20,40 +20,48 @@ import java.net.*;
  * Codec for encoding and decoding {@code DocId}s to {@code URI}s.
  */
 class DocIdCodec implements DocIdEncoder, DocIdDecoder {
-  private Config config;
+  private final URI baseDocUri;
+  private final boolean isDocIdUrl;
 
-  public DocIdCodec(Config config) {
-    this.config = config;
+  public DocIdCodec(URI baseDocUri, boolean isDocIdUrl) {
+    if (baseDocUri == null) {
+      throw new NullPointerException();
+    }
+    if (baseDocUri.getPath() == null) {
+      throw new NullPointerException("Provided URI must have a non-null path");
+    }
+    this.baseDocUri = baseDocUri;
+    this.isDocIdUrl = isDocIdUrl;
   }
 
   public URI encodeDocId(DocId docId) {
-    if (config.isDocIdUrl()) {
+    if (isDocIdUrl) {
       return URI.create(docId.getUniqueId());
     } else {
-      URI base = config.getServerBaseUri(docId);
       URI resource;
       String uniqueId = docId.getUniqueId();
       // Add two dots to any sequence of only dots. This is to allow "/../" and
       // "/./" within DocIds.
       uniqueId = uniqueId.replaceAll("(^|/)(\\.+)(?=$|/)", "$1$2..");
       try {
-        resource = new URI(null, null, base.getPath()
-                           + config.getServerDocIdPath() + uniqueId, null);
+        resource = new URI(null, null, baseDocUri.getPath() + uniqueId, null);
       } catch (URISyntaxException ex) {
         throw new IllegalStateException(ex);
       }
-      return base.resolve(resource);
+      return baseDocUri.resolve(resource);
     }
   }
 
   /** Given a URI that was used in feed file, convert back to doc id. */
   public DocId decodeDocId(URI uri) {
-    if (config.isDocIdUrl()) {
+    if (isDocIdUrl) {
       return new DocId(uri.toString());
     } else {
-      String basePath = config.getServerBaseUri().getPath();
-      String id = uri.getPath().substring(basePath.length()
-          + config.getServerDocIdPath().length());
+      String basePath = baseDocUri.getPath();
+      if (!uri.getPath().startsWith(basePath)) {
+        throw new IllegalArgumentException("URI does not refer to a DocId");
+      }
+      String id = uri.getPath().substring(basePath.length());
       // Remove two dots from any sequence of only dots. This is to remove the
       // addition we did in {@link #encodeDocId}.
       id = id.replaceAll("(^|/)(\\.+)\\.\\.(?=$|/)", "$1$2");

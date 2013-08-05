@@ -303,13 +303,9 @@ public class Config {
   /**
    * Optional: Returns this host's base URI which other paths will be resolved
    * against. It is used to construct URIs to provide to the GSA for it to
-   * contact this server for various services. For documents (which is probably
-   * what you care about), the {@link #getServerBaseUri(DocId)} version is used
-   * instead.
+   * contact this server for various services.
    *
-   * <p>It must contain the protocol, hostname, and port, but may optionally
-   * contain a path like {@code /yourfavoritepath}. By default, the protocol,
-   * hostname, and port are retrieved automatically and no path is set.
+   * <p>It contains the protocol, hostname, and port.
    */
   URI getServerBaseUri() {
     return URI.create(getServerReverseProxyProtocol() + "://"
@@ -322,37 +318,6 @@ public class Config {
    */
   String getServerDocIdPath() {
     return getValue("server.docIdPath");
-  }
-
-  /**
-   * Optional: Returns the host's base URI which GSA will contact for document
-   * information, including document contents. By default it returns {@link
-   * #getServerBaseUri()}.  However, if you would like to direct GSA's queries
-   * for contents to go to other computers/binaries then you can change this
-   * method.
-   *
-   * <p>For example, imagine that you want five binaries to serve the contents
-   * of files to the GSA.  In this case you could split the document ids into
-   * five categories using something like:
-   *
-   * <pre>String urlBeginnings[] = new String[] {
-   *   "http://content-server-A:5678",
-   *   "http://content-server-B:5678",
-   *   "http://backup-server-A:5678",
-   *   "http://backup-server-B:5678",
-   *   "http://new-server:7878"
-   * };
-   * int shard = docId.getUniqueId().hashCode() % 5;
-   * return URI.create(urlBeginnings[shard]);</pre>
-   *
-   * <p>Note that this URI is used in conjunction with {@link
-   * #getServerDocIdPath} and the document ID to form the full URL. In addition,
-   * by using {@link #getServerBaseUri()} and {@code getDocIdPath()}, we have to
-   * be able to parse back the original document ID when a request comes to this
-   * server.
-   */
-  URI getServerBaseUri(DocId docId) {
-    return getServerBaseUri();
   }
 
   /**

@@ -119,7 +119,8 @@ public class MockHttpServer extends HttpServer {
     throw new UnsupportedOperationException();
   }
 
-  public synchronized HttpExchange createExchange(String method, String path) {
+  public synchronized MockHttpExchange createExchange(String method,
+      String path) {
     HttpContext best = null;
     int bestLength = -1;
     for (HttpContext context : contexts) {
