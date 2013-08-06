@@ -22,6 +22,8 @@ import java.util.concurrent.TimeUnit;
 public class ExceptionHandlers {
   private static final ExceptionHandler defaultHandler
       = exponentialBackoffHandler(12, 5, TimeUnit.SECONDS);
+  private static final ExceptionHandler noRetryHandler
+      = exponentialBackoffHandler(-1, 0, TimeUnit.SECONDS);
 
   // Prevent instantiation.
   private ExceptionHandlers() {}
@@ -47,6 +49,13 @@ public class ExceptionHandlers {
         maximumTries, initialSleepDuration, initialSleepUnit);
   }
 
+  /**
+   * Create a handler that always returns {@code false}, causing no retries.
+   */
+  public static ExceptionHandler noRetryHandler() {
+    return noRetryHandler;
+  }
+
   private static class ExponentialBackoffExceptionHandler
       implements ExceptionHandler {
     private final int maximumTries;
@@ -68,6 +77,12 @@ public class ExceptionHandlers {
       }
       sleepUnit.sleep(sleepDuration * ntries);
       return true;
+    }
+
+    @Override
+    public String toString() {
+      return getClass().getSimpleName() + "(" + maximumTries + ","
+          + sleepDuration + " " + sleepUnit + ")";
     }
   }
 }

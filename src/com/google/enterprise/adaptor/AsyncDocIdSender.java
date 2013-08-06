@@ -74,8 +74,8 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
   private class WorkerRunnable implements Runnable {
     @Override
     public void run() {
+      List<DocIdSender.Item> list = new ArrayList<DocIdSender.Item>();
       try {
-        List<DocIdSender.Item> list = new ArrayList<DocIdSender.Item>();
         while (true) {
           BlockingQueueBatcher.take(
               queue, list, maxBatchSize, maxLatency, maxLatencyUnit);
@@ -83,8 +83,24 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
           list.clear();
         }
       } catch (InterruptedException ex) {
-        log.log(Level.FINE, "AsyncDocIdSender worker shutdown", ex);
-        Thread.currentThread().interrupt();
+        log.log(Level.FINE, "AsyncDocIdSender worker shutting down", ex);
+        try {
+          // We are shutting down, but there are likely items that haven't been
+          // sent because of maxLatency, so we try to send those now.
+          // If we were interrupted between calls to take(), then take() may
+          // have interrupted itself before draining the queue; might as well
+          // send everything that was put on the queue.
+          queue.drainTo(list);
+          itemPusher.pushItems(list.iterator(),
+              ExceptionHandlers.noRetryHandler());
+        } catch (InterruptedException ex2) {
+          // Ignore, because we are going to interrupt anyway. This should
+          // actually not happen because of the ExceptionHandler we are using,
+          // but the precise behavior of pushItems() may change in the future.
+        } finally {
+          log.log(Level.FINE, "AsyncDocIdSender worker shutdown", ex);
+          Thread.currentThread().interrupt();
+        }
       }
     }
   }

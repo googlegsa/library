@@ -56,7 +56,7 @@ public class AsyncDocIdSenderTest {
   }
 
   @Test(timeout = 100)
-  public void testPush() throws Exception {
+  public void testPushOfFullBatch() throws Exception {
     AsyncDocIdSender sender = new AsyncDocIdSender(pusher, 3 /* maxBatchSize */,
         1, TimeUnit.SECONDS, 3 /* queueCapacity */);
     final List<DocIdPusher.Record> golden = Arrays.asList(
@@ -75,6 +75,42 @@ public class AsyncDocIdSenderTest {
 
     Thread.sleep(10);
     workerThread.interrupt();
+    workerThread.join();
+    assertEquals(golden, pusher.getItems());
+  }
+
+  @Test(timeout = 100)
+  public void testPushOnInterrupt() throws Exception {
+    AsyncDocIdSender sender = new AsyncDocIdSender(pusher, 2 /* maxBatchSize */,
+        1, TimeUnit.SECONDS, 1 /* queueCapacity */);
+    final List<DocIdPusher.Record> golden = Arrays.asList(
+        new DocIdPusher.Record.Builder(new DocId("1")).build());
+    sender.asyncPushItem(golden.get(0));
+    Thread workerThread = new Thread(sender.worker());
+    workerThread.start();
+    // We want to trigger the code that waits on maxLatency.
+    Thread.sleep(10);
+    workerThread.interrupt();
+    workerThread.join();
+    assertEquals(golden, pusher.getItems());
+  }
+
+  @Test(timeout = 100)
+  public void testPushOnInterruptDrainQueue() throws Exception {
+    AsyncDocIdSender sender = new AsyncDocIdSender(pusher, 2 /* maxBatchSize */,
+        1, TimeUnit.SECONDS, 1 /* queueCapacity */);
+    final List<DocIdPusher.Record> golden = Arrays.asList(
+        new DocIdPusher.Record.Builder(new DocId("1")).build());
+    sender.asyncPushItem(golden.get(0));
+    final Runnable worker = sender.worker();
+    Thread workerThread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        Thread.currentThread().interrupt();
+        worker.run();
+      }
+    });
+    workerThread.start();
     workerThread.join();
     assertEquals(golden, pusher.getItems());
   }
