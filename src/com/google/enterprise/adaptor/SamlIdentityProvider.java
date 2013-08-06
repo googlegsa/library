@@ -258,6 +258,8 @@ class SamlIdentityProvider {
         entityDescriptor = metadata.getPeerEntity();
         roleDescriptor = getFirst(entityDescriptor.getRoleDescriptors(
             SPSSODescriptor.DEFAULT_ELEMENT_NAME));
+      } else {
+        log.log(Level.INFO, "Unknown Peer Entity Id: {0}", peerEntityId);
       }
 
       selector.setSamlRequest(context.getInboundSAMLMessage());
