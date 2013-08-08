@@ -202,7 +202,7 @@ function rpc(method, params, callback) {
       rpcRetrievingXsrfToken = true;
       $.ajax({
         type: 'POST',
-        url: '/rpc',
+        url: '../rpc',
         success: function() {
           // This should never happen.
           rpcRetrievingXsrfToken = false;
@@ -235,7 +235,7 @@ function rpc(method, params, callback) {
     data: JSON.stringify(request),
     processData: false,
     type: 'POST',
-    url: '/rpc',
+    url: '../rpc',
     headers: headers,
     success: function(data) {
       callback(data.result, data.error);

@@ -83,7 +83,8 @@ class Dashboard {
                                    secure)));
     addFilters(scope.createContext("/rpc", createAdminSecurityHandler(
         rpcHandler, config, sessionManager, secure)));
-    addFilters(scope.createContext("/", new RedirectHandler("/dashboard")));
+    addFilters(scope.createContext("/",
+          new RedirectHandler(contextPrefix + "/dashboard")));
   }
 
   private AdministratorSecurityHandler createAdminSecurityHandler(
