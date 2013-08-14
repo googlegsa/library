@@ -21,6 +21,7 @@ import com.sun.net.httpserver.*;
 import org.junit.Test;
 
 import java.util.Date;
+import java.util.Locale;
 
 /**
  * Test cases for {@link AbstractHandler}.
@@ -91,6 +92,22 @@ public class HttpExchangesTest {
     ex.getRequestHeaders().set("If-Modified-Since",
                                "Sun Nov  6 08:49:37 1994");
     assertEquals(golden, HttpExchanges.getIfModifiedSince(ex));
+
+    ex.getRequestHeaders().set("If-Modified-Since",
+                               "Sun, 06 Nov 1994 08:49:37 GMT");
+    // Java 7 added categories for Locales. The no-argument get() is DISPLAY.
+    // TODO(ejona): use reflection to override CATEGORY as well for Java 7.
+    Locale defaultLocalDisplay = Locale.getDefault();
+    Locale.setDefault(Locale.GERMANY);
+    HttpExchanges.resetThread();
+    Date date;
+    try {
+      date = HttpExchanges.getIfModifiedSince(ex);
+    } finally {
+      Locale.setDefault(defaultLocalDisplay);
+      HttpExchanges.resetThread();
+    }
+    assertEquals(golden, date);
   }
 
   @Test
@@ -107,8 +124,22 @@ public class HttpExchangesTest {
 
   @Test
   public void testSetLastModified() throws Exception {
-    HttpExchanges.setLastModified(ex, new Date(784111778L  * 1000));
-    assertEquals("Sun, 06 Nov 1994 08:49:38 GMT",
-        ex.getResponseHeaders().getFirst("Last-Modified"));
+    String golden = "Sun, 06 Nov 1994 08:49:38 GMT";
+    Date date = new Date(784111778L  * 1000);
+    HttpExchanges.setLastModified(ex, date);
+    assertEquals(golden, ex.getResponseHeaders().getFirst("Last-Modified"));
+
+    // Java 7 added categories for Locales. The no-argument get() is DISPLAY.
+    // TODO(ejona): use reflection to override CATEGORY as well for Java 7.
+    Locale defaultLocalDisplay = Locale.getDefault();
+    Locale.setDefault(Locale.GERMANY);
+    HttpExchanges.resetThread();
+    try {
+      HttpExchanges.setLastModified(ex, date);
+    } finally {
+      Locale.setDefault(defaultLocalDisplay);
+      HttpExchanges.resetThread();
+    }
+    assertEquals(golden, ex.getResponseHeaders().getFirst("Last-Modified"));
   }
 }

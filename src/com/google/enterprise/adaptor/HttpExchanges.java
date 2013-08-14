@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpsServer;
 
@@ -49,7 +50,8 @@ public final class HttpExchanges {
       = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
-          DateFormat df = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss zzz");
+          DateFormat df = new SimpleDateFormat(
+              "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
           df.setTimeZone(GMT);
           return df;
         }
@@ -59,7 +61,8 @@ public final class HttpExchanges {
       = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
-          DateFormat df = new SimpleDateFormat("EEEE, dd-MMM-yy HH:mm:ss zzz");
+          DateFormat df = new SimpleDateFormat(
+              "EEEE, dd-MMM-yy HH:mm:ss zzz", Locale.ENGLISH);
           df.setTimeZone(GMT);
           return df;
         }
@@ -69,7 +72,8 @@ public final class HttpExchanges {
       = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
-          DateFormat df = new SimpleDateFormat("EEE MMM d HH:mm:ss yyyy");
+          DateFormat df = new SimpleDateFormat(
+              "EEE MMM d HH:mm:ss yyyy", Locale.ENGLISH);
           df.setTimeZone(GMT);
           return df;
         }
@@ -95,6 +99,15 @@ public final class HttpExchanges {
 
   // Prevent initialization.
   private HttpExchanges() {}
+
+  /** Clear ThreadLocal state to test construction of those variables */
+  @VisibleForTesting
+  static void resetThread() {
+    dateFormatRfc1123.remove();
+    dateFormatRfc1036.remove();
+    dateFormatAsctime.remove();
+    abortImmediately.remove();
+  }
 
   /**
    * Best-effort attempt to reform the identical URI the client used to
