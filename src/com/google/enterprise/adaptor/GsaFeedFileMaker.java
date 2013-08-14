@@ -39,7 +39,8 @@ class GsaFeedFileMaker {
       = new ThreadLocal<DateFormat>() {
         @Override
         protected DateFormat initialValue() {
-          DateFormat df = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss Z");
+          DateFormat df = new SimpleDateFormat(
+              "EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
           df.setTimeZone(TimeZone.getTimeZone("GMT"));
           return df;
         }
