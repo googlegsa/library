@@ -40,9 +40,11 @@ class DocIdCodec implements DocIdEncoder, DocIdDecoder {
     } else {
       URI resource;
       String uniqueId = docId.getUniqueId();
-      // Add two dots to any sequence of only dots. This is to allow "/../" and
-      // "/./" within DocIds.
-      uniqueId = uniqueId.replaceAll("(^|/)(\\.+)(?=$|/)", "$1$2..");
+      // Add three dots to any sequence of only dots. This is to allow "/../"
+      // and "/./" within DocIds.
+      uniqueId = uniqueId.replaceAll("(^|/)(\\.+)(?=$|/)", "$1$2...");
+      // Also encode "//" except when after a ":".
+      uniqueId = uniqueId.replaceAll("(?<!:)/(?=/)", "/...");
       try {
         resource = new URI(null, null, baseDocUri.getPath() + uniqueId, null);
       } catch (URISyntaxException ex) {
@@ -62,9 +64,11 @@ class DocIdCodec implements DocIdEncoder, DocIdDecoder {
         throw new IllegalArgumentException("URI does not refer to a DocId");
       }
       String id = uri.getPath().substring(basePath.length());
-      // Remove two dots from any sequence of only dots. This is to remove the
-      // addition we did in {@link #encodeDocId}.
-      id = id.replaceAll("(^|/)(\\.+)\\.\\.(?=$|/)", "$1$2");
+      id = id.replaceAll("(?<!:)/\\.\\.\\.(?=/)", "/");
+      // Remove three dots from any sequence of only dots that's at least
+      // four dots long. This is to remove the addition we did in 
+      // {@link #encodeDocId}.
+      id = id.replaceAll("(^|/)(\\.+)\\.\\.\\.(?=$|/)", "$1$2");
       return new DocId(id);
     }
   }

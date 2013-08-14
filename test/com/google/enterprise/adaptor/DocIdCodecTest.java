@@ -49,7 +49,7 @@ public class DocIdCodecTest {
     String docId = ".";
     URI uri = codec.encodeDocId(new DocId(docId));
     String uriStr = uri.toString();
-    assertTrue(uriStr.contains("..."));
+    assertTrue(uriStr.contains("...."));
     assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
   }
 
@@ -58,16 +58,16 @@ public class DocIdCodecTest {
     String docId = "..";
     URI uri = codec.encodeDocId(new DocId(docId));
     String uriStr = uri.toString();
-    assertTrue(uriStr.contains("...."));
+    assertTrue(uriStr.contains("....."));
     assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
   }
 
   @Test
   public void testNotToBeConfusedDots() {
-    String docId = "...";
+    String docId = "....";
     URI uri = codec.encodeDocId(new DocId(docId));
     String uriStr = uri.toString();
-    assertTrue(uriStr.contains("....."));
+    assertTrue(uriStr.contains("......."));
     assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
   }
 
@@ -77,6 +77,62 @@ public class DocIdCodecTest {
     URI uri = codec.encodeDocId(new DocId(docId));
     String uriStr = uri.toString();
     assertTrue(uriStr.contains(docId));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testDoubleSlash() {
+    String docId = "//";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.contains("/.../"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testDoubleSlash2() {
+    String docId = "//drop/table/now";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.contains("/.../"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testDoubleSlash3() {
+    String docId = "//drop///table/now//";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.contains("/.../.../"));
+    assertTrue(uriStr.endsWith("/.../"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testDoubleSlashAfterColon() {
+    String docId = "//drop///table/n:ow//";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/.../drop/.../.../table/n:ow/.../"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testDoubleSlashAfterColon2() {
+    String docId = "//drop:///table////NOW";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.contains("p://.../t"));
+    assertFalse(uriStr.contains("////"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testDoubleSlashAfterColon3() {
+    String docId = "//d:////t//://NOW://.//";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/.../d://.../.../t/.../://NOW://..../.../"));
     assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
   }
 
@@ -90,16 +146,12 @@ public class DocIdCodecTest {
     decodeAndEncode("simple-id");
     decodeAndEncode("harder-id/");
     decodeAndEncode("harder-id/./");
-    decodeAndEncode("harder-id///&?///");
     decodeAndEncode("");
     decodeAndEncode(" ");
     decodeAndEncode(" \n\t  ");
     decodeAndEncode("/");
-    decodeAndEncode("//");
     decodeAndEncode("drop/table/now");
     decodeAndEncode("/drop/table/now");
-    decodeAndEncode("//drop/table/now");
-    decodeAndEncode("//d&op/t+b+e/n*w");
   }
 
   @Test
