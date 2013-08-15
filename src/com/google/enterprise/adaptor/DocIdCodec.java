@@ -45,6 +45,8 @@ class DocIdCodec implements DocIdEncoder, DocIdDecoder {
       uniqueId = uniqueId.replaceAll("(^|/)(\\.+)(?=$|/)", "$1$2...");
       // Also encode "//" except when after a ":".
       uniqueId = uniqueId.replaceAll("(?<!:)/(?=/)", "/...");
+      // Precede index.html and index.htm with "_" to avoid Google eating them.
+      uniqueId = uniqueId.replaceFirst("(^|/)(_*index.html?)$", "$1_$2");
       try {
         resource = new URI(null, null, baseDocUri.getPath() + uniqueId, null);
       } catch (URISyntaxException ex) {
@@ -64,6 +66,7 @@ class DocIdCodec implements DocIdEncoder, DocIdDecoder {
         throw new IllegalArgumentException("URI does not refer to a DocId");
       }
       String id = uri.getPath().substring(basePath.length());
+      id = id.replaceFirst("(^|/)_(_*index.html?)$", "$1$2");
       id = id.replaceAll("(?<!:)/\\.\\.\\.(?=/)", "/");
       // Remove three dots from any sequence of only dots that's at least
       // four dots long. This is to remove the addition we did in 

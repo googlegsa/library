@@ -136,6 +136,60 @@ public class DocIdCodecTest {
     assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
   }
 
+  @Test
+  public void testIndexEscaping() {
+    String docId = "index.html";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/_index.html"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testIndexEscaping2() {
+    String docId = "index.htm";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/_index.htm"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testIndexEscaping3() {
+    String docId = "__index.html";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/___index.html"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testIndexEscaping4() {
+    String docId = "____index.htm";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/_____index.htm"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testIndexEscaping5() {
+    String docId = "ooga//____index.htm";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("ooga/.../_____index.htm"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testIndexEscaping6() {
+    String docId = "index.htm/";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.endsWith("/index.htm/"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
   private void decodeAndEncode(String id) {
     URI uri = codec.encodeDocId(new DocId(id));
     assertEquals(id, codec.decodeDocId(uri).getUniqueId());
