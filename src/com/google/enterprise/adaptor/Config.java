@@ -421,14 +421,53 @@ public class Config {
    * configuration entry is added in each map based on the name provided by the
    * user.
    */
-  synchronized List<Map<String, String>> getTransformPipelineSpec() {
-    final String configKey = "transform.pipeline";
-    String configValue = getValue(configKey).trim();
+  List<Map<String, String>> getTransformPipelineSpec() {
+    return getListOfConfigs("transform.pipeline");
+  }
+
+  /**
+   * Returns a list of maps corresponding to each item of the comma-separated
+   * value of {@code key}. Each map is the configuration entries for that item
+   * in the list. The 'name' configuration entry is added in each map based on
+   * the name provided by the user.
+   *
+   * <p>As an example, provided the following config:
+   * <pre><code>adaptor.servers=server1,fluttershy , rainbowDash
+   *adaptor.servers.fluttershy.hostname=fluttershy
+   *adaptor.servers.fluttershy.port=42
+   *adaptor.servers.server1.hostname=applejack
+   *adaptor.servers.server1.port=314
+   *adaptor.servers.rainbowDash.hostname=rainbowdash
+   *adaptor.servers.rainbowDash.port=159
+   *adaptor.servers.rainbowDash.name=20% cooler
+   *adaptor.servers.derpy.hostname=hooves</code></pre>
+   *
+   * <p>And calling:
+   * <pre><code>config.getConfigList("adaptor.servers");</code></pre>
+   *
+   * <p>Returns:
+   * <pre><code>[{
+   *  "hostname": "applejack",
+   *  "port": "42",
+   *  "name": "server1",
+   *}, {
+   *  "hostname": "fluttershy",
+   *  "port": "314",
+   *  "name": "fluttershy",
+   *}, {
+   *  "hostname": "rainbowdash",
+   *  "port": "159",
+   *  "name": "raindowDash",
+   *}]</code></pre>
+   */
+  public synchronized List<Map<String, String>>
+      getListOfConfigs(String key) {
+    String configValue = getValue(key).trim();
     if ("".equals(configValue)) {
       return Collections.emptyList();
     }
-    String[] items = getValue(configKey).split(",");
-    List<Map<String, String>> transforms
+    String[] items = getValue(key).split(",");
+    List<Map<String, String>> listOfMaps
         = new ArrayList<Map<String, String>>(items.length);
     for (String item : items) {
       item = item.trim();
@@ -436,11 +475,11 @@ public class Config {
         throw new RuntimeException("Invalid format: " + configValue);
       }
       Map<String, String> params
-          = getValuesWithPrefix(configKey + "." + item + ".");
+          = getValuesWithPrefix(key + "." + item + ".");
       params.put("name", item);
-      transforms.add(params);
+      listOfMaps.add(params);
     }
-    return transforms;
+    return listOfMaps;
   }
 
   boolean isJournalReducedMem() {
