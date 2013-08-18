@@ -566,7 +566,7 @@ class DocumentHandler implements HttpHandler {
     }
 
     @Override
-    public OutputStream getOutputStream() {
+    public OutputStream getOutputStream() throws IOException {
       switch (state) {
         case SETUP:
           // We will need to make an OutputStream.
@@ -583,11 +583,17 @@ class DocumentHandler implements HttpHandler {
           throw new IllegalStateException("Already responded");
       }
       if ("HEAD".equals(ex.getRequestMethod())) {
+        // Unfortunately, we won't be able to report any errors after this
+        // point. We don't delay sending the headers, however, because of the
+        // watchdog.
         state = State.HEAD;
+        startSending(false);
         os = new SinkOutputStream();
       } else {
         state = State.SEND_BODY;
-        countingOs = new CountingOutputStream(new LazyContentOutputStream());
+        startSending(true);
+        countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
+            ex.getResponseBody()));
         os = countingOs;
       }
       return os;
@@ -722,8 +728,7 @@ class DocumentHandler implements HttpHandler {
             // In particular, it is possible the adaptor called getOutputStream,
             // but didn't write out to the stream (consider an empty document
             // and some code choosing to never call write because all the bytes
-            // were written). In using the OutputStream provided to the Adaptor
-            // for flush()ing we also trigger a call to startSending().
+            // were written).
             os.flush();
             os.close();
           }
@@ -735,7 +740,6 @@ class DocumentHandler implements HttpHandler {
           break;
 
         case HEAD:
-          startSending(false);
           break;
 
         default:
@@ -875,14 +879,9 @@ class DocumentHandler implements HttpHandler {
       contentType = params.get("Content-Type");
     }
 
-    /**
-     * Used when transform pipeline is circumvented.
-     */
-    private class LazyContentOutputStream extends AbstractLazyOutputStream {
-      @Override
-      protected OutputStream retrieveOs() throws IOException {
-        startSending(true);
-        return ex.getResponseBody();
+    private class CloseNotifyOutputStream extends FastFilterOutputStream {
+      public CloseNotifyOutputStream(OutputStream os) {
+        super(os);
       }
 
       @Override
