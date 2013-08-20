@@ -297,19 +297,20 @@ class GsaFeedFileMaker {
   }
 
   /** Adds all the groups' definitions into body. */
-  private void constructGroupsDefinitionsFileBody(Document doc,
-      Element root, Map<GroupPrincipal, ? extends Collection<Principal>> items,
+  private <T extends Collection<Principal>> void
+      constructGroupsDefinitionsFileBody(Document doc, Element root,
+      Collection<Map.Entry<GroupPrincipal, T>> items,
       boolean caseSensitiveMembers) {
-    for (Map.Entry<GroupPrincipal, ? extends Collection<Principal>> group
-        : items.entrySet()) {
+    for (Map.Entry<GroupPrincipal, T> group : items) {
       constructSingleMembership(doc, root, group.getKey(), group.getValue(),
           caseSensitiveMembers);
     }
   }
 
   /** Puts all groups' definitions into document. */
-  private void constructGroupsDefinitionsFeedFile(Document doc,
-      Map<GroupPrincipal, ? extends Collection<Principal>> items,
+  private <T extends Collection<Principal>> void
+      constructGroupsDefinitionsFeedFile(Document doc,
+      Collection<Map.Entry<GroupPrincipal, T>> items,
       boolean caseSensitiveMembers) {
     Element root = doc.createElement("xmlgroups");
     doc.appendChild(root);
@@ -318,9 +319,12 @@ class GsaFeedFileMaker {
     constructGroupsDefinitionsFileBody(doc, root, items, caseSensitiveMembers);
   }
 
+  // This and all the methods it calls with things from 'items' requires the
+  // parameter T even though ? would normally suffice. See comment in
+  // DocIdSender to learn about the Java limitation causing the need for T.
   /** Makes feed file with groups and their definitions. */
-  public String makeGroupsDefinitionsXml(
-      Map<GroupPrincipal, ? extends Collection<Principal>> items,
+  public <T extends Collection<Principal>> String makeGroupsDefinitionsXml(
+      Collection<Map.Entry<GroupPrincipal, T>> items,
       boolean caseSensitiveMembers) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();

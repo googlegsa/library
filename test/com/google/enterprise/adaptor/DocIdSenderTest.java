@@ -22,6 +22,7 @@ import org.junit.rules.ExpectedException;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.*;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -223,6 +224,48 @@ public class DocIdSenderTest {
   }
 
   @Test
+  public void testPushGroupsNormal() throws Exception {
+    // Order of iteration matters
+    Map<GroupPrincipal, Collection<Principal>> groups
+        = new TreeMap<GroupPrincipal, Collection<Principal>>();
+    groups.put(new GroupPrincipal("g1"),
+        Arrays.asList(new UserPrincipal("u1"), new GroupPrincipal("g2")));
+    groups.put(new GroupPrincipal("g2"),
+        Arrays.asList(new UserPrincipal("u2"), new GroupPrincipal("g3")));
+    groups.put(new GroupPrincipal("g3"),
+        Arrays.asList(new UserPrincipal("u3"), new GroupPrincipal("g4")));
+    groups = Collections.unmodifiableMap(groups);
+
+    // I'm sorry.
+    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> goldenGroups
+        = new ArrayList<List<Map.Entry<GroupPrincipal,
+          Collection<Principal>>>>();
+    {
+      List<Map.Entry<GroupPrincipal, Collection<Principal>>> tmp
+          = new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>();
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g1"), groups.get(new GroupPrincipal("g1"))));
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g2"), groups.get(new GroupPrincipal("g2"))));
+      goldenGroups.add(Collections.unmodifiableList(tmp));
+      goldenGroups.add(Collections.
+          <Map.Entry<GroupPrincipal, Collection<Principal>>>singletonList(
+          new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+            new GroupPrincipal("g3"), groups.get(new GroupPrincipal("g3")))));
+      goldenGroups = Collections.unmodifiableList(goldenGroups);
+    }
+
+    config.setValue("feed.maxUrls", "2");
+    docIdSender.pushGroupDefinitions(groups, false, null);
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(goldenGroups, fileMaker.groupses);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1",
+    }), fileSender.xmlStrings);
+  }
+
+  @Test
   public void testNamedResources() throws Exception {
     config.setValue("feed.name", "testing");
     assertNull(docIdSender.pushNamedResources(
@@ -268,6 +311,8 @@ public class DocIdSenderTest {
     List<String> names = new ArrayList<String>();
     List<List<? extends DocIdSender.Item>> recordses
         = new ArrayList<List<? extends DocIdSender.Item>>();
+    // Don't use generics because of limitations in Java
+    List<Object> groupses = new ArrayList<Object>();
     int i;
 
     public MockGsaFeedFileMaker() {
@@ -281,10 +326,19 @@ public class DocIdSenderTest {
       recordses.add(items);
       return "" + i++;
     }
+
+    @Override
+    public <T extends Collection<Principal>> String makeGroupsDefinitionsXml(
+        Collection<Map.Entry<GroupPrincipal, T>> items,
+        boolean caseSensitiveMembers) {
+      groupses.add(new ArrayList<Map.Entry<GroupPrincipal, T>>(items));
+      return "" + i++;
+    }
   }
 
   private static class MockGsaFeedFileSender extends GsaFeedFileSender {
     List<String> datasources = new ArrayList<String>();
+    List<String> groupsources = new ArrayList<String>();
     List<String> xmlStrings = new ArrayList<String>();
 
     public MockGsaFeedFileSender() {
@@ -296,6 +350,13 @@ public class DocIdSenderTest {
                                    String xmlString, boolean useCompression)
         throws IOException {
       datasources.add(datasource);
+      xmlStrings.add(xmlString);
+    }
+
+    @Override
+    public void sendGroups(String groupsource, String xmlString,
+        boolean useCompression) throws IOException {
+      groupsources.add(groupsource);
       xmlStrings.add(xmlString);
     }
   }

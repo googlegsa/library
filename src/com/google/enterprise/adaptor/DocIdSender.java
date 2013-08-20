@@ -169,12 +169,14 @@ class DocIdSender extends AbstractDocIdPusher
           // If this is not the first batch, then some items have already been
           // sent. Thus, return gracefully instead of throwing an exception so
           // that the caller can discover what was sent.
+          log.log(Level.INFO, "Pushing items interrupted");
           Thread.currentThread().interrupt();
           return batch.get(0);
         }
       }
       if (failedId != null) {
-        log.info("Failed to push all items. Failed on: " + failedId);
+        log.log(Level.INFO, "Failed to push all items. Failed on: {0}",
+            failedId);
         return failedId;
       }
       firstBatch = false;
@@ -188,12 +190,102 @@ class DocIdSender extends AbstractDocIdPusher
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, ExceptionHandler handler) 
       throws InterruptedException {
+    return pushGroupDefinitionsInternal(defs, caseSensitive, handler);
+  }
+
+  /*
+   * Internal version of pushGroupDefinitions() to add the parameterized generic
+   * T. We need the parameter to be able to create a List and add Map.Entries to
+   * that list.
+   *
+   * Unfortunately, due to a limitation in Java (which is still present in
+   * Java 7), the generics in the methods this one calls are forced to be
+   * parameterized even though it should be unnecessary. Fortunately, our API
+   * does not trigger this issue; it is only internal code that suffers.
+   *
+   * As an example test, these generics work fine:
+   *   private void method1(List<?> args) {
+   *     method2(args);
+   *   }
+   *
+   *   private <T> void method2(List<T> args) {
+   *     method1(args);
+   *   }
+   *
+   * Whereas these both fail to find the other method:
+   *   private void method3(List<List<?>> args) {
+   *     method4(args);
+   *   }
+   *
+   *  private <T> void method4(List<List<T>> args) {
+   *    method3(args);
+   *  }
+   *
+   * And so having any container of Map.Entry breaks mixing of parameterized
+   * and wildcard generic types.
+   *
+   * Luckily when mixed with concrete types it is only half broken:
+   *   List<List<Object>> l = null;
+   *   method3(l); // Fails
+   *   method4(l); // Compiles
+   */
+  private <T extends Collection<Principal>> GroupPrincipal
+      pushGroupDefinitionsInternal(
+      Map<GroupPrincipal, T> defs,
+      boolean caseSensitive, ExceptionHandler handler)
+      throws InterruptedException {
     if (defs.isEmpty()) {
       return null;
     }
     if (null == handler) {
       handler = defaultErrorHandler;
     }
+    boolean firstBatch = true;
+    final int max = config.getFeedMaxUrls();
+    Iterator<Map.Entry<GroupPrincipal, T>> defsIterator
+        = defs.entrySet().iterator();
+    List<Map.Entry<GroupPrincipal, T>> batch
+        = new ArrayList<Map.Entry<GroupPrincipal, T>>();
+    while (defsIterator.hasNext()) {
+      batch.clear();
+      for (int j = 0; j < max; j++) {
+        if (!defsIterator.hasNext()) {
+          break;
+        }
+        batch.add(defsIterator.next());
+      }
+      log.log(Level.INFO, "Pushing batch of {0} groups", batch.size());
+      GroupPrincipal failedId;
+      try {
+        failedId = pushSizedBatchOfGroups(batch, caseSensitive, handler);
+      } catch (InterruptedException ex) {
+        if (firstBatch) {
+          throw ex;
+        } else {
+          // If this is not the first batch, then some items have already been
+          // sent. Thus, return gracefully instead of throwing an exception so
+          // that the caller can discover what was sent.
+          log.log(Level.INFO, "Pushing items interrupted");
+          Thread.currentThread().interrupt();
+          return batch.get(0).getKey();
+        }
+      }
+      if (failedId != null) {
+        log.log(Level.INFO, "Failed to push all groups. Failed on: {0}",
+            failedId);
+        return failedId;
+      }
+      firstBatch = false;
+    }
+    log.info("Pushed groups");
+    return null;
+  }
+
+  private <T extends Collection<Principal>> GroupPrincipal
+      pushSizedBatchOfGroups(
+      List<Map.Entry<GroupPrincipal, T>> defs,
+      boolean caseSensitive, ExceptionHandler handler)
+      throws InterruptedException {
     String groupsDefXml
         = fileMaker.makeGroupsDefinitionsXml(defs, caseSensitive);
     boolean keepGoing = true;
@@ -216,12 +308,12 @@ class DocIdSender extends AbstractDocIdPusher
     }
     GroupPrincipal last = null;
     if (success) {
-      log.info("pushing groups succeeded");
+      log.info("pushing groups batch succeeded");
     } else {
-      log.log(Level.WARNING, "gave up pushing groups");
-      last = defs.entrySet().iterator().next().getKey();  // checked on entry
+      last = defs.get(0).getKey();  // checked in pushGroupDefinitions()
+      log.log(Level.WARNING, "gave up pushing groups. First item: {0}", last);
     }
-    log.info("finished pushing groups");
+    log.info("finished pushing batch of groups");
     return last;
   }
 

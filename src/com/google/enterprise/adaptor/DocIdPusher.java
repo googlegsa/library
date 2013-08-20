@@ -142,7 +142,7 @@ public interface DocIdPusher {
    * a predictable iteration order, like {@link java.util.TreeMap}.
    *
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
-   * @throws InterruptedException if interrupted
+   * @throws InterruptedException if interrupted and no definitions were sent
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
@@ -162,7 +162,7 @@ public interface DocIdPusher {
    * <p>If handler is {@code null}, then a default error handler is used.
    *
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
-   * @throws InterruptedException if interrupted
+   * @throws InterruptedException if interrupted and no definitions were sent
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
