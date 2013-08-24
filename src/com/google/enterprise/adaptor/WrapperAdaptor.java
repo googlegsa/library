@@ -443,11 +443,6 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void removeStatusSource(StatusSource source) {
-      context.removeStatusSource(source);
-    }
-
-    @Override
     public void setGetDocIdsFullErrorHandler(ExceptionHandler handler) {
       context.setGetDocIdsFullErrorHandler(handler);
     }

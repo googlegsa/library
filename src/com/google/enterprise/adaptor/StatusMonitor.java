@@ -49,4 +49,8 @@ class StatusMonitor {
   public void removeSource(StatusSource source) {
     sources.remove(source);
   }
+
+  public void clearSources() {
+    sources.clear();
+  }
 }

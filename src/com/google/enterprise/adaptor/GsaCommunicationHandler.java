@@ -508,6 +508,7 @@ public final class GsaCommunicationHandler {
         Thread.currentThread().interrupt();
       }
     }
+    dashboard.clearStatusSources();
     try {
       adaptor.destroy();
     } finally {
@@ -740,11 +741,6 @@ public final class GsaCommunicationHandler {
     @Override
     public void addStatusSource(StatusSource source) {
       dashboard.addStatusSource(source);
-    }
-
-    @Override
-    public void removeStatusSource(StatusSource source) {
-      dashboard.removeStatusSource(source);
     }
 
     @Override

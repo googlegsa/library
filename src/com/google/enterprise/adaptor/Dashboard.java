@@ -113,8 +113,8 @@ class Dashboard {
     monitor.addSource(source);
   }
 
-  public void removeStatusSource(StatusSource source) {
-    monitor.removeSource(source);
+  public void clearStatusSources() {
+    monitor.clearSources();
   }
 
   private HttpContext addFilters(HttpContext context) {

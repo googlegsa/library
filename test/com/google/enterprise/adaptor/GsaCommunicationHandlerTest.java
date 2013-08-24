@@ -92,7 +92,6 @@ public class GsaCommunicationHandlerTest {
           StatusSource source = new MockStatusSource("test",
               new MockStatus(Status.Code.NORMAL));
           context.addStatusSource(source);
-          context.removeStatusSource(source);
         } catch (Throwable t) {
           error.set(t);
         }

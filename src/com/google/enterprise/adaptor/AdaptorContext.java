@@ -40,14 +40,11 @@ public interface AdaptorContext {
   public DocIdEncoder getDocIdEncoder();
 
   /**
-   * Add a status source to the dashboard.
+   * Add a status source to the dashboard. The source will automatically be
+   * removed just before {@link Adaptor#destroy}. Source registration should
+   * occur during {@link Adaptor#init}.
    */
   public void addStatusSource(StatusSource source);
-
-  /**
-   * Remove a previously added status source to the dashboard.
-   */
-  public void removeStatusSource(StatusSource source);
 
   /**
    * Override the default {@link ExceptionHandler} for full push.
