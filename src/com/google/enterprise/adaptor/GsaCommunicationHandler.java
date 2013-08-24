@@ -347,6 +347,7 @@ public final class GsaCommunicationHandler {
   static TransformPipeline createTransformPipeline(
       List<Map<String, String>> pipelineConfig) {
     List<DocumentTransform> elements = new LinkedList<DocumentTransform>();
+    List<String> names = new LinkedList<String>();
     for (Map<String, String> element : pipelineConfig) {
       final String name = element.get("name");
       final String confPrefix = "transform.pipeline." + name + ".";
@@ -392,9 +393,10 @@ public final class GsaCommunicationHandler {
       }
       DocumentTransform transform = (DocumentTransform) o;
       elements.add(transform);
+      names.add(name);
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.
-    return elements.size() > 0 ? new TransformPipeline(elements) : null;
+    return elements.size() > 0 ? new TransformPipeline(elements, names) : null;
   }
 
   /**

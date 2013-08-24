@@ -19,7 +19,6 @@ import static org.junit.Assert.*;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TestHelper;
 import com.google.enterprise.adaptor.TransformException;
-import com.google.enterprise.adaptor.TransformPipeline;
 
 import org.junit.Test;
 
@@ -44,8 +43,7 @@ public class CommandLineTransformTest {
     CommandLineTransform cmd = new CommandLineTransform();
     cmd.setTransformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.setCommandAcceptsParameters(false);
-    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(metadata, params);
+    cmd.transform(metadata, params);
 
     assertEquals("metaValue1", metadata.getOneValue("metaKey1"));
     assertEquals(1, metadata.getKeys().size());
@@ -74,8 +72,7 @@ public class CommandLineTransformTest {
       + "rm \"$TMPFILE\" >&2;"
     }));
     cmd.setCommandAcceptsParameters(true);
-    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(metadata, params);
+    cmd.transform(metadata, params);
 
     assertEquals(1, metadata.getKeys().size());
     assertEquals("metaValue2", metadata.getOneValue("metaKey2"));

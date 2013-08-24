@@ -16,7 +16,7 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static java.util.AbstractMap.SimpleEntry;
 
-import com.google.enterprise.adaptor.AbstractDocumentTransform;
+import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TransformException;
@@ -30,7 +30,7 @@ import java.util.logging.*;
  * A conduit that allows a simple way to create a document transform based on
  * a command line program.
  */
-public class CommandLineTransform extends AbstractDocumentTransform {
+public class CommandLineTransform implements DocumentTransform {
   private static final Logger log
       = Logger.getLogger(CommandLineTransform.class.getName());
   private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB
@@ -43,13 +43,12 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   public CommandLineTransform() {}
 
   /**
-   * Accepts keys {@code "cmd"}, {@code "workingDirectory"}, {@code "arg?"}, and
-   * any keys accepted by the super class. The {@code "arg?"} configuration
-   * values should be numerically increasing starting from one: {@code "arg1"},
-   * {@code "arg2"}, {@code "arg3}, ...
+   * Accepts keys {@code "cmd"}, {@code "workingDirectory"}, and {@code "arg?"}.
+   * The {@code "arg?"} configuration values should be numerically increasing
+   * starting from one: {@code "arg1"}, {@code "arg2"}, {@code "arg3}, ...
    */
-  protected void configure(Map<String, String> config) {
-    super.configure(config);
+  public static CommandLineTransform create(Map<String, String> config) {
+    CommandLineTransform transform = new CommandLineTransform();
 
     List<String> cmdList = new ArrayList<String>();
     String cmd = config.get("cmd");
@@ -61,12 +60,12 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
     String workingDirectory = config.get("workingDirectory");
     if (workingDirectory != null) {
-      setWorkingDirectory(new File(workingDirectory));
+      transform.setWorkingDirectory(new File(workingDirectory));
     }
 
     String cmdAcceptsParameters = config.get("cmdAcceptsParameters");
     if (cmdAcceptsParameters != null) {
-      this.commandAcceptsParameters
+      transform.commandAcceptsParameters
           = Boolean.parseBoolean(cmdAcceptsParameters);
     }
 
@@ -77,7 +76,8 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       }
       cmdList.add(value);
     }
-    transformCommand = cmdList;
+    transform.transformCommand = cmdList;
+    return transform;
   }
 
   @Override
@@ -240,16 +240,5 @@ public class CommandLineTransform extends AbstractDocumentTransform {
    */
   public File getWorkingDirectory() {
     return workingDirectory;
-  }
-
-  @Override
-  public void setName(String name) {
-    super.setName(name);
-  }
-
-  public static CommandLineTransform create(Map<String, String> config) {
-    CommandLineTransform transform = new CommandLineTransform();
-    transform.configure(config);
-    return transform;
   }
 }
