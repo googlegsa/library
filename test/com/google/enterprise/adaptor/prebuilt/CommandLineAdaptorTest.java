@@ -15,9 +15,7 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
-
 import static java.util.Map.Entry;
-
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
@@ -26,11 +24,11 @@ import com.google.enterprise.adaptor.Adaptor;
 import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
+import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
-import com.google.enterprise.adaptor.GroupPrincipal;
 
 import org.junit.Test;
 
@@ -50,6 +48,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
@@ -295,6 +294,7 @@ public class CommandLineAdaptorTest {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
     public ContentsResponseTestMock(OutputStream os) {
       this.os = os;
@@ -334,6 +334,11 @@ public class CommandLineAdaptorTest {
     @Override
     public void setAcl(Acl acl) {
       this.acl = acl;
+    }
+
+    @Override
+    public void putNamedResource(String fname, Acl facl) {
+      this.fragments.put(fname, facl);
     }
 
     @Override

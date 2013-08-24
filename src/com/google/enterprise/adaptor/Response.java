@@ -97,6 +97,12 @@ public interface Response {
   public void setAcl(Acl acl);
 
   /**
+   * Provide alternative ACLs for this document, uniquely identified by
+   * response document's {@code DocId} and {@code fragment}.
+   */
+  public void putNamedResource(String fragment, Acl acl);
+
+  /**
    * Mark the document as secure, for use with late-binding security. By
    * default, the secure setting will be {@code false}, which means the document
    * is public if there are no ACLs. ACLs should be used, if possible, instead

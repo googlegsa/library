@@ -543,6 +543,7 @@ class DocumentHandler implements HttpHandler {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
     public DocumentResponse(HttpExchange ex, DocId docId) {
       this.ex = ex;
@@ -629,6 +630,15 @@ class DocumentHandler implements HttpHandler {
         throw new IllegalStateException("Already responded");
       }
       this.acl = acl;
+    }
+
+    @Override
+    public void putNamedResource(String fragment, Acl acl) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      // TODO(pjo): verify fragment string is valid
+      this.fragments.put(fragment, acl);
     }
 
     @Override
@@ -817,6 +827,10 @@ class DocumentHandler implements HttpHandler {
       watchdog.processingStarting(contentTimeoutMillis);
       HttpExchanges.startResponse(
           ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
+      for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
+        pusher.asyncPushItem(new DocIdSender.AclItem(docId,
+            fragment.getKey(), fragment.getValue()));
+      }
     }
 
     private Acl checkAndWorkaroundGsa70Acl(Acl acl) {

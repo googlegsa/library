@@ -161,7 +161,13 @@ public class Acl {
     return inheritFrom;
   }
 
-  String getInheritFromFragment() {
+  /**
+   * Returns fragment, if there is one, that specifies which of the parent's
+   * ACLs is to to be inhertied from.
+   *
+   * @see #getInheritanceType
+   */
+  public String getInheritFromFragment() {
     return inheritFromFragment;
   }
 
@@ -725,6 +731,22 @@ public class Acl {
       return this;
     }
 
+    /**
+     * Set the parent to inherit ACLs from. 
+     * Note that the parent's {@code InheritanceType}
+     * determines how to combine results with this ACL.
+     * <p>
+     * The fragment facilitates a single parent {@code DocId}
+     * having multiple ACLs to inherit from.  For example
+     * a single parent DocId could have ACLs that are to be inherited
+     * by sub-folder {@code DocId} instances and different
+     * ACLs that are to be inherited by children files.
+     * The fragment allows specifying which of the parent's ACLs
+     * is to be inherited from.
+     *
+     * @return the same instance of the builder, for chaining calls
+     * @see #setInheritanceType
+     */
     public Builder setInheritFrom(DocId inheritFrom, String fragment) {
       this.inheritFrom = inheritFrom;
       this.inheritFromFragment = fragment;

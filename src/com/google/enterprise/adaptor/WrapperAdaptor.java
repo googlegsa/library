@@ -139,6 +139,11 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
+    public void putNamedResource(String fname, Acl facl) {
+      response.putNamedResource(fname, facl);
+    }
+
+    @Override
     public void setSecure(boolean secure) {
       response.setSecure(secure);
     }
@@ -229,6 +234,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -267,6 +273,11 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void setAcl(Acl acl) {
       this.acl = acl;
+    }
+
+    @Override
+    public void putNamedResource(String fname, Acl facl) {
+      this.fragments.put(fname, facl);
     }
 
     @Override
