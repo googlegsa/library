@@ -27,7 +27,7 @@ import java.util.Map;
  *
  * <p>This class is thread-safe.
  */
-public class TransformPipeline {
+class TransformPipeline {
   private final List<DocumentTransform> transformList;
   private final List<String> names;
 
