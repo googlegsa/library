@@ -19,7 +19,7 @@ import java.util.Arrays;
 /**
  * Represents either a user or a group.
  */
-public class Principal implements Comparable<Principal> {
+public abstract class Principal implements Comparable<Principal> {
   public static final String DEFAULT_NAMESPACE = "Default";
 
   private final String name;
@@ -51,13 +51,9 @@ public class Principal implements Comparable<Principal> {
     return namespace;
   }
 
-  public boolean isUser() {
-    return this instanceof UserPrincipal;
-  }
+  public abstract boolean isUser();
 
-  public boolean isGroup() {
-    return this instanceof GroupPrincipal;
-  }
+  public abstract boolean isGroup();
 
   @Override
   public boolean equals(Object other) {
