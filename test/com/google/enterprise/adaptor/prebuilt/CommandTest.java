@@ -14,9 +14,9 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.TestHelper;
-
 import static org.junit.Assert.*;
+
+import com.google.enterprise.adaptor.TestHelper;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -25,8 +25,6 @@ import org.junit.rules.ExpectedException;
  * Tests for {@link Command}.
  */
 public class CommandTest {
-  private Command command = new Command();
-
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -36,10 +34,11 @@ public class CommandTest {
     TestHelper.assumeOsIsNotWindows();
     final String value = "hello";
     final String encoding = "US-ASCII";
-    command.exec(new String[] {"cat"}, value.getBytes(encoding));
-    assertEquals(0, command.getReturnCode());
-    assertEquals(value, new String(command.getStdout(), encoding));
-    assertEquals(0, command.getStderr().length);
+    Command.Result result
+        = Command.exec(new String[] {"cat"}, value.getBytes(encoding));
+    assertEquals(0, result.getReturnCode());
+    assertEquals(value, new String(result.getStdout(), encoding));
+    assertEquals(0, result.getStderr().length);
   }
 
   @Test
@@ -49,7 +48,7 @@ public class CommandTest {
     // Only sets flag, does not immediately throw InterruptedException.
     Thread.currentThread().interrupt();
     thrown.expect(InterruptedException.class);
-    command.exec(new String[] {"sleep", "10"});
+    Command.exec(new String[] {"sleep", "10"});
   }
 
   @Test
@@ -60,7 +59,7 @@ public class CommandTest {
     Thread.currentThread().interrupt();
     thrown.expect(InterruptedException.class);
     // Use a 10 second ping as substitute for unix sleep.
-    command.exec(new String[] {"ping", "-n", "10", "localhost"});
+    Command.exec(new String[] {"ping", "-n", "10", "localhost"});
   }
 
 }

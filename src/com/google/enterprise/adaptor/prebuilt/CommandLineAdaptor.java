@@ -25,6 +25,8 @@ import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
+import com.google.enterprise.adaptor.prebuilt.StreamingCommand.InputSource;
+import com.google.enterprise.adaptor.prebuilt.StreamingCommand.OutputSink;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -119,13 +121,12 @@ public class CommandLineAdaptor extends AbstractAdaptor {
   public void getDocIds(final DocIdPusher pusher) throws IOException,
          InterruptedException {
     int commandResult;
-    StreamingCommand command = newListerCommand();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     try {
       log.finest("Command: " + listerCommand);
       String[] commandLine = listerCommand.toArray(new String[0]);
-      StreamingCommand.OutputSink stdout = new StreamingCommand.OutputSink() {
+      OutputSink stdout = new OutputSink() {
         @Override
         public void sink(InputStream in) throws IOException {
           try {
@@ -135,8 +136,8 @@ public class CommandLineAdaptor extends AbstractAdaptor {
           }
         }
       };
-      StreamingCommand.OutputSink stderr = new StreamingCommand.StreamOutputSink(baos);
-      commandResult = command.exec(commandLine, null, stdout, stderr);
+      OutputSink stderr = StreamingCommand.streamOutputSink(baos);
+      commandResult = executeLister(commandLine, null, stdout, stderr);
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
     } catch (IOException e) {
@@ -154,7 +155,6 @@ public class CommandLineAdaptor extends AbstractAdaptor {
   public void getDocContent(Request req, final Response resp) throws IOException {
     final DocId id = req.getDocId();
     int commandResult;
-    StreamingCommand command = newRetrieverCommand();
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
     try {
@@ -167,16 +167,16 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       retrieverCommand.toArray(commandLine);
       commandLine[retrieverCommand.size()] = id.getUniqueId();
       commandLine[retrieverCommand.size() + 1] = Long.toString(lastCrawledMillis);
-      StreamingCommand.OutputSink stdin = new StreamingCommand.OutputSink() {
+      OutputSink stdin = new OutputSink() {
         @Override
         public void sink(InputStream in) throws IOException {
           new CommandStreamParser(in).readFromRetriever(id, resp);
         }
       };
-      StreamingCommand.OutputSink stderr = new StreamingCommand.StreamOutputSink(baos);
+      OutputSink stderr = StreamingCommand.streamOutputSink(baos);
 
       log.finest("Command: " + Arrays.asList(commandLine));
-      commandResult = command.exec(commandLine, null, stdin, stderr);
+      commandResult = executeRetriever(commandLine, null, stdin, stderr);
     } catch (InterruptedException e) {
       throw new IOException("Thread intrupted while waiting for external command.", e);
     } catch (IOException e) {
@@ -254,8 +254,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     }
     String stdin = stdinStringBuilder.toString();
 
-    int commandResult;
-    Command command = newAuthorizerCommand();
+    Command.Result commandResult;
 
     try {
 
@@ -263,34 +262,40 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       authorizerCommand.toArray(commandLine);
 
       log.finest("Command: " + Arrays.asList(commandLine));
-      commandResult = command.exec(commandLine, stdin.getBytes(encoding));
+      commandResult = executeAuthorizer(commandLine, stdin.getBytes(encoding));
     } catch (InterruptedException e) {
       throw new IOException("Thread interrupted while waiting for external command.", e);
     } catch (IOException e) {
       throw new IOException("External command could not be executed.", e);
     }
-    if (commandResult != 0) {
-      String errorOutput = new String(command.getStderr(), encoding);
-      throw new IOException("External command error. code = " + commandResult + ". Stderr: "
+    int returnCode = commandResult.getReturnCode();
+    if (returnCode != 0) {
+      String errorOutput = new String(commandResult.getStderr(), encoding);
+      throw new IOException("External command error. code = " + returnCode + ". Stderr: "
                             + errorOutput);
     }
 
     CommandStreamParser parser = new CommandStreamParser(
-        new ByteArrayInputStream(command.getStdout()));
+        new ByteArrayInputStream(commandResult.getStdout()));
     log.finest("Pushing Document IDs.");
     return parser.readFromAuthorizer();
   }
 
-  protected StreamingCommand newListerCommand() {
-    return new StreamingCommand();
+  protected int executeLister(String[] commandLine, InputSource stdin,
+      OutputSink stdout, OutputSink stderr) throws IOException,
+      InterruptedException {
+    return StreamingCommand.exec(commandLine, stdin, stdout, stderr);
   }
 
-  protected StreamingCommand newRetrieverCommand() {
-    return new StreamingCommand();
+  protected int executeRetriever(String[] commandLine, InputSource stdin,
+      OutputSink stdout, OutputSink stderr) throws IOException,
+      InterruptedException {
+    return StreamingCommand.exec(commandLine, stdin, stdout, stderr);
   }
 
-  protected Command newAuthorizerCommand() {
-    return new Command();
+  protected Command.Result executeAuthorizer(String[] commandLine,
+      byte[] stdin) throws IOException, InterruptedException {
+    return Command.exec(commandLine, stdin);
   }
 
   /** Call default main for adaptors. */

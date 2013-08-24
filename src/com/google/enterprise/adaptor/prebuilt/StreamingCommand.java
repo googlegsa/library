@@ -26,19 +26,19 @@ import java.io.*;
  * stdin, stdout, and stderr, instead of buffering them.
  */
 public class StreamingCommand {
-  private static InputSource noInputSource = new NoInputSource();
-  private static OutputSink dropOutputSink = new DropOutputSink();
+  private static final InputSource NO_INPUT_SOURCE = new NoInputSource();
+  private static final OutputSink DROP_OUTPUT_SINK = new DropOutputSink();
 
-  public StreamingCommand() {}
+  // Prevent instantiation.
+  private StreamingCommand() {}
 
   /**
    * Same as {@code exec(command, null, stdin, stdout, stderr)}.
    *
    * @see #exec(String[], File, InputSource, OutputSink, OutputSink)
    */
-  public int exec(String[] command, InputSource stdin, OutputSink stdout,
-                  OutputSink stderr)
-      throws IOException, InterruptedException {
+  public static int exec(String[] command, InputSource stdin, OutputSink stdout,
+      OutputSink stderr) throws IOException, InterruptedException {
     return exec(command, null, stdin, stdout, stderr);
   }
 
@@ -52,17 +52,17 @@ public class StreamingCommand {
    * @return Process return code
    * @throws IOException if creating process fails
    */
-  public int exec(String[] command, File workingDir, InputSource stdin,
-                  OutputSink stdout, OutputSink stderr)
+  public static int exec(String[] command, File workingDir, InputSource stdin,
+      OutputSink stdout, OutputSink stderr)
       throws IOException, InterruptedException {
     if (stdin == null) {
-      stdin = noInputSource;
+      stdin = NO_INPUT_SOURCE;
     }
     if (stdout == null) {
-      stdout = dropOutputSink;
+      stdout = DROP_OUTPUT_SINK;
     }
     if (stderr == null) {
-      stderr = dropOutputSink;
+      stderr = DROP_OUTPUT_SINK;
     }
 
     Process proc = Runtime.getRuntime().exec(command, null, workingDir);
@@ -95,6 +95,20 @@ public class StreamingCommand {
     }
 
     return returnCode;
+  }
+
+  /**
+   * {@link InputStream} to {@link InputSource} adaptor.
+   */
+  public static InputSource streamInputSource(InputStream in) {
+    return new StreamInputSource(in);
+  }
+
+  /**
+   * {@link OutputStream} to {@link OutputSink} adaptor.
+   */
+  public static OutputSink streamOutputSink(OutputStream out) {
+    return new StreamOutputSink(out);
   }
 
   private static void silentClose(Closeable closeable) {
@@ -140,10 +154,7 @@ public class StreamingCommand {
     }
   }
 
-  /**
-   * {@link InputStream} to {@link InputSource} adaptor.
-   */
-  public static class StreamInputSource implements InputSource {
+  private static class StreamInputSource implements InputSource {
     private final InputStream in;
 
     public StreamInputSource(InputStream in) {
@@ -156,10 +167,7 @@ public class StreamingCommand {
     }
   }
 
-  /**
-   * {@link OutputStream} to {@link OutputSink} adaptor.
-   */
-  public static class StreamOutputSink implements OutputSink {
+  private static class StreamOutputSink implements OutputSink {
     private final OutputStream out;
 
     public StreamOutputSink(OutputStream out) {

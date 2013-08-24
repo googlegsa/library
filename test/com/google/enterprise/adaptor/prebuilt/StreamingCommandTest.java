@@ -28,6 +28,6 @@ public class StreamingCommandTest {
   public void testNoSourceAndSink() throws Exception {
     TestHelper.assumeOsIsNotWindows();
     String[] cmd = new String[] {"echo", "This is a test"};
-    assertEquals(0, new StreamingCommand().exec(cmd, null, null, null));
+    assertEquals(0, StreamingCommand.exec(cmd, null, null, null));
   }
 }

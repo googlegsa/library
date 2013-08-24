@@ -29,12 +29,13 @@ import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
+import com.google.enterprise.adaptor.prebuilt.StreamingCommand.InputSource;
+import com.google.enterprise.adaptor.prebuilt.StreamingCommand.OutputSink;
 
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
@@ -57,7 +58,7 @@ import java.util.TreeSet;
 public class CommandLineAdaptorTest {
   private final Charset charset = Charset.forName("US-ASCII");
 
-  private static class MockListerCommand extends StreamingCommand {
+  private static class CommandLineAdaptorTestMock extends CommandLineAdaptor {
 
     static final List<DocId> original = Arrays.asList(new DocId[] {
         new DocId("1001"),
@@ -66,7 +67,7 @@ public class CommandLineAdaptorTest {
     });
 
     @Override
-    public int exec(String[] command, File workingDir, InputSource stdin, final OutputSink stdout,
+    public int executeLister(String[] command, InputSource stdin, final OutputSink stdout,
         OutputSink stderr) throws IOException, InterruptedException {
       assertEquals(command[0], "./lister_cmd.sh");
       assertEquals(command[1], "lister_arg1");
@@ -92,9 +93,6 @@ public class CommandLineAdaptorTest {
 
       return 0;
     }
-  }
-
-  private static class MockRetrieverCommand extends StreamingCommand {
 
     private static final Map<String, String> ID_TO_CONTENT;
     private static final Map<String, String> ID_TO_MIME_TYPE;
@@ -140,8 +138,8 @@ public class CommandLineAdaptorTest {
     }
 
     @Override
-    public int exec(String[] command, File workingDir, InputSource stdin, final OutputSink stdout,
-                    OutputSink stderr) throws IOException, InterruptedException {
+    public int executeRetriever(String[] command, InputSource stdin, final OutputSink stdout,
+        OutputSink stderr) throws IOException, InterruptedException {
       assertEquals(command[0], "./retriever_cmd.sh");
       assertEquals(command[1], "retriever_arg1");
       assertEquals(command[2], "retriever_arg2");
@@ -188,9 +186,6 @@ public class CommandLineAdaptorTest {
 
       return 0;
     }
-  }
-
-  private static class MockAuthorizerCommand extends Command {
 
     private static final Map<String, String> ID_TO_AUTHZ_STATUS;
 
@@ -201,8 +196,9 @@ public class CommandLineAdaptorTest {
       idToAuthzStatus.put("1003", "INDETERMINATE");
       ID_TO_AUTHZ_STATUS = Collections.unmodifiableMap(idToAuthzStatus);
     }
+
     @Override
-    public int exec(String[] command, File workingDir, byte[] stdin)
+    public Command.Result executeAuthorizer(String[] command, byte[] stdin)
         throws UnsupportedEncodingException{
       assertEquals(command[0], "./authorizer_cmd.sh");
       String expectedText = "GSA Adaptor Data Version 1 [\n]\n"
@@ -214,12 +210,8 @@ public class CommandLineAdaptorTest {
           + "id=1002\n"
           + "id=1003\n"
           + "id=1004\n";
-        assertEquals(expectedText, new String(stdin, "UTF-8"));
-      return 0;
-    }
+      assertEquals(expectedText, new String(stdin, "UTF-8"));
 
-    @Override
-    public byte[] getStdout() {
       StringBuffer result = new StringBuffer();
       result.append("GSA Adaptor Data Version 1 [\n]\n");
       result.append("id=1001").append("\n");
@@ -228,24 +220,8 @@ public class CommandLineAdaptorTest {
       result.append("authz-status=DENY").append("\n");
       result.append("id=1003").append("\n");
       result.append("authz-status=INDETERMINATE").append("\n");
-     return result.toString().getBytes();
-    }
-  }
-
-  private static class CommandLineAdaptorTestMock extends CommandLineAdaptor {
-    @Override
-    protected StreamingCommand newListerCommand() {
-      return new MockListerCommand();
-    }
-
-    @Override
-    protected StreamingCommand newRetrieverCommand() {
-      return new MockRetrieverCommand();
-    }
-
-    @Override
-    protected Command newAuthorizerCommand() {
-      return new MockAuthorizerCommand();
+      byte[] stdout = result.toString().getBytes();
+      return new Command.Result(0, stdout, new byte[0]);
     }
   }
 
@@ -449,7 +425,7 @@ public class CommandLineAdaptorTest {
 
     // Test lister
     List<DocId> idList = getDocIds(adaptor, config);
-    assertEquals(MockListerCommand.original, idList);
+    assertEquals(CommandLineAdaptorTestMock.original, idList);
 
     // Test authorizer
     final UserPrincipal user = new UserPrincipal("user1");
@@ -491,24 +467,26 @@ public class CommandLineAdaptorTest {
 
       adaptor.getDocContent(request, response);
 
-      boolean notModified = !MockRetrieverCommand.ID_TO_LAST_MODIFIED.get(docId.getUniqueId())
-          .after(MockRetrieverCommand.ID_TO_LAST_CRAWLED.get(docId.getUniqueId()));
+      boolean notModified = !CommandLineAdaptorTestMock.ID_TO_LAST_MODIFIED.get(docId.getUniqueId())
+          .after(CommandLineAdaptorTestMock.ID_TO_LAST_CRAWLED.get(docId.getUniqueId()));
 
       assertEquals(notModified, response.getNotModified());
 
       if (!notModified) {
-      assertEquals(MockRetrieverCommand.ID_TO_MIME_TYPE.get(docId.getUniqueId()),
-          response.getContentType());
+        assertEquals(CommandLineAdaptorTestMock.ID_TO_MIME_TYPE.get(docId.getUniqueId()),
+            response.getContentType());
 
-      assertEquals(MockRetrieverCommand.ID_TO_METADATA.get(docId.getUniqueId()),
-          response.getMetadata());
+        assertEquals(CommandLineAdaptorTestMock.ID_TO_METADATA.get(docId.getUniqueId()),
+            response.getMetadata());
 
-        byte[] expected = MockRetrieverCommand.ID_TO_CONTENT.get(docId.getUniqueId()).getBytes();
+        byte[] expected = CommandLineAdaptorTestMock.ID_TO_CONTENT.get(
+            docId.getUniqueId()).getBytes();
         byte[] actual = baos.toByteArray();
         String expectedString = new String(expected);
         String actualString = new String(actual);
-      assertArrayEquals(MockRetrieverCommand.ID_TO_CONTENT.get(docId.getUniqueId()).getBytes(),
-          baos.toByteArray());
+        assertArrayEquals(
+            CommandLineAdaptorTestMock.ID_TO_CONTENT.get(docId.getUniqueId()).getBytes(),
+            baos.toByteArray());
       }
     }
   }

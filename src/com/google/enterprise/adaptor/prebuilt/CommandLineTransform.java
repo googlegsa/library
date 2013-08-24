@@ -100,25 +100,25 @@ public class CommandLineTransform implements DocumentTransform {
         commandLine = transformCommand.toArray(new String[0]);
       }
 
-      Command command = new Command();
+      Command.Result result;
       try {
-        command.exec(commandLine, workingDirectory);
+        result = Command.exec(commandLine, workingDirectory);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
         throw new RuntimeException(ex);
       }
 
-      int exitCode = command.getReturnCode();
+      int exitCode = result.getReturnCode();
 
       // Handle stderr
       if (exitCode != 0) {
-        String errorOutput = new String(command.getStderr(), charset);
+        String errorOutput = new String(result.getStderr(), charset);
         throw new RuntimeException("Exit code " + exitCode + ". Stderr: "
-                                     + errorOutput);
+                                   + errorOutput);
       }
 
-      if (command.getStderr().length > 0) {
-        String errorOutput = new String(command.getStderr(), charset);
+      if (result.getStderr().length > 0) {
+        String errorOutput = new String(result.getStderr(), charset);
         log.log(Level.INFO, "Stderr: {0}", new Object[] {errorOutput});
       }
 

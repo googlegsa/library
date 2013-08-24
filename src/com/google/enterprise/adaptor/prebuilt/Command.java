@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.prebuilt.StreamingCommand.StreamInputSource;
-import static com.google.enterprise.adaptor.prebuilt.StreamingCommand.StreamOutputSink;
-
 import java.io.*;
 
 /**
@@ -25,17 +22,14 @@ import java.io.*;
  * mentioned briefly in {@link Process}), so this class handles that for you.
  */
 public class Command {
-  private int returnCode;
-  private byte[] stdout;
-  private byte[] stderr;
-
-  public Command() {}
+  // Prevent instantiation.
+  private Command() {}
 
   /**
    * Same as {@code exec(command, null, new byte[0])}.
    *
    */
-  public int exec(String[] command) throws IOException,
+  public static Result exec(String[] command) throws IOException,
          InterruptedException {
     return exec(command, null, new byte[0]);
   }
@@ -45,8 +39,8 @@ public class Command {
    *
    * @see #exec(String[], File, byte[])
    */
-  public int exec(String[] command, File workingDir) throws IOException,
-         InterruptedException {
+  public static Result exec(String[] command, File workingDir)
+      throws IOException, InterruptedException {
     return exec(command, workingDir, new byte[0]);
   }
 
@@ -55,7 +49,7 @@ public class Command {
    *
    * @see #exec(String[], File, byte[])
    */
-  public int exec(String[] command, byte[] stdin) throws IOException,
+  public static Result exec(String[] command, byte[] stdin) throws IOException,
          InterruptedException {
     return exec(command, null, stdin);
   }
@@ -63,53 +57,66 @@ public class Command {
   /**
    * Create process {@code command} starting in the {@code workingDir} and
    * providing {@code stdin} as input. This method blocks until the process
-   * exits. Stdout and stderr are available after the method terminates via
-   * {@link #getStdout} and {@link #getStderr}. Before using them, however, you
-   * should generally make sure that the process exited with a return code of
-   * zero, as other return codes typically indicate an error.
+   * exits. Stdout and stderr are available via {@link Result#getStdout} and
+   * {@link Result#getStderr}. Before using them, however, you should generally
+   * make sure that the process exited with a return code of zero, as other
+   * return codes typically indicate an error.
    *
-   * @return Process return code
    * @throws IOException if creating process fails
    */
-  public int exec(String[] command, File workingDir, byte[] stdin)
+  public static Result exec(String[] command, File workingDir, byte[] stdin)
       throws IOException, InterruptedException {
-    // Clear so that if the object is reused, and the second use has an
-    // InterruptedException, they don't accidentally use the wrong data.
-    stdout = null;
-    stderr = null;
-
-    StreamInputSource in
-        = new StreamInputSource(new ByteArrayInputStream(stdin));
-
     ByteArrayOutputStream outBuffer = new ByteArrayOutputStream();
-    StreamOutputSink out = new StreamOutputSink(outBuffer);
-
     ByteArrayOutputStream errBuffer = new ByteArrayOutputStream();
-    StreamOutputSink err = new StreamOutputSink(errBuffer);
 
-    returnCode = new StreamingCommand().exec(command, workingDir, in, out, err);
+    int returnCode = StreamingCommand.exec(command, workingDir,
+        StreamingCommand.streamInputSource(new ByteArrayInputStream(stdin)),
+        StreamingCommand.streamOutputSink(outBuffer),
+        StreamingCommand.streamOutputSink(errBuffer));
 
-    stdout = outBuffer.toByteArray();
-    stderr = errBuffer.toByteArray();
+    byte[] stdout = outBuffer.toByteArray();
+    byte[] stderr = errBuffer.toByteArray();
 
-    return returnCode;
-  }
-
-  public int getReturnCode() {
-    return returnCode;
-  }
-
-  /**
-   * Returns internal byte array without copying.
-   */
-  public byte[] getStdout() {
-    return stdout;
+    return new Result(returnCode, stdout, stderr);
   }
 
   /**
-   * Returns internal byte array without copying.
+   * Result data from an invocation
    */
-  public byte[] getStderr() {
-    return stderr;
+  public static class Result {
+    private final int returnCode;
+    private final byte[] stdout;
+    private final byte[] stderr;
+
+    /**
+     * Construct a result. In normal usage, this is unnecessary, but it can be
+     * helpful in the tests of classes that use {@code Command}.
+     */
+    public Result(int returnCode, byte[] stdout, byte[] stderr) {
+      if (stdout == null || stderr == null) {
+        throw new NullPointerException();
+      }
+      this.returnCode = returnCode;
+      this.stdout = stdout;
+      this.stderr = stderr;
+    }
+
+    public int getReturnCode() {
+      return returnCode;
+    }
+
+    /**
+     * Returns internal byte array without copying.
+     */
+    public byte[] getStdout() {
+      return stdout;
+    }
+
+    /**
+     * Returns internal byte array without copying.
+     */
+    public byte[] getStderr() {
+      return stderr;
+    }
   }
 }
