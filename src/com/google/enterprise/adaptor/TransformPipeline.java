@@ -48,8 +48,7 @@ class TransformPipeline {
   /**
    * Transform {@code metadata}.
    */
-  public void transform(Metadata metadata, Map<String, String> params)
-      throws TransformException {
+  public void transform(Metadata metadata, Map<String, String> params) {
     if (transformList.isEmpty()) {
       return;
     }
@@ -62,8 +61,9 @@ class TransformPipeline {
       DocumentTransform transform = transformList.get(i);
       try {
         transform.transform(metadataInTransit, paramsInTransit);
-      } catch (TransformException e) {
-        throw new TransformException("Aborting " + names.get(i), e);
+      } catch (RuntimeException e) {
+        throw new RuntimeException(
+            "Exception during transform " + names.get(i), e);
       }
     }
 

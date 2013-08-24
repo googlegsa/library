@@ -30,7 +30,7 @@ public class TransformPipelineTest {
   public ExpectedException thrown = ExpectedException.none();
 
   @Test
-  public void testNoOpEmpty() throws IOException, TransformException {
+  public void testNoOpEmpty() throws IOException {
     TransformPipeline pipeline = new TransformPipeline(
         Collections.<DocumentTransform>emptyList(), Collections.<String>emptyList());
     Metadata metadata = new Metadata();
@@ -42,7 +42,7 @@ public class TransformPipelineTest {
   }
 
   @Test
-  public void testNoOpWithInput() throws IOException, TransformException {
+  public void testNoOpWithInput() throws IOException {
     TransformPipeline pipeline = new TransformPipeline(
         Collections.<DocumentTransform>emptyList(), Collections.<String>emptyList());
     Metadata metadata = new Metadata();
@@ -58,7 +58,7 @@ public class TransformPipelineTest {
   }
 
   @Test
-  public void testAddMetadataAndParams() throws IOException, TransformException {
+  public void testAddMetadataAndParams() throws IOException {
     Metadata metadata = new Metadata();
     metadata.add("key1", "value1");
     Map<String, String> params = new HashMap<String, String>();
@@ -67,7 +67,7 @@ public class TransformPipelineTest {
     List<DocumentTransform> transforms = new ArrayList<DocumentTransform>();
     transforms.add(new DocumentTransform() {
         @Override
-        public void transform(Metadata m, Map<String, String> p) throws TransformException {
+        public void transform(Metadata m, Map<String, String> p) {
           m.set("newMeta", "metaValue");
           p.put("newKey", "newValue");
         }
@@ -86,19 +86,17 @@ public class TransformPipelineTest {
 
   private static class ErroringTransform implements DocumentTransform {
     @Override
-    public void transform(Metadata metadata, Map<String, String> p)
-        throws TransformException {
+    public void transform(Metadata metadata, Map<String, String> p) {
       // Do some work, but don't complete.
       metadata.set("trash", "value");
       p.put("more trash", "values");
-      throw new TransformException("test exception");
+      throw new RuntimeException("test exception");
     }
   }
 
   private static class IncrementTransform implements DocumentTransform {
     @Override
-    public void transform(Metadata metadata, Map<String, String> p)
-        throws TransformException {
+    public void transform(Metadata metadata, Map<String, String> p) {
       metadata.set("int", "" + (Integer.parseInt(metadata.getOneValue("int")) + 1));
       p.put("int", "" + (Integer.parseInt(p.get("int")) + 1));
     }
@@ -112,15 +110,14 @@ public class TransformPipelineTest {
     }
 
     @Override
-    public void transform(Metadata metadata, Map<String, String> p)
-        throws TransformException {
+    public void transform(Metadata metadata, Map<String, String> p) {
       metadata.set("int", "" + (Integer.parseInt(metadata.getOneValue("int")) * factor));
       p.put("int", "" + (Integer.parseInt(p.get("int")) * factor));
     }
   }
 
   @Test
-  public void testTransform() throws IOException, TransformException {
+  public void testTransform() throws IOException {
     TransformPipeline pipeline = new TransformPipeline(
         Arrays.asList(new IncrementTransform()), Arrays.asList("it"));
     Metadata metadata = new Metadata();
@@ -137,7 +134,7 @@ public class TransformPipelineTest {
   }
 
   @Test
-  public void testMultipleTransforms() throws IOException, TransformException {
+  public void testMultipleTransforms() throws IOException {
     TransformPipeline pipeline = new TransformPipeline(Arrays.asList(
         new IncrementTransform(), new ProductTransform(2)),
         Arrays.asList("it", "pt"));
@@ -156,7 +153,7 @@ public class TransformPipelineTest {
   }
 
   @Test
-  public void testTransformErrorFatal() throws IOException, TransformException {
+  public void testTransformErrorFatal() throws IOException {
     TransformPipeline pipeline = new TransformPipeline(Arrays.asList(
         new IncrementTransform(), new ErroringTransform()),
         Arrays.asList("it", "et"));
@@ -165,7 +162,7 @@ public class TransformPipelineTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("int", "1");
 
-    thrown.expect(TransformException.class);
+    thrown.expect(RuntimeException.class);
     try {
       pipeline.transform(metadata, params);
     } finally {

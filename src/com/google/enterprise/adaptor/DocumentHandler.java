@@ -885,11 +885,7 @@ class DocumentHandler implements HttpHandler {
       Map<String, String> params = new HashMap<String, String>();
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
-      try {
-        transform.transform(metadata, params);
-      } catch (TransformException e) {
-        throw new RuntimeException("transform failed", e);
-      }
+      transform.transform(metadata, params);
       contentType = params.get("Content-Type");
     }
 

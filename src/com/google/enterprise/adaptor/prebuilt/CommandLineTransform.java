@@ -19,7 +19,6 @@ import static java.util.AbstractMap.SimpleEntry;
 import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Metadata;
-import com.google.enterprise.adaptor.TransformException;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -81,8 +80,7 @@ public class CommandLineTransform implements DocumentTransform {
   }
 
   @Override
-  public void transform(Metadata metadata, Map<String, String> params)
-      throws TransformException {
+  public void transform(Metadata metadata, Map<String, String> params) {
     if (transformCommand == null) {
       throw new NullPointerException("transformCommand must not be null");
     }
@@ -106,7 +104,8 @@ public class CommandLineTransform implements DocumentTransform {
       try {
         command.exec(commandLine, workingDirectory);
       } catch (InterruptedException ex) {
-        throw new TransformException(ex);
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ex);
       }
 
       int exitCode = command.getReturnCode();
@@ -114,7 +113,7 @@ public class CommandLineTransform implements DocumentTransform {
       // Handle stderr
       if (exitCode != 0) {
         String errorOutput = new String(command.getStderr(), charset);
-        throw new TransformException("Exit code " + exitCode + ". Stderr: "
+        throw new RuntimeException("Exit code " + exitCode + ". Stderr: "
                                      + errorOutput);
       }
 
@@ -129,7 +128,7 @@ public class CommandLineTransform implements DocumentTransform {
         params.putAll(readMapFromFile(paramsFile));
       }
     } catch (IOException ioe) {
-      throw new TransformException(ioe);
+      throw new RuntimeException(ioe);
     } finally {
       if (metadataFile != null) {
         metadataFile.delete();
@@ -141,20 +140,20 @@ public class CommandLineTransform implements DocumentTransform {
   }
 
   private File writeMapToTempFile(Map<String, String> map)
-      throws IOException, TransformException {
+      throws IOException {
     return writeIterableToTempFile(map.entrySet());
   }
 
   private File writeIterableToTempFile(Iterable<Map.Entry<String, String>> it)
-      throws IOException, TransformException {
+      throws IOException {
     StringBuilder sb = new StringBuilder();
     for (Map.Entry<String, String> me : it) {
       if (me.getKey().contains("\0")) {
-        throw new TransformException("Key cannot contain the null character: "
+        throw new RuntimeException("Key cannot contain the null character: "
                                      + me.getKey());
       }
       if (me.getValue().contains("\0")) {
-        throw new TransformException("Value for key '" + me.getKey()
+        throw new RuntimeException("Value for key '" + me.getKey()
             + "' cannot contain the null " + "character: " + me.getKey());
       }
       sb.append(me.getKey()).append('\0');

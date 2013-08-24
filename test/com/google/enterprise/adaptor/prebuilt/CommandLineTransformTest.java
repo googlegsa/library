@@ -18,7 +18,6 @@ import static org.junit.Assert.*;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TestHelper;
-import com.google.enterprise.adaptor.TransformException;
 
 import org.junit.Test;
 
@@ -31,7 +30,7 @@ import java.util.*;
  */
 public class CommandLineTransformTest {
   @Test
-  public void testSed() throws IOException, TransformException {
+  public void testSed() throws IOException {
     TestHelper.assumeOsIsNotWindows();
 
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
@@ -52,7 +51,7 @@ public class CommandLineTransformTest {
   }
 
   @Test
-  public void testSedWithMetadata() throws IOException, TransformException {
+  public void testSedWithMetadata() throws IOException {
     TestHelper.assumeOsIsNotWindows();
 
     Metadata metadata = new Metadata();
