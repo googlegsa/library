@@ -25,7 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.*;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
+import java.util.*;
 import java.util.concurrent.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,6 +48,14 @@ public final class Application {
 
   private final Config config;
   private final GsaCommunicationHandler gsa;
+  private final ConfigModificationListener configModListener
+      = new ConfigModListener();
+  /**
+   * An "inverted" semaphore that has permits available when stop() is running;
+   * at all other times it has no permits. This allows start() to sleep on the
+   * semaphore and be woken when stop() is called.
+   */
+  private final Semaphore shutdownSemaphore = new Semaphore(0);
   private Thread shutdownHook;
   private HttpServer primaryServer;
   private HttpServer dashboardServer;
@@ -64,7 +72,7 @@ public final class Application {
    * manual shutdown. A shutdown hook is automatically installed that calls
    * {@code stop()}.
    */
-  public void start() throws IOException, InterruptedException {
+  public synchronized void start() throws IOException, InterruptedException {
     synchronized (this) {
       daemonInit();
 
@@ -99,24 +107,62 @@ public final class Application {
   /**
    * Really start. This must be called after a successful {@link #daemonInit}.
    */
-  void daemonStart() throws IOException, InterruptedException {
-    gsa.start(primaryServer, dashboardServer);
+  synchronized void daemonStart() throws IOException, InterruptedException {
+    AdaptorContext context = gsa.setup(primaryServer, dashboardServer, null);
+
+    long sleepDurationMillis = 8000;
+    // An hour.
+    long maxSleepDurationMillis = 60 * 60 * 1000;
+    // Loop until 1) the adaptor starts successfully, 2) stop() is called, or
+    // 3) Thread.interrupt() is called on this thread (which we don't do).
+    // Retrying to start the adaptor is helpful in cases where it needs
+    // initialization data from a repository that is temporarily down; if the
+    // adaptor is running as a service, we don't want to stop starting simply
+    // because another computer is down while we start (which would easily be
+    // the case after a power failure).
+    while (true) {
+      try {
+        gsa.tryToPutVersionIntoConfig();
+        String adaptorType = gsa.getAdaptor().getClass().getName();
+        log.log(Level.INFO, "about to init {0}", adaptorType); 
+        gsa.getAdaptor().init(context);
+        break;
+      } catch (InterruptedException ex) {
+        throw ex;
+      } catch (Exception ex) {
+        log.log(Level.WARNING, "Failed to initialize adaptor", ex);
+        if (shutdownSemaphore.tryAcquire(sleepDurationMillis,
+              TimeUnit.MILLISECONDS)) {
+          shutdownSemaphore.release();
+          // Shutdown initiated.
+          return;
+        }
+        sleepDurationMillis
+            = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
+        gsa.ensureLatestConfigLoaded();
+      }
+    }
+
+    config.addConfigModificationListener(configModListener);
+    gsa.start();
   }
 
   /**
    * Stop processing incoming requests and background tasks, allowing graceful
    * shutdown.
    */
-  public synchronized void stop(long time, TimeUnit unit) {
+  public void stop(long time, TimeUnit unit) {
     daemonStop(time, unit);
     daemonDestroy(time, unit);
-    if (shutdownHook != null) {
-      try {
-        Runtime.getRuntime().removeShutdownHook(shutdownHook);
-      } catch (IllegalStateException ex) {
-        // Already executing hook.
+    synchronized (this) {
+      if (shutdownHook != null) {
+        try {
+          Runtime.getRuntime().removeShutdownHook(shutdownHook);
+        } catch (IllegalStateException ex) {
+          // Already executing hook.
+        }
+        shutdownHook = null;
       }
-      shutdownHook = null;
     }
   }
 
@@ -124,11 +170,35 @@ public final class Application {
    * Stop all the services we provide. This is the opposite of {@link
    * #daemonStart}.
    */
-  synchronized void daemonStop(long time, TimeUnit unit) {
-    if (primaryServer == null) {
-      throw new IllegalStateException("Already stopped");
+  void daemonStop(long time, TimeUnit unit) {
+    shutdownSemaphore.release();
+    try {
+      synchronized (this) {
+        if (primaryServer == null) {
+          throw new IllegalStateException("Already stopped");
+        }
+        config.removeConfigModificationListener(configModListener);
+        gsa.stop(time, unit);
+        try {
+          gsa.getAdaptor().destroy();
+        } finally {
+          gsa.teardown();
+        }
+      }
+    } finally {
+      boolean interrupted = false;
+      while (true) {
+        try {
+          shutdownSemaphore.acquire();
+          break;
+        } catch (InterruptedException ex) {
+          interrupted = true;
+        }
+      }
+      if (interrupted) {
+        Thread.currentThread().interrupt();
+      }
     }
-    gsa.stop(time, unit);
   }
 
   /**
@@ -405,6 +475,37 @@ public final class Application {
         r.run();
       } finally {
         abortImmediately.set(null);
+      }
+    }
+  }
+
+  private class ConfigModListener implements ConfigModificationListener {
+    @Override
+    public void configModified(ConfigModificationEvent ev) {
+      Set<String> modifiedKeys = ev.getModifiedKeys();
+      if (modifiedKeys.contains("adaptor.fullListingSchedule")) {
+        gsa.rescheduleFullListing(
+            ev.getNewConfig().getAdaptorFullListingSchedule());
+      }
+
+      // List of "safe" keys that can be updated without a restart.
+      List<String> safeKeys = Arrays.asList("adaptor.fullListingSchedule");
+      // Set of "unsafe" keys that have been modified.
+      Set<String> modifiedKeysRequiringRestart
+          = new HashSet<String>(modifiedKeys);
+      modifiedKeysRequiringRestart.removeAll(safeKeys);
+      // If there are modified "unsafe" keys, then we restart things to make
+      // sure all the code is up-to-date with the new values.
+      if (!modifiedKeysRequiringRestart.isEmpty()) {
+        log.warning("Unsafe configuration keys modified. To ensure a sane "
+                    + "state, the adaptor is restarting.");
+        daemonStop(3, TimeUnit.SECONDS);
+        try {
+          daemonStart();
+        } catch (Exception ex) {
+          log.log(Level.SEVERE, "Automatic restart failed", ex);
+          throw new RuntimeException(ex);
+        }
       }
     }
   }

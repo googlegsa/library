@@ -65,4 +65,8 @@ class HttpServerScope implements Closeable {
   public HttpServer getHttpServer() {
     return server;
   }
+
+  public String getContextPrefix() {
+    return contextPrefix;
+  }
 }

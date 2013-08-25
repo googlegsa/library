@@ -26,7 +26,7 @@ import java.util.concurrent.Executor;
  */
 public class MockHttpServer extends HttpServer {
   private final InetSocketAddress addr;
-  private final List<HttpContext> contexts = new ArrayList<HttpContext>();
+  final List<HttpContext> contexts = new ArrayList<HttpContext>();
 
   public MockHttpServer() {
     this(new InetSocketAddress(80));

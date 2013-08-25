@@ -68,78 +68,50 @@ public class GsaCommunicationHandlerTest {
   @After
   public void teardown() {
     gsa.stop(0, TimeUnit.SECONDS);
+    gsa.teardown();
   }
 
   @Test
   public void testAdaptorContext() throws Exception {
-    final AtomicReference<Throwable> error = new AtomicReference<Throwable>();
-    class PollingIncrNullAdaptor extends NullAdaptor {
+    gsa = new GsaCommunicationHandler(new NullAdaptor(), config);
+    AdaptorContext context = gsa.setup(mockServer, mockServer, null);
+    assertSame(config, context.getConfig());
+    assertNotNull(context.getDocIdPusher());
+    assertNotNull(context.getDocIdEncoder());
+    assertNotNull(context.getSensitiveValueDecoder());
+    ExceptionHandler originalHandler
+        = context.getGetDocIdsFullErrorHandler();
+    ExceptionHandler replacementHandler
+        = ExceptionHandlers.exponentialBackoffHandler(
+            1, 1, TimeUnit.SECONDS);
+    assertNotNull(originalHandler);
+    context.setGetDocIdsFullErrorHandler(replacementHandler);
+    assertSame(replacementHandler,
+        context.getGetDocIdsFullErrorHandler());
+
+    StatusSource source = new MockStatusSource("test",
+        new MockStatus(Status.Code.NORMAL));
+    context.addStatusSource(source);
+
+    assertNotNull(context.createHttpContext("/test", new HttpHandler() {
       @Override
-      public void init(AdaptorContext context) {
-        try {
-          assertSame(config, context.getConfig());
-          assertNotNull(context.getDocIdPusher());
-          assertNotNull(context.getDocIdEncoder());
-          assertNotNull(context.getSensitiveValueDecoder());
-          ExceptionHandler originalHandler
-              = context.getGetDocIdsFullErrorHandler();
-          ExceptionHandler replacementHandler
-              = ExceptionHandlers.exponentialBackoffHandler(
-                  1, 1, TimeUnit.SECONDS);
-          assertNotNull(originalHandler);
-          context.setGetDocIdsFullErrorHandler(replacementHandler);
-          assertSame(replacementHandler,
-              context.getGetDocIdsFullErrorHandler());
-
-          StatusSource source = new MockStatusSource("test",
-              new MockStatus(Status.Code.NORMAL));
-          context.addStatusSource(source);
-
-          assertNotNull(context.createHttpContext("/test", new HttpHandler() {
-            @Override
-            public void handle(HttpExchange ex) {}
-          }));
-        } catch (Throwable t) {
-          error.set(t);
-        }
-      }
-    }
-    PollingIncrNullAdaptor adaptor = new PollingIncrNullAdaptor();
-    gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start(mockServer, mockServer);
-    Throwable t = error.get();
-    if (t != null) {
-      if (t instanceof Exception) {
-        throw (Exception) t;
-      } else if (t instanceof Error) {
-        throw (Error) t;
-      } else {
-        throw new AssertionError();
-      }
-    }
+      public void handle(HttpExchange ex) {}
+    }));
   }
 
   @Test
   public void testPollingIncrementalAdaptor() throws Exception {
-    class PollingIncrNullAdaptor extends NullAdaptor
-        implements PollingIncrementalLister {
-      public final ArrayBlockingQueue<Object> queue
-          = new ArrayBlockingQueue<Object>(1);
-
-      @Override
-      public void init(AdaptorContext context) {
-        context.setPollingIncrementalLister(this);
-      }
-
+    gsa = new GsaCommunicationHandler(new NullAdaptor(), config);
+    AdaptorContext context = gsa.setup(mockServer, mockServer, null);
+    final ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<Object>(1);
+    context.setPollingIncrementalLister(new PollingIncrementalLister() {
       @Override
       public void getModifiedDocIds(DocIdPusher pusher) {
         queue.offer(new Object());
       }
-    }
-    PollingIncrNullAdaptor adaptor = new PollingIncrNullAdaptor();
-    gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start(mockServer, mockServer);
-    assertNotNull(adaptor.queue.poll(1, TimeUnit.SECONDS));
+    });
+    gsa.start();
+    assertNotNull(queue.poll(1, TimeUnit.SECONDS));
   }
 
   @Test
@@ -147,93 +119,21 @@ public class GsaCommunicationHandlerTest {
     NullAdaptor adaptor = new NullAdaptor();
     config.setValue("adaptor.pushDocIdsOnStartup", "false");
     gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start(mockServer, mockServer);
+    gsa.setup(mockServer, mockServer, null);
+    gsa.start();
     gsa.stop(1, TimeUnit.SECONDS);
-    gsa.start(mockServer, mockServer);
+    gsa.start();
     assertTrue(gsa.checkAndScheduleImmediatePushOfDocIds());
   }
 
-  @Test
-  public void testFailOnceInitAdaptor() throws Exception {
-    class FailFirstAdaptor extends NullAdaptor {
-      private int count = 0;
-      public boolean started = false;
-
-      @Override
-      public void init(AdaptorContext context) {
-        if (count == 0) {
-          count++;
-          throw new RuntimeException();
-        }
-        started = true;
-      }
-    }
-    FailFirstAdaptor adaptor = new FailFirstAdaptor();
-    gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start(mockServer, mockServer);
-    assertTrue(adaptor.started);
-  }
-
   /**
-   * Tests that Adaptor is properly initialized before HTTP serving is started.
+   * Tests that HTTP serving not is started during setup().
    */
   @Test
-  public void testInitBeforeServing() throws Exception {
-    class SlowAdaptor extends NullAdaptor {
-      public AtomicBoolean initHasFinished = new AtomicBoolean();
-      public AtomicBoolean getCalledBeforeInitFinished = new AtomicBoolean();
-
-      @Override
-      public void init(AdaptorContext context) {
-        try {
-          Thread.sleep(500);  // the slowness of this adaptor
-          initHasFinished.set(true);
-        } catch (InterruptedException e) {
-          throw new AssertionError(e);
-        }
-      }
-
-      @Override
-      public void getDocContent(Request req, Response resp)
-          throws IOException {
-        if (!initHasFinished.get()) {
-          getCalledBeforeInitFinished.set(true);
-        }
-        resp.respondNotFound();
-      }
-    }
-    SlowAdaptor adaptor = new SlowAdaptor();
+  public void testNoServingBeforeStart() throws Exception {
     gsa = new GsaCommunicationHandler(adaptor, config);
-
-    Thread tryFetch = new Thread(new Runnable() {
-      @Override
-      public void run() {
-        while (true) {
-          HttpExchange ex = mockServer.createExchange("GET", "/doc/1");
-          if (ex != null) {
-            try {
-              mockServer.handle(ex);
-            } catch (IOException e) {
-              // We will already be retrying.
-            }
-          }
-
-          try {
-            Thread.sleep(20);
-          } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return;
-          }
-        }
-      }
-    });
-    tryFetch.start();
-
-    gsa.start(mockServer, mockServer);
-    tryFetch.interrupt();
-    tryFetch.join();
-
-    assertEquals(false, adaptor.getCalledBeforeInitFinished.get());
+    gsa.setup(mockServer, mockServer, null);
+    assertEquals(0, mockServer.contexts.size());
   }
 
   @Test
@@ -249,9 +149,11 @@ public class GsaCommunicationHandlerTest {
     };
     config.setValue("adaptor.pushDocIdsOnStartup", "false");
     gsa = new GsaCommunicationHandler(adaptor, config);
-    gsa.start(mockServer, mockServer, "/path");
+    gsa.setup(mockServer, mockServer, "/path");
+    gsa.start();
     GsaCommunicationHandler gsa2 = new GsaCommunicationHandler(adaptor, config);
-    gsa2.start(mockServer, mockServer, "/path2");
+    gsa2.setup(mockServer, mockServer, "/path2");
+    gsa2.start();
 
     try {
       MockHttpExchange ex = mockServer.createExchange("GET", "/path/doc/1");
@@ -262,6 +164,7 @@ public class GsaCommunicationHandlerTest {
       assertEquals("2", new String(ex.getResponseBytes(), charset));
     } finally {
       gsa2.stop(0, TimeUnit.SECONDS);
+      gsa2.teardown();
       // gsa.stop() is called in @After, so no need for second finally for
       // shutting 'gsa' down.
     }

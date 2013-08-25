@@ -46,8 +46,6 @@ public final class GsaCommunicationHandler {
   private final Adaptor adaptor;
   private final Config config;
   private final Journal journal;
-  private final GsaConfigModListener gsaConfigModListener
-      = new GsaConfigModListener();
   private AdaptorContextImpl adaptorContext;
   /**
    * Cron-style scheduler. Available for other uses, but necessary for
@@ -95,12 +93,8 @@ public final class GsaCommunicationHandler {
   private HttpServerScope dashboardScope;
   private Dashboard dashboard;
   private SensitiveValueCodec secureValueCodec;
-  /**
-   * Used to stop startup prematurely. This allows cancelling an already-running
-   * start(). If start fails, a stale shuttingDownLatch can remain, thus it does
-   * not provide any information as to whether a start() call is running.
-   */
-  private volatile CountDownLatch shuttingDownLatch;
+  private KeyPair keyPair;
+  private AclTransform aclTransform;
   /**
    * Used to stop startup prematurely. When greater than 0, start() should abort
    * immediately because stop() is currently processing. This allows cancelling
@@ -122,19 +116,12 @@ public final class GsaCommunicationHandler {
   }
 
   /**
-   * Starts listening for communications from GSA. {@code contextPrefix}
+   * Start services necessary for handling outgoing requests. {@code ""} is used
+   * for {@code contextPrefix} if the passed value is {@code null}.
    */
-  public synchronized void start(HttpServer server, HttpServer dashboardServer)
-      throws IOException, InterruptedException {
-    start(server, dashboardServer, null);
-  }
-
-  /**
-   * Starts listening for communications from GSA. {@code ""} is used for
-   * {@code contextPrefix} if the passed value is {@code null}.
-   */
-  public synchronized void start(HttpServer server, HttpServer dashboardServer,
-      String contextPrefix) throws IOException, InterruptedException {
+  public synchronized AdaptorContext setup(HttpServer server,
+      HttpServer dashboardServer, String contextPrefix) throws IOException,
+      InterruptedException {
     if (this.scope != null) {
       throw new IllegalStateException("Already listening");
     }
@@ -149,17 +136,12 @@ public final class GsaCommunicationHandler {
       throw new IllegalArgumentException(
           "Both servers must be HttpServers or both HttpsServers");
     }
-    shuttingDownLatch = new CountDownLatch(1);
-    if (shutdownCount.get() > 0) {
-      shuttingDownLatch = null;
-      return;
-    }
 
     boolean secure = server instanceof HttpsServer;
     if (secure != config.isServerSecure()) {
       config.setValue("server.secure", "" + secure);
     }
-    KeyPair keyPair = null;
+    keyPair = null;
     try {
       keyPair = getKeyPair(config.getServerKeyAlias());
     } catch (IOException ex) {
@@ -192,8 +174,6 @@ public final class GsaCommunicationHandler {
           30 * 60 * 1000 /* session lifetime: 30 minutes */,
           5 * 60 * 1000 /* max cleanup frequency: 5 minutes */);
 
-    config.addConfigModificationListener(gsaConfigModListener);
-
     URI baseUri = config.getServerBaseUri();
     URI docUri;
     try {
@@ -206,52 +186,29 @@ public final class GsaCommunicationHandler {
     GsaFeedFileSender fileSender = new GsaFeedFileSender(
         config.getGsaHostname(), config.isServerSecure(), // use secure bool?
         config.getGsaCharacterEncoding());
-    AclTransform aclTransform = createAclTransform();
+    aclTransform = createAclTransform();
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec, aclTransform,
         config.isGsa614FeedWorkaroundEnabled(),
         config.isGsa70AuthMethodWorkaroundEnabled());
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
 
+    // Could be done during start(), but then we would have to save
+    // dashboardServer and contextPrefix.
+    dashboardScope = new HttpServerScope(dashboardServer, contextPrefix);
+
     // We are about to start the Adaptor, so anything available through
     // AdaptorContext or other means must be initialized at this point. Any
     // reference to 'adaptor' before this point must be done very carefully to
     // ensure it doesn't call the adaptor until after Adaptor.init() completes.
+    return adaptorContext = new AdaptorContextImpl();
+  }
 
-    long sleepDurationMillis = 8000;
-
-    // An hour.
-    long maxSleepDurationMillis = 60 * 60 * 1000;
-    // Loop until 1) the adaptor starts successfully, 2) stop() is called, or
-    // 3) Thread.interrupt() is called on this thread (which we don't do).
-    // Retrying to start the adaptor is helpful in cases where it needs
-    // initialization data from a repository that is temporarily down; if the
-    // adaptor is running as a service, we don't want to stop starting simply
-    // because another computer is down while we start (which would easily be
-    // the case after a power failure).
-    while (true) {
-      try {
-        tryToPutVersionIntoConfig(secure);
-        adaptorContext = new AdaptorContextImpl();
-        String adaptorType = adaptor.getClass().getName();
-        log.log(Level.INFO, "about to init {0}", adaptorType); 
-        adaptor.init(adaptorContext);
-        break;
-      } catch (InterruptedException ex) {
-        throw ex;
-      } catch (Exception ex) {
-        log.log(Level.WARNING, "Failed to initialize adaptor", ex);
-        if (shuttingDownLatch.await(sleepDurationMillis,
-              TimeUnit.MILLISECONDS)) {
-          // Shutdown initiated.
-          break;
-        }
-        sleepDurationMillis
-            = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
-        ensureLatestConfigLoaded();
-      }
-    }
-
+  /**
+   * Start servicing incoming requests. This makes use of the
+   * previously-provided HttpServers and configuration.
+   */
+  public synchronized void start() {
     // Since the Adaptor has been started, we can now issue other calls to it.
     // Usages of 'adaptor' are completely safe after this point.
     adaptorContext.freeze();
@@ -263,10 +220,8 @@ public final class GsaCommunicationHandler {
           (ConfigModificationListener) adaptor);
     }*/
 
-    dashboardScope = new HttpServerScope(dashboardServer, contextPrefix);
-
     SamlServiceProvider samlServiceProvider = null;
-    if (secure) {
+    if (config.isServerSecure()) {
       bootstrapOpenSaml();
       SamlMetadata metadata = new SamlMetadata(config.getServerHostname(),
           config.getServerPort(), config.getGsaHostname(),
@@ -358,14 +313,13 @@ public final class GsaCommunicationHandler {
     dashboard = new Dashboard(config, this, journal, sessionManager,
         secureValueCodec, adaptor, adaptorContext.statusSources);
     dashboard.start(dashboardScope);
-
-    shuttingDownLatch = null;
   }
    
-  private void tryToPutVersionIntoConfig(boolean secure) throws IOException { 
+  void tryToPutVersionIntoConfig() throws IOException {
     try {
       if ("GENERATE".equals(config.getGsaVersion())) {  // is not set
-        GsaVersion ver = GsaVersion.get(config.getGsaHostname(), secure);
+        GsaVersion ver = GsaVersion.get(config.getGsaHostname(),
+            config.isServerSecure());
         config.overrideKey("gsa.version", "" + ver);
       }
     } catch (FileNotFoundException fne) {
@@ -596,38 +550,28 @@ public final class GsaCommunicationHandler {
   }
 
   /**
-   * Stop the current services, allowing up to {@code maxDelay} seconds for
-   * things to shutdown.
+   * Stops servicing incoming requests, allowing up to {@code maxDelay} seconds
+   * for things to shutdown. After called, no requests will be sent to the
+   * Adaptor.
+   *
+   * @return {@code true} if shutdown cleanly, {@code false} if requests may
+   *     still be processing
    */
-  public void stop(long time, TimeUnit unit) {
-    // Prevent new start()s.
-    shutdownCount.incrementAndGet();
-    try {
-      CountDownLatch latch = shuttingDownLatch;
-      if (latch != null) {
-        // Cause existing start() to begin cancelling.
-        latch.countDown();
-      }
-      realStop(time, unit);
-    } finally {
-      // Permit new start()s.
-      shutdownCount.decrementAndGet();
-    }
-  }
-
-  private synchronized void realStop(long time, TimeUnit unit) {
+  public synchronized boolean stop(long time, TimeUnit unit) {
+    boolean clean = true;
     if (adaptorContext != null) {
       adaptorContext.freeze();
     }
-    config.removeConfigModificationListener(gsaConfigModListener);
     if (scope != null) {
       scope.close();
-      scope = null;
+      scope = new HttpServerScope(
+          scope.getHttpServer(), scope.getContextPrefix());
     }
-    if (dashboardScope != null) {
+    if (scheduleExecutor != null) {
       // Post-Adaptor.init() resources need to be stopped.
       dashboardScope.close();
-      dashboardScope = null;
+      dashboardScope = new HttpServerScope(
+          dashboardScope.getHttpServer(), dashboardScope.getContextPrefix());
 
       scheduleExecutor.shutdownNow();
       scheduleExecutor = null;
@@ -648,24 +592,35 @@ public final class GsaCommunicationHandler {
       docIdIncrementalPusher = null;
 
       try {
-        waiter.shutdown(time, unit);
+        clean = clean & waiter.shutdown(time, unit);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
+        clean = false;
       }
-      waiter = null;
+      waiter = new ShutdownWaiter();
     }
-    try {
-      adaptor.destroy();
-    } finally {
-      // Wait until after adaptor.destroy() to shutdown things accessible by
-      // AdaptorContext, so that the AdaptorContext is usable until the very
-      // end.
-      secureValueCodec = null;
-      sessionManager = null;
-      docIdCodec = null;
-      docIdSender = null;
-      adaptorContext = null;
-    }
+    return clean;
+  }
+
+  /**
+   * Stop services necessary for handling outgoing requests. This call
+   * invalidates the {@link AdaptorContext} returned from {@link #setup}.
+   */
+  public synchronized void teardown() {
+    scope = null;
+    dashboardScope = null;
+    keyPair = null;
+    aclTransform = null;
+    waiter = null;
+
+    // Wait until after adaptor.destroy() to shutdown things accessible by
+    // AdaptorContext, so that the AdaptorContext is usable until the very
+    // end.
+    secureValueCodec = null;
+    sessionManager = null;
+    docIdCodec = null;
+    docIdSender = null;
+    adaptorContext = null;
   }
 
   /**
@@ -718,6 +673,17 @@ public final class GsaCommunicationHandler {
       log.log(Level.WARNING, "Error while trying to reload configuration",
               ex);
       return false;
+    }
+  }
+
+  synchronized void rescheduleFullListing(String schedule) {
+    if (sendDocIdsFuture == null) {
+      return;
+    }
+    try {
+      scheduler.reschedule(sendDocIdsFuture, schedule);
+    } catch (IllegalArgumentException ex) {
+      log.log(Level.WARNING, "Invalid schedule pattern", ex);
     }
   }
 
@@ -807,47 +773,6 @@ public final class GsaCommunicationHandler {
       // Wrap with waiter.runnable() every time instead of in constructor to aid
       // auditing the code for "ShutdownWaiter correctness."
       backgroundExecutor.execute(waiter.runnable(delegate));
-    }
-  }
-
-  private class GsaConfigModListener implements ConfigModificationListener {
-    @Override
-    public void configModified(ConfigModificationEvent ev) {
-      Set<String> modifiedKeys = ev.getModifiedKeys();
-      synchronized (GsaCommunicationHandler.this) {
-        if (modifiedKeys.contains("adaptor.fullListingSchedule")
-            && sendDocIdsFuture != null) {
-          String schedule = ev.getNewConfig().getAdaptorFullListingSchedule();
-          try {
-            scheduler.reschedule(sendDocIdsFuture, schedule);
-          } catch (IllegalArgumentException ex) {
-            log.log(Level.WARNING, "Invalid schedule pattern", ex);
-          }
-        }
-      }
-
-      // List of "safe" keys that can be updated without a restart.
-      List<String> safeKeys = Arrays.asList("adaptor.fullListingSchedule");
-      // Set of "unsafe" keys that have been modified.
-      Set<String> modifiedKeysRequiringRestart
-          = new HashSet<String>(modifiedKeys);
-      modifiedKeysRequiringRestart.removeAll(safeKeys);
-      // If there are modified "unsafe" keys, then we restart things to make
-      // sure all the code is up-to-date with the new values.
-      if (!modifiedKeysRequiringRestart.isEmpty()) {
-        log.warning("Unsafe configuration keys modified. To ensure a sane "
-                    + "state, the adaptor is restarting.");
-        HttpServer existingServer = scope.getHttpServer();
-        HttpServer existingDashboardServer
-            = dashboardScope.getHttpServer();
-        stop(3, TimeUnit.SECONDS);
-        try {
-          start(existingServer, existingDashboardServer);
-        } catch (Exception ex) {
-          log.log(Level.SEVERE, "Automatic restart failed", ex);
-          throw new RuntimeException(ex);
-        }
-      }
     }
   }
 

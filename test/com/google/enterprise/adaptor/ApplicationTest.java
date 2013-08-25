@@ -142,6 +142,27 @@ public class ApplicationTest {
     conn.getContent();
   }
 
+  @Test
+  public void testFailOnceInitAdaptor() throws Exception {
+    class FailFirstAdaptor extends NullAdaptor {
+      private int count = 0;
+      public boolean started = false;
+
+      @Override
+      public void init(AdaptorContext context) {
+        if (count == 0) {
+          count++;
+          throw new RuntimeException();
+        }
+        started = true;
+      }
+    }
+    FailFirstAdaptor adaptor = new FailFirstAdaptor();
+    app = new Application(adaptor, config);
+    app.start();
+    assertTrue(adaptor.started);
+  }
+
   private static class NullAdaptor extends AbstractAdaptor {
     private boolean inited;
 
