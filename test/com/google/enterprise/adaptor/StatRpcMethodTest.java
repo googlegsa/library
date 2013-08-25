@@ -18,19 +18,14 @@ import static org.junit.Assert.*;
 
 import org.junit.Test;
 
-import java.io.IOException;
-
 import java.util.*;
 
 /**
  * Tests for {@link StatRpcMethod}.
  */
 public class StatRpcMethodTest {
-  private RpcHandler.RpcMethod method;
-
-  public StatRpcMethodTest() {
-    method = new StatRpcMethod(new SnapshotMockJournal(), new AdaptorMock());
-  }
+  private RpcHandler.RpcMethod method = new StatRpcMethod(
+      new SnapshotMockJournal(), new AdaptorMock(), false);
 
   @Test
   public void testStat() throws Exception {

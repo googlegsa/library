@@ -97,13 +97,13 @@ class SamlIdentityProvider {
     }
   }
 
-  private final AuthnAdaptor adaptor;
+  private final AuthnAuthority adaptor;
   /** Credentials to use to sign messages. */
   private final Credential cred;
   private final SamlMetadata metadata;
   private final SsoHandler ssoHandler = new SsoHandler();
 
-  public SamlIdentityProvider(AuthnAdaptor adaptor, SamlMetadata metadata,
+  public SamlIdentityProvider(AuthnAuthority adaptor, SamlMetadata metadata,
       KeyPair key) {
     if (adaptor == null || metadata == null) {
       throw new NullPointerException();
@@ -274,7 +274,7 @@ class SamlIdentityProvider {
     }
   }
 
-  private class AuthnCallback implements AuthnAdaptor.Callback {
+  private class AuthnCallback implements AuthnAuthority.Callback {
     private final SAMLMessageContext<AuthnRequest, Response, NameID> context;
 
     public AuthnCallback(

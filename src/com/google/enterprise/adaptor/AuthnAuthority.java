@@ -20,8 +20,11 @@ import java.io.IOException;
 
 /**
  * Interface for adaptors capable of authenticating users.
+ *
+ * <p>Instances of this interface are typically registered with {@link
+ * AdaptorContext#setAuthnAuthority}.
  */
-public interface AuthnAdaptor extends Adaptor {
+public interface AuthnAuthority {
   /**
    * Authenticate the user connected via {@code ex}. After attempting to
    * authenticate the user the implementation should respond by calling {@link

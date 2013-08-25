@@ -29,9 +29,10 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   private Journal journal;
   private boolean isAdaptorIncremental;
 
-  public StatRpcMethod(Journal journal, Adaptor adaptor) {
+  public StatRpcMethod(Journal journal, Adaptor adaptor,
+      boolean isAdaptorIncremental) {
     this.journal = journal;
-    this.isAdaptorIncremental = adaptor instanceof PollingIncrementalAdaptor;
+    this.isAdaptorIncremental = isAdaptorIncremental;
 
     Class adaptorClass = adaptor.getClass();
     if (adaptorClass.getPackage() != null) {

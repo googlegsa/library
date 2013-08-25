@@ -41,8 +41,8 @@ import java.util.logging.*;
  *     hour,  day of month, month, day of week).  Defaults to 0 3 * * *
  * <tr><td> </td><td>adaptor.incrementalPollPeriodSecs </td><td> number
  *     of seconds between invocations of {@link
- *     PollingIncrementalAdaptor#getModifiedDocIds
- *     PollingIncrementalAdaptor.getModifiedDocIds}.    Defaults to 900
+ *     PollingIncrementalLister#getModifiedDocIds
+ *     PollingIncrementalLister.getModifiedDocIds}.    Defaults to 900
  * <tr><td> </td><td>adaptor.docContentTimeoutSecs </td><td> number of seconds
  *     adaptor has to complete sending content before it is interrupted. Timing
  *     starts when sending content starts. Defaults to 180

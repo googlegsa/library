@@ -115,9 +115,14 @@ public class GsaCommunicationHandlerTest {
   @Test
   public void testPollingIncrementalAdaptor() throws Exception {
     class PollingIncrNullAdaptor extends NullAdaptor
-        implements PollingIncrementalAdaptor {
+        implements PollingIncrementalLister {
       public final ArrayBlockingQueue<Object> queue
           = new ArrayBlockingQueue<Object>(1);
+
+      @Override
+      public void init(AdaptorContext context) {
+        context.setPollingIncrementalLister(this);
+      }
 
       @Override
       public void getModifiedDocIds(DocIdPusher pusher) {

@@ -477,5 +477,15 @@ abstract class WrapperAdaptor implements Adaptor {
     public Session getUserSession(HttpExchange ex, boolean create) {
       return context.getUserSession(ex, create);
     }
+
+    @Override
+    public void setPollingIncrementalLister(PollingIncrementalLister lister) {
+      context.setPollingIncrementalLister(lister);
+    }
+
+    @Override
+    public void setAuthnAuthority(AuthnAuthority authnAuthority) {
+      context.setAuthnAuthority(authnAuthority);
+    }
   }
 }

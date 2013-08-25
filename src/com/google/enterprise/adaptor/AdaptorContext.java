@@ -103,4 +103,16 @@ public interface AdaptorContext {
    *     and {@code create = false}
    */
   public Session getUserSession(HttpExchange ex, boolean create);
+
+  /**
+   * Register a polling incremental lister, so that it can be called when
+   * appropriate. Registration may not occur after {@link Adaptor#init}.
+   */
+  public void setPollingIncrementalLister(PollingIncrementalLister lister);
+
+  /**
+   * Register an authentication provider, so it can authenticate users for the
+   * GSA. Registration may not occur after {@link Adaptor#init}.
+   */
+  public void setAuthnAuthority(AuthnAuthority authnAuthority);
 }

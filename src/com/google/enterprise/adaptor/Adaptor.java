@@ -34,7 +34,7 @@ import java.util.Map;
  *
  * @see com.google.enterprise.adaptor.examples.AdaptorTemplate
  * @see AbstractAdaptor
- * @see PollingIncrementalAdaptor
+ * @see PollingIncrementalLister
  */
 public interface Adaptor {
   /**

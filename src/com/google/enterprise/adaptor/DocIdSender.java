@@ -84,8 +84,8 @@ class DocIdSender extends AbstractDocIdPusher
    * Calls {@link Adaptor#getModifiedDocIds}. This method blocks until all
    * DocIds are sent or retrying failed.
    */
-  public void pushIncrementalDocIdsFromAdaptor(ExceptionHandler handler)
-      throws InterruptedException {
+  public void pushIncrementalDocIdsFromAdaptor(PollingIncrementalLister lister,
+      ExceptionHandler handler) throws InterruptedException {
     if (handler == null) {
       throw new NullPointerException();
     }
@@ -94,7 +94,7 @@ class DocIdSender extends AbstractDocIdPusher
     for (int ntries = 1;; ntries++) {
       boolean keepGoing = true;
       try {
-        ((PollingIncrementalAdaptor) adaptor).getModifiedDocIds(this);
+        lister.getModifiedDocIds(this);
         break; // Success
       } catch (InterruptedException ex) {
         // Stop early.

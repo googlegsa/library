@@ -45,6 +45,9 @@ public final class GsaCommunicationHandler {
   private final Adaptor adaptor;
   private final Config config;
   private final Journal journal;
+  private boolean afterInit;
+  private PollingIncrementalLister pollingIncrementalLister;
+  private AuthnAuthority authnAuthority;
   /**
    * Cron-style scheduler. Available for other uses, but necessary for
    * scheduling {@link docIdFullPusher}. Tasks should execute quickly, to allow
@@ -254,6 +257,7 @@ public final class GsaCommunicationHandler {
 
     // Since the Adaptor has been started, we can now issue other calls to it.
     // Usages of 'adaptor' are completely safe after this point.
+    afterInit = true;
 
     // Since we are white-listing particular keys for auto-update, things aren't
     // ready enough to expose to adaptors.
@@ -269,16 +273,14 @@ public final class GsaCommunicationHandler {
           config.getServerPort(), config.getGsaHostname(),
           config.getGsaSamlEntityId(), config.getServerSamlEntityId());
 
-      if (adaptor instanceof AuthnAdaptor) {
-        log.config("Adaptor is an AuthnAdaptor; enabling adaptor-based "
-            + "authentication");
+      if (authnAuthority != null) {
+        log.config("Adaptor-based authentication supported");
         samlIdentityProvider = new SamlIdentityProvider(
-            (AuthnAdaptor) adaptor, metadata, key);
+            authnAuthority, metadata, key);
         addFilters(scope.createContext("/samlip",
             samlIdentityProvider.getSingleSignOnHandler()));
       } else {
-        log.config("Adaptor is not an AuthnAdaptor; not enabling adaptor-based "
-            + "authentication");
+        log.config("Adaptor-based authentication not supported");
       }
       samlServiceProvider
           = new SamlServiceProvider(sessionManager, metadata, key);
@@ -323,9 +325,9 @@ public final class GsaCommunicationHandler {
       checkAndScheduleImmediatePushOfDocIds();
     }
 
-    if (adaptor instanceof PollingIncrementalAdaptor) {
+    if (pollingIncrementalLister != null) {
       docIdIncrementalPusher = new OneAtATimeRunnable(
-          new IncrementalPushRunnable((PollingIncrementalAdaptor) adaptor),
+          new IncrementalPushRunnable(pollingIncrementalLister),
           new AlreadyRunningRunnable());
 
       scheduleExecutor.scheduleAtFixedRate(
@@ -493,6 +495,7 @@ public final class GsaCommunicationHandler {
       scope.close();
     }
     if (dashboard != null) {
+      dashboard.clearStatusSources();
       dashboard.stop();
     }
     if (scheduleExecutor != null) {
@@ -508,7 +511,6 @@ public final class GsaCommunicationHandler {
         Thread.currentThread().interrupt();
       }
     }
-    dashboard.clearStatusSources();
     try {
       adaptor.destroy();
     } finally {
@@ -523,6 +525,9 @@ public final class GsaCommunicationHandler {
       waiter = null;
       sessionManager = null;
       docIdCodec = null;
+      afterInit = false;
+      pollingIncrementalLister = null;
+      authnAuthority = null;
     }
   }
 
@@ -544,7 +549,7 @@ public final class GsaCommunicationHandler {
 
   /**
    * Perform an push of incremental changes. This works only for adaptors that
-   * support incremental polling (implements {@link PollingIncrementalAdaptor}.
+   * support incremental polling (implements {@link PollingIncrementalLister}.
    */
   public synchronized boolean checkAndScheduleIncrementalPushOfDocIds() {
     if (docIdIncrementalPusher == null) {
@@ -560,6 +565,10 @@ public final class GsaCommunicationHandler {
     // now, and one "just started."
     backgroundExecutor.execute(waiter.runnable(docIdIncrementalPusher));
     return true;
+  }
+
+  boolean isAdaptorIncremental() {
+    return pollingIncrementalLister != null;
   }
 
   boolean ensureLatestConfigLoaded() {
@@ -617,16 +626,17 @@ public final class GsaCommunicationHandler {
   private class IncrementalPushRunnable implements Runnable {
     private volatile ExceptionHandler handler
         = ExceptionHandlers.defaultHandler();
-    private PollingIncrementalAdaptor adaptor;
+    private PollingIncrementalLister adaptor;
 
-    public IncrementalPushRunnable(PollingIncrementalAdaptor adaptor) {
+    public IncrementalPushRunnable(PollingIncrementalLister adaptor) {
       this.adaptor = adaptor;
     }
 
     @Override
     public void run() {
       try {
-        docIdSender.pushIncrementalDocIdsFromAdaptor(handler);
+        docIdSender.pushIncrementalDocIdsFromAdaptor(
+            pollingIncrementalLister, handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
       } catch (Exception ex) {
@@ -794,6 +804,22 @@ public final class GsaCommunicationHandler {
         }
       }
       return nsSession;
+    }
+
+    @Override
+    public void setPollingIncrementalLister(PollingIncrementalLister lister) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
+      pollingIncrementalLister = lister;
+    }
+
+    @Override
+    public void setAuthnAuthority(AuthnAuthority authnAuthority) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
+      authnAuthority = authnAuthority;
     }
   }
 }

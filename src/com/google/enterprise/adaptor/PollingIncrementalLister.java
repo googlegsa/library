@@ -33,7 +33,7 @@ import java.io.IOException;
  * adaptor for the user. Thus, adaptors are encouraged to implement this
  * interface if it is applicable.
  */
-public interface PollingIncrementalAdaptor extends Adaptor {
+public interface PollingIncrementalLister {
   /**
    * Check for documents modified since the last call to the method. This method
    * is intended to provide little-effort updates to the GSA about recent

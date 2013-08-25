@@ -39,6 +39,7 @@ class Dashboard {
   private final GsaCommunicationHandler gsaCommHandler;
   private final SessionManager<HttpExchange> sessionManager;
   private final RpcHandler rpcHandler;
+  private final Adaptor adaptor;
 
   public Dashboard(Config config, GsaCommunicationHandler gsaCommHandler,
                    Journal journal, SessionManager<HttpExchange> sessionManager,
@@ -47,6 +48,7 @@ class Dashboard {
     this.gsaCommHandler = gsaCommHandler;
     this.journal = journal;
     this.sessionManager = sessionManager;
+    this.adaptor = adaptor;
 
     rpcHandler = new RpcHandler(sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
@@ -55,8 +57,6 @@ class Dashboard {
     circularLogRpcMethod = new CircularLogRpcMethod();
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
-    rpcHandler.registerRpcMethod("getStats",
-        new StatRpcMethod(journal, adaptor));
     rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
     rpcHandler.registerRpcMethod("checkForUpdatedConfig",
         new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
@@ -71,6 +71,9 @@ class Dashboard {
   /** Starts listening for connections to the dashboard. */
   public void start(HttpServer dashboardServer, String contextPrefix)
       throws IOException {
+    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal, adaptor,
+        gsaCommHandler.isAdaptorIncremental()));
+
     this.scope = new HttpServerScope(dashboardServer, contextPrefix);
     int dashboardPort = dashboardServer.getAddress().getPort();
     if (dashboardPort != config.getServerDashboardPort()) {

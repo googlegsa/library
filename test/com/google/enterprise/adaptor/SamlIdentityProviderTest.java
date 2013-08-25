@@ -43,7 +43,7 @@ public class SamlIdentityProviderTest {
   private UserPrincipal user = new UserPrincipal("user1");
   private Set<GroupPrincipal> groups = GroupPrincipal.makeSet(Arrays.asList(
       "group1", "group2"));
-  private AuthnAdaptor adaptor = new AuthnAdaptorImpl();
+  private AuthnAuthority adaptor = new AuthnAuthorityImpl();
   private SamlIdentityProvider identityProvider = new SamlIdentityProvider(
       adaptor, metadata, null);
   private MockHttpContext httpContext = new MockHttpsContext(null, "/samlip");
@@ -112,17 +112,7 @@ public class SamlIdentityProviderTest {
     assertEquals(404, ex.getResponseCode());
   }
 
-  private class AuthnAdaptorImpl extends AbstractAdaptor
-      implements AuthnAdaptor {
-    @Override
-    public void getDocContent(Request request, Response response)
-        throws IOException {
-      response.respondNotFound();
-    }
-
-    @Override
-    public void getDocIds(DocIdPusher pusher) {}
-
+  private class AuthnAuthorityImpl implements AuthnAuthority {
     @Override
     public void authenticateUser(HttpExchange ex, Callback callback)
         throws IOException {
