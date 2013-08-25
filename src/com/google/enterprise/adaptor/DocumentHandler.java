@@ -47,6 +47,7 @@ class DocumentHandler implements HttpHandler {
   private final DocIdEncoder docIdEncoder;
   private final Journal journal;
   private final Adaptor adaptor;
+  private final AuthzAuthority authzAuthority;
   private final Watchdog watchdog;
   private final AsyncPusher pusher;
   /**
@@ -72,6 +73,7 @@ class DocumentHandler implements HttpHandler {
    */
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
+                         AuthzAuthority authzAuthority,
                          String gsaHostname, String[] fullAccessHosts,
                          SamlServiceProvider samlServiceProvider,
                          TransformPipeline transform,
@@ -88,6 +90,7 @@ class DocumentHandler implements HttpHandler {
     this.docIdEncoder = docIdEncoder;
     this.journal = journal;
     this.adaptor = adaptor;
+    this.authzAuthority = authzAuthority;
     this.samlServiceProvider = samlServiceProvider;
     this.transform = transform;
     this.useCompression = useCompression;
@@ -243,6 +246,10 @@ class DocumentHandler implements HttpHandler {
 
     if (requestIsFromFullyTrustedClient(ex)) {
       journal.recordGsaContentRequest(docId);
+    } else if (authzAuthority == null) {
+      HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
+          Translation.HTTP_FORBIDDEN);
+      return false;
     } else {
       journal.recordNonGsaContentRequest(docId);
       // Default to anonymous.
@@ -252,8 +259,8 @@ class DocumentHandler implements HttpHandler {
         identity = samlServiceProvider.getUserIdentity(ex);
       }
 
-      Map<DocId, AuthzStatus> authzMap = adaptor.isUserAuthorized(identity,
-          Collections.singletonList(docId));
+      Map<DocId, AuthzStatus> authzMap = authzAuthority.isUserAuthorized(
+          identity, Collections.singletonList(docId));
 
       AuthzStatus status = authzMap != null ? authzMap.get(docId) : null;
       if (status == null) {

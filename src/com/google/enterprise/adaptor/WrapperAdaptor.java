@@ -61,12 +61,6 @@ abstract class WrapperAdaptor implements Adaptor {
     adaptor.destroy();
   }
 
-  @Override
-  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
-      Collection<DocId> ids) throws IOException {
-    return adaptor.isUserAuthorized(userIdentity, ids);
-  }
-
   /**
    * Passes through all operations to wrapped {@code Request}.
    */
@@ -486,6 +480,11 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void setAuthnAuthority(AuthnAuthority authnAuthority) {
       context.setAuthnAuthority(authnAuthority);
+    }
+
+    @Override
+    public void setAuthzAuthority(AuthzAuthority authzAuthority) {
+      context.setAuthzAuthority(authzAuthority);
     }
   }
 }

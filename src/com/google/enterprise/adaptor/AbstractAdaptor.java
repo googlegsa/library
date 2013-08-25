@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.IOException;
 import java.util.*;
 import java.util.logging.Logger;
 
@@ -26,23 +25,6 @@ import java.util.logging.Logger;
 public abstract class AbstractAdaptor implements Adaptor {
   private static final Logger log
       = Logger.getLogger(AbstractAdaptor.class.getName());
-
-  /**
-   * {@inheritDoc}
-   *
-   * <p>This implementation provides {@link AuthzStatus#DENY} for all {@code
-   * DocId}s in an unmodifiable map.
-   */
-  @Override
-  public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
-      Collection<DocId> ids) throws IOException {
-    Map<DocId, AuthzStatus> result
-        = new HashMap<DocId, AuthzStatus>(ids.size() * 2);
-    for (DocId id : ids) {
-      result.put(id, AuthzStatus.DENY);
-    }
-    return Collections.unmodifiableMap(result);
-  }
 
   /**
    * {@inheritDoc}

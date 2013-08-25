@@ -70,6 +70,9 @@ public class TestHelper {
       public Config getConfig() {
         return config;
       }
+
+      @Override
+      public void setAuthzAuthority(AuthzAuthority authzAuthority) {}
     });
     adaptor.getDocIds(pusher);
     return pusher.getDocIds();

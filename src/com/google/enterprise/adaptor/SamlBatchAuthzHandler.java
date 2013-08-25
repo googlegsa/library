@@ -51,13 +51,13 @@ class SamlBatchAuthzHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(SamlBatchAuthzHandler.class.getName());
 
-  private final Adaptor adaptor;
+  private final AuthzAuthority authzAuthority;
   private final SamlMetadata metadata;
   private DocIdDecoder docIdDecoder;
 
-  public SamlBatchAuthzHandler(Adaptor adaptor, DocIdDecoder docIdDecoder,
-                               SamlMetadata samlMetadata) {
-    this.adaptor = adaptor;
+  public SamlBatchAuthzHandler(AuthzAuthority authzAuthority,
+      DocIdDecoder docIdDecoder, SamlMetadata samlMetadata) {
+    this.authzAuthority = authzAuthority;
     this.docIdDecoder = docIdDecoder;
     this.metadata = samlMetadata;
   }
@@ -187,7 +187,7 @@ class SamlBatchAuthzHandler implements HttpHandler {
     docIds = Collections.unmodifiableMap(docIds);
     Map<DocId, AuthzStatus> statuses;
     try {
-      statuses = adaptor.isUserAuthorized(identity, docIds.values());
+      statuses = authzAuthority.isUserAuthorized(identity, docIds.values());
     } catch (Exception e) {
       log.log(Level.WARNING, "Exception while satisfying Authn query", e);
       statuses = null;

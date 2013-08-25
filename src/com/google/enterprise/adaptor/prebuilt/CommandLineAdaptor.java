@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor.prebuilt;
 import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.AdaptorContext;
 import com.google.enterprise.adaptor.AuthnIdentity;
+import com.google.enterprise.adaptor.AuthzAuthority;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.CommandStreamParser;
 import com.google.enterprise.adaptor.Config;
@@ -45,7 +46,8 @@ import java.util.logging.Logger;
 /**
  * Command Line Adaptor
  */
-public class CommandLineAdaptor extends AbstractAdaptor {
+public class CommandLineAdaptor extends AbstractAdaptor
+    implements AuthzAuthority {
   private static final Logger log = Logger.getLogger(CommandLineAdaptor.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
   private List<String> listerCommand;
@@ -99,6 +101,10 @@ public class CommandLineAdaptor extends AbstractAdaptor {
     authorizerCommand = readCommandLineConfig(context, "commandline.authorizer.");
 
     authzDelimiter = context.getConfig().getValue("commandline.authorizer.delimeter");
+
+    if (authorizerCommand != null) {
+      context.setAuthzAuthority(this);
+    }
   }
 
   public void setListerCommand(List<String> commandWithArgs) {
@@ -206,7 +212,7 @@ public class CommandLineAdaptor extends AbstractAdaptor {
       Collection<DocId> ids) throws IOException {
 
     if (authorizerCommand == null) {
-      return super.isUserAuthorized(userIdentity, ids);
+      throw new IllegalStateException("Can't authz as configured");
     }
 
     StringBuilder stdinStringBuilder = new StringBuilder();

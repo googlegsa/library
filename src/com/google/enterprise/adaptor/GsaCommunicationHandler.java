@@ -48,6 +48,7 @@ public final class GsaCommunicationHandler {
   private boolean afterInit;
   private PollingIncrementalLister pollingIncrementalLister;
   private AuthnAuthority authnAuthority;
+  private AuthzAuthority authzAuthority;
   /**
    * Cron-style scheduler. Available for other uses, but necessary for
    * scheduling {@link docIdFullPusher}. Tasks should execute quickly, to allow
@@ -286,8 +287,13 @@ public final class GsaCommunicationHandler {
           = new SamlServiceProvider(sessionManager, metadata, key);
       addFilters(scope.createContext("/samlassertionconsumer",
           samlServiceProvider.getAssertionConsumer()));
-      addFilters(scope.createContext("/saml-authz", new SamlBatchAuthzHandler(
-          adaptor, docIdCodec, metadata)));
+      if (authzAuthority != null) {
+        log.config("Adaptor-based authorization supported");
+        addFilters(scope.createContext("/saml-authz", new SamlBatchAuthzHandler(
+            authzAuthority, docIdCodec, metadata)));
+      } else {
+        log.config("Adaptor-based authorization not supported");
+      }
     }
     Watchdog watchdog = new Watchdog(scheduleExecutor);
     AsyncDocIdSender asyncDocIdSender = new AsyncDocIdSender(docIdSender,
@@ -296,7 +302,7 @@ public final class GsaCommunicationHandler {
         2 * config.getFeedMaxUrls() /* queue size */);
     backgroundExecutor.execute(waiter.runnable(asyncDocIdSender.worker()));
     DocumentHandler docHandler = new DocumentHandler(
-        docIdCodec, docIdCodec, journal, adaptor,
+        docIdCodec, docIdCodec, journal, adaptor, authzAuthority,
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
         samlServiceProvider, createTransformPipeline(),
@@ -528,6 +534,7 @@ public final class GsaCommunicationHandler {
       afterInit = false;
       pollingIncrementalLister = null;
       authnAuthority = null;
+      authzAuthority = null;
     }
   }
 
@@ -820,6 +827,14 @@ public final class GsaCommunicationHandler {
         throw new IllegalStateException("After init()");
       }
       authnAuthority = authnAuthority;
+    }
+
+    @Override
+    public void setAuthzAuthority(AuthzAuthority authzAuthority) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
+      authzAuthority = authzAuthority;
     }
   }
 }

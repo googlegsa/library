@@ -16,9 +16,10 @@ package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.Acl;
+import com.google.enterprise.adaptor.AdaptorContext;
 import com.google.enterprise.adaptor.AuthnIdentity;
+import com.google.enterprise.adaptor.AuthzAuthority;
 import com.google.enterprise.adaptor.AuthzStatus;
-import com.google.enterprise.adaptor.Config;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.GroupPrincipal;
@@ -40,10 +41,16 @@ import java.util.logging.Logger;
  *   <li> restricting access to documents
  * </ol>
  */
-public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor {
+public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor
+    implements AuthzAuthority {
   private static final Logger log
       = Logger.getLogger(AdaptorWithCrawlTimeMetadataTemplate.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
+
+  @Override
+  public void init(AdaptorContext context) {
+    context.setAuthzAuthority(this);
+  }
 
   /** Gives list of document ids that you'd like on the GSA. */
   @Override

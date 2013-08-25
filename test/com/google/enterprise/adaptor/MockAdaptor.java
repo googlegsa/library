@@ -20,8 +20,13 @@ import java.util.*;
 /**
  * Mock of {@link Adaptor}. All documents authz as PERMIT.
  */
-class MockAdaptor extends AbstractAdaptor {
+class MockAdaptor extends AbstractAdaptor implements AuthzAuthority {
   public byte[] documentBytes = new byte[] {1, 2, 3};
+
+  @Override
+  public void init(AdaptorContext context) {
+    context.setAuthzAuthority(this);
+  }
 
   @Override
   public void getDocIds(DocIdPusher pusher) throws InterruptedException,

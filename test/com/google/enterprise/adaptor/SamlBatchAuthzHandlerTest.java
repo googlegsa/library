@@ -35,7 +35,7 @@ public class SamlBatchAuthzHandlerTest {
       =   "</soap11:Body>"
       + "</soap11:Envelope>";
 
-  private MockAdaptor adaptor = new MockAdaptor();
+  private AuthzAuthority adaptor = new MockAdaptor();
   private SamlMetadata samlMetadata = new SamlMetadata("localhost", 80,
       "localhost", "http://google.com/enterprise/gsa/security-manager",
       "http://google.com/enterprise/gsa/adaptor");
@@ -114,7 +114,7 @@ public class SamlBatchAuthzHandlerTest {
 
   @Test
   public void testBrokenAdaptor() throws Exception {
-    Adaptor adaptor = new MockAdaptor() {
+    AuthzAuthority adaptor = new AuthzAuthority() {
       @Override
       public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
           Collection<DocId> ids) {
@@ -146,7 +146,7 @@ public class SamlBatchAuthzHandlerTest {
 
   @Test
   public void testIndeterminateAdaptor() throws Exception {
-    Adaptor adaptor = new MockAdaptor() {
+    AuthzAuthority adaptor = new AuthzAuthority() {
       @Override
       public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
           Collection<DocId> ids) {
@@ -180,7 +180,7 @@ public class SamlBatchAuthzHandlerTest {
 
   @Test
   public void testErroringAdaptor() throws Exception {
-    Adaptor adaptor = new MockAdaptor() {
+    AuthzAuthority adaptor = new AuthzAuthority() {
       @Override
       public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
           Collection<DocId> ids) {

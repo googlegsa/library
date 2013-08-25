@@ -20,7 +20,6 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.Adaptor;
 import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
@@ -411,7 +410,7 @@ public class CommandLineAdaptorTest {
   @Test
   public void testListerAndRetriever() throws Exception {
 
-    Adaptor adaptor = new CommandLineAdaptorTestMock();
+    CommandLineAdaptor adaptor = new CommandLineAdaptorTestMock();
 
     Map<String, String> config = new HashMap<String, String>();
     config.put("commandline.lister.cmd", "./lister_cmd.sh");

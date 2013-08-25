@@ -107,8 +107,9 @@ public class DocumentHandlerTest {
         HttpExchanges.cannedRespond(ex, 1234, Translation.HTTP_NOT_FOUND);
       }
     };
+    PrivateMockAdaptor adaptor = new PrivateMockAdaptor();
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(new PrivateMockAdaptor())
+        .setAdaptor(adaptor).setAuthzAuthority(adaptor)
         .setSamlServiceProvider(samlServiceProvider).build();
     handler.handle(ex);
     assertEquals(1234, ex.getResponseCode());
@@ -119,8 +120,9 @@ public class DocumentHandlerTest {
     MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
     samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
         .Builder(new UserPrincipal("test")).build());
+    UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor();
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(new UserPrivateMockAdaptor())
+        .setAdaptor(adaptor).setAuthzAuthority(adaptor)
         .setSamlServiceProvider(samlServiceProvider).build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -290,6 +292,7 @@ public class DocumentHandlerTest {
     };
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
+        .setAuthzAuthority(mockAdaptor)
         .setWatchdog(watchdog)
         .setHeaderTimeoutMillis(1)
         .build();
@@ -307,6 +310,7 @@ public class DocumentHandlerTest {
         = Executors.newSingleThreadScheduledExecutor();
     Watchdog watchdog = new Watchdog(executor);
     DocumentHandler handler = createHandlerBuilder()
+        .setAuthzAuthority(new MockAdaptor())
         .setWatchdog(watchdog)
         .setHeaderTimeoutMillis(100)
         .setContentTimeoutMillis(100)
@@ -800,7 +804,12 @@ public class DocumentHandlerTest {
   }
 
   private DocumentHandler createDefaultHandlerForAdaptor(Adaptor adaptor) {
-    return createHandlerBuilder().setAdaptor(adaptor).build();
+    AuthzAuthority authzAuthority = null;
+    if (adaptor instanceof AuthzAuthority) {
+      authzAuthority = (AuthzAuthority) adaptor;
+    }
+    return createHandlerBuilder().setAdaptor(adaptor)
+        .setAuthzAuthority(authzAuthority).build();
   }
 
   @Test
@@ -1349,6 +1358,7 @@ public class DocumentHandlerTest {
     private DocIdEncoder docIdEncoder;
     private Journal journal;
     private Adaptor adaptor;
+    private AuthzAuthority authzAuthority;
     private String gsaHostname;
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
@@ -1380,6 +1390,12 @@ public class DocumentHandlerTest {
 
     public DocumentHandlerBuilder setAdaptor(Adaptor adaptor) {
       this.adaptor = adaptor;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setAuthzAuthority(
+        AuthzAuthority authzAuthority) {
+      this.authzAuthority = authzAuthority;
       return this;
     }
 
@@ -1444,8 +1460,8 @@ public class DocumentHandlerTest {
 
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
-          gsaHostname, fullAccessHosts, samlServiceProvider, transform,
-          useCompression, watchdog, pusher, sendDocControls,
+          authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
+          transform, useCompression, watchdog, pusher, sendDocControls,
           headerTimeoutMillis, contentTimeoutMillis, scoring);
     }
   }

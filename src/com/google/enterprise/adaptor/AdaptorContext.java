@@ -115,4 +115,10 @@ public interface AdaptorContext {
    * GSA. Registration may not occur after {@link Adaptor#init}.
    */
   public void setAuthnAuthority(AuthnAuthority authnAuthority);
+
+  /**
+   * Register an authorization provider, so it can check authorization of users
+   * for the GSA. Registration may not occur after {@link Adaptor#init}.
+   */
+  public void setAuthzAuthority(AuthzAuthority authzAuthority);
 }
