@@ -46,16 +46,22 @@ public class GsaVersionTest {
 
   @Test
   public void testAtLeastWithBigger() {
-    assertFalse(base.atLeast("7.4.0-1"));
+    assertFalse(base.isAtLeast("7.4.0-1"));
   }
 
   @Test
   public void testAtLeastWithSmaller() {
-    assertTrue(base.atLeast("6.14.36-155"));
+    assertTrue(base.isAtLeast("6.14.36-155"));
   }
 
   @Test
   public void testAtLeastWithEqual() {
-    assertTrue(base.atLeast("7.2.1-1"));
+    assertTrue(base.isAtLeast("7.2.1-1"));
+  }
+
+  @Test
+  public void testAtLeastWithWrongArgument() {
+    thrown.expect(IllegalArgumentException.class);
+    assertTrue(base.isAtLeast("6.p.36-155"));
   }
 }

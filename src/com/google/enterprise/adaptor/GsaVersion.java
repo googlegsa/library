@@ -24,8 +24,8 @@ import java.nio.charset.Charset;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Acquires and provides GSA's version . */
-public final class GsaVersion {
+/** Acquires and provides GSA's version. */
+final class GsaVersion {
   private static final Charset charset = Charset.forName("UTF-8");
 
   private String ver;  // example: 7.2.1-1
@@ -48,7 +48,7 @@ public final class GsaVersion {
   }
 
   /* Requsts entire detailed version string and returns it. */
-  public static GsaVersion get(String host) throws IOException {
+  static GsaVersion get(String host) throws IOException {
     URL url = new URL("http", host, "sw_version.txt");
     URLConnection conn = url.openConnection();
     InputStream in = conn.getInputStream();
@@ -57,11 +57,12 @@ public final class GsaVersion {
   }
 
   /** Provides entire version string gotten from GSA, eg. 7.2.1-1 */
+  @Override
   public String toString() {
     return ver;
   } 
 
-  public boolean atLeast(String minimum) {
+  public boolean isAtLeast(String minimum) {
     GsaVersion min = new GsaVersion(minimum);
     for (int i = 0; i < parts.length; i++) {
       if (parts[i] < min.parts[i]) {
