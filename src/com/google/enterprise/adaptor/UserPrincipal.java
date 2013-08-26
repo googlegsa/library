@@ -25,4 +25,16 @@ public final class UserPrincipal extends Principal {
   public UserPrincipal(String name) {
     super(name);
   }
+
+  /** Always returns {@code true}. */
+  @Override
+  public boolean isUser() {
+    return true;
+  }
+
+  /** Always returns {@code false}. */
+  @Override
+  public boolean isGroup() {
+    return false;
+  }
 }

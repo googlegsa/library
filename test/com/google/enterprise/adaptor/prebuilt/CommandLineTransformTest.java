@@ -18,8 +18,6 @@ import static org.junit.Assert.*;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TestHelper;
-import com.google.enterprise.adaptor.TransformException;
-import com.google.enterprise.adaptor.TransformPipeline;
 
 import org.junit.Test;
 
@@ -32,7 +30,7 @@ import java.util.*;
  */
 public class CommandLineTransformTest {
   @Test
-  public void testSed() throws IOException, TransformException {
+  public void testSed() throws IOException {
     TestHelper.assumeOsIsNotWindows();
 
     ByteArrayOutputStream contentOut = new ByteArrayOutputStream();
@@ -44,8 +42,7 @@ public class CommandLineTransformTest {
     CommandLineTransform cmd = new CommandLineTransform();
     cmd.setTransformCommand(Arrays.asList(new String[] {"sed", "s/i/1/"}));
     cmd.setCommandAcceptsParameters(false);
-    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(metadata, params);
+    cmd.transform(metadata, params);
 
     assertEquals("metaValue1", metadata.getOneValue("metaKey1"));
     assertEquals(1, metadata.getKeys().size());
@@ -54,7 +51,7 @@ public class CommandLineTransformTest {
   }
 
   @Test
-  public void testSedWithMetadata() throws IOException, TransformException {
+  public void testSedWithMetadata() throws IOException {
     TestHelper.assumeOsIsNotWindows();
 
     Metadata metadata = new Metadata();
@@ -74,8 +71,7 @@ public class CommandLineTransformTest {
       + "rm \"$TMPFILE\" >&2;"
     }));
     cmd.setCommandAcceptsParameters(true);
-    TransformPipeline pipeline = new TransformPipeline(Arrays.asList(cmd));
-    pipeline.transform(metadata, params);
+    cmd.transform(metadata, params);
 
     assertEquals(1, metadata.getKeys().size());
     assertEquals("metaValue2", metadata.getOneValue("metaKey2"));

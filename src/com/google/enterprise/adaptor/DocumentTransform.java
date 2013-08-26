@@ -14,9 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Map;
 
 /**
@@ -24,24 +21,12 @@ import java.util.Map;
  *
  * <p>Implementations should also typically have a static factory method with a
  * single {@code Map<String, String>} argument for creating instances based on
- * configuration. Implementations are encouraged to accept "name" as a 
- * configuration key.
+ * configuration.
  */
 public interface DocumentTransform {
   /**
    * Any changes to {@code metadata} and {@code params} will be
    * passed on to subsequent transforms. This method must be thread-safe.
-   *
-   * @throws TransformException
-   * @throws IOException
    */
-  public void transform(Metadata metadata, Map<String, String> params)
-      throws TransformException;
-
-  /**
-   * The name of this transform instance, typically provided by the user. It
-   * should not be {@code null}. Using the class name as a default is reasonable
-   * if no name has been provided.
-   */
-  public String getName();
+  public void transform(Metadata metadata, Map<String, String> params);
 }

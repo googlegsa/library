@@ -270,7 +270,7 @@ public class GsaCommunicationHandlerTest {
     assertEquals(1, pipeline.getDocumentTransforms().size());
     assertEquals(IdentityTransform.class, 
         pipeline.getDocumentTransforms().get(0).getClass());
-    assertEquals("testing", pipeline.getDocumentTransforms().get(0).getName());
+    assertEquals("testing", pipeline.getNames().get(0));
   }
 
   @Test
@@ -415,16 +415,14 @@ public class GsaCommunicationHandlerTest {
     }
   }
 
-  static class IdentityTransform extends AbstractDocumentTransform {
+  static class IdentityTransform implements DocumentTransform {
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
     }
   }
 
   public static IdentityTransform factoryMethod(Map<String, String> config) {
-    IdentityTransform transform = new IdentityTransform();
-    transform.configure(config);
-    return transform;
+    return new IdentityTransform();
   }
 
   public static IdentityTransform wrongFactoryMethod() {

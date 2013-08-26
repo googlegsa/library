@@ -30,6 +30,18 @@ public final class GroupPrincipal extends Principal {
     super(name);
   }
 
+  /** Always returns {@code false}. */
+  @Override
+  public boolean isUser() {
+    return false;
+  }
+
+  /** Always returns {@code true}. */
+  @Override
+  public boolean isGroup() {
+    return true;
+  }
+
   static Set<GroupPrincipal> makeSet(Collection<String> names) {
     if (null == names) {
       return null;

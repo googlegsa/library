@@ -14,17 +14,11 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Modify metadata using multiple serial transforms. The transforms
@@ -33,21 +27,28 @@ import java.util.logging.Logger;
  *
  * <p>This class is thread-safe.
  */
-public class TransformPipeline {
-  private static final Logger log
-      = Logger.getLogger(TransformPipeline.class.getName());
-
+class TransformPipeline {
   private final List<DocumentTransform> transformList;
+  private final List<String> names;
 
-  public TransformPipeline(List<? extends DocumentTransform> transforms) {
+  public TransformPipeline(List<? extends DocumentTransform> transforms, List<String> names) {
+    if (transforms.size() != names.size()) {
+      throw new IllegalArgumentException("Transforms and names must be the same size");
+    }
+    if (transforms.contains(null)) {
+      throw new NullPointerException("Transforms must not contain null values");
+    }
+    if (names.contains(null)) {
+      throw new NullPointerException("Names must not contain null values");
+    }
     this.transformList = Collections.unmodifiableList(new ArrayList<DocumentTransform>(transforms));
+    this.names = Collections.unmodifiableList(new ArrayList<String>(names));
   }
 
   /**
    * Transform {@code metadata}.
    */
-  public void transform(Metadata metadata, Map<String, String> params)
-      throws TransformException {
+  public void transform(Metadata metadata, Map<String, String> params) {
     if (transformList.isEmpty()) {
       return;
     }
@@ -56,11 +57,13 @@ public class TransformPipeline {
     Map<String, String> paramsInTransit = Collections.checkedMap(
         new HashMap<String, String>(params), String.class, String.class);
 
-    for (DocumentTransform transform : transformList) {
+    for (int i = 0; i < transformList.size(); i++) {
+      DocumentTransform transform = transformList.get(i);
       try {
         transform.transform(metadataInTransit, paramsInTransit);
-      } catch (TransformException e) {
-        throw new TransformException("Aborting " + transform.getName(), e);
+      } catch (RuntimeException e) {
+        throw new RuntimeException(
+            "Exception during transform " + names.get(i), e);
       }
     }
 
@@ -74,5 +77,9 @@ public class TransformPipeline {
    */
   public List<DocumentTransform> getDocumentTransforms() {
     return transformList;
+  }
+
+  public List<String> getNames() {
+    return names;
   }
 }

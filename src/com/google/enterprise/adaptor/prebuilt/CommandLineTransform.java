@@ -16,10 +16,9 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static java.util.AbstractMap.SimpleEntry;
 
-import com.google.enterprise.adaptor.AbstractDocumentTransform;
+import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Metadata;
-import com.google.enterprise.adaptor.TransformException;
 
 import java.io.*;
 import java.nio.charset.Charset;
@@ -30,7 +29,7 @@ import java.util.logging.*;
  * A conduit that allows a simple way to create a document transform based on
  * a command line program.
  */
-public class CommandLineTransform extends AbstractDocumentTransform {
+public class CommandLineTransform implements DocumentTransform {
   private static final Logger log
       = Logger.getLogger(CommandLineTransform.class.getName());
   private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB
@@ -43,13 +42,12 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   public CommandLineTransform() {}
 
   /**
-   * Accepts keys {@code "cmd"}, {@code "workingDirectory"}, {@code "arg?"}, and
-   * any keys accepted by the super class. The {@code "arg?"} configuration
-   * values should be numerically increasing starting from one: {@code "arg1"},
-   * {@code "arg2"}, {@code "arg3}, ...
+   * Accepts keys {@code "cmd"}, {@code "workingDirectory"}, and {@code "arg?"}.
+   * The {@code "arg?"} configuration values should be numerically increasing
+   * starting from one: {@code "arg1"}, {@code "arg2"}, {@code "arg3}, ...
    */
-  protected void configure(Map<String, String> config) {
-    super.configure(config);
+  public static CommandLineTransform create(Map<String, String> config) {
+    CommandLineTransform transform = new CommandLineTransform();
 
     List<String> cmdList = new ArrayList<String>();
     String cmd = config.get("cmd");
@@ -61,12 +59,12 @@ public class CommandLineTransform extends AbstractDocumentTransform {
 
     String workingDirectory = config.get("workingDirectory");
     if (workingDirectory != null) {
-      setWorkingDirectory(new File(workingDirectory));
+      transform.setWorkingDirectory(new File(workingDirectory));
     }
 
     String cmdAcceptsParameters = config.get("cmdAcceptsParameters");
     if (cmdAcceptsParameters != null) {
-      this.commandAcceptsParameters
+      transform.commandAcceptsParameters
           = Boolean.parseBoolean(cmdAcceptsParameters);
     }
 
@@ -77,12 +75,12 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       }
       cmdList.add(value);
     }
-    transformCommand = cmdList;
+    transform.transformCommand = cmdList;
+    return transform;
   }
 
   @Override
-  public void transform(Metadata metadata, Map<String, String> params)
-      throws TransformException {
+  public void transform(Metadata metadata, Map<String, String> params) {
     if (transformCommand == null) {
       throw new NullPointerException("transformCommand must not be null");
     }
@@ -106,7 +104,8 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       try {
         command.exec(commandLine, workingDirectory);
       } catch (InterruptedException ex) {
-        throw new TransformException(ex);
+        Thread.currentThread().interrupt();
+        throw new RuntimeException(ex);
       }
 
       int exitCode = command.getReturnCode();
@@ -114,7 +113,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
       // Handle stderr
       if (exitCode != 0) {
         String errorOutput = new String(command.getStderr(), charset);
-        throw new TransformException("Exit code " + exitCode + ". Stderr: "
+        throw new RuntimeException("Exit code " + exitCode + ". Stderr: "
                                      + errorOutput);
       }
 
@@ -129,7 +128,7 @@ public class CommandLineTransform extends AbstractDocumentTransform {
         params.putAll(readMapFromFile(paramsFile));
       }
     } catch (IOException ioe) {
-      throw new TransformException(ioe);
+      throw new RuntimeException(ioe);
     } finally {
       if (metadataFile != null) {
         metadataFile.delete();
@@ -141,20 +140,20 @@ public class CommandLineTransform extends AbstractDocumentTransform {
   }
 
   private File writeMapToTempFile(Map<String, String> map)
-      throws IOException, TransformException {
+      throws IOException {
     return writeIterableToTempFile(map.entrySet());
   }
 
   private File writeIterableToTempFile(Iterable<Map.Entry<String, String>> it)
-      throws IOException, TransformException {
+      throws IOException {
     StringBuilder sb = new StringBuilder();
     for (Map.Entry<String, String> me : it) {
       if (me.getKey().contains("\0")) {
-        throw new TransformException("Key cannot contain the null character: "
+        throw new RuntimeException("Key cannot contain the null character: "
                                      + me.getKey());
       }
       if (me.getValue().contains("\0")) {
-        throw new TransformException("Value for key '" + me.getKey()
+        throw new RuntimeException("Value for key '" + me.getKey()
             + "' cannot contain the null " + "character: " + me.getKey());
       }
       sb.append(me.getKey()).append('\0');
@@ -240,16 +239,5 @@ public class CommandLineTransform extends AbstractDocumentTransform {
    */
   public File getWorkingDirectory() {
     return workingDirectory;
-  }
-
-  @Override
-  public void setName(String name) {
-    super.setName(name);
-  }
-
-  public static CommandLineTransform create(Map<String, String> config) {
-    CommandLineTransform transform = new CommandLineTransform();
-    transform.configure(config);
-    return transform;
   }
 }

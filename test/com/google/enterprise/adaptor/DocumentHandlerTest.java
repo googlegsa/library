@@ -323,14 +323,15 @@ public class DocumentHandlerTest {
   public void testTransform() throws Exception {
     final String key = "testing key";
     List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new AbstractDocumentTransform() {
+    transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         metadata.set(key, metadata.getOneValue(key).toUpperCase());
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms);
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
