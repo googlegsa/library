@@ -35,14 +35,16 @@ class TransformPipeline {
     if (transforms.size() != names.size()) {
       throw new IllegalArgumentException("Transforms and names must be the same size");
     }
-    if (transforms.contains(null)) {
+    this.transformList = Collections.unmodifiableList(new ArrayList<DocumentTransform>(transforms));
+    this.names = Collections.unmodifiableList(new ArrayList<String>(names));
+    // Check for null after copying the lists because List.contains(null) is permitted to throw NPE
+    // whereas ArrayList is documented not to throw NPE.
+    if (transformList.contains(null)) {
       throw new NullPointerException("Transforms must not contain null values");
     }
     if (names.contains(null)) {
       throw new NullPointerException("Names must not contain null values");
     }
-    this.transformList = Collections.unmodifiableList(new ArrayList<DocumentTransform>(transforms));
-    this.names = Collections.unmodifiableList(new ArrayList<String>(names));
   }
 
   /**
