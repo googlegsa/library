@@ -23,9 +23,10 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
+import java.util.TreeSet;
 
 /** Test cases for {@link Metadata}. */
 public class MetadataTest {
@@ -72,6 +73,14 @@ public class MetadataTest {
     Metadata m = new Metadata();
     thrown.expect(NullPointerException.class);
     m.set("foo", (String) null);
+  }
+
+  @Test
+  public void testSetWithTreeSet() {
+    Metadata m = new Metadata();
+    // Previous versions would throw an NPE because TreeSet.contains(null)
+    // throws a NPE.
+    m.set("foo", new TreeSet<String>());
   }
 
   @Test

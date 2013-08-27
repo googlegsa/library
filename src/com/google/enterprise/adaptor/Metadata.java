@@ -22,7 +22,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
-import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
 
@@ -64,8 +63,12 @@ public class Metadata implements Iterable<Entry<String, String>> {
 
   /** Throws NullPointerException if a null is found. */
   private static void assureNoNulls(Set<String> items) {
-    if (items.contains(null)) {
-      throw new NullPointerException();
+    // Can't use items.contains(null) because Set is permitted to throw NPE in
+    // such a case.
+    for (String s : items) {
+      if (s == null) {
+        throw new NullPointerException();
+      }
     }
   }
 
