@@ -52,7 +52,7 @@ public class PrebuiltTransforms {
    */
   public static DocumentTransform copyMetadata(Map<String, String> config) {
     boolean overwrite = Boolean.parseBoolean(config.get("overwrite"));
-    List<String> copies = parseCopies(config);
+    List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
       log.warning("No entries listed to be copied");
     }
@@ -67,7 +67,7 @@ public class PrebuiltTransforms {
    */
   public static DocumentTransform moveMetadata(Map<String, String> config) {
     boolean overwrite = Boolean.parseBoolean(config.get("overwrite"));
-    List<String> copies = parseCopies(config);
+    List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
       log.warning("No entries listed to be moved");
     }
@@ -75,13 +75,40 @@ public class PrebuiltTransforms {
   }
 
   /**
-   * Returns interleaved source/destination pairs.
+   * Pairs of keys, with a src-key-name and destination-key-name.
+   * The sequence is in order the copies/moves should happen.
    */
-  private static List<String> parseCopies(Map<String, String> config) {
-    // We get all configuration items that are like "12.BLAH" (some integer
-    // followed by a dot and more text). The inner map's keys is the text that
-    // follows the dot (so "BLAH" in this case).
-    Map<Integer, Map<String, String>> intConfig
+  private static List<KeyPairing> parseCopies(Map<String, String> config) {
+    Map<Integer, Map<String, String>> allSubs = parseOrderedMaps(config);
+    List<KeyPairing> copies = new ArrayList<KeyPairing>(allSubs.size());
+    for (Map.Entry<Integer, Map<String, String>> instruction : allSubs.entrySet()) {
+      String from = instruction.getValue().get("from");
+      String to = instruction.getValue().get("to");
+      if (from == null || to == null) {
+        log.log(Level.FINE, "Ignoring int {0}. Missing .from or .to",
+            instruction.getKey());
+        continue;
+      }
+      KeyPairing kp = new KeyPairing(from, to);
+      copies.add(kp);
+      log.log(Level.FINE, "Found config to rename {0} to {1}",
+          new Object[] {from, to});
+    }
+    return copies;
+  }
+
+  /**
+   * Splits configurations that start with number and period into
+   * their own maps.
+   * <p>
+   * For example we get all configuration items that are like "12.BLAH"
+   * (some integer followed by a dot and more text). The inner map's keys
+   * are the text strings that follow the dot (so "BLAH" would be a key in 
+   * this case).
+   */
+  private static Map<Integer, Map<String, String>>
+      parseOrderedMaps(Map<String, String> config) {
+    Map<Integer, Map<String, String>> numberedConfigs
         = new TreeMap<Integer, Map<String, String>>();
     for (Map.Entry<String, String> me : config.entrySet()) {
       String[] parts = me.getKey().split("\\.", 2);
@@ -97,70 +124,50 @@ public class PrebuiltTransforms {
         continue;
       }
       int i = Integer.parseInt(parts[0]);
-      Map<String, String> values = intConfig.get(i);
+      Map<String, String> values = numberedConfigs.get(i);
       if (values == null) {
         values = new HashMap<String, String>();
-        intConfig.put(i, values);
+        numberedConfigs.put(i, values);
       }
       values.put(parts[1], me.getValue());
     }
-
-    // Now do the real processing of the config.
-    List<String> copies = new ArrayList<String>(intConfig.size() * 2);
-    for (Map.Entry<Integer, Map<String, String>> me : intConfig.entrySet()) {
-      String from = me.getValue().get("from");
-      String to = me.getValue().get("to");
-      if (from == null || to == null) {
-        log.log(Level.FINE, "Ignoring int {0}. Missing .from or .to",
-            me.getKey());
-        continue;
-      }
-      copies.add(from);
-      copies.add(to);
-      log.log(Level.FINE, "Found config to rename {0} to {1}",
-          new Object[] {from, to});
-    }
-    return copies;
+    return numberedConfigs;
   }
 
   private static class CopyTransform implements DocumentTransform {
-    private final List<String> copies;
+    private final List<KeyPairing> copies;
     private final boolean overwrite;
     private final boolean move;
 
-    private CopyTransform(List<String> copies, boolean overwrite,
+    private CopyTransform(List<KeyPairing> copies, boolean overwrite,
         boolean move) {
-      if ((copies.size() % 2) != 0) {
-        throw new AssertionError();
-      }
-      this.copies = Collections.unmodifiableList(new ArrayList<String>(copies));
+      this.copies = Collections.unmodifiableList(
+          new ArrayList<KeyPairing>(copies));
       this.overwrite = overwrite;
       this.move = move;
     }
 
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
-      for (int i = 0; i < copies.size(); i += 2) {
-        String from = copies.get(i);
-        String to = copies.get(i + 1);
-        Set<String> values = metadata.getAllValues(from);
+      for (KeyPairing kp : copies) {
+        Set<String> values = metadata.getAllValues(kp.src);
         if (values.isEmpty()) {
-          log.log(Level.FINE, "No values for {0}. Skipping", from);
+          log.log(Level.FINE, "No values for {0}. Skipping", kp.src);
           continue;
         }
         log.log(Level.FINE, "Copying values from {0} to {1}: {2}",
-            new Object[] {from, to, values});
-        Set<String> destValues = metadata.getAllValues(to);
+            new Object[] {kp.src, kp.dest, values});
+        Set<String> destValues = metadata.getAllValues(kp.dest);
         if (!overwrite && !destValues.isEmpty()) {
           values = new HashSet<String>(values);
           log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
-              new Object[] {to, destValues});
+              new Object[] {kp.dest, destValues});
           values.addAll(destValues);
         }
-        metadata.set(to, values);
+        metadata.set(kp.dest, values);
         if (move) {
-          log.log(Level.FINER, "Deleting source {0}", from);
-          metadata.set(from, Collections.<String>emptySet());
+          log.log(Level.FINER, "Deleting source {0}", kp.src);
+          metadata.set(kp.src, Collections.<String>emptySet());
         }
       }
     }
@@ -169,6 +176,24 @@ public class PrebuiltTransforms {
     public String toString() {
       return "CopyTransform(copies=" + copies + ",overwrite=" + overwrite
           + ",move=" + move + ")";
+    }
+  }
+
+  /** Contains source and destination metadata key. */
+  private static class KeyPairing {
+    private final String src;
+    private final String dest;
+
+    KeyPairing(String from, String to) {
+      if (null == from || null == to) {
+        throw new NullPointerException();
+      } 
+      src = from;
+      dest = to;
+    }
+
+    public String toString() {
+      return "KeyPairing(from=" + src + ",to=" + dest + ")";
     }
   }
 
