@@ -239,6 +239,8 @@ public final class GsaCommunicationHandler {
     // the case after a power failure).
     while (true) {
       try {
+        String adaptorType = adaptor.getClass().getName();
+        log.log(Level.INFO, "about to init {0}", adaptorType); 
         adaptor.init(new AdaptorContextImpl());
         break;
       } catch (InterruptedException ex) {
