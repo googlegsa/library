@@ -26,6 +26,7 @@ import java.util.TreeMap;
  */
 class StatRpcMethod implements RpcHandler.RpcMethod {
   private String adaptorVersion = null;
+  private String adaptorType;
   private Journal journal;
   private boolean isAdaptorIncremental;
 
@@ -38,6 +39,7 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
     if (adaptorClass.getPackage() != null) {
       adaptorVersion = adaptorClass.getPackage().getImplementationVersion();
     }
+    adaptorType = adaptorClass.getSimpleName();
   }
 
   @Override
@@ -79,10 +81,9 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
       Map<String, Object> versionMap = new TreeMap<String, Object>();
 
       versionMap.put("versionJvm", System.getProperty("java.version"));
-      versionMap.put("versionAdaptorLibrary",
-                     getAdaptorLibraryVersion(locale));
-      versionMap.put("versionAdaptor",
-                     getAdaptorVersion(locale));
+      versionMap.put("versionAdaptorLibrary", getAdaptorLibraryVersion(locale));
+      versionMap.put("typeAdaptor", adaptorType);
+      versionMap.put("versionAdaptor", getAdaptorVersion(locale));
 
       map.put("versionStats", versionMap);
     }

@@ -101,6 +101,7 @@ function getStatsCallback(result, error) {
 
   $('#version-jvm').text(data.versionStats.versionJvm);
   $('#version-adaptor-library').text(data.versionStats.versionAdaptorLibrary);
+  $('#type-adaptor').text(data.versionStats.typeAdaptor);
   $('#version-adaptor').text(data.versionStats.versionAdaptor);
 
   $('#gaf-incremental-feed-push').attr(

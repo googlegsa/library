@@ -54,6 +54,7 @@ public class StatRpcMethodTest {
       versionMap.put("versionJvm", System.getProperty("java.version"));
       versionMap.put("versionAdaptorLibrary",
                      Translation.STATS_VERSION_UNKNOWN.toString(locale));
+      versionMap.put("typeAdaptor", AdaptorMock.class.getSimpleName());
       versionMap.put("versionAdaptor",
                      Translation.STATS_VERSION_UNKNOWN.toString(locale));
 
