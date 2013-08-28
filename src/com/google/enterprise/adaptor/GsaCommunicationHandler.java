@@ -308,7 +308,7 @@ public final class GsaCommunicationHandler {
         samlServiceProvider, createTransformPipeline(),
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
-        config.sendDocControlsHeader(),
+        config.doesGsaAcceptDocControlsHeader(),
         config.getAdaptorDocHeaderTimeoutMillis(),
         config.getAdaptorDocContentTimeoutMillis(),
         config.getScoringType());

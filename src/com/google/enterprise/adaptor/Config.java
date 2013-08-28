@@ -32,7 +32,7 @@ import java.util.logging.*;
  * <table>
  * <tr><td align=center><b>required?</b></td>
  *     <td><b>name</b></td><td><b>meaning</b></td>
- * <tr><td> </td><td>adaptor.sendDocControlsHeader </td><td>use 
+ * <tr><td> </td><td>gsa.acceptsDocControlsHeader </td><td>use 
  *      X-Gsa-Doc-Controls HTTP header with namespaced ACLs.
  *      Otherwise ACLs are sent without namespace and as metadata.
  *      Defaults to false
@@ -210,7 +210,7 @@ public class Config {
     addKey("adaptor.docHeaderTimeoutSecs", "30");
     addKey("transform.pipeline", "");
     addKey("journal.reducedMem", "true");
-    addKey("adaptor.sendDocControlsHeader", "false");
+    addKey("gsa.acceptsDocControlsHeader", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -365,8 +365,8 @@ public class Config {
     return Boolean.parseBoolean(getValue("server.useCompression"));
   }
 
-  boolean sendDocControlsHeader() {
-    return Boolean.parseBoolean(getValue("adaptor.sendDocControlsHeader"));
+  boolean doesGsaAcceptDocControlsHeader() {
+    return Boolean.parseBoolean(getValue("gsa.acceptsDocControlsHeader"));
   }
 
   /**
