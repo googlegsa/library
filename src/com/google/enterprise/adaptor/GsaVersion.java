@@ -14,18 +14,20 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /** Acquires and provides GSA's version. */
 final class GsaVersion {
+  private static final Logger log
+      = Logger.getLogger(GsaVersion.class.getName());
   private static final Charset charset = Charset.forName("UTF-8");
 
   private String ver;  // example: 7.2.1-1
@@ -34,7 +36,6 @@ final class GsaVersion {
   private static final Pattern VERSION_FORMAT
       = Pattern.compile("^(\\d+)\\.(\\d+)\\.(\\d+)\\-(\\d+)$");
  
-  @VisibleForTesting 
   GsaVersion(String version) {
     ver = version;
     Matcher m = VERSION_FORMAT.matcher(ver);
@@ -49,10 +50,12 @@ final class GsaVersion {
 
   /* Requsts entire detailed version string and returns it. */
   static GsaVersion get(String host) throws IOException {
-    URL url = new URL("http", host, "sw_version.txt");
+    URL url = new URL("http", host, "/sw_version.txt");
+    log.log(Level.FINE, "about to ask GSA for {0}", url);
     URLConnection conn = url.openConnection();
     InputStream in = conn.getInputStream();
     String ver = IOHelper.readInputStreamToString(in, charset);
+    ver = ver.replaceAll("\\s","");
     return new GsaVersion(ver);
   }
 

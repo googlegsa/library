@@ -29,7 +29,8 @@ import java.nio.charset.Charset;
 public class DaemonTest {
   private String[] arguments = new String[] {
       SingleDocAdaptor.class.getName(), "-Dgsa.hostname=localhost",
-      "-Dserver.port=0", "-Dserver.dashboardPort=0"};
+      "-Dserver.port=0", "-Dserver.dashboardPort=0",
+      "-Dgsa.version=7.2.0-0"};
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();

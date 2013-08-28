@@ -35,7 +35,9 @@ import java.util.logging.*;
  * <tr><td> </td><td>gsa.acceptsDocControlsHeader </td><td>use 
  *      X-Gsa-Doc-Controls HTTP header with namespaced ACLs.
  *      Otherwise ACLs are sent without namespace and as metadata.
- *      Defaults to false
+ *      If not set, then an attempt to compute from gsa.version is made.
+ *      Defaults to true for 7.2.0-0 and later, and false for earlier,
+ *      as defined by gsa.version.
  * <tr><td> </td><td>adaptor.fullListingSchedule </td><td> when to invoke 
  *     {@link Adaptor#getDocIds Adaptor.getDocIds}, in cron format (minute,
  *     hour,  day of month, month, day of week).  Defaults to 0 3 * * *
@@ -63,6 +65,9 @@ import java.util.logging.*;
  *     if not provided
  * <tr><td> </td><td>feed.noRecrawlBitEnabled </td><td> send bit telling
  *     GSA to crawl your documents only once.  Defaults to  false
+ * <tr><td> </td><td>gsa.version </td><td> version number used to configure
+ *     expected GSA features.  Defaults to acquiring from GSA.
+ *     Uses 7.0.14-114 if acquiring fails.
  * <tr><td> </td><td>gsa.614FeedWorkaroundEnabled </td><td> enable detour
  *     around particular feed parsing failure found in GSA version 6.14 .
  *     Defaults to false
@@ -182,6 +187,7 @@ public class Config {
     addKey("server.samlEntityId", "http://google.com/enterprise/gsa/adaptor");
     addKey("gsa.hostname", null);
     addKey("gsa.characterEncoding", "UTF-8");
+    addKey("gsa.version", "GENERATE");
     addKey("gsa.614FeedWorkaroundEnabled", "false");
     addKey("gsa.70AuthMethodWorkaroundEnabled", "false");
     addKey("gsa.samlEntityId",
@@ -210,7 +216,24 @@ public class Config {
     addKey("adaptor.docHeaderTimeoutSecs", "30");
     addKey("transform.pipeline", "");
     addKey("journal.reducedMem", "true");
-    addKey("gsa.acceptsDocControlsHeader", "false");
+    addKey("gsa.acceptsDocControlsHeader", "GENERATE", new ValueComputer() {
+          public String compute(String rawValue) {
+            if (!"GENERATE".equals(rawValue)) {
+              log.log(Level.FINE,
+                  "returning raw gsa.acceptsDocControlsHeader: {0}", rawValue);
+              return rawValue;
+            }
+            String ver = getValue("gsa.version");
+            if ("GENERATE".equals(ver)) {
+              throw new IllegalStateException("gsa.version not yet available");
+            } else {
+              boolean computed = new GsaVersion(ver).isAtLeast("7.2.0-0");
+              log.log(Level.FINE,
+                  "gsa.acceptsDocControlsHeader computed {0}", computed);
+              return "" + computed;
+            }
+          }
+        });
   }
 
   public Set<String> getAllKeys() {
@@ -501,6 +524,10 @@ public class Config {
   /** Provides the character encoding the GSA prefers. */
   Charset getGsaCharacterEncoding() {
     return Charset.forName(getValue("gsa.characterEncoding"));
+  }
+
+  String getGsaVersion() {
+    return getValue("gsa.version");
   }
 
   boolean isGsa614FeedWorkaroundEnabled() {

@@ -60,6 +60,7 @@ public class GsaCommunicationHandlerTest {
     config.setValue("server.dashboardPort", "0");
     // As hard-coded in MockHttpExchange
     config.setValue("server.fullAccessHosts", "127.0.0.3");
+    config.setValue("gsa.version", "7.2.0-0");
     gsa = new GsaCommunicationHandler(adaptor, config);
   }
 

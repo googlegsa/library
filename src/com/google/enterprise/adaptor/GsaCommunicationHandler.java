@@ -239,6 +239,7 @@ public final class GsaCommunicationHandler {
     // the case after a power failure).
     while (true) {
       try {
+        tryToPutVersionIntoConfig();
         String adaptorType = adaptor.getClass().getName();
         log.log(Level.INFO, "about to init {0}", adaptorType); 
         adaptor.init(new AdaptorContextImpl());
@@ -348,6 +349,23 @@ public final class GsaCommunicationHandler {
     dashboard.start(dashboardServer, contextPrefix);
 
     shuttingDownLatch = null;
+  }
+   
+  private void tryToPutVersionIntoConfig() throws IOException { 
+    try {
+      if ("GENERATE".equals(config.getGsaVersion())) {  // is not set
+        GsaVersion ver = GsaVersion.get(config.getGsaHostname());
+        config.overrideKey("gsa.version", "" + ver);
+      }
+    } catch (FileNotFoundException fne) {
+      // we're talking to an older GSA that cannot tell us its version.
+      log.log(Level.FINE, "gsa didn't provide version", fne);
+      config.setValue("gsa.version", "7.0.14-114");
+    } catch (IllegalArgumentException iae) {
+      // we're talking to a GSA whose version we don't understand 
+      log.log(Level.FINE, "gsa provided incomprehensible version", iae);
+      config.setValue("gsa.version", "7.0.14-114");
+    } // other IOException propagates out
   }
 
   private TransformPipeline createTransformPipeline() {

@@ -41,6 +41,7 @@ public class ApplicationTest {
     // Let the OS choose the port
     config.setValue("server.port", "0");
     config.setValue("server.dashboardPort", "0");
+    config.setValue("gsa.version", "7.2.0-6");
     app = new Application(adaptor, config);
   }
 
