@@ -73,6 +73,9 @@ class LoggingFilter extends Filter {
 
   @VisibleForTesting
   String getLoggableHeaders(Headers headers) {
+    if (headers.isEmpty()) {
+      return "";
+    }
     StringBuilder sb = new StringBuilder();
     for (Map.Entry<String, List<String>> me : headers.entrySet()) {
       for (String value : me.getValue()) {
