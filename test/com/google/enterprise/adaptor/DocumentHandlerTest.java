@@ -1322,6 +1322,10 @@ public class DocumentHandlerTest {
   }
 
   private static class MockSamlServiceProvider extends SamlServiceProvider {
+    static {
+      GsaCommunicationHandler.bootstrapOpenSaml();
+    }
+
     private AuthnIdentity identity;
 
     public MockSamlServiceProvider() {
