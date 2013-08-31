@@ -360,6 +360,14 @@ class DocumentHandler implements HttpHandler {
     }
     if (null != acl.getInheritFrom()) {
       URI from = enc.encodeDocId(acl.getInheritFrom());
+      try {
+        // Although it is named "fragment", we use a query parameter because the
+        // GSA "normalizes" away fragments.
+        from = new URI(from.getScheme(), from.getAuthority(), from.getPath(),
+            acl.getInheritFromFragment(), null);
+      } catch (URISyntaxException ex) {
+        throw new AssertionError(ex);
+      }
       gsaAcl.put("inherit_from", "" + from);
     }
     if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {

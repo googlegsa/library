@@ -902,6 +902,15 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testFormNamespacedAclHeaderFragment() {
+    DocIdEncoder enc = new MockDocIdCodec();
+    String golden = "{\"inherit_from\":\"http:\\/\\/localhost\\/t?f?=$%25\"}";
+    String aclHeader = DocumentHandler.formNamespacedAclHeader(new Acl.Builder()
+        .setInheritFrom(new DocId("t"), "f?=$%").build(), enc);
+    assertEquals(golden, aclHeader);
+  }
+
+  @Test
   public void testFormNamespacedAclHeaderBusy() {
     DocIdEncoder enc = new MockDocIdCodec();
     String golden = "{"
