@@ -81,12 +81,17 @@ public class PrebuiltTransforms {
   private static List<KeyPairing> parseCopies(Map<String, String> config) {
     Map<Integer, Map<String, String>> allSubs = parseOrderedMaps(config);
     List<KeyPairing> copies = new ArrayList<KeyPairing>(allSubs.size());
-    for (Map.Entry<Integer, Map<String, String>> instruction : allSubs.entrySet()) {
+    for (Map.Entry<Integer, Map<String, String>> instruction
+        : allSubs.entrySet()) {
       String from = instruction.getValue().get("from");
       String to = instruction.getValue().get("to");
       if (from == null || to == null) {
         log.log(Level.FINE, "Ignoring int {0}. Missing .from or .to",
             instruction.getKey());
+        continue;
+      }
+      if (from.equals(to)) {
+        log.log(Level.WARNING, "removing no-op: {0}", from);
         continue;
       }
       KeyPairing kp = new KeyPairing(from, to);

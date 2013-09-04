@@ -263,4 +263,42 @@ public class PrebuiltTransformsTest {
     thrown.expect(IllegalArgumentException.class);
     DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
   }
+
+  @Test
+  public void testDegenerateMove() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("1.from", "color");
+    config.put("1.to", "color");
+    config = Collections.unmodifiableMap(config);
+    DocumentTransform transform = PrebuiltTransforms.moveMetadata(config);
+    final Metadata metadataGolden;
+    {
+      Metadata golden = new Metadata();
+      golden.add("color", "black");
+      metadataGolden = golden.unmodifiableView();
+    }
+    Metadata metadata = new Metadata();
+    metadata.add("color", "black");
+    transform.transform(metadata, new HashMap<String, String>());
+    assertEquals(metadataGolden, metadata);
+  }
+
+  @Test
+  public void testDegenerateCopy() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("1.from", "color");
+    config.put("1.to", "color");
+    config = Collections.unmodifiableMap(config);
+    DocumentTransform transform = PrebuiltTransforms.copyMetadata(config);
+    final Metadata metadataGolden;
+    {
+      Metadata golden = new Metadata();
+      golden.add("color", "black");
+      metadataGolden = golden.unmodifiableView();
+    }
+    Metadata metadata = new Metadata();
+    metadata.add("color", "black");
+    transform.transform(metadata, new HashMap<String, String>());
+    assertEquals(metadataGolden, metadata);
+  }
 }
