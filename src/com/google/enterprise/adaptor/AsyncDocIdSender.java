@@ -74,13 +74,13 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
   private class WorkerRunnable implements Runnable {
     @Override
     public void run() {
-      List<DocIdSender.Item> list = new ArrayList<DocIdSender.Item>();
+      Set<DocIdSender.Item> items = new LinkedHashSet<DocIdSender.Item>();
       try {
         while (true) {
           BlockingQueueBatcher.take(
-              queue, list, maxBatchSize, maxLatency, maxLatencyUnit);
-          itemPusher.pushItems(list.iterator(), null);
-          list.clear();
+              queue, items, maxBatchSize, maxLatency, maxLatencyUnit);
+          itemPusher.pushItems(items.iterator(), null);
+          items.clear();
         }
       } catch (InterruptedException ex) {
         log.log(Level.FINE, "AsyncDocIdSender worker shutting down", ex);
@@ -90,8 +90,8 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
           // If we were interrupted between calls to take(), then take() may
           // have interrupted itself before draining the queue; might as well
           // send everything that was put on the queue.
-          queue.drainTo(list);
-          itemPusher.pushItems(list.iterator(),
+          queue.drainTo(items);
+          itemPusher.pushItems(items.iterator(),
               ExceptionHandlers.noRetryHandler());
         } catch (InterruptedException ex2) {
           // Ignore, because we are going to interrupt anyway. This should
