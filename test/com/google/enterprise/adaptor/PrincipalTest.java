@@ -16,6 +16,9 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
+import com.google.enterprise.adaptor.Principal.DomainFormat;
+import com.google.enterprise.adaptor.Principal.ParsedPrincipal;
+
 import org.junit.*;
 import org.junit.rules.ExpectedException;
 
@@ -161,5 +164,137 @@ public class PrincipalTest {
        Collections.sort(dup);
        assertEquals(sorted, dup);
      }
+  }
+
+  @Test
+  public void testPrincipalParse() {
+    assertEquals(
+        new ParsedPrincipal(false, "user", "", DomainFormat.NONE, "Default"),
+        new UserPrincipal("user").parse());
+    assertEquals(new ParsedPrincipal(false, "user", "example.com",
+          DomainFormat.DNS, "somens"),
+        new UserPrincipal("user@example.com", "somens").parse());
+    assertEquals(new ParsedPrincipal(false, "usr", "EXAMPLE",
+          DomainFormat.NETBIOS, "Default"),
+        new UserPrincipal("EXAMPLE\\usr").parse());
+    assertEquals(new ParsedPrincipal(true, "grp", "EXAMPLE.COM",
+          DomainFormat.NETBIOS_FORWARDSLASH, "Default"),
+        new GroupPrincipal("EXAMPLE.COM/grp").parse());
+  }
+
+  @Test
+  public void testParsedPrincipalRoundtrip() {
+    // All principals should round-trip back to an identical principal.
+    List<Principal> golden = Arrays.asList(
+        new UserPrincipal("user"),
+        new UserPrincipal("user@example.com", "ns1"),
+        new UserPrincipal("EXAMPLE.COM\\user", "ns2"),
+        new UserPrincipal("EXAMPLE.COM/user"),
+        new GroupPrincipal("group1"),
+        new GroupPrincipal("group@example.com"),
+        new GroupPrincipal("\\group"),
+        new GroupPrincipal("domain\\"),
+        new GroupPrincipal("/group"),
+        new GroupPrincipal("domain/"),
+        new GroupPrincipal("@domain"),
+        new GroupPrincipal("group@"),
+        new GroupPrincipal("domain\\group@/\\extra"),
+        new GroupPrincipal("domain/group@/\\extra"),
+        new GroupPrincipal("group@domain@/\\extra"));
+    for (Principal p : golden) {
+      assertEquals(p, p.parse().toPrincipal());
+    }
+  }
+
+  @Test
+  public void testParsedPrincipalToPrincipal() {
+    assertEquals(new UserPrincipal("a", "ns"),
+        new ParsedPrincipal(false, "a", "", DomainFormat.NONE, "ns")
+          .toPrincipal());
+    assertEquals(new UserPrincipal("a@", "ns"),
+        new ParsedPrincipal(false, "a", "", DomainFormat.DNS, "ns")
+          .toPrincipal());
+    assertEquals(new UserPrincipal("DOMAIN\\a", "ns"),
+        new ParsedPrincipal(false, "a", "DOMAIN", DomainFormat.NONE, "ns")
+          .toPrincipal());
+    assertEquals(new UserPrincipal("a@DOM\\AIN", "ns"),
+        new ParsedPrincipal(false, "a", "DOM\\AIN", DomainFormat.NETBIOS, "ns")
+          .toPrincipal());
+    assertEquals(new UserPrincipal("domain.com\\a@", "ns"),
+        new ParsedPrincipal(false, "a@", "domain.com", DomainFormat.DNS, "ns")
+          .toPrincipal());
+    assertEquals(new UserPrincipal("domain.com\\a/", "ns"),
+        new ParsedPrincipal(false, "a/", "domain.com", DomainFormat.DNS, "ns")
+          .toPrincipal());
+  }
+
+  @Test(expected = IllegalStateException.class)
+  public void testParsedPrincipalToPrincipalFail() {
+    new ParsedPrincipal(false, "a/", "domain@com", DomainFormat.DNS, "ns")
+        .toPrincipal();
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testParsedPrincipalNullPlainName() {
+    new ParsedPrincipal(false, null, "b", DomainFormat.DNS, "c");
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testParsedPrincipalNullDomain() {
+    new ParsedPrincipal(false, "a", null, DomainFormat.DNS, "c");
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testParsedPrincipalNullDomainFormat() {
+    new ParsedPrincipal(false, "a", "b", null, "c");
+  }
+
+  @Test(expected = NullPointerException.class)
+  public void testParsedPrincipalNullNamespace() {
+    new ParsedPrincipal(false, "a", "b", DomainFormat.DNS, null);
+  }
+
+  @Test
+  public void testParsedPrincipalEquals() {
+    ParsedPrincipal p1 = new ParsedPrincipal(false, "a", "b", DomainFormat.DNS,
+        "c");
+    ParsedPrincipal p2 = new ParsedPrincipal(false, new String("a"),
+        new String("b"), DomainFormat.DNS, new String("c"));
+    assertEquals(p1, p2);
+    assertEquals(p1.hashCode(), p2.hashCode());
+
+    assertFalse(p1.equals(new Object()));
+    assertFalse(p1.equals(new ParsedPrincipal(true, "a", "b", DomainFormat.DNS,
+        "c")));
+    assertFalse(p1.equals(new ParsedPrincipal(false, "z", "b", DomainFormat.DNS,
+        "c")));
+    assertFalse(p1.equals(new ParsedPrincipal(false, "a", "z", DomainFormat.DNS,
+        "c")));
+    assertFalse(p1.equals(new ParsedPrincipal(false, "a", "b",
+        DomainFormat.NONE, "c")));
+    assertFalse(p1.equals(new ParsedPrincipal(false, "a", "b", DomainFormat.DNS,
+        "z")));
+  }
+
+  @Test
+  public void testParsedPrincipalToString() {
+    assertEquals("ParsedPrincipal(isGroup=true,plainName=a,domain=b,"
+          + "domainFormat=NETBIOS,namespace=ns)",
+        new ParsedPrincipal(true, "a", "b", DomainFormat.NETBIOS, "ns")
+          .toString());
+  }
+
+  @Test
+  public void testParsedPrincipalSetters() {
+    ParsedPrincipal p
+        = new ParsedPrincipal(false, "a", "b", DomainFormat.DNS, "c");
+    assertEquals(new ParsedPrincipal(false, "z", "b", DomainFormat.DNS, "c"),
+        p.plainName("z"));
+    assertEquals(new ParsedPrincipal(false, "a", "z", DomainFormat.DNS, "c"),
+        p.domain("z"));
+    assertEquals(new ParsedPrincipal(false, "a", "b", DomainFormat.NONE, "c"),
+        p.domainFormat(DomainFormat.NONE));
+    assertEquals(new ParsedPrincipal(false, "a", "b", DomainFormat.DNS, "z"),
+        p.namespace("z"));
   }
 }

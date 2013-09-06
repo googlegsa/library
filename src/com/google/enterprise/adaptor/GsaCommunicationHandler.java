@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.sun.net.httpserver.Filter;
@@ -308,7 +309,7 @@ public final class GsaCommunicationHandler {
         docIdCodec, docIdCodec, journal, adaptor, authzAuthority,
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
-        samlServiceProvider, createTransformPipeline(),
+        samlServiceProvider, createTransformPipeline(), createAclTransform(),
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
         config.doesGsaAcceptDocControlsHeader(),
@@ -372,6 +373,7 @@ public final class GsaCommunicationHandler {
     return createTransformPipeline(config.getTransformPipelineSpec());
   }
 
+  @VisibleForTesting
   static TransformPipeline createTransformPipeline(
       List<Map<String, String>> pipelineConfig) {
     List<DocumentTransform> elements = new LinkedList<DocumentTransform>();
@@ -425,6 +427,93 @@ public final class GsaCommunicationHandler {
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.
     return elements.size() > 0 ? new TransformPipeline(elements, names) : null;
+  }
+
+  private AclTransform createAclTransform() {
+    return createAclTransform(config.getValuesWithPrefix("transform.acl."));
+  }
+
+  @VisibleForTesting
+  static AclTransform createAclTransform(Map<String, String> aclConfigRaw) {
+    Map<Integer, String> aclConfig = new TreeMap<Integer, String>();
+    for (Map.Entry<String, String> me : aclConfigRaw.entrySet()) {
+      try {
+        aclConfig.put(Integer.parseInt(me.getKey()), me.getValue());
+      } catch (NumberFormatException ex) {
+        // Don't insert into map.
+        log.log(Level.FINE, "Ignorning transform.acl.{0} because {0} is not an "
+            + "integer", me.getKey());
+      }
+    }
+
+    List<AclTransform.Rule> rules = new LinkedList<AclTransform.Rule>();
+    for (String value : aclConfig.values()) {
+      String[] parts = value.split(";", 2);
+      if (parts.length != 2) {
+        log.log(Level.WARNING, "Could not find semicolon in acl transform: {0}",
+            value);
+        continue;
+      }
+      AclTransform.MatchData search = parseAclTransformMatchData(parts[0]);
+      AclTransform.MatchData replace = parseAclTransformMatchData(parts[1]);
+      if (search == null || replace == null) {
+        log.log(Level.WARNING,
+            "Could not parse acl transform rule: {0}", value);
+        continue;
+      }
+      if (replace.isGroup != null) {
+        log.log(Level.WARNING,
+            "Replacement cannot change type. Failed in rule: {0}", value);
+        continue;
+      }
+      rules.add(new AclTransform.Rule(search, replace));
+    }
+    return new AclTransform(rules);
+  }
+
+  private static AclTransform.MatchData parseAclTransformMatchData(String s) {
+    String[] decls = s.split(",", -1);
+    if (decls.length == 1 && decls[0].trim().equals("")) {
+      // No declarations are required
+      return new AclTransform.MatchData(null, null, null, null);
+    }
+    Boolean isGroup = null;
+    String name = null;
+    String domain = null;
+    String namespace = null;
+    for (String decl : decls) {
+      String parts[] = decl.split("=", 2);
+      if (parts.length != 2) {
+        log.log(Level.WARNING,
+            "Could not find \"=\" in \"{0}\" as part of \"{1}\"",
+            new Object[] {decl, s});
+        return null;
+      }
+      String key = parts[0].trim();
+      String value = parts[1];
+      if (key.equals("type")) {
+        if (value.equals("group")) {
+          isGroup = true;
+        } else if (value.equals("user")) {
+          isGroup = false;
+        } else {
+          log.log(Level.WARNING, "Unknown type \"{0}\" as part of \"{1}\"",
+              new Object[] {value, s});
+          return null;
+        }
+      } else if (key.equals("name")) {
+        name = value;
+      } else if (key.equals("domain")) {
+        domain = value;
+      } else if (key.equals("namespace")) {
+        namespace = value;
+      } else {
+        log.log(Level.WARNING, "Unknown key \"{0}\" as part of \"{1}\"",
+            new Object[] {key, s});
+        return null;
+      }
+    }
+    return new AclTransform.MatchData(isGroup, name, domain, namespace);
   }
 
   /**

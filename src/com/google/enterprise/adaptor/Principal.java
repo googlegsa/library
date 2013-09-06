@@ -95,4 +95,168 @@ public abstract class Principal implements Comparable<Principal> {
 
     return name.compareTo(other.name);
   }
+
+  ParsedPrincipal parse() {
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      switch (c) {
+        case '\\':
+          return new ParsedPrincipal(isGroup(), name.substring(i + 1),
+              name.substring(0, i), DomainFormat.NETBIOS, namespace);
+        case '/':
+          return new ParsedPrincipal(isGroup(), name.substring(i + 1),
+              name.substring(0, i), DomainFormat.NETBIOS_FORWARDSLASH,
+              namespace);
+        case '@':
+          return new ParsedPrincipal(isGroup(), name.substring(0, i),
+              name.substring(i + 1), DomainFormat.DNS, namespace);
+        default:
+      }
+    }
+    return new ParsedPrincipal(isGroup(), name, "", DomainFormat.NONE,
+        namespace);
+  }
+
+  static enum DomainFormat {
+    NONE,
+    DNS,
+    NETBIOS,
+    /**
+     * Same as NETBIOS, but a forward slash is used instead of a backslash. This
+     * is to support round-tripping all Principals; if you don't modify the
+     * ParsedPrincipal, you shouldn't see any modifications.
+     */
+    NETBIOS_FORWARDSLASH,
+    ;
+  }
+
+  /**
+   * Immutable form of Principal where user's name has been split into name and
+   * domain components. This class guarantees full fidelity of Principal
+   * objects: {@code principal.equals(principal.parse().toPrincipal())} is
+   * always {@code true}.
+   */
+  static class ParsedPrincipal<T extends Principal> {
+    public final boolean isGroup;
+    public final String plainName;
+    public final String domain;
+    public final DomainFormat domainFormat;
+    public final String namespace;
+
+    public ParsedPrincipal(boolean isGroup, String plainName, String domain,
+        DomainFormat domainFormat, String namespace) {
+      if (plainName == null || domain == null || domainFormat == null
+          || namespace == null) {
+        throw new NullPointerException();
+      }
+      this.isGroup = isGroup;
+      this.plainName = plainName;
+      this.domain = domain;
+      this.domainFormat = domainFormat;
+      this.namespace = namespace;
+    }
+
+    public ParsedPrincipal plainName(String plainName) {
+      return new ParsedPrincipal(isGroup, plainName, domain, domainFormat,
+          namespace);
+    }
+
+    public ParsedPrincipal domain(String domain) {
+      return new ParsedPrincipal(isGroup, plainName, domain, domainFormat,
+          namespace);
+    }
+
+    public ParsedPrincipal domainFormat(DomainFormat domainFormat) {
+      return new ParsedPrincipal(isGroup, plainName, domain, domainFormat,
+          namespace);
+    }
+
+    public ParsedPrincipal namespace(String namespace) {
+      return new ParsedPrincipal(isGroup, plainName, domain, domainFormat,
+          namespace);
+    }
+
+    /**
+     * Determine the format that should be used for combining the name and
+     * domain together. This does not simply return domainFormat, because it
+     * needs to make sure that using such a format will not cause ambiguities.
+     */
+    private DomainFormat determineEffectiveFormat() {
+      DomainFormat format = domainFormat;
+      if (domain.equals("")) {
+        return format;
+      }
+
+      // Domain handling
+      if (format == DomainFormat.NONE) {
+        format = DomainFormat.NETBIOS;
+      }
+      if ((format == DomainFormat.NETBIOS
+            || format == DomainFormat.NETBIOS_FORWARDSLASH)
+          && containsSpecial(domain)) {
+        format = DomainFormat.DNS;
+      }
+      if (format == DomainFormat.DNS && containsSpecial(plainName)) {
+        if (containsSpecial(domain)) {
+          throw new IllegalStateException("Neither NETBIOS nor DNS formats can "
+              + "be used: plainName=" + plainName + " domain=" + domain);
+        }
+        format = DomainFormat.NETBIOS;
+      }
+      return format;
+    }
+
+    private boolean containsSpecial(String s) {
+      return s.contains("\\") || s.contains("/") || s.contains("@");
+    }
+
+    public Principal toPrincipal() {
+      String name;
+      switch (determineEffectiveFormat()) {
+        case NONE:
+          name = plainName;
+          break;
+        case DNS:
+          name = plainName + "@" + domain;
+          break;
+        case NETBIOS:
+          name = domain + "\\" + plainName;
+          break;
+        case NETBIOS_FORWARDSLASH:
+          name = domain + "/" + plainName;
+          break;
+        default:
+          throw new AssertionError();
+      }
+      if (isGroup) {
+        return new GroupPrincipal(name, namespace);
+      } else {
+        return new UserPrincipal(name, namespace);
+      }
+    }
+
+    @Override
+    public String toString() {
+      return "ParsedPrincipal(isGroup=" + isGroup + ",plainName=" + plainName
+          + ",domain=" + domain + ",domainFormat=" + domainFormat
+          + ",namespace=" + namespace + ")";
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(
+          new Object[] {isGroup, plainName, domain, domainFormat, namespace});
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (!(o instanceof ParsedPrincipal)) {
+        return false;
+      }
+      ParsedPrincipal p = (ParsedPrincipal) o;
+      return isGroup == p.isGroup && plainName.equals(p.plainName)
+          && domainFormat == p.domainFormat && namespace.equals(p.namespace)
+          && domain.equals(p.domain);
+    }
+  }
 }

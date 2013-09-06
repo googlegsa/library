@@ -119,6 +119,8 @@ import java.util.logging.*;
  *     checking. Defaults to false
  * <tr><td> </td><td>server.useCompression </td><td> compress retrieval
  *     responses. Defaults to true
+ * <tr><td> </td><td>transform.acl.X </td><td> where X is an integer, match
+ *     and modify principals as described. Defaults no modifications
  * <tr><td> </td><td>transform.pipeline </td><td> sequence of
  *     transformation steps.  Defaults to no-pipeline
  * </table>

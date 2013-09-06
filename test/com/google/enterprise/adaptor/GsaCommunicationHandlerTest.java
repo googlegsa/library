@@ -370,6 +370,41 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
+  public void testCreateAclTransformNone() throws Exception {
+    Map<String, String> config = new HashMap<String, String>();
+    assertEquals(new AclTransform(Arrays.<AclTransform.Rule>asList()),
+        GsaCommunicationHandler.createAclTransform(config));
+  }
+
+  @Test
+  public void testCreateAclTransformNoOp() throws Exception {
+    Map<String, String> config = new HashMap<String, String>() {
+      {
+        put("nogood", "name=u1;name=u1");
+        put("1", " type=group; ");
+        put("3", "nosemicolon");
+        put("5", "name=u1; name=u2, namespace=ns1");
+        put("6", "type=user, domain=d1;domain=d2");
+        put("7", "unknown=key;name=u1");
+        put("8", "missingequals;name=u1");
+        put("9", "type=unknown;name=u1");
+        put("10", "name=u1;type=group");
+      }
+    };
+    assertEquals(new AclTransform(Arrays.asList(
+          new AclTransform.Rule(
+            new AclTransform.MatchData(true, null, null, null),
+            new AclTransform.MatchData(null, null, null, null)),
+          new AclTransform.Rule(
+            new AclTransform.MatchData(null, "u1", null, null),
+            new AclTransform.MatchData(null, "u2", null, "ns1")),
+          new AclTransform.Rule(
+            new AclTransform.MatchData(false, null, "d1", null),
+            new AclTransform.MatchData(null, null, "d2", null)))),
+        GsaCommunicationHandler.createAclTransform(config));
+  }
+
+  @Test
   public void testKeyStore() throws Exception {
     assertNotNull(GsaCommunicationHandler.getKeyPair("notadaptor",
         KEYSTORE_VALID_FILENAME, "JKS", "notchangeit"));

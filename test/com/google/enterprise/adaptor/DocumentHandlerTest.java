@@ -358,6 +358,36 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testAclTransform() throws Exception {
+    AclTransform aclTransform = new AclTransform(Arrays.asList(
+        new AclTransform.Rule(
+            new AclTransform.MatchData(null, "u1", null, null),
+            new AclTransform.MatchData(null, "u2", null, null))));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setAcl(new Acl.Builder()
+            .setPermitUsers(Arrays.asList(
+                new UserPrincipal("u1"), new UserPrincipal("u3")))
+            .build());
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setAclTransform(aclTransform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("google%3Aaclusers=u2,google%3Aaclusers=u3",
+                 ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(1));
+  }
+
+  @Test
   public void testNullAuthzResponse() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -1376,6 +1406,8 @@ public class DocumentHandlerTest {
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private TransformPipeline transform;
+    private AclTransform aclTransform
+        = new AclTransform(Arrays.<AclTransform.Rule>asList());
     private int transformMaxBytes;
     private boolean transformRequired;
     private boolean useCompression;
@@ -1433,6 +1465,11 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setAclTransform(AclTransform aclTransform) {
+      this.aclTransform = aclTransform;
+      return this;
+    }
+
     public DocumentHandlerBuilder setUseCompression(boolean useCompression) {
       this.useCompression = useCompression;
       return this;
@@ -1474,8 +1511,8 @@ public class DocumentHandlerTest {
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
-          transform, useCompression, watchdog, pusher, sendDocControls,
-          headerTimeoutMillis, contentTimeoutMillis, scoring);
+          transform, aclTransform, useCompression, watchdog, pusher,
+          sendDocControls, headerTimeoutMillis, contentTimeoutMillis, scoring);
     }
   }
 }

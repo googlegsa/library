@@ -62,6 +62,7 @@ class DocumentHandler implements HttpHandler {
       = new HashSet<InetAddress>();
   private final SamlServiceProvider samlServiceProvider;
   private final TransformPipeline transform;
+  private final AclTransform aclTransform;
   private final boolean useCompression;
   private final boolean sendDocControls;
   private final long headerTimeoutMillis;
@@ -76,14 +77,14 @@ class DocumentHandler implements HttpHandler {
                          AuthzAuthority authzAuthority,
                          String gsaHostname, String[] fullAccessHosts,
                          SamlServiceProvider samlServiceProvider,
-                         TransformPipeline transform,
+                         TransformPipeline transform, AclTransform aclTransform,
                          boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
                          boolean sendDocControls, long headerTimeoutMillis,
                          long contentTimeoutMillis, String scoringType) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
-        || adaptor == null || watchdog == null || pusher == null
-        || scoringType == null) {
+        || adaptor == null || aclTransform == null || watchdog == null
+        || pusher == null || scoringType == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
@@ -93,6 +94,7 @@ class DocumentHandler implements HttpHandler {
     this.authzAuthority = authzAuthority;
     this.samlServiceProvider = samlServiceProvider;
     this.transform = transform;
+    this.aclTransform = aclTransform;
     this.useCompression = useCompression;
     this.watchdog = watchdog;
     this.pusher = pusher;
@@ -777,6 +779,7 @@ class DocumentHandler implements HttpHandler {
       if (transform != null) {
         transform();  
       } 
+      acl = aclTransform.transform(acl);
       if (requestIsFromFullyTrustedClient(ex)) {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
