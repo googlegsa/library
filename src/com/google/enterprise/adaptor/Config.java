@@ -97,7 +97,7 @@ import java.util.logging.*;
  * <tr><td> </td><td>server.hostname </td><td>
  *     hostname of adaptor machine for URL generation. 
  *     The GSA will use this hostname to crawl the adaptor.
- *     Defaults to automatically detected hostname
+ *     Defaults to lowercase of automatically detected hostname
  * <tr><td> </td><td>server.keyAlias </td><td> keystore alias where
  *     encryption (public and private) keys are stored.
  *     Defaults to adaptor
@@ -153,6 +153,7 @@ public class Config {
     String hostname = null;
     try {
       hostname = InetAddress.getLocalHost().getCanonicalHostName();
+      hostname = hostname.toLowerCase();  // work around GSA 7.0 bug
     } catch (UnknownHostException ex) {
       // Ignore
     }
@@ -301,9 +302,11 @@ public class Config {
     return Boolean.parseBoolean(getValue("docId.isUrl"));
   }
 
-  /** Without changes contains InetAddress.getLocalHost().getHostName(). */
+  /** Default is lowercase of InetAddress.getLocalHost().getHostName(). */
   String getServerHostname() {
-    return getValue("server.hostname");
+    String hostname = getValue("server.hostname");
+    log.log(Level.FINER, "server hostname: " + hostname);
+    return hostname;
   }
 
   /**
