@@ -316,7 +316,7 @@ public class DocIdSenderTest {
     int i;
 
     public MockGsaFeedFileMaker() {
-      super(null);
+      super(null, new AclTransform(Arrays.<AclTransform.Rule>asList()));
     }
 
     @Override

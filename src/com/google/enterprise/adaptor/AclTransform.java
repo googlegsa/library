@@ -37,23 +37,45 @@ final class AclTransform {
       return acl;
     }
     return new Acl.Builder(acl)
-        .setPermits(transform(acl.getPermits()))
-        .setDenies(transform(acl.getDenies()))
+        .setPermits(transformInternal(acl.getPermits()))
+        .setDenies(transformInternal(acl.getDenies()))
         .build();
   }
 
-  private Set<Principal> transform(Set<Principal> principals) {
-    Set<Principal> newPrincipals = new TreeSet<Principal>();
-    for (Principal principal : principals) {
-      ParsedPrincipal parsed = principal.parse();
-      for (Rule rule : rules) {
-        if (rule.match.matches(parsed)) {
-          parsed = rule.replace.replace(parsed);
-        }
-      }
-      newPrincipals.add(parsed.toPrincipal());
+  public <T extends Principal> Collection<T> transform(
+      Collection<T> principals) {
+    if (rules.isEmpty()) {
+      return principals;
     }
-    return Collections.unmodifiableSet(newPrincipals);
+    return transformInternal(principals);
+  }
+
+  public <T extends Principal> T transform(T principal) {
+    if (rules.isEmpty()) {
+      return principal;
+    }
+    return transformInternal(principal);
+  }
+
+  private <T extends Principal> Collection<T> transformInternal(
+      Collection<T> principals) {
+    Collection<T> newPrincipals = new ArrayList<T>(principals.size());
+    for (T principal : principals) {
+      newPrincipals.add(transformInternal(principal));
+    }
+    return Collections.unmodifiableCollection(newPrincipals);
+  }
+
+  private <T extends Principal> T transformInternal(T principal) {
+    ParsedPrincipal parsed = principal.parse();
+    for (Rule rule : rules) {
+      if (rule.match.matches(parsed)) {
+        parsed = rule.replace.replace(parsed);
+      }
+    }
+    @SuppressWarnings("unchecked")
+    T principalNew = (T) parsed.toPrincipal();
+    return principalNew;
   }
 
   @Override

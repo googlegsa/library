@@ -28,7 +28,9 @@ public class GsaFeedFileMakerTest {
   public ExpectedException thrown = ExpectedException.none();
 
   private DocIdEncoder encoder = new MockDocIdCodec();
-  private GsaFeedFileMaker meker = new GsaFeedFileMaker(encoder);
+  private AclTransform aclTransform
+      = new AclTransform(Arrays.<AclTransform.Rule>asList());
+  private GsaFeedFileMaker meker = new GsaFeedFileMaker(encoder, aclTransform);
 
   @Test
   public void testEmptyMetadataAndUrl() {
@@ -198,6 +200,39 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
+  public void testNamedResourcesAclTransform() {
+    String golden
+        = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<header>\n"
+        + "<datasource>test</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group>\n"
+        + "<acl url=\"http://localhost/docid2\">\n"
+        + "<principal access=\"permit\" scope=\"user\">pu2</principal>\n"
+        + "</acl>\n"
+        + "</group>\n"
+        + "</gsafeed>\n";
+
+    List<DocIdSender.AclItem> acls = new ArrayList<DocIdSender.AclItem>();
+    acls.add(new DocIdSender.AclItem(new DocId("docid2"), new Acl.Builder()
+        .setPermitUsers(
+            Arrays.asList(new UserPrincipal("pu1")))
+        .build()));
+
+    aclTransform = new AclTransform(Arrays.asList(new AclTransform.Rule(
+        new AclTransform.MatchData(null, null, null, null),
+        new AclTransform.MatchData(null, "pu2", null, null))));
+    meker = new GsaFeedFileMaker(encoder, aclTransform);
+    String xml = meker.makeMetadataAndUrlXml("test", acls);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
   public void testUnsupportedDocIdSenderItemMetadataAndUrl() {
     class UnsupportedItem implements DocIdSender.Item {};
     List<UnsupportedItem> items = new ArrayList<UnsupportedItem>();
@@ -226,7 +261,8 @@ public class GsaFeedFileMakerTest {
     List<DocIdPusher.Record> records = new ArrayList<DocIdPusher.Record>();
     records.add(new DocIdPusher.Record.Builder(new DocId("docid1")).build());
 
-    meker = new GsaFeedFileMaker(encoder, true /* 6.14 workaround */, false);
+    meker = new GsaFeedFileMaker(encoder, aclTransform,
+        true /* 6.14 workaround */, false);
     String xml = meker.makeMetadataAndUrlXml("test", records);
     xml = xml.replace("\r\n", "\n");
     assertEquals(golden, xml);
@@ -252,7 +288,8 @@ public class GsaFeedFileMakerTest {
     List<DocIdPusher.Record> records = new ArrayList<DocIdPusher.Record>();
     records.add(new DocIdPusher.Record.Builder(new DocId("docid1")).build());
 
-    meker = new GsaFeedFileMaker(encoder, false, true /* 7.0 workaround */);
+    meker = new GsaFeedFileMaker(encoder, aclTransform, false,
+        true /* 7.0 workaround */);
     String xml = meker.makeMetadataAndUrlXml("test", records);
     xml = xml.replace("\r\n", "\n");
     assertEquals(golden, xml);
@@ -355,12 +392,12 @@ public class GsaFeedFileMakerTest {
         + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
         + " namespace=\"Default\""
         + " scope=\"USER\""
-        + ">splat</principal>\n"
+        + ">plump</principal>\n"
         + "<principal" 
         + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
         + " namespace=\"Default\""
         + " scope=\"USER\""
-        + ">plump</principal>\n"
+        + ">splat</principal>\n"
         + "</members>\n"
         + "</membership>\n"
         + "</xmlgroups>\n";
@@ -389,16 +426,16 @@ public class GsaFeedFileMakerTest {
         + "<membership>\n"
         + "<principal namespace=\"Default\" scope=\"GROUP\">immortals</principal>\n"
         + "<members>\n"
+        + "<principal"
+        + " case-sensitivity-type=\"EVERYTHING_CASE_SENSITIVE\""
+        + " namespace=\"3vil\""
+        + " scope=\"GROUP\""
+        + ">badguys</principal>\n"
         + "<principal" 
         + " case-sensitivity-type=\"EVERYTHING_CASE_SENSITIVE\""
         + " namespace=\"goodguys\""
         + " scope=\"USER\""
         + ">MacLeod\\Duncan</principal>\n"
-        + "<principal" 
-        + " case-sensitivity-type=\"EVERYTHING_CASE_SENSITIVE\""
-        + " namespace=\"3vil\""
-        + " scope=\"GROUP\""
-        + ">badguys</principal>\n"
         + "</members>\n"
         + "</membership>\n"
         + "</xmlgroups>\n";
@@ -409,6 +446,40 @@ public class GsaFeedFileMakerTest {
     members.add(new GroupPrincipal("badguys", "3vil"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
     String xml = meker.makeGroupsDefinitionsXml(groupDefs.entrySet(), true);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testGroupsDefinitionsAclTransform() {
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<xmlgroups>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<membership>\n"
+        + "<principal namespace=\"Default\" scope=\"GROUP\">Clan MacLeod"
+        +  "</principal>\n"
+        + "<members>\n"
+        + "<principal case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\" scope=\"USER\">MacLeod\\Connor</principal>\n"
+        + "</members>\n"
+        + "</membership>\n"
+        + "</xmlgroups>\n";
+    Map<GroupPrincipal, List<Principal>> groupDefs
+        = new TreeMap<GroupPrincipal, List<Principal>>();
+    List<Principal> members = new ArrayList<Principal>();
+    members.add(new UserPrincipal("MacLeod\\Duncan"));
+    groupDefs.put(new GroupPrincipal("immortals"), members);
+    aclTransform = new AclTransform(Arrays.asList(
+        new AclTransform.Rule(
+          new AclTransform.MatchData(null, "Duncan", null, null),
+          new AclTransform.MatchData(null, "Connor", null, null)),
+        new AclTransform.Rule(
+          new AclTransform.MatchData(null, "immortals", null, null),
+          new AclTransform.MatchData(null, "Clan MacLeod", null, null))));
+    meker = new GsaFeedFileMaker(encoder, aclTransform);
+    String xml = meker.makeGroupsDefinitionsXml(groupDefs.entrySet(), false);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }

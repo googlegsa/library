@@ -47,17 +47,19 @@ class GsaFeedFileMaker {
       };
 
   private final DocIdEncoder idEncoder;
+  private final AclTransform aclTransform;
   private final boolean separateClosingRecordTagWorkaround;
   private final boolean useAuthMethodWorkaround;
 
-  public GsaFeedFileMaker(DocIdEncoder encoder) {
-    this(encoder, false, false);
+  public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform) {
+    this(encoder, aclTransform, false, false);
   }
 
-  public GsaFeedFileMaker(DocIdEncoder encoder,
+  public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform,
       boolean separateClosingRecordTagWorkaround,
       boolean useAuthMethodWorkaround) {
     this.idEncoder = encoder;
+    this.aclTransform = aclTransform;
     this.separateClosingRecordTagWorkaround
         = separateClosingRecordTagWorkaround;
     this.useAuthMethodWorkaround = useAuthMethodWorkaround;
@@ -145,6 +147,7 @@ class GsaFeedFileMaker {
     }
     aclElement.setAttribute("url", uri.toString());
     Acl acl = docAcl.getAcl();
+    acl = aclTransform.transform(acl);
     if (acl.getInheritFrom() != null) {
       URI inheritFrom = idEncoder.encodeDocId(acl.getInheritFrom());
       try {
@@ -270,6 +273,8 @@ class GsaFeedFileMaker {
   private void constructSingleMembership(Document doc, Element root,
       GroupPrincipal groupPrincipal, Collection<Principal> members,
       boolean caseSensitiveMembers) {
+    groupPrincipal = aclTransform.transform(groupPrincipal);
+    members = new TreeSet<Principal>(aclTransform.transform(members));
     Element groupWithDef = doc.createElement("membership");
     root.appendChild(groupWithDef);
     Element groupKey = doc.createElement("principal");

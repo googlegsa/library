@@ -214,7 +214,8 @@ public final class GsaCommunicationHandler {
     GsaFeedFileSender fileSender = new GsaFeedFileSender(
         config.getGsaHostname(), config.isServerSecure(),
         config.getGsaCharacterEncoding());
-    GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec,
+    AclTransform aclTransform = createAclTransform();
+    GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec, aclTransform,
         config.isGsa614FeedWorkaroundEnabled(),
         config.isGsa70AuthMethodWorkaroundEnabled());
     docIdSender
@@ -309,7 +310,7 @@ public final class GsaCommunicationHandler {
         docIdCodec, docIdCodec, journal, adaptor, authzAuthority,
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
-        samlServiceProvider, createTransformPipeline(), createAclTransform(),
+        samlServiceProvider, createTransformPipeline(), aclTransform,
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
         config.doesGsaAcceptDocControlsHeader(),

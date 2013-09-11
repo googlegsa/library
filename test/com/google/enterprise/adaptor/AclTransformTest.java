@@ -43,8 +43,12 @@ public class AclTransformTest {
 
   @Test
   public void testEmptyTransform() {
-    assertSame(baseAcl,
-        new AclTransform(Arrays.<Rule>asList()).transform(baseAcl));
+    AclTransform transform = new AclTransform(Arrays.<Rule>asList());
+    assertSame(baseAcl, transform.transform(baseAcl));
+    Principal principal = new UserPrincipal("user");
+    List<Principal> principals = Arrays.asList(principal);
+    assertSame(principals, transform.transform(principals));
+    assertSame(principal, transform.transform(principal));
   }
 
   @Test
@@ -62,7 +66,7 @@ public class AclTransformTest {
           new MatchData(null, "anyprincipal", "anydomain", "anyns")));
     AclTransform transform = new AclTransform(rules);
     // Test null passthrough and re-use of AclTransform
-    assertNull(transform.transform(null));
+    assertNull(transform.transform((Acl) null));
     assertEquals(new Acl.Builder(baseAcl)
           .setPermits(Arrays.asList(
             new UserPrincipal("anydomain\\anyprincipal", "anyns"),
