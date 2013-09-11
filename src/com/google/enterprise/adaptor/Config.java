@@ -153,7 +153,7 @@ public class Config {
     String hostname = null;
     try {
       hostname = InetAddress.getLocalHost().getCanonicalHostName();
-      hostname = hostname.toLowerCase();  // work around GSA 7.0 bug
+      hostname = hostname.toLowerCase(Locale.ENGLISH);  // work around GSA 7.0
     } catch (UnknownHostException ex) {
       // Ignore
     }
@@ -305,7 +305,7 @@ public class Config {
   /** Default is lowercase of InetAddress.getLocalHost().getHostName(). */
   String getServerHostname() {
     String hostname = getValue("server.hostname");
-    log.log(Level.FINER, "server hostname: " + hostname);
+    log.log(Level.FINER, "server hostname: {0}", hostname);
     return hostname;
   }
 
