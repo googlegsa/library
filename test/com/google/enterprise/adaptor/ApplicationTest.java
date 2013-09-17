@@ -98,7 +98,7 @@ public class ApplicationTest {
     app.start();
     long duration = System.nanoTime() - startTime;
     final long nanosInAMilli = 1000 * 1000;
-    if (duration > 200 * nanosInAMilli) {
+    if (duration > 1000 * nanosInAMilli) {
       fail("Starting took a long time to stop after being aborted: "
           + duration);
     }
