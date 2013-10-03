@@ -212,7 +212,7 @@ public final class GsaCommunicationHandler {
     }
     docIdCodec = new DocIdCodec(baseUri.resolve(docUri), config.isDocIdUrl());
     GsaFeedFileSender fileSender = new GsaFeedFileSender(
-        config.getGsaHostname(), config.isServerSecure(),
+        config.getGsaHostname(), config.isServerSecure(), // use secure bool?
         config.getGsaCharacterEncoding());
     AclTransform aclTransform = createAclTransform();
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec, aclTransform,
@@ -241,7 +241,7 @@ public final class GsaCommunicationHandler {
     // the case after a power failure).
     while (true) {
       try {
-        tryToPutVersionIntoConfig();
+        tryToPutVersionIntoConfig(secure);
         String adaptorType = adaptor.getClass().getName();
         log.log(Level.INFO, "about to init {0}", adaptorType); 
         adaptor.init(new AdaptorContextImpl());
@@ -353,10 +353,10 @@ public final class GsaCommunicationHandler {
     shuttingDownLatch = null;
   }
    
-  private void tryToPutVersionIntoConfig() throws IOException { 
+  private void tryToPutVersionIntoConfig(boolean secure) throws IOException { 
     try {
       if ("GENERATE".equals(config.getGsaVersion())) {  // is not set
-        GsaVersion ver = GsaVersion.get(config.getGsaHostname());
+        GsaVersion ver = GsaVersion.get(config.getGsaHostname(), secure);
         config.overrideKey("gsa.version", "" + ver);
       }
     } catch (FileNotFoundException fne) {
