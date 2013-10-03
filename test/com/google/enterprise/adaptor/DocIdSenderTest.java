@@ -45,6 +45,7 @@ public class DocIdSenderTest {
   @Before
   public void setup() {
     config.setValue("gsa.hostname", "localhost");
+    config.setValue("gsa.version", "7.2.0-8");
   }
 
   @Test

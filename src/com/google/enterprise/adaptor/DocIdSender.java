@@ -237,6 +237,12 @@ class DocIdSender extends AbstractDocIdPusher
     if (defs.isEmpty()) {
       return null;
     }
+    String gsaVerString = config.getGsaVersion();
+    if (!new GsaVersion(gsaVerString).isAtLeast("7.2.0-0")) {
+      log.log(Level.WARNING,
+          "GSA ver {0} doesn't accept group definitions", gsaVerString);
+      return defs.entrySet().iterator().next().getKey();
+    }
     if (null == handler) {
       handler = defaultErrorHandler;
     }
@@ -310,7 +316,7 @@ class DocIdSender extends AbstractDocIdPusher
     if (success) {
       log.info("pushing groups batch succeeded");
     } else {
-      last = defs.get(0).getKey();  // checked in pushGroupDefinitions()
+      last = defs.get(0).getKey();  // checked in pushGroupDefinitionsInternal()
       log.log(Level.WARNING, "gave up pushing groups. First item: {0}", last);
     }
     log.info("finished pushing batch of groups");
