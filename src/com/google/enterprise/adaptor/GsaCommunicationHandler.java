@@ -229,7 +229,8 @@ public final class GsaCommunicationHandler {
     // reference to 'adaptor' before this point must be done very carefully to
     // ensure it doesn't call the adaptor until after Adaptor.init() completes.
 
-    long sleepDurationMillis = 1000;
+    long sleepDurationMillis = 8000;
+
     // An hour.
     long maxSleepDurationMillis = 60 * 60 * 1000;
     // Loop until 1) the adaptor starts successfully, 2) stop() is called, or
