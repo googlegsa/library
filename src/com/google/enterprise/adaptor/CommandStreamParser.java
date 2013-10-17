@@ -26,6 +26,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -240,7 +242,6 @@ import java.util.regex.Pattern;
  */
 public class CommandStreamParser {
 
-
   private static enum Operation {
     ID("id"),
     RESULT_LINK("result-link"),
@@ -263,6 +264,17 @@ public class CommandStreamParser {
     NO_FOLLOW("no-follow"),
     NO_ARCHIVE("no-archive"),
     DISPLAY_URL("display-url"),
+    ACL("acl"),
+    NAMESPACE("namespace"),
+    ACL_PERMIT_USER("acl-permit-user"),
+    ACL_DENY_USER("acl-deny-user"),
+    ACL_PERMIT_GROUP("acl-permit-group"),
+    ACL_DENY_GROUP("acl-deny-group"),
+    ACL_INHERIT_FROM("acl-inherit-from"),
+    ACL_INHERIT_FRAGMENT("acl-inherit-fragment"),
+    ACL_INHERITANCE_TYPE("acl-inheritance-type"),
+    ACL_CASE_SENSITIVE("acl-case-sensitive"),
+    ACL_CASE_INSENSITIVE("acl-case-insensitive"),
     ;
 
     private final String commandName;
@@ -282,13 +294,22 @@ public class CommandStreamParser {
   private static final Charset CHARSET = Charset.forName("UTF-8");
 
   private static final Map<String, Operation> STRING_TO_OPERATION;
-
   static {
     Map<String, Operation> stringToOperation = new HashMap<String, Operation>();
     for (Operation operation : Operation.values()) {
       stringToOperation.put(operation.getCommandName(), operation);
     }
     STRING_TO_OPERATION = Collections.unmodifiableMap(stringToOperation);
+  }
+
+  private static final Map<String, Acl.InheritanceType> STRING_TO_INHERITANCE_TYPE;
+  static {
+    Map<String, Acl.InheritanceType> stringToType
+        = new HashMap<String, Acl.InheritanceType>();
+    for (Acl.InheritanceType type : Acl.InheritanceType.values()) {
+      stringToType.put(type.getCommonForm(), type);
+    }
+    STRING_TO_INHERITANCE_TYPE = Collections.unmodifiableMap(stringToType);
   }
 
   private InputStream inputStream;
@@ -376,7 +397,6 @@ public class CommandStreamParser {
   }
 
   public void readFromRetriever(DocId docId, Response response) throws IOException {
-
     Command command = readCommand();
 
     if (command == null) {
@@ -391,6 +411,14 @@ public class CommandStreamParser {
       throw new IOException("requested document "  + docId + " does not match retrieved "
           + "document " + foundDocId + ".");
     }
+
+    boolean sendAclWithDocument = false;
+    Acl.Builder aclBuilder = new Acl.Builder();
+    DocId inheritFrom = null;  // saves inherit-from in case fragment comes
+    Set<Principal> permits = new TreeSet<Principal>();  // accumulates acl state
+    Set<Principal> denies = new TreeSet<Principal>();  // accumulates acl state
+    String namespace = Principal.DEFAULT_NAMESPACE;  // last given namespace
+
     command = readCommand();
     while (command != null) {
       switch (command.getOperation()) {
@@ -455,11 +483,58 @@ public class CommandStreamParser {
         case LOCK:
           response.setLock(Boolean.parseBoolean(command.getArgument()));
           break;
+        case ACL:
+          sendAclWithDocument = true;
+          break;
+        case NAMESPACE:
+          namespace = command.getArgument();
+          break;
+        case ACL_PERMIT_USER:
+          permits.add(new UserPrincipal(command.getArgument(), namespace));
+          break;
+        case ACL_DENY_USER:
+          denies.add(new UserPrincipal(command.getArgument(), namespace));
+          break;
+        case ACL_PERMIT_GROUP:
+          permits.add(new GroupPrincipal(command.getArgument(), namespace));
+          break;
+        case ACL_DENY_GROUP:
+          denies.add(new GroupPrincipal(command.getArgument(), namespace));
+          break;
+        case ACL_INHERIT_FROM:
+          inheritFrom = new DocId(command.getArgument());
+          aclBuilder.setInheritFrom(inheritFrom);
+          break;
+        case ACL_INHERIT_FRAGMENT:
+          if (null == inheritFrom) {
+            throw new IOException("acl-inherit-fragment cannot preceed acl-inherit-from");
+          }
+          aclBuilder.setInheritFrom(inheritFrom, command.getArgument());
+          break;
+        case ACL_INHERITANCE_TYPE:
+          Acl.InheritanceType type = STRING_TO_INHERITANCE_TYPE.get(command.getArgument());
+          if (null == type) {
+            throw new IOException("invalid acl-inheritance-type: " + command.getArgument());
+          }
+          aclBuilder.setInheritanceType(type);
+          break;
+        case ACL_CASE_SENSITIVE:
+          aclBuilder.setEverythingCaseSensitive();
+          break;
+        case ACL_CASE_INSENSITIVE:
+          aclBuilder.setEverythingCaseInsensitive();
+          break;
         default:
           throw new IOException("Retriever Error: invalid operation: '" + command.getOperation() +
               (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
       }
       command = readCommand();
+    }
+    // Finish by putting accumulated ACL into response.
+    if (sendAclWithDocument) {
+      aclBuilder.setPermits(permits);
+      aclBuilder.setDenies(denies);
+      response.setAcl(aclBuilder.build());
     }
   }
 
@@ -559,7 +634,7 @@ public class CommandStreamParser {
       Operation operation = STRING_TO_OPERATION.get(commandTokens[0]);
       // Skip over unrecognized commands
       if (operation == null) {
-        // TODO(johnfelton) add a warning about an unrecognized command
+        log.warning("Unrecognized command: " + commandTokens[0]);
         continue;
       }
 

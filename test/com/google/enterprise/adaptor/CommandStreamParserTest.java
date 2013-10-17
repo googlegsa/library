@@ -200,6 +200,162 @@ public class CommandStreamParserTest {
   }
 
   @Test
+  public void testRetrieverWithoutAcl() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=isacltest\n" +
+        "content\npick-up-sticks";
+    InputStream inputStream
+        = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    assertEquals(1, parser.getVersionNumber());
+    parser.readFromRetriever(new DocId("isacltest"), response);
+    assertArrayEquals("pick-up-sticks".getBytes(), outputStream.toByteArray());
+    assertEquals(null, response.getAcl());
+    assertEquals(false, response.isSecure());
+  }
+
+  @Test
+  public void testRetrieverNamespaceAloneDoesntMakeAcl() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=isacltest\n" +
+        "namespace=winds\n" + 
+        "content\npick-up-sticks";
+    InputStream inputStream
+        = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    assertEquals(1, parser.getVersionNumber());
+    parser.readFromRetriever(new DocId("isacltest"), response);
+    assertArrayEquals("pick-up-sticks".getBytes(), outputStream.toByteArray());
+    assertEquals(null, response.getAcl());
+    assertEquals(false, response.isSecure());
+  }
+
+  private static GroupPrincipal g(String n, String ns) {
+    return new GroupPrincipal(n, ns);
+  }
+
+  private static GroupPrincipal g(String n) {
+    return new GroupPrincipal(n);
+  }
+
+  private static UserPrincipal u(String n, String ns) {
+    return new UserPrincipal(n, ns);
+  }
+
+  private static UserPrincipal u(String n) {
+    return new UserPrincipal(n);
+  }
+
+  @Test
+  public void testRetrieverSimpleAcl() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=isacltest\n" +
+        "acl\n" +
+        "acl-permit-user=ted@abc\n" +
+        "acl-deny-group=todd@abc\n" +
+        "namespace=Winds\n" +
+        "acl-permit-user=Banjo@Zephyr\n" +
+        "acl-permit-group=ward@Zephyr\n" +
+        "namespace=RockaRollas\n" +
+        "acl-deny-user=bob.dylan@rocka\n" +
+        "acl-deny-user=paul@rocka\n" +
+        "acl-deny-group=beatles@rocka\n" +
+        "acl-inherit-from=oxfords\n" +
+        "acl-inheritance-type=and-both-permit\n" +
+        "content\npick-up-sticks";
+    InputStream inputStream
+        = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    assertEquals(1, parser.getVersionNumber());
+    parser.readFromRetriever(new DocId("isacltest"), response);
+    assertArrayEquals("pick-up-sticks".getBytes(), outputStream.toByteArray());
+    Acl golden = new Acl.Builder().setPermits(Arrays.asList(
+        g("ward@Zephyr", "Winds"), u("ted@abc"), u("Banjo@Zephyr", "Winds")))
+        .setDenies(Arrays.asList(g("todd@abc"), g("beatles@rocka", "RockaRollas"),
+        u("bob.dylan@rocka", "RockaRollas"), u("paul@rocka", "RockaRollas")))
+        .setInheritFrom(new DocId("oxfords"))
+        .setInheritanceType(Acl.InheritanceType.AND_BOTH_PERMIT)
+        .build();
+    assertEquals(golden, response.getAcl());
+  }
+
+  @Test
+  public void testRetrieverInsensitiveAcl() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=isacltest\n" +
+        "acl\n" +
+        "acl-case-insensitive\n" +
+        "content\npick-up-sticks";
+    InputStream inputStream
+        = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    assertEquals(1, parser.getVersionNumber());
+    parser.readFromRetriever(new DocId("isacltest"), response);
+    assertArrayEquals("pick-up-sticks".getBytes(), outputStream.toByteArray());
+    assertEquals(new Acl.Builder().setEverythingCaseInsensitive().build(),
+        response.getAcl());
+  }
+
+  @Test
+  public void testRetrieverLastSensitiveStick() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=isacltest\n" +
+        "acl\n" +
+        "acl-case-insensitive\n" +
+        "acl-case-sensitive\n" +
+        "acl-case-insensitive\n" +
+        "acl-case-sensitive\n" +
+        "content\npick-up-sticks";
+    InputStream inputStream
+        = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    assertEquals(1, parser.getVersionNumber());
+    parser.readFromRetriever(new DocId("isacltest"), response);
+    assertArrayEquals("pick-up-sticks".getBytes(), outputStream.toByteArray());
+    assertEquals(true, response.getAcl().isEverythingCaseSensitive());
+    assertEquals(false, response.getAcl().isEverythingCaseInsensitive());
+  }
+
+  @Test
+  public void testRetrieverAclHasFragment() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n" +
+        "id=isacltest\n" +
+        "acl-inherit-from=london\n" +
+        "acl-inherit-from=oxfords\n" +
+        "acl\n" +
+        "acl-inherit-fragment=topleft\n" +
+        "acl-inherit-fragment=lowerright\n" +
+        "content\npick-up-sticks";
+    InputStream inputStream
+        = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    WrapperAdaptor.GetContentsResponse response
+        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    assertEquals(1, parser.getVersionNumber());
+    parser.readFromRetriever(new DocId("isacltest"), response);
+    assertArrayEquals("pick-up-sticks".getBytes(), outputStream.toByteArray());
+    assertEquals(new Acl.Builder()
+        .setInheritFrom(new DocId("oxfords"), "lowerright").build(),
+         response.getAcl());
+  }
+
+  @Test
   public void testRetrieverMultipleMetadataValuesSameKey() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n" +
         "id=123\n" +
