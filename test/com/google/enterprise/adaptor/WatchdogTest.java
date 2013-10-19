@@ -20,6 +20,7 @@ import org.junit.*;
 import org.junit.rules.ExpectedException;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Tests for {@link Watchdog}.
@@ -53,6 +54,27 @@ public class WatchdogTest {
     } finally {
       watchdog.processingCompleted();
     }
+  }
+
+  @Test
+  public void testDifferentThread() throws InterruptedException {
+    watchdog = new Watchdog(executor);
+    final Thread thread = Thread.currentThread();
+    watchdog.processingStarting(1000);
+    final AtomicBoolean success = new AtomicBoolean();
+    Thread thread2 = new Thread() {
+      @Override
+      public void run() {
+        watchdog.processingCompleted(thread);
+        watchdog.processingStarting(thread, 1000);
+        success.set(true);
+      }
+    };
+    thread2.start();
+    thread2.join();
+    assertTrue(success.get());
+
+    watchdog.processingCompleted();
   }
 
   @Test

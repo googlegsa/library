@@ -33,8 +33,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 class Watchdog {
   private final ScheduledExecutorService executor;
-  private final ThreadLocal<FutureInfo> inProcess
-      = new ThreadLocal<FutureInfo>();
+  private final ConcurrentMap<Thread, FutureInfo> inProcess
+      = new ConcurrentHashMap<Thread, FutureInfo>();
 
   /**
    * @param executor executor to schedule tasks
@@ -50,23 +50,36 @@ class Watchdog {
    * @param timeout maximum allowed duration in milliseconds
    */
   public void processingStarting(long timeout) {
-    if (inProcess.get() != null) {
+    processingStarting(Thread.currentThread(), timeout);
+  }
+
+  public void processingStarting(Thread thread, long timeout) {
+    if (inProcess.get(thread) != null) {
       throw new IllegalStateException("Processing is already occuring on the "
           + "thread");
     }
     AtomicBoolean interruptNeeded = new AtomicBoolean(true);
-    Runnable task = new Interrupter(Thread.currentThread(), interruptNeeded);
+    Runnable task = new Interrupter(thread, interruptNeeded);
     Future<?> future = executor.schedule(task, timeout, TimeUnit.MILLISECONDS);
-    inProcess.set(new FutureInfo(future, interruptNeeded));
+    FutureInfo info = new FutureInfo(future, interruptNeeded);
+    if (inProcess.putIfAbsent(thread, info) != null) {
+      // Reset state and try again.
+      future.cancel(false);
+      processingStarting(thread, timeout);
+      return;
+    }
   }
 
   public void processingCompleted() {
-    FutureInfo info = inProcess.get();
+    processingCompleted(Thread.currentThread());
+  }
+
+  public void processingCompleted(Thread thread) {
+    FutureInfo info = inProcess.remove(thread);
     if (info == null) {
       throw new IllegalStateException("No processing was started on the "
           + "thread");
     }
-    inProcess.remove();
     // Prevent Interrupter from running if it hasn't started already. It may
     // still be running after this call and Future doesn't tell us if it is
     // currently running.
@@ -80,7 +93,7 @@ class Watchdog {
         // Interrupter has interrupted this thread.
         // Clear the interrupt, if not already cleared, since we don't want to
         // interrupt this thread any further.
-        Thread.currentThread().interrupted();
+        thread.interrupted();
       }
     }
   }

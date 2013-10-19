@@ -205,7 +205,8 @@ class DocumentHandler implements HttpHandler {
       }
 
       DocumentRequest request = new DocumentRequest(ex, docId);
-      DocumentResponse response = new DocumentResponse(ex, docId);
+      DocumentResponse response
+          = new DocumentResponse(ex, docId, Thread.currentThread());
       journal.recordRequestProcessingStart();
       watchdog.processingStarting(headerTimeoutMillis);
       try {
@@ -537,6 +538,7 @@ class DocumentHandler implements HttpHandler {
    * need to be very aware of all the different possibilities.
    */
   private class DocumentResponse implements Response {
+    private Thread workingThread;
     private State state = State.SETUP;
     private HttpExchange ex;
     // Whether ex.getResponseBody().close() has been called while we are in the
@@ -562,9 +564,10 @@ class DocumentHandler implements HttpHandler {
     private boolean lock;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
-    public DocumentResponse(HttpExchange ex, DocId docId) {
+    public DocumentResponse(HttpExchange ex, DocId docId, Thread thread) {
       this.ex = ex;
       this.docId = docId;
+      this.workingThread = thread;
     }
 
     @Override
@@ -841,8 +844,8 @@ class DocumentHandler implements HttpHandler {
       }
       // There are separate timeouts for sending headers and sending content.
       // Here we stop the headers timer and start the content timer.
-      watchdog.processingCompleted();
-      watchdog.processingStarting(contentTimeoutMillis);
+      watchdog.processingCompleted(workingThread);
+      watchdog.processingStarting(workingThread, contentTimeoutMillis);
       HttpExchanges.startResponse(
           ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {

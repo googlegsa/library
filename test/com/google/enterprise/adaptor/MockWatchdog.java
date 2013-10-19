@@ -37,6 +37,14 @@ class MockWatchdog extends Watchdog {
   }
 
   @Override
+  public void processingStarting(Thread thread, long timout) {
+  }
+
+  @Override
   public void processingCompleted() {
+  }
+
+  @Override
+  public void processingCompleted(Thread thread) {
   }
 }
