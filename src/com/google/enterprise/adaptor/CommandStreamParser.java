@@ -161,6 +161,43 @@ import java.util.regex.Pattern;
  * If every document in the GSA is locked then locked document may be forced out when maximum
  * capacity is reached.<p>
  *
+ * "acl" -- when provided, an ACL is sent along with document. The ACL is made of 
+ * values provided for other commands starting with "acl-" and "namespace"
+ * command. If no acl command is provided then all other ACL commands are 
+ * ignored. <p>
+ *
+ * "namespace=" -- namespace used on all user and group principals until another
+ * another namespace is provided.  Defaults to the default namespace.<p>
+ *
+ * "acl-permit-user=" -- a user name, either with domain or without, that will
+ * be permitted to view document being returned.<p>
+ *
+ * "acl-deny-user=" -- a user name, either with domain or without, that will
+ * be denied access to document being returned.<p>
+ *
+ * "acl-permit-group=" -- a group name, either with domain or without, that 
+ * will be permitted to view document being returned.<p>
+ *
+ * "acl-deny-group=" -- a group name, either with domain or without, that
+ * will be denied to view document being returned.<p>
+ *
+ * "acl-inherit-from=" -- document id that this document inherits permissions
+ * from. <p>
+ *
+ * "acl-inherit-fragment=" -- optional fragment supplementing acl-inherit-from.
+ * Together acl-inherit-from and acl-inherit-fragment are what is being
+ * inherited from.<p>
+ * 
+ * "acl-inheritance-type=" -- the type of inheritance {@code
+ * com.google.enterprise.adaptor.Acl.InheritanceType}.  Valid values are:
+ * and-both-permit, child-overrides, leaf-node, and parent-overrides<p>
+ *
+ * "acl-case-sensitive=" -- the principals of this document are case sensitive.
+ * <p>
+ *
+ * "acl-case-insensitive=" -- the principals of this document are case
+ * insensitive. <p>
+ *
  * <h1>Authorizer Commands:</h1>
  *
  * "authz-status=" -- specifies whether a document is visible to a
