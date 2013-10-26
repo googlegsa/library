@@ -30,7 +30,7 @@ public class CustomFormatter extends Formatter {
   // and background colors, respectively. The ';' isn't required. If you don't
   // provide a foreground or background, it will be set to the default.
   private MessageFormat formatter = new MessageFormat(
-      "\u001b[3{5}m{0,date,HH:mm:ss.SSS}"
+      "\u001b[3{5}m{0,date,MM-dd HH:mm:ss.SSS}"
       + " \u001b[3{6}m{1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
   /** Is identical to {@link #formatter} except for colors */
   private MessageFormat noColorFormatter = new MessageFormat(
