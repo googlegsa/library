@@ -15,26 +15,40 @@
 package com.google.enterprise.adaptor;
 
 import java.io.*;
+import java.nio.charset.Charset;
+import java.util.Arrays;
 
 /** Mock File for testing file-related code paths. */
 class MockFile extends File {
+  private static final Charset CHARSET = Charset.forName("UTF-8");
+
   private String fileContents = "";
   private long lastModified;
   private boolean exists = true;
+  private boolean isFile = true;
+  private File[] children;
 
   public MockFile(String name) {
     super(name);
   }
 
   public Reader createReader() {
-    if (!exists) {
+    if (!exists || !isFile) {
       throw new IllegalStateException("File does not exist");
     }
     return new StringReader(fileContents);
   }
 
-  public void setFileContents(String fileContents) {
+  public InputStream createInputStream() {
+    if (!exists || !isFile) {
+      throw new IllegalStateException("File does not exist");
+    }
+    return new ByteArrayInputStream(fileContents.getBytes(CHARSET));
+  }
+
+  public MockFile setFileContents(String fileContents) {
     this.fileContents = fileContents;
+    return this;
   }
 
   @Override
@@ -56,13 +70,33 @@ class MockFile extends File {
     return exists;
   }
 
-  public void setExists(boolean exists) {
+  public MockFile setExists(boolean exists) {
     this.exists = exists;
+    return this;
   }
 
   @Override
   public boolean isFile() {
-    // This only mocks files, not directories and the like.
-    return exists;
+    return exists && isFile;
+  }
+
+  @Override
+  public boolean isDirectory() {
+    return exists && !isFile;
+  }
+
+  /** Marks the file and a directory, with the provided children. */
+  public MockFile setChildren(File[] children) {
+    isFile = false;
+    this.children = children;
+    return this;
+  }
+
+  @Override
+  public File[] listFiles() {
+    if (!exists || isFile) {
+      return null;
+    }
+    return Arrays.copyOf(children, children.length);
   }
 }

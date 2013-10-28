@@ -160,6 +160,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
       <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg value="-Xlint:deprecation"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
       <exclude name="${adaptor.pkg.dir}/experimental/**"/>
