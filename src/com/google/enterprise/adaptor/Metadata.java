@@ -192,6 +192,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
   }
 
   /** True if exactly the same key-values are represented. */
+  @Override
   public boolean equals(Object o) {
     if (!(o instanceof Metadata)) {
       return false;
@@ -201,6 +202,11 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
     Metadata other = (Metadata) o;
     return mappings.equals(other.mappings);
+  }
+
+  @Override
+  public int hashCode() {
+    return mappings.hashCode();
   }
 
   /** True with 0 entries. */

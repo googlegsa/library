@@ -360,6 +360,35 @@ public class MetadataTest {
   }
 
   @Test
+  public void testHashCode() {
+    Metadata m1 = new Metadata();
+    m1.add("foo", "home");
+    Metadata m2 = new Metadata();
+    m2.add("foo", "home");
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    m1.add("foo", "bar");
+    m2.add("foo", "bar");
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    m1.set("foo", "high");
+    m2.set("foo", "low");
+    assertFalse(m1.hashCode() == m2.hashCode());
+
+    m2.set("foo", "high");
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    m1.set("bar", makeSet("floor", "door"));
+    m2.set("bar", makeSet("floor", "door"));
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    m1.set("bar", makeSet("near", "far"));
+    assertFalse(m1.hashCode() == m2.hashCode());
+    m2.set("bar", makeSet("near", "far"));
+    assertEquals(m1.hashCode(), m2.hashCode());
+  }
+
+  @Test
   public void testUnmodifiableSetSingle() {
     Metadata m = new Metadata().unmodifiableView();
     thrown.expect(UnsupportedOperationException.class);
