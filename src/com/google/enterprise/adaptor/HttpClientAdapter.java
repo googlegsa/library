@@ -240,15 +240,15 @@ class HttpClientAdapter implements HttpClientInterface {
       }
       InputStream is = getResponseEntityAsStream();
       StringBuilder sb = new StringBuilder();
+      Reader reader = new InputStreamReader(is, charset);
       try {
-        Reader reader = new InputStreamReader(is, charset);
         char[] buf = new char[1024];
         int read;
         while ((read = reader.read(buf)) != -1) {
           sb.append(buf, 0, read);
         }
       } finally {
-        is.close();
+        reader.close();
       }
       return sb.toString();
     }
