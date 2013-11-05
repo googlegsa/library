@@ -937,7 +937,7 @@ public final class GsaCommunicationHandler {
       if (afterInit) {
         throw new IllegalStateException("After init()");
       }
-      authnAuthority = authnAuthority;
+      GsaCommunicationHandler.this.authnAuthority = authnAuthority;
     }
 
     @Override
@@ -945,7 +945,7 @@ public final class GsaCommunicationHandler {
       if (afterInit) {
         throw new IllegalStateException("After init()");
       }
-      authzAuthority = authzAuthority;
+      GsaCommunicationHandler.this.authzAuthority = authzAuthority;
     }
   }
 }
