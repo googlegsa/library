@@ -177,9 +177,19 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       String query) throws SQLException {
     Statement st = conn.createStatement();
     log.fine("about to query: " + query);
-    ResultSet rs = st.executeQuery(query);
-    log.fine("queried");
-    return new StatementAndResult(st, rs); 
+    try {
+      ResultSet rs = st.executeQuery(query);
+      log.fine("queried");
+      return new StatementAndResult(st, rs); 
+    } catch (SQLException sqle) {
+      try {
+        st.close();  // could mask originl sqle
+      } catch (SQLException maskingSqle) {
+        log.log(Level.WARNING, 
+            "failed to close after query failure", maskingSqle);
+      }
+      throw sqle;
+    }
   }
 
   private static StatementAndResult getStreamFromDb(Connection conn,
@@ -189,9 +199,19 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
         /* 2nd streaming flag */ java.sql.ResultSet.CONCUR_READ_ONLY);
     st.setFetchSize(/*3rd streaming flag*/ Integer.MIN_VALUE);
     log.fine("about to query for stream: " + query);
-    ResultSet rs = st.executeQuery(query);
-    log.fine("queried for stream");
-    return new StatementAndResult(st, rs); 
+    try {
+      ResultSet rs = st.executeQuery(query);
+      log.fine("queried for stream");
+      return new StatementAndResult(st, rs); 
+    } catch (SQLException sqle) {
+      try {
+        st.close();  // could mask originl sqle
+      } catch (SQLException maskingSqle) {
+        log.log(Level.WARNING,
+            "failed to close after query failure", maskingSqle);
+      }
+      throw sqle;
+    }
   }
 
   private static void tryClosingStatementAndResult(StatementAndResult strs) {
