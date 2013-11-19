@@ -87,7 +87,9 @@ class Dashboard {
     addFilters(scope.createContext("/rpc", createAdminSecurityHandler(
         rpcHandler, config, sessionManager, secure)));
     addFilters(scope.createContext("/diagnostics-support.zip",
-        new DownloadDumpHandler(config.getFeedName().replace('_', '-'))));
+        createAdminSecurityHandler(new DownloadDumpHandler(
+            config.getFeedName().replace('_', '-')),
+            config, sessionManager, secure)));
     addFilters(scope.createContext("/",
           new RedirectHandler(contextPrefix + "/dashboard")));
   }
