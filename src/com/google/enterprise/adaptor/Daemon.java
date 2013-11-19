@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import com.google.common.annotations.VisibleForTesting;
 
 import org.apache.commons.daemon.DaemonContext;
+import org.apache.commons.daemon.DaemonController;
 
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
@@ -24,13 +25,34 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * Allows running an adaptor as a daemon when used in conjunction with procrun
- * or jsvc.
+ * or {@code jsvc}.
  *
- * <p>Example execution with jsvc:
+ * <p>Example execution with {@code jsvc}:
  * <pre>jsvc -pidfile adaptor.pid -cp someadaptor-withlib.jar \
  *    com.google.enterprise.adaptor.Daemon package.SomeAdaptor</pre>
+ *
+ * <p>Example registration with {@code prunsrv}, the procrun service
+ * application:
+ * <pre>prunsrv install someadaptor --StartPath="%CD%" ^
+ *  --Classpath=someadaptor-withlib.jar ^
+ *  --StartMode=jvm --StartClass=com.google.enterprise.adaptor.Daemon ^
+ *  --StartMethod=serviceStart --StartParams=package.SomeAdaptor
+ *  --StopMode=jvm --StopClass=com.google.enterprise.adaptor.Daemon ^
+ *  --StopMethod=serviceStop</pre>
+ *
+ * <p>Where {@code someadaptor} is a unique, arbitrary service name.
+ *
+ * <p>Typical setups will also want to provide extra arguments with {@code
+ * procrun}:
+ * <pre>prunsrv ... ^
+ *   --StdOutput=stdout.log --StdError=stderr.log ^
+ *   ++JvmOptions=-Djava.util.logging.config.file=logging.properties</pre>
+
  */
 public class Daemon implements org.apache.commons.daemon.Daemon {
+  /** Windows-specific instance for keeping track of running Daemon. */
+  private static Daemon windowsDaemon;
+
   private Application app;
   private DaemonContext context;
 
@@ -100,8 +122,46 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
     app.daemonStop(5, TimeUnit.SECONDS);
   }
 
+  public static synchronized void serviceStart(String[] args) throws Exception {
+    if (windowsDaemon != null) {
+      throw new IllegalStateException("Service already running");
+    }
+    windowsDaemon = new Daemon();
+    windowsDaemon.init(new WindowsDaemonContext(args));
+    windowsDaemon.start();
+  }
+
+  public static synchronized void serviceStop(String[] args) throws Exception {
+    windowsDaemon.stop();
+    windowsDaemon.destroy();
+    windowsDaemon = null;
+  }
+
   @VisibleForTesting
   Application getApplication() {
     return app;
+  }
+
+  private static class WindowsDaemonContext implements DaemonContext {
+    private final String[] args;
+
+    public WindowsDaemonContext(String[] args) {
+      this.args = Arrays.copyOf(args, args.length);
+    }
+
+    /**
+     * Returns arguments, similar to the String[] provided to main(). The
+     * returned array is not safe for modification, which is the same behavior
+     * as Apache Daemon's context used on Unix environments.
+     */
+    @Override
+    public String[] getArguments() {
+      return args;
+    }
+
+    @Override
+    public DaemonController getController() {
+      throw new UnsupportedOperationException();
+    }
   }
 }

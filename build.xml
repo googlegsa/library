@@ -386,6 +386,7 @@
       <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="http://download.oracle.com/javase/6/docs/api/"/>
+      <link href="http://commons.apache.org/proper/commons-daemon/apidocs/"/>
       <arg value="-quiet"/>
       <arg value="-notimestamp"/>
     </javadoc>
