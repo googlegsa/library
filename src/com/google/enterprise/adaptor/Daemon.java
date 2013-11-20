@@ -88,7 +88,6 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
   public void start() throws Exception {
     final Application savedApp;
     final DaemonContext savedContext;
-    final CountDownLatch latch = new CountDownLatch(1);
     // Save values so that there aren't any races with stop/destroy.
     synchronized (this) {
       savedApp = this.app;
@@ -99,7 +98,7 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
     // throwing an exception). However, we still try to wait for start to
     // complete normally to ease testing and improve the user experience in the
     // common case of starting being quick.
-    new Thread(new Runnable() {
+    Thread thread = new Thread(new Runnable() {
       @Override
       public void run() {
         try {
@@ -109,12 +108,11 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
           Thread.currentThread().interrupt();
         } catch (Exception ex) {
           savedContext.getController().fail(ex);
-        } finally {
-          latch.countDown();
         }
       }
-    }).start();
-    latch.await(5, TimeUnit.SECONDS);
+    });
+    thread.start();
+    thread.join(5 * 1000);
   }
 
   @Override
