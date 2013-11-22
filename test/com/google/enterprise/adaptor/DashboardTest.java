@@ -33,6 +33,7 @@ public class DashboardTest {
     String golden = "Testing\n";
     Dashboard.CircularLogRpcMethod method
         = new Dashboard.CircularLogRpcMethod();
+    method.start();
     try {
       Logger logger = Logger.getLogger("");
       Level origLevel = logger.getLevel();
@@ -72,11 +73,11 @@ public class DashboardTest {
       golden.add(goldenObj);
     }
 
-    StatusMonitor monitor = new StatusMonitor();
+    List<StatusSource> sources = new ArrayList<StatusSource>();
     Status status = new MockStatus(Status.Code.NORMAL, "fine");
     MockStatusSource source = new MockStatusSource("mock", status);
-    monitor.addSource(source);
-    Dashboard.StatusRpcMethod method = new Dashboard.StatusRpcMethod(monitor);
+    sources.add(source);
+    Dashboard.StatusRpcMethod method = new Dashboard.StatusRpcMethod(sources);
     List list = (List) method.run(null);
     assertEquals(golden, list);
   }

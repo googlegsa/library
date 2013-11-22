@@ -94,7 +94,10 @@ public final class GsaCommunicationHandler {
   private ExecutorService backgroundExecutor;
   private DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
+  private HttpServerScope dashboardScope;
   private Dashboard dashboard;
+  private final List<StatusSource> statusSources
+      = new CopyOnWriteArrayList<StatusSource>();
   private SensitiveValueCodec secureValueCodec;
   private SamlIdentityProvider samlIdentityProvider;
   /**
@@ -181,8 +184,13 @@ public final class GsaCommunicationHandler {
     if (port != config.getServerPort()) {
         config.setValue("server.port", "" + port);
     }
+    int dashboardPort = dashboardServer.getAddress().getPort();
+    if (dashboardPort != config.getServerDashboardPort()) {
+      config.setValue("server.dashboardPort", "" + dashboardPort);
+    }
 
     scope = new HttpServerScope(server, contextPrefix);
+    dashboardScope = new HttpServerScope(dashboardServer, contextPrefix);
     waiter = new ShutdownWaiter();
 
     scheduleExecutor = Executors.newSingleThreadScheduledExecutor(
@@ -220,9 +228,6 @@ public final class GsaCommunicationHandler {
         config.isGsa70AuthMethodWorkaroundEnabled());
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
-
-    dashboard = new Dashboard(config, this, journal, sessionManager,
-        secureValueCodec, adaptor);
 
     // We are about to start the Adaptor, so anything available through
     // AdaptorContext or other means must be initialized at this point. Any
@@ -349,7 +354,9 @@ public final class GsaCommunicationHandler {
           TimeUnit.MILLISECONDS);
     }
 
-    dashboard.start(dashboardServer, contextPrefix);
+    dashboard = new Dashboard(config, this, journal, sessionManager,
+        secureValueCodec, adaptor, statusSources);
+    dashboard.start(dashboardScope);
 
     shuttingDownLatch = null;
   }
@@ -610,10 +617,13 @@ public final class GsaCommunicationHandler {
   private synchronized void realStop(long time, TimeUnit unit) {
     if (scope != null) {
       scope.close();
-    }
-    if (dashboard != null) {
-      dashboard.clearStatusSources();
+      scope = null;
+
+      dashboardScope.close();
+      dashboardScope = null;
+
       dashboard.stop();
+      dashboard = null;
     }
     if (scheduleExecutor != null) {
       scheduleExecutor.shutdownNow();
@@ -635,8 +645,6 @@ public final class GsaCommunicationHandler {
       // AdaptorContext is usable until the very end.
       sendDocIdsFuture = null;
       scheduler = null;
-      scope = null;
-      dashboard = null;
       scheduleExecutor = null;
       backgroundExecutor = null;
       waiter = null;
@@ -835,7 +843,7 @@ public final class GsaCommunicationHandler {
                     + "state, the adaptor is restarting.");
         HttpServer existingServer = scope.getHttpServer();
         HttpServer existingDashboardServer
-            = dashboard.getScope().getHttpServer();
+            = dashboardScope.getHttpServer();
         stop(3, TimeUnit.SECONDS);
         try {
           start(existingServer, existingDashboardServer);
@@ -871,7 +879,7 @@ public final class GsaCommunicationHandler {
       if (afterInit) {
         throw new IllegalStateException("After init()");
       }
-      dashboard.addStatusSource(source);
+      statusSources.add(source);
     }
 
     @Override

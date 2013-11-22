@@ -33,55 +33,47 @@ class Dashboard {
 
   private final Config config;
   private final Journal journal;
-  private HttpServerScope scope;
-  private CircularLogRpcMethod circularLogRpcMethod;
-  private final StatusMonitor monitor = new StatusMonitor();
+  private final CircularLogRpcMethod circularLogRpcMethod
+      = new CircularLogRpcMethod();
   private final GsaCommunicationHandler gsaCommHandler;
   private final SessionManager<HttpExchange> sessionManager;
   private final RpcHandler rpcHandler;
-  private final Adaptor adaptor;
 
   public Dashboard(Config config, GsaCommunicationHandler gsaCommHandler,
                    Journal journal, SessionManager<HttpExchange> sessionManager,
-                   SensitiveValueCodec secureValueCodec, Adaptor adaptor) {
+                   SensitiveValueCodec secureValueCodec, Adaptor adaptor,
+                   List<StatusSource> adaptorSources) {
     this.config = config;
     this.gsaCommHandler = gsaCommHandler;
     this.journal = journal;
     this.sessionManager = sessionManager;
-    this.adaptor = adaptor;
+
+    List<StatusSource> sources = new LinkedList<StatusSource>();
+    sources.add(new LastPushStatusSource(journal));
+    sources.add(new RetrieverStatusSource(journal));
+    sources.add(new GsaCrawlingStatusSource(journal));
+    sources.addAll(adaptorSources);
 
     rpcHandler = new RpcHandler(sessionManager);
     rpcHandler.registerRpcMethod("startFeedPush", new StartFeedPushRpcMethod());
     rpcHandler.registerRpcMethod("startIncrementalFeedPush",
         new StartIncrementalFeedPushRpcMethod());
-    circularLogRpcMethod = new CircularLogRpcMethod();
     rpcHandler.registerRpcMethod("getLog", circularLogRpcMethod);
     rpcHandler.registerRpcMethod("getConfig", new ConfigRpcMethod(config));
-    rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(monitor));
+    rpcHandler.registerRpcMethod("getStatuses", new StatusRpcMethod(sources));
     rpcHandler.registerRpcMethod("checkForUpdatedConfig",
         new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
     rpcHandler.registerRpcMethod("encodeSensitiveValue",
         new EncodeSensitiveValueMethod(secureValueCodec));
-
-    monitor.addSource(new LastPushStatusSource(journal));
-    monitor.addSource(new RetrieverStatusSource(journal));
-    monitor.addSource(new GsaCrawlingStatusSource(journal));
+    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal, adaptor,
+        gsaCommHandler.isAdaptorIncremental()));
   }
 
   /** Starts listening for connections to the dashboard. */
-  public void start(HttpServer dashboardServer, String contextPrefix)
-      throws IOException {
-    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal, adaptor,
-        gsaCommHandler.isAdaptorIncremental()));
-
-    this.scope = new HttpServerScope(dashboardServer, contextPrefix);
-    int dashboardPort = dashboardServer.getAddress().getPort();
-    if (dashboardPort != config.getServerDashboardPort()) {
-        config.setValue("server.dashboardPort", "" + dashboardPort);
-    }
+  public void start(HttpServerScope scope) {
     boolean secure = config.isServerSecure();
     HttpHandler dashboardHandler = new DashboardHandler();
-    addFilters(scope.createContext("/dashboard",
+    HttpContext dashboardContext = addFilters(scope.createContext("/dashboard",
         createAdminSecurityHandler(dashboardHandler, config, sessionManager,
                                    secure)));
     addFilters(scope.createContext("/rpc", createAdminSecurityHandler(
@@ -91,7 +83,9 @@ class Dashboard {
             config.getFeedName().replace('_', '-')),
             config, sessionManager, secure)));
     addFilters(scope.createContext("/",
-          new RedirectHandler(contextPrefix + "/dashboard")));
+        new RedirectHandler(dashboardContext.getPath())));
+
+    circularLogRpcMethod.start();
   }
 
   private AdministratorSecurityHandler createAdminSecurityHandler(
@@ -102,26 +96,7 @@ class Dashboard {
   }
 
   public void stop() {
-    if (circularLogRpcMethod != null) {
-      circularLogRpcMethod.close();
-      circularLogRpcMethod = null;
-    }
-    if (scope != null) {
-      scope.close();
-      scope = null;
-    }
-  }
-
-  public HttpServerScope getScope() {
-    return scope;
-  }
-
-  public void addStatusSource(StatusSource source) {
-    monitor.addSource(source);
-  }
-
-  public void clearStatusSources() {
-    monitor.clearSources();
+    circularLogRpcMethod.close();
   }
 
   private HttpContext addFilters(HttpContext context) {
@@ -152,7 +127,7 @@ class Dashboard {
     /**
      * Installs a log handler; to uninstall handler, call {@link #close}.
      */
-    public CircularLogRpcMethod() {
+    public void start() {
       LogManager.getLogManager().getLogger("").addHandler(circularLog);
     }
 
@@ -185,15 +160,25 @@ class Dashboard {
   }
 
   static class StatusRpcMethod implements RpcHandler.RpcMethod {
-    private final StatusMonitor monitor;
+    private final List<StatusSource> sources;
 
-    public StatusRpcMethod(StatusMonitor monitor) {
-      this.monitor = monitor;
+    public StatusRpcMethod(List<StatusSource> sources) {
+      this.sources = Collections.unmodifiableList(
+          new ArrayList<StatusSource>(sources));
+    }
+
+    public Map<StatusSource, Status> retrieveStatuses() {
+      Map<StatusSource, Status> statuses
+          = new LinkedHashMap<StatusSource, Status>(sources.size() * 2);
+      for (StatusSource source : sources) {
+        statuses.put(source, source.retrieveStatus());
+      }
+      return statuses;
     }
 
     @Override
     public Object run(List request) {
-      Map<StatusSource, Status> statuses = monitor.retrieveStatuses();
+      Map<StatusSource, Status> statuses = retrieveStatuses();
       List<Object> flatStatuses = new ArrayList<Object>(statuses.size());
       // TODO(ejona): choose locale based on Accept-Languages.
       Locale locale = Locale.ENGLISH;
