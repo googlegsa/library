@@ -308,6 +308,14 @@ public class DocIdSenderTest {
         Collections.singletonMap((DocId) null, Acl.EMPTY));
   }
 
+  @Test
+  public void testAclItemToString() {
+    DocId id = new DocId("foxtrot");
+    Acl acl = Acl.EMPTY;
+    String golden = "AclItem(" + id + ",null," + acl + ")";
+    assertEquals(golden, "" + new DocIdSender.AclItem(id, acl));
+  }
+
   private static class MockGsaFeedFileMaker extends GsaFeedFileMaker {
     List<String> names = new ArrayList<String>();
     List<List<? extends DocIdSender.Item>> recordses

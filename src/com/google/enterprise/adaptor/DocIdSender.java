@@ -137,8 +137,11 @@ class DocIdSender extends AbstractDocIdPusher
     for (Map.Entry<DocId, Acl> me : resources.entrySet()) {
       acls.add(new AclItem(me.getKey(), me.getValue()));
     }
+    log.log(Level.FINE, "about to push named resources: {0}", acls);
     AclItem acl = pushItems(acls.iterator(), handler);
-    return acl == null ? null : acl.getDocId();
+    DocId result = (acl == null) ? null : acl.getDocId();
+    log.log(Level.FINE, "return value: {0}", result);
+    return result;
   }
 
   @Override
@@ -161,7 +164,7 @@ class DocIdSender extends AbstractDocIdPusher
       log.log(Level.INFO, "Pushing group of {0} items", batch.size());
       T failedId;
       try {
-        failedId = pushSizedBatchOfRecords(batch, handler);
+        failedId = pushSizedBatchOfItems(batch, handler);
       } catch (InterruptedException ex) {
         if (firstBatch) {
           throw ex;
@@ -324,7 +327,7 @@ class DocIdSender extends AbstractDocIdPusher
   }
 
 
-  private <T extends Item> T pushSizedBatchOfRecords(List<T> items,
+  private <T extends Item> T pushSizedBatchOfItems(List<T> items,
                                          ExceptionHandler handler)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
@@ -390,6 +393,11 @@ class DocIdSender extends AbstractDocIdPusher
 
     public Acl getAcl() {
       return acl;
+    }
+   
+    @Override 
+    public String toString() {
+      return "AclItem(" + id + "," + docIdFragment + "," + acl + ")";
     }
   }
 }
