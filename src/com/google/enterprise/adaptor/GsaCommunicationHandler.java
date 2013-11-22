@@ -868,11 +868,17 @@ public final class GsaCommunicationHandler {
 
     @Override
     public void addStatusSource(StatusSource source) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
       dashboard.addStatusSource(source);
     }
 
     @Override
     public void setGetDocIdsFullErrorHandler(ExceptionHandler handler) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
       ((PushRunnable) docIdFullPusher.getRunnable())
           .setGetDocIdsErrorHandler(handler);
     }
@@ -886,6 +892,9 @@ public final class GsaCommunicationHandler {
     @Override
     public void setGetDocIdsIncrementalErrorHandler(
         ExceptionHandler handler) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
       ((PushRunnable) docIdFullPusher.getRunnable())
           .setGetDocIdsErrorHandler(handler);
     }
@@ -903,6 +912,9 @@ public final class GsaCommunicationHandler {
 
     @Override
     public HttpContext createHttpContext(String path, HttpHandler handler) {
+      if (afterInit) {
+        throw new IllegalStateException("After init()");
+      }
       return addFilters(scope.createContext(path, handler));
     }
 
