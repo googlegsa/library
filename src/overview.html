@@ -109,7 +109,33 @@ feed.name=mydocfeedtogsa</pre>
     com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname 
     -Dserver.port=6677</pre>
 
-  <h3>Enabling Security</h3>
+  <h3 id="windows-service">Running as a Windows Service</h3>
+  <p>Download and extract prunsrv.exe from the
+    <a href="http://www.us.apache.org/dist/commons/daemon/binaries/windows/">
+    latest Windows binary download</a> of Apache Commons Daemon. If you are
+    running on 64-bit Windows and will use a 64-bit JVM, then you should use the
+    prunsrv.exe in the amd64/ directory. Place prunsrv.exe in the same directory
+    of the Adaptor you would like to run as a service.
+
+  <p>You can then register the service:
+  <pre>prunsrv install <b>someadaptor</b> --StartPath="%CD%" ^
+  --Classpath=<b>someadaptor-withlib.jar</b> ^
+  --StartMode=jvm --StartClass=com.google.enterprise.adaptor.Daemon ^
+  --StartMethod=serviceStart --StartParams=<b>package.SomeAdaptor</b>
+  --StopMode=jvm --StopClass=com.google.enterprise.adaptor.Daemon ^
+  --StopMethod=serviceStop --StdOutput=stdout.log --StdError=stderr.log ^
+  ++JvmOptions=-Djava.util.logging.config.file=logging.properties ^
+  --Startup=auto</pre>
+
+  <p>Where {@code someadaptor} is a unique, arbitrary service name.
+
+  <p>To start the service, use the Windows service management tool or run:
+  <pre>prunsrv start <b>someadaptor</b></pre>
+
+  <p>Where {@code someadaptor} is the same service name used during
+    registration.</p>
+
+  <h3 id="secure-mode">Enabling Security</h3>
   <p>Security is not enabled by default because it requires a reasonable amount
     of setup, on both the GSA and adaptor. The GSA needs a valid certificate for
     the hostname you are accessing it with (<code>gsa.hostname</code>). Thus,
