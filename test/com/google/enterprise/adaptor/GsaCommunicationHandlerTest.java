@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.*;
 
 import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -93,6 +94,11 @@ public class GsaCommunicationHandlerTest {
           StatusSource source = new MockStatusSource("test",
               new MockStatus(Status.Code.NORMAL));
           context.addStatusSource(source);
+
+          assertNotNull(context.createHttpContext("/test", new HttpHandler() {
+            @Override
+            public void handle(HttpExchange ex) {}
+          }));
         } catch (Throwable t) {
           error.set(t);
         }
