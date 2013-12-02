@@ -18,14 +18,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.enterprise.secmgr.common.GCookie;
-import com.google.enterprise.secmgr.config.AuthnMechBasic;
-import com.google.enterprise.secmgr.config.AuthnMechConnector;
-import com.google.enterprise.secmgr.config.AuthnMechLdap;
-import com.google.enterprise.secmgr.config.AuthnMechNtlm;
-import com.google.enterprise.secmgr.config.AuthnMechanism;
 import com.google.enterprise.secmgr.config.ConfigSingleton;
-import com.google.enterprise.secmgr.http.ConnectorUtil;
 import com.google.enterprise.secmgr.json.ProxyTypeAdapter;
 import com.google.enterprise.secmgr.json.TypeAdapters;
 import com.google.enterprise.secmgr.json.TypeProxy;
@@ -191,78 +184,18 @@ public final class ExportedState {
 
   @Nonnegative private final int version;
   @Nonnegative private final long timeStamp;
-  @Nonnull private final AuthnSessionState sessionState;
   @Nonnull private final Credentials pviCredentials;
   @Nonnull private final Credentials basicCredentials;
   @Nonnull private final ImmutableMap<String, Credentials> connectorCredentials;
-  @Nonnull private final ImmutableSet<GCookie> cookies;
 
   private ExportedState(@Nonnegative int version, @Nonnegative long timeStamp,
-      AuthnSessionState sessionState, Credentials pviCredentials, Credentials basicCredentials,
-      ImmutableMap<String, Credentials> connectorCredentials, ImmutableSet<GCookie> cookies) {
+      Credentials pviCredentials, Credentials basicCredentials,
+      ImmutableMap<String, Credentials> connectorCredentials) {
     this.version = version;
     this.timeStamp = timeStamp;
-    this.sessionState = sessionState;
     this.pviCredentials = pviCredentials;
     this.basicCredentials = basicCredentials;
     this.connectorCredentials = connectorCredentials;
-    this.cookies = cookies;
-  }
-
-  /**
-   * Makes an exported-state object from a given session snapshot.
-   *
-   * @param snapshot A snapshot to derive the exported state from.
-   * @return A corresponding exported-state object.
-   */
-  @CheckReturnValue
-  @Nonnull
-  public static ExportedState make(SessionSnapshot snapshot) {
-    long timeStamp = snapshot.getTimeStamp();
-    Credentials pviCredentials
-        = credentialsForView(snapshot.getPrimaryVerifiedView(), Credentials.EMPTY);
-    Credentials basicCredentials = credentialsForView(getBasicView(snapshot), pviCredentials);
-    ImmutableMap.Builder<String, Credentials> connectorCredentialsBuilder = ImmutableMap.builder();
-    for (String instanceName : ConnectorUtil.getUrlMap().keySet()) {
-      connectorCredentialsBuilder.put(instanceName,
-          credentialsForView(findConnectorView(instanceName, snapshot), pviCredentials));
-    }
-    ImmutableMap<String, Credentials> connectorCredentials = connectorCredentialsBuilder.build();
-    ImmutableSet<GCookie> cookies = ImmutableSet.copyOf(snapshot.getView().getAuthorityCookies());
-    return new ExportedState(CURRENT_VERSION, timeStamp, snapshot.getState(), pviCredentials,
-        basicCredentials, connectorCredentials, cookies);
-  }
-
-  private static Credentials credentialsForView(SessionView view, Credentials fallback) {
-    if (view == null) {
-      return fallback;
-    }
-    if (view.hasVerifiedPrincipalAndPassword()) {
-      return Credentials.make(view.getUsername(), view.getDomain(), view.getPassword(),
-          view.getGroups());
-    }
-    return Credentials.EMPTY;
-  }
-
-  private static SessionView getBasicView(SessionSnapshot snapshot) {
-    for (AuthnMechanism mechanism : snapshot.getConfig().getMechanisms()) {
-      if (mechanism instanceof AuthnMechBasic
-          || mechanism instanceof AuthnMechLdap
-          || mechanism instanceof AuthnMechNtlm) {
-        return snapshot.getView(mechanism);
-      }
-    }
-    return null;
-  }
-
-  private static SessionView findConnectorView(String instanceName, SessionSnapshot snapshot) {
-    for (AuthnMechanism mechanism : snapshot.getConfig().getMechanisms()) {
-      if (mechanism instanceof AuthnMechConnector
-          && instanceName.equals(((AuthnMechConnector) mechanism).getConnectorName())) {
-        return snapshot.getView(mechanism);
-      }
-    }
-    return null;
   }
 
   /**
@@ -272,16 +205,6 @@ public final class ExportedState {
   @Nonnegative
   public long getTimeStamp() {
     return timeStamp;
-  }
-
-  /**
-   * Gets the security manager's session state, consisting of all cookies,
-   * credentials, and verifications generated during authentication.
-   */
-  @CheckReturnValue
-  @Nonnull
-  public AuthnSessionState getSessionState() {
-    return sessionState;
   }
 
   /**
@@ -314,15 +237,6 @@ public final class ExportedState {
   }
 
   /**
-   * Gets all the cookies collected by the security manager.
-   */
-  @CheckReturnValue
-  @Nonnull
-  public ImmutableSet<GCookie> getCookies() {
-    return cookies;
-  }
-
-  /**
    * Gets a JSON string representation for this object.
    */
   @CheckReturnValue
@@ -340,14 +254,12 @@ public final class ExportedState {
     return ConfigSingleton.getGson().fromJson(jsonString, ExportedState.class);
   }
 
-  static void registerTypeAdapters(GsonBuilder builder) {
+  public static void registerTypeAdapters(GsonBuilder builder) {
     builder.registerTypeAdapter(Credentials.class,
         ProxyTypeAdapter.make(Credentials.class, Credentials.LocalProxy.class));
     builder.registerTypeAdapter(ExportedState.class,
         ProxyTypeAdapter.make(ExportedState.class, LocalProxy.class));
     builder.registerTypeAdapter(new TypeToken<ImmutableSet<String>>() {}.getType(),
-        TypeAdapters.immutableSet());
-    builder.registerTypeAdapter(new TypeToken<ImmutableSet<GCookie>>() {}.getType(),
         TypeAdapters.immutableSet());
     builder.registerTypeAdapter(new TypeToken<ImmutableMap<String, Credentials>>() {}.getType(),
         TypeAdapters.immutableMap());
@@ -356,11 +268,9 @@ public final class ExportedState {
   private static final class LocalProxy implements TypeProxy<ExportedState> {
     int version;
     long timeStamp;
-    AuthnSessionState sessionState;
     Credentials pviCredentials;
     Credentials basicCredentials;
     ImmutableMap<String, Credentials> connectorCredentials;
-    ImmutableSet<GCookie> cookies;
 
     @SuppressWarnings("unused")
     LocalProxy() {
@@ -370,20 +280,17 @@ public final class ExportedState {
     LocalProxy(ExportedState state) {
       version = state.version;
       timeStamp = state.timeStamp;
-      sessionState = state.getSessionState();
       pviCredentials = state.getPviCredentials();
       basicCredentials = state.getBasicCredentials();
       connectorCredentials = state.getConnectorCredentials();
-      cookies = state.getCookies();
     }
 
     @Override
     public ExportedState build() {
       Preconditions.checkArgument(version >= MIN_VERSION && version <= MAX_VERSION);
       Preconditions.checkArgument(timeStamp >= 0);
-      Preconditions.checkArgument(sessionState != null);
-      return new ExportedState(version, timeStamp, sessionState, pviCredentials, basicCredentials,
-          ImmutableMap.copyOf(connectorCredentials), ImmutableSet.copyOf(cookies));
+      return new ExportedState(version, timeStamp, pviCredentials, basicCredentials,
+          ImmutableMap.copyOf(connectorCredentials));
     }
   }
 }

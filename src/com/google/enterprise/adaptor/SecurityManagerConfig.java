@@ -14,11 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.secmgr.authncontroller.AuthnGuiceModule;
-import com.google.enterprise.secmgr.common.GCookie;
-import com.google.enterprise.secmgr.config.ConfigModule;
+import com.google.enterprise.secmgr.authncontroller.ExportedState;
 import com.google.enterprise.secmgr.config.ConfigSingleton;
-import com.google.enterprise.secmgr.identity.CredentialModule;
 import com.google.gson.GsonBuilder;
 
 class SecurityManagerConfig {
@@ -27,10 +24,7 @@ class SecurityManagerConfig {
         new ConfigSingleton.GsonRegistrations() {
           @Override
           public void register(GsonBuilder builder) {
-            AuthnGuiceModule.registerTypeAdapters(builder);
-            ConfigModule.registerTypeAdapters(builder);
-            CredentialModule.registerTypeAdapters(builder);
-            GCookie.registerTypeAdapters(builder);
+            ExportedState.registerTypeAdapters(builder);
           }
         });
   }

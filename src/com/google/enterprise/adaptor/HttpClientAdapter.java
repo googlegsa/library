@@ -15,8 +15,6 @@
 package com.google.enterprise.adaptor;
 
 import com.google.common.collect.ListMultimap;
-import com.google.enterprise.secmgr.common.CookieStore;
-import com.google.enterprise.secmgr.common.GCookie;
 import com.google.enterprise.secmgr.http.HttpClientInterface;
 import com.google.enterprise.secmgr.http.HttpExchange;
 
@@ -39,16 +37,6 @@ class HttpClientAdapter implements HttpClientInterface {
   private static final String POST_ENCODING = "UTF-8";
 
   @Override
-  public HttpExchange headExchange(URL url) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public HttpExchange getExchange(URL url) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
   public HttpExchange postExchange(URL url,
                                    ListMultimap<String, String> parameters) {
     HttpExchange exchange = new ClientExchange(url, "POST");
@@ -62,42 +50,6 @@ class HttpClientAdapter implements HttpClientInterface {
       }
     }
     return exchange;
-  }
-
-  @Override
-  public HttpExchange newHttpExchange(URL url) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Connection getConnection(URL url) throws IOException {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public HttpExchange headExchange(Connection connection, URL url) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public HttpExchange getExchange(Connection connection, URL url) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public HttpExchange postExchange(Connection connection, URL url,
-                                   ListMultimap<String, String> parameters) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public HttpExchange newHttpExchange(Connection connection, URL url) {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public void setRequestTimeoutMillis(int millisec) {
-    throw new UnsupportedOperationException();
   }
 
   private static class ClientExchange implements HttpExchange {
@@ -180,16 +132,6 @@ class HttpClientAdapter implements HttpClientInterface {
     @Override
     public String getRequestHeaderValue(String headerName) {
       return conn.getRequestProperty(headerName);
-    }
-
-    @Override
-    public void addCookies(Iterable<GCookie> cookies) {
-      throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public CookieStore getCookies() {
-      throw new UnsupportedOperationException();
     }
 
     /** Does not copy provided byte array. */

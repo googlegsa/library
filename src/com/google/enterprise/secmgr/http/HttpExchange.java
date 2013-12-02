@@ -15,8 +15,6 @@
 package com.google.enterprise.secmgr.http;
 
 import com.google.common.collect.ListMultimap;
-import com.google.enterprise.secmgr.common.CookieStore;
-import com.google.enterprise.secmgr.common.GCookie;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -121,23 +119,6 @@ public interface HttpExchange {
    */
   @Nullable
   public String getRequestHeaderValue(String headerName);
-
-  /**
-   * Adds cookies to this exchange's request.
-   *
-   * @param cookies The cookies to add.
-   */
-  public void addCookies(Iterable<GCookie> cookies);
-
-  /**
-   * Gets this exchange's cookies.  Prior to calling {@link #exchange} this will
-   * return the request cookies; subsequently it will return cookies as modified
-   * by the response.
-   *
-   * @return The exchange's cookie store.
-   */
-  @Nonnull
-  public CookieStore getCookies();
 
   /**
    * Sets the entity of the request.

@@ -76,7 +76,6 @@
     <fileset dir="${lib.dir}">
       <!--include name="guice-3.0.jar"/-->
       <include name="jsr305.jar"/>
-      <include name="servlet-api.jar"/>
 
       <!-- Dependencies that are in common with opensaml. -->
       <include name="joda-time-1.6.jar"/>

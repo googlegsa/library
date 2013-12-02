@@ -21,7 +21,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.enterprise.secmgr.authncontroller.ExportedState;
 import com.google.enterprise.secmgr.common.SecurityManagerUtil;
-import com.google.enterprise.secmgr.identity.Verification;
 import com.google.enterprise.secmgr.modules.SamlClient;
 import com.google.enterprise.secmgr.saml.OpenSamlUtil;
 import com.google.enterprise.secmgr.saml.SamlLogUtil;
@@ -206,21 +205,6 @@ public final class ResponseParser {
         .getSubjectConfirmationData()
         .getNotOnOrAfter();
     return (time1 == null || dtComparator.compare(time1, time2) > 0) ? time2 : time1;
-  }
-
-  /**
-   * Convert an assertion's expiration time to a form suitable for use in a
-   * verification.
-   *
-   * @param time The given expiration time.
-   * @return An expiration time usable by a verification.
-   */
-  public long expirationTimeToVerificationTime(DateTime time) {
-    if (time != null) {
-      return time.getMillis();
-    }
-    warn("SAML IdP failed to return expiration time");
-    return Verification.NEVER_EXPIRES;
   }
 
   /**
