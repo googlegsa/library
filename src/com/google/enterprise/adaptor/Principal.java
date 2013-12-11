@@ -33,7 +33,8 @@ public abstract class Principal implements Comparable<Principal> {
       throw new IllegalArgumentException("name cannot be empty");
     }
     if (!n.trim().equals(n)) {
-      throw new IllegalArgumentException("name cannot start or end with space");
+      throw new IllegalArgumentException("name \"" + n
+          + "\" should not start or end with space");
     }
     name = n;
     namespace = ns;

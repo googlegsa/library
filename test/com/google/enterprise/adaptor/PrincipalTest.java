@@ -86,6 +86,62 @@ public class PrincipalTest {
   }
 
   @Test
+  public void testEmptyNameOfUser() {
+    thrown.expect(IllegalArgumentException.class);
+    new UserPrincipal("");
+  }
+
+  @Test
+ public void testEmptyNameOfGroup() {
+    thrown.expect(IllegalArgumentException.class);
+    new GroupPrincipal("");
+  }
+
+  @Test
+  public void testLeadingSpaceOfUser() {
+    thrown.expect(IllegalArgumentException.class);
+    new UserPrincipal(" yowser");
+  }
+
+  @Test
+  public void testLeadingSpaceOfGroup() {
+    thrown.expect(IllegalArgumentException.class);
+    new GroupPrincipal(" gooop");
+  }
+
+  @Test
+  public void testTrailingSpaceOfUser() {
+    thrown.expect(IllegalArgumentException.class);
+    new UserPrincipal("yowser ");
+  }
+
+  @Test
+  public void testTrailingSpaceOfGroup() {
+    thrown.expect(IllegalArgumentException.class);
+    new GroupPrincipal("gooop ");
+  }
+
+  @Test
+  public void testLeadingSpaceOfUserNameExceptionContainsName() {
+    try {
+      new UserPrincipal(" yowser");
+      fail("Expected IllegalArgumentException not thrown.");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.toString().contains("\" yowser\""));
+    }
+  }
+
+  @Test
+  public void testTrailingSpaceOfGroupNameExceptionContainsName() {
+    try {
+      new GroupPrincipal("gooop ");
+      fail("Expected IllegalArgumentException not thrown.");
+    } catch (IllegalArgumentException e) {
+      assertTrue(e.toString().contains("\"gooop \""));
+    }
+  }
+
+  @Test
   public void testUserEquals() {
     Principal p1 = new UserPrincipal("id");
     assertFalse(p1.equals(null));
