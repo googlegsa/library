@@ -24,6 +24,7 @@ import java.net.HttpURLConnection;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.logging.Level;
@@ -40,8 +41,14 @@ class DownloadDumpHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(DownloadDumpHandler.class.getName());
 
+  /** Used to generate the configuration output file */
+  private Config config;
+
   /** To be used as part of the zip file name */
   private String feedName;
+
+  /** Used to obtain statistics for one file in the .zip */
+  private StatRpcMethod statRpcMethod;
 
   /** Used to specify the top-level directory where logs are kept */
   private final File logsDir;
@@ -54,13 +61,18 @@ class DownloadDumpHandler implements HttpHandler {
   private final DateFormat dateFormat = new SimpleDateFormat("yyyyMMdd");
 
   /** Default to "logs/" and System time */
-  public DownloadDumpHandler(String feedName) {
-    this(feedName, new File("logs/"), new SystemTimeProvider());
+  public DownloadDumpHandler(Config config, String feedName,
+      StatRpcMethod statRpcMethod) {
+    this(config, feedName, statRpcMethod, new File("logs/"),
+        new SystemTimeProvider());
   }
 
   @VisibleForTesting
-  DownloadDumpHandler(String feedName, File logsDir,
-      TimeProvider timeProvider) {
+  DownloadDumpHandler(Config config, String feedName,
+      StatRpcMethod statRpcMethod, File logsDir, TimeProvider timeProvider) {
+    if (null == config) {
+      throw new NullPointerException();
+    }
     if (null == feedName) {
       throw new NullPointerException();
     }
@@ -68,7 +80,9 @@ class DownloadDumpHandler implements HttpHandler {
       throw new IllegalArgumentException(
           "feedName must not contain the \" character");
     }
+    this.config = config;
     this.feedName = feedName;
+    this.statRpcMethod = statRpcMethod; // OK to leave as null
     this.logsDir = logsDir;
     this.timeProvider = timeProvider;
   }
@@ -109,6 +123,8 @@ class DownloadDumpHandler implements HttpHandler {
       throws IOException {
     dumpLogFiles(logsDir, zos);
     dumpStackTraces(zos);
+    dumpConfig(zos);
+    dumpStats(zos);
     zos.flush();
   }
 
@@ -178,6 +194,129 @@ class DownloadDumpHandler implements HttpHandler {
     }
     writer.flush();
     zos.closeEntry();
+  }
+
+  /**
+   * Output the configuration into the diagnostics zip
+   */
+  private void dumpConfig(ZipOutputStream zos) throws IOException {
+    PrintWriter writer = new PrintWriter(new OutputStreamWriter(zos, "UTF-8"));
+    String newline = "\n"; // so our support folks always see the same results
+    TreeMap<String, String> sortedConfig = new TreeMap<String, String>();
+    for (String key : config.getAllKeys()) {
+      sortedConfig.put(key, config.getValue(key));
+    }
+    zos.putNextEntry(new ZipEntry("config.txt"));
+    prettyPrintMap(writer, sortedConfig);
+    writer.flush();
+    zos.closeEntry();
+  }
+
+  /**
+   * Output the version info and statistics into the diagnostics zip
+   */
+  private void dumpStats(ZipOutputStream zos) throws IOException {
+    PrintWriter writer = new PrintWriter(new OutputStreamWriter(zos, "UTF-8"));
+    String newline = "\n"; // so our support folks always see the same results
+    // LinkedHashMap maintains put() -> get() order of elements.
+    LinkedHashMap<String, String> stats = new LinkedHashMap<String, String>();
+    if (statRpcMethod == null) {
+      return;  // don't generate empty stats file
+    }
+    @SuppressWarnings("unchecked")
+    Map<String, Object> map = (Map<String, Object>) statRpcMethod.run(null);
+
+    zos.putNextEntry(new ZipEntry("stats.txt"));
+
+    if (null != map.get("versionStats")) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> vMap = (Map<String, Object>) map.get("versionStats");
+      // TODO(myk): determine if these strings can be shared with the CSS code
+      // that displays these in the dashboard
+      stats.put("JVM version", vMap.get("versionJvm").toString());
+      stats.put("Adaptor library version",
+          vMap.get("versionAdaptorLibrary").toString());
+      stats.put("Adaptor type", vMap.get("typeAdaptor").toString());
+      stats.put("Adaptor version", vMap.get("versionAdaptor").toString());
+      stats.put("Configuration file", vMap.get("configFileName").toString());
+      stats.put("current directory", vMap.get("cwd").toString());
+      prettyPrintMap(writer, stats);
+      stats.clear();
+    }
+
+    if (null != map.get("simpleStats")) {
+      @SuppressWarnings("unchecked")
+      Map<String, Object> sMap = (Map<String, Object>) map.get("simpleStats");
+      stats.put("Program started at",
+          prettyDate(sMap.get("whenStarted"), "Unknown"));
+      stats.put("Last successful full push start",
+          prettyDate(sMap.get("lastSuccessfulFullPushStart"), "None yet"));
+      stats.put("Last successful full push end",
+          prettyDate(sMap.get("lastSuccessfulFullPushEnd"), "None yet"));
+      stats.put("Current full push",
+          prettyDate(sMap.get("currentFullPushStart"), "None in progress"));
+      stats.put("Last successful incremental push start",
+          prettyDate(sMap.get("lastSuccessfulIncrementalPushStart"),
+              "None yet"));
+      stats.put("Last successful incremental push end",
+          prettyDate(sMap.get("lastSuccessfulIncrementalPushEnd"), "None yet"));
+      stats.put("Current incremental push",
+          prettyDate(sMap.get("currentIncrementalPushStart"),
+              "None in progress"));
+      stats.put("Total document ids pushed",
+          sMap.get("numTotalDocIdsPushed").toString());
+      stats.put("Unique document ids pushed",
+          sMap.get("numUniqueDocIdsPushed").toString());
+      stats.put("GSA document requests",
+          sMap.get("numTotalGsaRequests").toString());
+      stats.put("GSA Unique document requests",
+          sMap.get("numUniqueGsaRequests").toString());
+      stats.put("Non-GSA document requests",
+          sMap.get("numTotalNonGsaRequests").toString());
+      stats.put("Non-GSA Unique document requests",
+          sMap.get("numUniqueNonGsaRequests").toString());
+      stats.put("Time resolution", sMap.get("timeResolution") + " ms");
+      prettyPrintMap(writer, stats);
+      stats.clear();
+    }
+
+    writer.flush();
+    zos.closeEntry();
+  }
+
+  /**
+   * Pretty-prints a map
+   */
+  void prettyPrintMap(PrintWriter writer, Map<String, String> map) {
+    int maxKeyLength = 0;
+
+    for (String key : map.keySet()) {
+      if (key.length() > maxKeyLength) {
+        maxKeyLength = key.length();
+      }
+    }
+
+    String outputFormat = "%-" + (maxKeyLength + 1) + "s= %s%n";
+    for (Map.Entry<String, String> me : map.entrySet()) {
+      writer.format(outputFormat, me.getKey(),
+          (me.getValue() == null ? "[null]" : me.getValue()));
+    }
+    writer.format("%n");
+  }
+
+  private String prettyDate(Object date, String defaultText) {
+    if (null == date) {
+      return defaultText;
+    }
+    try {
+      long value = new Long(date.toString());
+      if (value == 0) {
+        return defaultText;
+      }
+      return new Date(value).toString();
+    } catch (NumberFormatException e) {
+      return defaultText;
+    }
   }
 
   /**

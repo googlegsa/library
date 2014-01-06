@@ -25,7 +25,7 @@ import java.util.*;
  */
 public class StatRpcMethodTest {
   private RpcHandler.RpcMethod method = new StatRpcMethod(
-      new SnapshotMockJournal(), new AdaptorMock(), false);
+      new SnapshotMockJournal(), new AdaptorMock(), false, null);
 
   @Test
   public void testStat() throws Exception {
@@ -57,6 +57,9 @@ public class StatRpcMethodTest {
       versionMap.put("typeAdaptor", AdaptorMock.class.getSimpleName());
       versionMap.put("versionAdaptor",
                      Translation.STATS_VERSION_UNKNOWN.toString(locale));
+      versionMap.put("cwd", System.getProperty("user.dir"));
+      versionMap.put("configFileName",
+                     Translation.STATUS_NONE.toString(locale));
 
       golden.put("versionStats", versionMap);
 

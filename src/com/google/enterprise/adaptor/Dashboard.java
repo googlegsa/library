@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
-import com.sun.net.httpserver.HttpServer;
 
 import java.io.*;
 import java.util.*;
@@ -38,6 +37,7 @@ class Dashboard {
   private final GsaCommunicationHandler gsaCommHandler;
   private final SessionManager<HttpExchange> sessionManager;
   private final RpcHandler rpcHandler;
+  private final StatRpcMethod statRpcMethod;
 
   public Dashboard(Config config, GsaCommunicationHandler gsaCommHandler,
                    Journal journal, SessionManager<HttpExchange> sessionManager,
@@ -65,8 +65,9 @@ class Dashboard {
         new CheckForUpdatedConfigRpcMethod(gsaCommHandler));
     rpcHandler.registerRpcMethod("encodeSensitiveValue",
         new EncodeSensitiveValueMethod(secureValueCodec));
-    rpcHandler.registerRpcMethod("getStats", new StatRpcMethod(journal, adaptor,
-        gsaCommHandler.isAdaptorIncremental()));
+    statRpcMethod = new StatRpcMethod(journal, adaptor,
+        gsaCommHandler.isAdaptorIncremental(), config.getConfigFile());
+    rpcHandler.registerRpcMethod("getStats", statRpcMethod);
   }
 
   /** Starts listening for connections to the dashboard. */
@@ -79,8 +80,8 @@ class Dashboard {
     addFilters(scope.createContext("/rpc", createAdminSecurityHandler(
         rpcHandler, config, sessionManager, secure)));
     addFilters(scope.createContext("/diagnostics-support.zip",
-        createAdminSecurityHandler(new DownloadDumpHandler(
-            config.getFeedName().replace('_', '-')),
+        createAdminSecurityHandler(new DownloadDumpHandler(config,
+            config.getFeedName().replace('_', '-'), statRpcMethod),
             config, sessionManager, secure)));
     addFilters(scope.createContext("/",
         new RedirectHandler(dashboardContext.getPath())));

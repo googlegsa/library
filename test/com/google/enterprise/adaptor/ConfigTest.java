@@ -72,6 +72,7 @@ public class ConfigTest {
     config.load(configFile);
     assertEquals("notreal", config.getGsaHostname());
     assertEquals("1", config.getAdaptorFullListingSchedule());
+    assertEquals(configFile, config.getConfigFile());
 
     final List<ConfigModificationEvent> events
         = new LinkedList<ConfigModificationEvent>();

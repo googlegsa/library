@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -32,26 +33,41 @@ import java.util.zip.ZipInputStream;
  * Tests for {@link DownloadDumpHandler}.
  */
 public class DownloadDumpHandlerTest {
-  private DownloadDumpHandler handler =
-      new ModifiedDownloadDumpHandler("adaptor");
-  private String pathPrefix = "/";
-  private MockHttpContext httpContext =
-      new MockHttpContext(handler, pathPrefix);
-  private MockHttpExchange ex = createExchange("");
+  private Config config;
+  private DownloadDumpHandler handler;
+  private final String pathPrefix = "/";
+  private MockHttpContext httpContext;
+  private MockHttpExchange ex;
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
+  @Before
+  public void setUp() {
+    config = new Config();
+    // problems arise if gsa.version is left unset
+    config.setValue("gsa.version", "7.0.14-114");
+    handler = new ModifiedDownloadDumpHandler(config, "adaptor");
+    httpContext = new MockHttpContext(handler, pathPrefix);
+    ex = createExchange("");
+  }
+
+  @Test
+  public void testNullConfig() throws Exception {
+    thrown.expect(NullPointerException.class);
+    handler = new DownloadDumpHandler(null, "feedname", null);
+  }
+
   @Test
   public void testNullFeedName() throws Exception {
     thrown.expect(NullPointerException.class);
-    handler = new ModifiedDownloadDumpHandler(null);
+    handler = new ModifiedDownloadDumpHandler(config, null);
   }
 
   @Test
   public void testIllegalFeedName() throws Exception {
     thrown.expect(IllegalArgumentException.class);
-    handler = new ModifiedDownloadDumpHandler("bad\"name");
+    handler = new ModifiedDownloadDumpHandler(config, "bad\"name");
   }
 
   @Test
@@ -83,7 +99,7 @@ public class DownloadDumpHandlerTest {
     MockTimeProvider timeProvider = new MockTimeProvider();
     timeProvider.time = 1383763470000L; // November 6, 2013 @ 10:44:30
     try {
-      handler = new ModifiedDownloadDumpHandler("adaptor", mockLogsDir,
+      handler = new ModifiedDownloadDumpHandler(config, "adaptor", mockLogsDir,
           timeProvider);
       handler.handle(ex);
       assertEquals(200, ex.getResponseCode());
@@ -93,7 +109,7 @@ public class DownloadDumpHandlerTest {
           ex.getResponseHeaders().getFirst("Content-Disposition"));
       // extract the zip contents and just count the number of entries
       int entries = countZipEntries(ex.getResponseBytes());
-      assertEquals(3, entries); /* 2 expected log files + thread dump */
+      assertEquals(4, entries); /* 2 log files + thread dump + config */
     } finally {
        TimeZone.setDefault(previousTimeZone);
     }
@@ -104,14 +120,14 @@ public class DownloadDumpHandlerTest {
     TimeZone previousTimeZone = TimeZone.getDefault();
     TimeZone.setDefault(TimeZone.getTimeZone("PST"));
     try {
-      handler = new ModifiedDownloadDumpHandler("myadaptor",
+      handler = new ModifiedDownloadDumpHandler(config, "myadaptor",
           new MockFile("no-such-dir").setExists(false), new MockTimeProvider());
       handler.handle(ex);
       assertEquals(200, ex.getResponseCode());
       assertEquals("attachment; filename=\"myadaptor-19691231.zip\"",
           ex.getResponseHeaders().getFirst("Content-Disposition"));
       int entries = countZipEntries(ex.getResponseBytes());
-      assertEquals(1, entries); /* 0 expected log files + thread dump */
+      assertEquals(2, entries); /* 0 log files + thread dump + config */
    } finally {
       TimeZone.setDefault(previousTimeZone);
    }
@@ -136,14 +152,13 @@ public class DownloadDumpHandlerTest {
   }
 
   private static class ModifiedDownloadDumpHandler extends DownloadDumpHandler {
-
-    public ModifiedDownloadDumpHandler(String feedName) {
-      super(feedName);
+    public ModifiedDownloadDumpHandler(Config config, String feedName) {
+      super(config, feedName, null);
     }
 
-    ModifiedDownloadDumpHandler(String feedName, File logsDir,
+    ModifiedDownloadDumpHandler(Config config, String feedName, File logsDir,
         TimeProvider timeProvider) {
-      super(feedName, logsDir, timeProvider);
+      super(config, feedName, null, logsDir, timeProvider);
     }
 
     @Override

@@ -45,6 +45,7 @@ enum Translation {
   STATUS_ERROR_RATE_RATE,
   STATUS_FEED,
   STATUS_FEED_INTERRUPTED,
+  STATUS_NONE,
   ;
 
   /**

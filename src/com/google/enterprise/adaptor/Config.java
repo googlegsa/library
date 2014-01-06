@@ -713,6 +713,13 @@ public class Config {
   }
 
   /**
+   * Returns the current config file
+   */
+  File getConfigFile() {
+    return configFile;
+  }
+
+  /**
    * Gets all configuration values that begin with {@code prefix}, returning
    * them as a map with the keys having {@code prefix} removed.
    */

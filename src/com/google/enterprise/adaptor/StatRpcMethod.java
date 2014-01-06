@@ -14,6 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
+import java.io.File;
+import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -29,11 +32,13 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   private String adaptorType;
   private Journal journal;
   private boolean isAdaptorIncremental;
+  private File configFile;
 
   public StatRpcMethod(Journal journal, Adaptor adaptor,
-      boolean isAdaptorIncremental) {
+      boolean isAdaptorIncremental, File configFile) {
     this.journal = journal;
     this.isAdaptorIncremental = isAdaptorIncremental;
+    this.configFile = configFile;
 
     Class adaptorClass = adaptor.getClass();
     if (adaptorClass.getPackage() != null) {
@@ -84,7 +89,8 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
       versionMap.put("versionAdaptorLibrary", getAdaptorLibraryVersion(locale));
       versionMap.put("typeAdaptor", adaptorType);
       versionMap.put("versionAdaptor", getAdaptorVersion(locale));
-
+      versionMap.put("cwd", System.getProperty("user.dir"));
+      versionMap.put("configFileName", getConfigFilename(locale));
       map.put("versionStats", versionMap);
     }
 
@@ -139,5 +145,20 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   private String getAdaptorVersion(Locale locale) {
     return adaptorVersion == null ?
         Translation.STATS_VERSION_UNKNOWN.toString(locale) : adaptorVersion;
+  }
+
+  private String getConfigFilename(Locale locale) {
+    File canonicalConfigFile = null;
+    try {
+      if (configFile != null) {
+        canonicalConfigFile = configFile.getCanonicalFile();
+      }
+    } catch (IOException e) {
+      // ignore error; treat file as null
+    }
+
+    return canonicalConfigFile == null ?
+        Translation.STATUS_NONE.toString(locale) :
+        canonicalConfigFile.toString();
   }
 }
