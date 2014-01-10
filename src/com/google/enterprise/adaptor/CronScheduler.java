@@ -216,18 +216,17 @@ class CronScheduler {
     // day of month: 0-30, 0 is 1st day of month.
     // month: 0-11, 0 in January.
     // day of week: 0-6, 0 is Sunday.
-    private final List<BitSet> fields;
+    private final EnumMap<Field, BitSet> fields;
 
-    private CronPattern(List<BitSet> fields) {
+    private CronPattern(EnumMap<Field, BitSet> fields) {
       this.fields = fields;
     }
 
     public boolean matches(Date date, TimeZone timeZone) {
       GregorianCalendar calendar = new GregorianCalendar(timeZone);
       calendar.setTime(date);
-      for (int i = 0; i < FIELDS.size(); i++) {
-        Field field = FIELDS.get(i);
-        if (!fields.get(i).get(field.calendarToIndex(calendar))) {
+      for (Field field : FIELDS) {
+        if (!fields.get(field).get(field.calendarToIndex(calendar))) {
           return false;
         }
       }
@@ -236,7 +235,7 @@ class CronScheduler {
 
     @Override
     public String toString() {
-      return "" + fields;
+      return "" + fields.values();
     }
 
     public static CronPattern create(String timeSpecification)
@@ -248,10 +247,9 @@ class CronScheduler {
             "Should have precisely 5 fields: "
             + "minute, hour, day of month, month, day of week");
       }
-      List<BitSet> fields = new ArrayList<BitSet>(FIELDS.size());
-      for (int i = 0; i < FIELDS.size(); i++) {
-        String stringField = stringFields[i];
-        Field fieldType = FIELDS.get(i);
+      EnumMap<Field, BitSet> fields = new EnumMap<Field, BitSet>(Field.class);
+      for (Field fieldType : FIELDS) {
+        String stringField = stringFields[fieldType.ordinal()];
         BitSet set = new BitSet(fieldType.numValues());
         for (String element : stringField.split(",", -1)) {
           int step = 1;
@@ -282,7 +280,7 @@ class CronScheduler {
             }
           }
         }
-        fields.add(set);
+        fields.put(fieldType, set);
       }
       return new CronPattern(fields);
     }
