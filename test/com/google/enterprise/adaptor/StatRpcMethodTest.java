@@ -59,7 +59,7 @@ public class StatRpcMethodTest {
                      Translation.STATS_VERSION_UNKNOWN.toString(locale));
       versionMap.put("cwd", System.getProperty("user.dir"));
       versionMap.put("configFileName",
-                     Translation.STATUS_NONE.toString(locale));
+                     Translation.STATS_CONFIG_NONE.toString(locale));
 
       golden.put("versionStats", versionMap);
 

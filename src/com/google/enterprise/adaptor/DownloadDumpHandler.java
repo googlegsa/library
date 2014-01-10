@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableSet;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -24,8 +25,9 @@ import java.net.HttpURLConnection;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
 import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,7 +50,7 @@ class DownloadDumpHandler implements HttpHandler {
   private String feedName;
 
   /** Used to obtain statistics for one file in the .zip */
-  private StatRpcMethod statRpcMethod;
+  private final StatRpcMethod statRpcMethod;
 
   /** Used to specify the top-level directory where logs are kept */
   private final File logsDir;
@@ -217,9 +219,6 @@ class DownloadDumpHandler implements HttpHandler {
    */
   private void dumpStats(ZipOutputStream zos) throws IOException {
     PrintWriter writer = new PrintWriter(new OutputStreamWriter(zos, "UTF-8"));
-    String newline = "\n"; // so our support folks always see the same results
-    // LinkedHashMap maintains put() -> get() order of elements.
-    LinkedHashMap<String, String> stats = new LinkedHashMap<String, String>();
     if (statRpcMethod == null) {
       return;  // don't generate empty stats file
     }
@@ -231,53 +230,43 @@ class DownloadDumpHandler implements HttpHandler {
     if (null != map.get("versionStats")) {
       @SuppressWarnings("unchecked")
       Map<String, Object> vMap = (Map<String, Object>) map.get("versionStats");
-      // TODO(myk): determine if these strings can be shared with the CSS code
-      // that displays these in the dashboard
-      stats.put("JVM version", vMap.get("versionJvm").toString());
-      stats.put("Adaptor library version",
-          vMap.get("versionAdaptorLibrary").toString());
-      stats.put("Adaptor type", vMap.get("typeAdaptor").toString());
-      stats.put("Adaptor version", vMap.get("versionAdaptor").toString());
-      stats.put("Configuration file", vMap.get("configFileName").toString());
-      stats.put("current directory", vMap.get("cwd").toString());
-      prettyPrintMap(writer, stats);
-      stats.clear();
+      prettyPrintMap(writer, vMap);
     }
 
     if (null != map.get("simpleStats")) {
       @SuppressWarnings("unchecked")
       Map<String, Object> sMap = (Map<String, Object>) map.get("simpleStats");
-      stats.put("Program started at",
-          prettyDate(sMap.get("whenStarted"), "Unknown"));
-      stats.put("Last successful full push start",
-          prettyDate(sMap.get("lastSuccessfulFullPushStart"), "None yet"));
-      stats.put("Last successful full push end",
-          prettyDate(sMap.get("lastSuccessfulFullPushEnd"), "None yet"));
-      stats.put("Current full push",
-          prettyDate(sMap.get("currentFullPushStart"), "None in progress"));
-      stats.put("Last successful incremental push start",
-          prettyDate(sMap.get("lastSuccessfulIncrementalPushStart"),
-              "None yet"));
-      stats.put("Last successful incremental push end",
-          prettyDate(sMap.get("lastSuccessfulIncrementalPushEnd"), "None yet"));
-      stats.put("Current incremental push",
-          prettyDate(sMap.get("currentIncrementalPushStart"),
-              "None in progress"));
-      stats.put("Total document ids pushed",
-          sMap.get("numTotalDocIdsPushed").toString());
-      stats.put("Unique document ids pushed",
-          sMap.get("numUniqueDocIdsPushed").toString());
-      stats.put("GSA document requests",
-          sMap.get("numTotalGsaRequests").toString());
-      stats.put("GSA Unique document requests",
-          sMap.get("numUniqueGsaRequests").toString());
-      stats.put("Non-GSA document requests",
-          sMap.get("numTotalNonGsaRequests").toString());
-      stats.put("Non-GSA Unique document requests",
-          sMap.get("numUniqueNonGsaRequests").toString());
-      stats.put("Time resolution", sMap.get("timeResolution") + " ms");
-      prettyPrintMap(writer, stats);
-      stats.clear();
+      Set<String> expectedDateAttrs = ImmutableSet.of("whenStarted",
+          "lastSuccessfulFullPushStart", "lastSuccessfulFullPushEnd",
+          "currentFullPushStart", "lastSuccessfulIncremementalPushStart",
+          "lastSuccessfulIncremementalPushEnd", "currentIncrementalPushEnd");
+      DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss Z");
+      dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
+      for (String key : expectedDateAttrs) {
+        if (!sMap.containsKey(key)) {
+          log.log(Level.INFO,
+              "Did not find expected key \"{0}\" in simpleStats", key);
+          continue;
+        }
+        Object value = sMap.get(key);
+        if (value == null) {
+          continue;
+        }
+        if (!(value instanceof Number)) {
+          log.log(Level.INFO,
+              "Key \"{0}\" contained non-date value \"{1}\" in simpleStats",
+              new Object[] {key, value});
+          continue;
+        }
+        long date = ((Number) value).longValue();
+        if (date <= 0) {
+          continue;
+        }
+        // It's a number > 0 -- assume it's a date.
+        // Replace value in map with a formatted date.
+        sMap.put(key, dateFormat.format(new Date(date)));
+      }
+      prettyPrintMap(writer, sMap);
     }
 
     writer.flush();
@@ -287,7 +276,7 @@ class DownloadDumpHandler implements HttpHandler {
   /**
    * Pretty-prints a map
    */
-  void prettyPrintMap(PrintWriter writer, Map<String, String> map) {
+  void prettyPrintMap(PrintWriter writer, Map<String, ?> map) {
     int maxKeyLength = 0;
 
     for (String key : map.keySet()) {
@@ -297,26 +286,11 @@ class DownloadDumpHandler implements HttpHandler {
     }
 
     String outputFormat = "%-" + (maxKeyLength + 1) + "s= %s%n";
-    for (Map.Entry<String, String> me : map.entrySet()) {
+    for (Map.Entry<String, ?> me : map.entrySet()) {
       writer.format(outputFormat, me.getKey(),
-          (me.getValue() == null ? "[null]" : me.getValue()));
+          (me.getValue() == null ? "[null]" : me.getValue().toString()));
     }
     writer.format("%n");
-  }
-
-  private String prettyDate(Object date, String defaultText) {
-    if (null == date) {
-      return defaultText;
-    }
-    try {
-      long value = new Long(date.toString());
-      if (value == 0) {
-        return defaultText;
-      }
-      return new Date(value).toString();
-    } catch (NumberFormatException e) {
-      return defaultText;
-    }
   }
 
   /**

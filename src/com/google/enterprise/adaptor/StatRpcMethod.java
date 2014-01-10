@@ -22,6 +22,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Provides performance data when responding to 
@@ -33,6 +35,8 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   private Journal journal;
   private boolean isAdaptorIncremental;
   private File configFile;
+  private static final Logger log
+      = Logger.getLogger(StatRpcMethod.class.getName());
 
   public StatRpcMethod(Journal journal, Adaptor adaptor,
       boolean isAdaptorIncremental, File configFile) {
@@ -154,11 +158,13 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
         canonicalConfigFile = configFile.getCanonicalFile();
       }
     } catch (IOException e) {
-      // ignore error; treat file as null
+      log.log(Level.WARNING, "Could not determine file location for \""
+          + configFile + "\"", e);
+      // treat file as if it were not specified -- leave it null below
     }
 
     return canonicalConfigFile == null ?
-        Translation.STATUS_NONE.toString(locale) :
+        Translation.STATS_CONFIG_NONE.toString(locale) :
         canonicalConfigFile.toString();
   }
 }
