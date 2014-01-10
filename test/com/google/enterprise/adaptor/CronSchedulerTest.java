@@ -152,21 +152,18 @@ public class CronSchedulerTest {
     // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
     timeProvider.time = 2800921L * 1000;
     atomicCommand.get().run();
-    Thread.sleep(10);
     assertEquals(1, counter.get());
 
     // Wrong minute.
     // 1970-02-02T10:01:01Z, which is a Monday. That is 02:01:01 in PST.
     timeProvider.time = 2800861L * 1000;
     atomicCommand.get().run();
-    Thread.sleep(10);
     assertEquals(1, counter.get());
 
     // Wrong hour.
     // 1970-02-02T09:02:01Z, which is a Monday. That is 01:02:01 in PST.
     timeProvider.time = 2797321L * 1000;
     atomicCommand.get().run();
-    Thread.sleep(10);
     assertEquals(1, counter.get());
 
     // Wrong day of month.
@@ -174,7 +171,6 @@ public class CronSchedulerTest {
     timeProvider.time = 2800921L * 1000;
     scheduler.reschedule(future, "2 2 1 2 2");
     atomicCommand.get().run();
-    Thread.sleep(10);
     assertEquals(1, counter.get());
 
     // Wrong month.
@@ -182,7 +178,6 @@ public class CronSchedulerTest {
     timeProvider.time = 2800921L * 1000;
     scheduler.reschedule(future, "2 2 2 1 2");
     atomicCommand.get().run();
-    Thread.sleep(10);
     assertEquals(1, counter.get());
 
     // Wrong day of week.
@@ -190,7 +185,6 @@ public class CronSchedulerTest {
     timeProvider.time = 2800921L * 1000;
     scheduler.reschedule(future, "2 2 2 2 2");
     atomicCommand.get().run();
-    Thread.sleep(10);
     assertEquals(1, counter.get());
   }
 
