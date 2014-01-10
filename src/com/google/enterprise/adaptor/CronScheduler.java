@@ -163,7 +163,8 @@ class CronScheduler {
   }
 
   private static class CronPattern {
-    private static final List<Field> FIELDS = Arrays.asList(Field.values());
+    private static final List<Field> FIELDS
+        = Collections.unmodifiableList(Arrays.asList(Field.values()));
 
     private static enum Field {
       MINUTE(0, 60, Calendar.MINUTE, 0),
