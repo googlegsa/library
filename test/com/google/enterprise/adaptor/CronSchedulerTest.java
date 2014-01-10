@@ -51,8 +51,10 @@ public class CronSchedulerTest {
         scheduler.schedule("0 0 1 1 1-7/2", noopRunnable).toString());
     assertEquals("CronFuture([{0}, {0}, {1, 3, 5, 7, 9, 11}, {0}, {0}])",
         scheduler.schedule("0 0 2-13/2 1 0", noopRunnable).toString());
-    assertEquals("CronFuture([{0}, {0}, {0}, {0}, {0, 1, 2, 3, 4, 5, 6}])",
+    assertEquals("CronFuture([{0}, {0}, {0}, {0}, null])",
         scheduler.schedule("0 0 1 1 *", noopRunnable).toString());
+    assertEquals("CronFuture([{0}, {0}, {0}, {0}, {0, 1, 2, 3, 4, 5, 6}])",
+        scheduler.schedule("0 0 1 1 */1", noopRunnable).toString());
   }
 
   @Test
@@ -169,23 +171,44 @@ public class CronSchedulerTest {
     // Wrong day of month.
     // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
     timeProvider.time = 2800921L * 1000;
-    scheduler.reschedule(future, "2 2 1 2 2");
+    scheduler.reschedule(future, "2 2 1 2 *");
     atomicCommand.get().run();
     assertEquals(1, counter.get());
 
     // Wrong month.
     // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
     timeProvider.time = 2800921L * 1000;
-    scheduler.reschedule(future, "2 2 2 1 2");
+    scheduler.reschedule(future, "2 2 2 1 1");
     atomicCommand.get().run();
     assertEquals(1, counter.get());
 
     // Wrong day of week.
     // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
     timeProvider.time = 2800921L * 1000;
-    scheduler.reschedule(future, "2 2 2 2 2");
+    scheduler.reschedule(future, "2 2 * 2 2");
     atomicCommand.get().run();
     assertEquals(1, counter.get());
+
+    // Wrong day of week and day of month.
+    // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
+    timeProvider.time = 2800921L * 1000;
+    scheduler.reschedule(future, "2 2 1 2 2");
+    atomicCommand.get().run();
+    assertEquals(1, counter.get());
+
+    // Wrong day of week, but right day of month.
+    // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
+    timeProvider.time = 2800921L * 1000;
+    scheduler.reschedule(future, "2 2 2 2 2");
+    atomicCommand.get().run();
+    assertEquals(2, counter.get());
+
+    // Wrong day of month, but right day of week.
+    // 1970-02-02T10:02:01Z, which is a Monday. That is 02:02:01 in PST.
+    timeProvider.time = 2800921L * 1000;
+    scheduler.reschedule(future, "2 2 1 2 1");
+    atomicCommand.get().run();
+    assertEquals(3, counter.get());
   }
 
   @Test
