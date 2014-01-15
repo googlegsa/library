@@ -163,7 +163,8 @@ class CronScheduler {
   }
 
   private static class CronPattern {
-    private static final List<Field> FIELDS = Arrays.asList(Field.values());
+    private static final List<Field> FIELDS
+        = Collections.unmodifiableList(Arrays.asList(Field.values()));
 
     private static enum Field {
       MINUTE(0, 60, Calendar.MINUTE, 0),
@@ -216,27 +217,46 @@ class CronScheduler {
     // day of month: 0-30, 0 is 1st day of month.
     // month: 0-11, 0 in January.
     // day of week: 0-6, 0 is Sunday.
-    private final List<BitSet> fields;
+    // null for any value implies wildcard
+    private final EnumMap<Field, BitSet> fields;
 
-    private CronPattern(List<BitSet> fields) {
+    private CronPattern(EnumMap<Field, BitSet> fields) {
       this.fields = fields;
     }
 
     public boolean matches(Date date, TimeZone timeZone) {
       GregorianCalendar calendar = new GregorianCalendar(timeZone);
       calendar.setTime(date);
-      for (int i = 0; i < FIELDS.size(); i++) {
-        Field field = FIELDS.get(i);
-        if (!fields.get(i).get(field.calendarToIndex(calendar))) {
-          return false;
-        }
+      boolean dayMatches;
+      if (fields.get(Field.DAY_OF_MONTH) != null
+          && fields.get(Field.DAY_OF_WEEK) != null) {
+        // Both day of month and day of week are restricted, so we OR the two
+        // instead of the typical AND. This is a special case of the cron
+        // format since both fields restrict the day.
+        dayMatches = matches(Field.DAY_OF_MONTH, calendar)
+            || matches(Field.DAY_OF_WEEK, calendar);
+      } else {
+        dayMatches = matches(Field.DAY_OF_MONTH, calendar)
+            && matches(Field.DAY_OF_WEEK, calendar);
       }
-      return true;
+      return dayMatches
+          && matches(Field.MINUTE, calendar)
+          && matches(Field.HOUR, calendar)
+          && matches(Field.MONTH, calendar);
+    }
+
+    private boolean matches(Field field, Calendar calendar) {
+      BitSet bitset = fields.get(field);
+      if (bitset == null) {
+        // Wildcard.
+        return true;
+      }
+      return bitset.get(field.calendarToIndex(calendar));
     }
 
     @Override
     public String toString() {
-      return "" + fields;
+      return "" + fields.values();
     }
 
     public static CronPattern create(String timeSpecification)
@@ -248,10 +268,15 @@ class CronScheduler {
             "Should have precisely 5 fields: "
             + "minute, hour, day of month, month, day of week");
       }
-      List<BitSet> fields = new ArrayList<BitSet>(FIELDS.size());
-      for (int i = 0; i < FIELDS.size(); i++) {
-        String stringField = stringFields[i];
-        Field fieldType = FIELDS.get(i);
+      EnumMap<Field, BitSet> fields = new EnumMap<Field, BitSet>(Field.class);
+      for (Field fieldType : FIELDS) {
+        String stringField = stringFields[fieldType.ordinal()];
+        if ("*".equals(stringField)) {
+          // Signal wildcard. Semantics of day of week and day of month vary
+          // based on raw wildcard vs any other value.
+          fields.put(fieldType, null);
+          continue;
+        }
         BitSet set = new BitSet(fieldType.numValues());
         for (String element : stringField.split(",", -1)) {
           int step = 1;
@@ -282,7 +307,7 @@ class CronScheduler {
             }
           }
         }
-        fields.add(set);
+        fields.put(fieldType, set);
       }
       return new CronPattern(fields);
     }

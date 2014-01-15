@@ -14,7 +14,6 @@
 
 package com.google.enterprise.secmgr.modules;
 
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.getMetadataSignaturePolicyRule;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.initializeLocalEntity;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.initializePeerEntity;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAction;
@@ -22,9 +21,7 @@ import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeArtifactResolve
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAuthnRequest;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAuthzDecisionQuery;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeSamlMessageContext;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeStaticSecurityPolicyResolver;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeSubject;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.peerSupportsSignatureVerification;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.runDecoder;
 import static com.google.enterprise.secmgr.saml.OpenSamlUtil.runEncoder;
 import static org.opensaml.common.xml.SAMLConstants.SAML20P_NS;
@@ -33,24 +30,19 @@ import static org.opensaml.common.xml.SAMLConstants.SAML2_SOAP11_BINDING_URI;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Maps;
-//import com.google.enterprise.secmgr.authncontroller.AuthnSession;
 import com.google.enterprise.secmgr.common.AuthzStatus;
-import com.google.enterprise.secmgr.common.HttpUtil;
-//import com.google.enterprise.secmgr.common.ServletBase;
 import com.google.enterprise.secmgr.http.HttpClientInterface;
 import com.google.enterprise.secmgr.http.HttpExchange;
 import com.google.enterprise.secmgr.saml.HTTPSOAP11MultiContextDecoder;
 import com.google.enterprise.secmgr.saml.HTTPSOAP11MultiContextEncoder;
 import com.google.enterprise.secmgr.saml.HttpExchangeToInTransport;
 import com.google.enterprise.secmgr.saml.HttpExchangeToOutTransport;
-import com.google.enterprise.secmgr.saml.MetadataEditor;
 import com.google.enterprise.secmgr.saml.SamlLogUtil;
 
 import org.joda.time.DateTime;
 import org.opensaml.common.SAMLObject;
 import org.opensaml.common.binding.SAMLMessageContext;
 import org.opensaml.common.xml.SAMLConstants;
-import org.opensaml.saml2.binding.decoding.HTTPPostDecoder;
 import org.opensaml.saml2.binding.decoding.HTTPSOAP11Decoder;
 import org.opensaml.saml2.binding.encoding.HTTPRedirectDeflateEncoder;
 import org.opensaml.saml2.binding.encoding.HTTPSOAP11Encoder;
@@ -75,16 +67,13 @@ import org.opensaml.saml2.metadata.SingleSignOnService;
 import org.opensaml.util.URLBuilder;
 import org.opensaml.ws.message.encoder.MessageEncoder;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
-import org.opensaml.ws.security.provider.MandatoryAuthenticatedMessageRule;
-import org.opensaml.ws.security.provider.MandatoryIssuerRule;
 import org.opensaml.ws.transport.http.HTTPInTransport;
 import org.opensaml.ws.transport.http.HTTPOutTransport;
-import org.opensaml.ws.transport.http.HttpServletRequestAdapter;
-import org.opensaml.ws.transport.http.HttpServletResponseAdapter;
 import org.opensaml.xml.security.credential.Credential;
 import org.opensaml.xml.util.Pair;
 
 import java.io.IOException;
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
@@ -94,8 +83,6 @@ import java.util.logging.Logger;
 
 import javax.annotation.concurrent.GuardedBy;
 import javax.annotation.concurrent.ThreadSafe;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 
 /**
  * A library implementing most of the functionality of a SAML service provider.
@@ -200,7 +187,7 @@ public class SamlClient {
    * @return The assertion consumer service descriptor.
    */
   public AssertionConsumerService getPostAssertionConsumerService() {
-    return getAssertionConsumerService(MetadataEditor.SAML_BINDING_HTTP_POST);
+    return getAssertionConsumerService(SAMLConstants.SAML2_POST_BINDING_URI);
   }
 
   /**
@@ -209,7 +196,7 @@ public class SamlClient {
    * @return The assertion consumer service descriptor.
    */
   public AssertionConsumerService getArtifactAssertionConsumerService() {
-    return getAssertionConsumerService(MetadataEditor.SAML_BINDING_HTTP_ARTIFACT);
+    return getAssertionConsumerService(SAMLConstants.SAML2_ARTIFACT_BINDING_URI);
   }
 
   private AssertionConsumerService getAssertionConsumerService(String binding) {
@@ -267,56 +254,6 @@ public class SamlClient {
     context.setOutboundMessageTransport(outTransport);
     runEncoder(new RedirectEncoder(), context);
   }
-
-  /**
-   * Decode a SAML response sent via the POST binding.
-   *
-   * @param request The HTTP request containing the encoded response.
-   * @return The decoded response, or null if there was an error decoding the message.  In
-   *     this case, a log file entry is generated, so the caller doesn't need to know the
-   *     details of the failure.
-   * @throws IOException for various errors related to session and metadata.
-   */
-  /*
-  // Commented out to prevent pulling in AuthnSession.
-  public Response decodePostResponse(HttpServletRequest request)
-      throws IOException {
-    AuthnSession session = AuthnSession.getInstance(request);
-    if (session == null) {
-      return null;
-    }
-    SAMLMessageContext<Response, SAMLObject, NameID> context =
-        makeSamlMessageContext();
-
-    initializeLocalEntity(context, localEntity, localEntity.getSPSSODescriptor(SAML20P_NS));
-    initializePeerEntity(context, peerEntity, peerEntity.getIDPSSODescriptor(SAML20P_NS),
-        SingleSignOnService.DEFAULT_ELEMENT_NAME,
-        SAML2_REDIRECT_BINDING_URI);
-
-    if (!peerSupportsSignatureVerification(context)) {
-      LOGGER.warning("SAML POST peer not configured for signature verification");
-      return null;
-    }
-
-    // Create a security policy to check the response signature.  Works only
-    // with certificates that are stored in the metadata.
-    context.setSecurityPolicyResolver(
-        makeStaticSecurityPolicyResolver(
-            getMetadataSignaturePolicyRule(request),
-            // Requires an <Issuer>:
-            new MandatoryIssuerRule(),
-            // Requires that the message be authenticated:
-            new MandatoryAuthenticatedMessageRule()));
-
-    context.setInboundMessageTransport(new HttpServletRequestAdapter(request));
-    if (!runDecoder(new HTTPPostDecoder(), context, session, "client identity provider")) {
-      return null;
-    }
-
-    Response samlResponse = context.getInboundSAMLMessage();
-    Preconditions.checkNotNull(samlResponse, "Decoded SAML response is null");
-    return samlResponse;
-  }*/
 
   /**
    * Decode a SAML response sent via the artifact binding.
@@ -405,7 +342,7 @@ public class SamlClient {
 
     // Do HTTP exchange.
     int status = exchange.exchange();
-    if (status != HttpServletResponse.SC_OK) {
+    if (status != HttpURLConnection.HTTP_OK) {
       LOGGER.warning("Incorrect HTTP status: " + status);
       return null;
     }
@@ -448,7 +385,7 @@ public class SamlClient {
 
       // Do HTTP exchange
       int status = exchange.exchange();
-      if (!HttpUtil.isGoodHttpStatus(status)) {
+      if (!isGoodHttpStatus(status)) {
         throw new IOException("Incorrect HTTP status: " + status);
       }
 
@@ -511,7 +448,7 @@ public class SamlClient {
 
       // Do HTTP exchange
       int status = exchange.exchange();
-      if (!HttpUtil.isGoodHttpStatus(status)) {
+      if (!isGoodHttpStatus(status)) {
         throw new IOException("Incorrect HTTP status: " + status);
       }
 
@@ -677,5 +614,10 @@ public class SamlClient {
       }
       return builder.buildURL();
     }
+  }
+
+  public static boolean isGoodHttpStatus(int status) {
+    return status == HttpURLConnection.HTTP_OK
+        || status == HttpURLConnection.HTTP_PARTIAL;
   }
 }

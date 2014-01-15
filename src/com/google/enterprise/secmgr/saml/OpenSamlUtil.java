@@ -16,14 +16,8 @@ package com.google.enterprise.secmgr.saml;
 
 import static org.opensaml.common.xml.SAMLConstants.SAML20P_NS;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
-//import com.google.enterprise.secmgr.authncontroller.AuthnSession;
-import com.google.enterprise.secmgr.common.FileUtil;
-import com.google.enterprise.secmgr.common.HttpUtil;
-import com.google.enterprise.secmgr.config.ConfigSingleton;
 
-//import org.jdom.Namespace;
 import org.joda.time.DateTime;
 import org.opensaml.Configuration;
 import org.opensaml.DefaultBootstrap;
@@ -37,9 +31,7 @@ import org.opensaml.common.binding.SAMLMessageContext;
 import org.opensaml.common.binding.artifact.BasicSAMLArtifactMap;
 import org.opensaml.common.binding.artifact.SAMLArtifactMap;
 import org.opensaml.common.binding.artifact.SAMLArtifactMap.SAMLArtifactMapEntry;
-import org.opensaml.common.binding.security.SAMLProtocolMessageXMLSignatureSecurityPolicyRule;
 import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.binding.security.SAML2HTTPRedirectDeflateSignatureRule;
 import org.opensaml.saml2.core.Action;
 import org.opensaml.saml2.core.Artifact;
 import org.opensaml.saml2.core.ArtifactResolve;
@@ -109,10 +101,7 @@ import org.opensaml.xml.security.keyinfo.provider.DSAKeyValueProvider;
 import org.opensaml.xml.security.keyinfo.provider.InlineX509DataProvider;
 import org.opensaml.xml.security.keyinfo.provider.RSAKeyValueProvider;
 import org.opensaml.xml.security.trust.TrustEngine;
-import org.opensaml.xml.security.x509.X509Credential;
 import org.opensaml.xml.signature.KeyInfo;
-import org.opensaml.xml.signature.SignatureTrustEngine;
-import org.opensaml.xml.signature.impl.ExplicitKeySignatureTrustEngine;
 import org.w3c.dom.Element;
 
 import java.io.File;
@@ -120,15 +109,11 @@ import java.io.IOException;
 import java.security.KeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.annotation.concurrent.Immutable;
-import javax.servlet.http.HttpServletRequest;
 import javax.xml.namespace.QName;
 
 /**
@@ -927,31 +912,6 @@ public final class OpenSamlUtil {
   }
 
   /**
-   * Run a message decoder.
-   *
-   * @param decoder The message decoder to run.
-   * @param context The message context to pass to the decoder.
-   * @param senderDescription A phrase describing the sender of the message.
-   * @return True only if the message was successfully decode.
-   */
-  /*
-  // Commented out to prevent pulling in AuthnSession.
-  public static boolean runDecoder(MessageDecoder decoder, MessageContext context,
-      AuthnSession session, String senderDescription) {
-    try {
-      decoder.decode(context);
-    } catch (MessageDecodingException e) {
-      LOGGER.warning(session.logMessage("Unable to decode SAML message from " + senderDescription));
-      return false;
-    } catch (SecurityException e) {
-      LOGGER.warning(session.logMessage("Unable to verify signature of SAML message from " +
-              senderDescription));
-      return false;
-    }
-    return true;
-  }*/
-
-  /**
    * Get a string for the current date/time, in the correct format for SAML.
    *
    * @return The corresponding string.
@@ -1024,50 +984,6 @@ public final class OpenSamlUtil {
     return securityPolicy;
   }
 
-  /**
-   * Get a signature policy rule for XML signatures, using metadata credentials.
-   *
-   * @param request An HTTP request to use for specializing the metadata.
-   * @return An appropriate signature policy rule.
-   * @throws IOException
-   */
-  public static synchronized SecurityPolicyRule getMetadataSignaturePolicyRule(
-      HttpServletRequest request)
-      throws IOException {
-    return new SAMLProtocolMessageXMLSignatureSecurityPolicyRule(
-        getMetadataSignatureTrustEngine(request));
-  }
-
-  /**
-   * Get a signature policy rule for the redirect binding, using metadata credentials.
-   *
-   * @param request An HTTP request to use for specializing the metadata.
-   * @return An appropriate signature policy rule.
-   * @throws IOException
-   */
-  public static synchronized SecurityPolicyRule getMetadataSignaturePolicyRuleForRedirect(
-      HttpServletRequest request)
-      throws IOException {
-    return new SAML2HTTPRedirectDeflateSignatureRule(
-        getMetadataSignatureTrustEngine(request));
-  }
-
-  /**
-   * Make a trust engine that checks signatures using credentials in metadata.
-   *
-   * @param request An HTTP request to use for specializing the metadata.
-   * @return An appropriate signature trust engine.
-   * @throws IOException
-   */
-  public static SignatureTrustEngine getMetadataSignatureTrustEngine(HttpServletRequest request)
-      throws IOException {
-    KeyInfoCredentialResolver keyInfoCredentialResolver = getStandardKeyInfoCredentialResolver();
-    MetadataCredentialResolver credentialResolver =
-        new MetadataCredentialResolver(getMetadata(request).getProvider());
-    credentialResolver.setKeyInfoCredentialResolver(keyInfoCredentialResolver);
-    return new ExplicitKeySignatureTrustEngine(credentialResolver, keyInfoCredentialResolver);
-  }
-
   private static KeyInfoCredentialResolver standardKeyInfoCredentialResolver = null;
 
   /**
@@ -1123,40 +1039,6 @@ public final class OpenSamlUtil {
   }
 
   /**
-   * Read a PEM-encoded X.509 certificate file and its associated private-key file and
-   * return an {@link X509Credential} object.
-   *
-   * @param certFile The certificate file.
-   * @param keyFile The private-key file.
-   * @return The credential object, never null.
-   * @throws IOException if there's some kind of error reading or converting the files.
-   */
-  public static X509Credential readX509Credential(File certFile, File keyFile)
-      throws IOException {
-    return SecurityHelper.getSimpleCredential(
-        readX509CertificateFile(certFile),
-        readPrivateKeyFile(keyFile));
-  }
-
-  /**
-   * Read a PEM-encoded X.509 certificate file and return it as an {@link X509Certificate}
-   * object.
-   *
-   * @param file The file to read.
-   * @return The certificate object, never null.
-   * @throws IOException if there's some kind of error reading or converting the file.
-   */
-  public static X509Certificate readX509CertificateFile(File file)
-      throws IOException {
-    String base64Cert = FileUtil.readPEMCertificateFile(file);
-    try {
-      return SecurityHelper.buildJavaX509Cert(base64Cert);
-    } catch (CertificateException e) {
-      throw new IOException(e);
-    }
-  }
-
-  /**
    * Read a PEM-encoded private-key file and return it as a {@link PrivateKey} object.
    *
    * @param file The file to read.
@@ -1205,88 +1087,5 @@ public final class OpenSamlUtil {
         new BasicParserPool(),
         new MapBasedStorageService<String, SAMLArtifactMapEntry>(),
         artifactLifetime);
-  }
-
-  /**
-   * Gets an entity descriptor with a given ID.
-   *
-   * @param id The ID of the entity to get.
-   * @param request The servlet request to use for getting the metadata.
-   * @return The entity's descriptor, or {@code null} if there's no entity with
-   *     that ID.
-   */
-  public static EntityDescriptor getEntity(String id, HttpServletRequest request)
-      throws IOException {
-    return getMetadata(request).getEntity(id);
-  }
-
-  /**
-   * Gets the entity descriptor for the security manager.
-   *
-   * @param request The servlet request to use for getting the metadata.
-   * @return The security manager's entity descriptor.
-   */
-  public static EntityDescriptor getSmEntity(HttpServletRequest request)
-      throws IOException {
-    return getMetadata(request).getSmEntity();
-  }
-
-  /**
-   * Gets the entity ID for the security manager.
-   *
-   * @param request The servlet request to use for getting the metadata.
-   * @return The security manager's entity ID.
-   */
-  public static String getSmEntityId(HttpServletRequest request)
-      throws IOException {
-    return getMetadata(request).getSmEntityId();
-  }
-
-  /**
-   * Gets the SAML metadata.
-   *
-   * @param request The servlet request to use for customizing the metadata.
-   * @return The metadata.
-   */
-  public static Metadata getMetadata(HttpServletRequest request)
-      throws IOException {
-    return Metadata.getInstance(HttpUtil.getRequestUrl(request, false));
-  }
-
-  @VisibleForTesting
-  public static Metadata getMetadata()
-      throws IOException {
-    return Metadata.getInstance("localhost");
-  }
-
-  /**
-   * Gets the credential to use for signing outgoing messages.
-   *
-   * @return The credential, or null if unable to obtain.
-   */
-  public static Credential getSigningCredential()
-      throws IOException {
-    String certFileName = ConfigSingleton.getSigningCertificateFilename();
-    String keyFileName = ConfigSingleton.getSigningKeyFilename();
-    if (certFileName == null || keyFileName == null) {
-      LOGGER.info("No signing certificate available for outbound requests");
-      return null;
-    }
-    File certFile = FileUtil.getContextFile(certFileName);
-    File keyFile = FileUtil.getContextFile(keyFileName);
-    if (!certFile.canRead()) {
-      LOGGER.warning("Unable to read signing certificate file: " + certFile);
-      return null;
-    }
-    if (!keyFile.canRead()) {
-      LOGGER.warning("Unable to read signing key file: " + keyFile);
-      return null;
-    }
-    try {
-      return OpenSamlUtil.readX509Credential(certFile, keyFile);
-    } catch (IOException e) {
-      LOGGER.log(Level.WARNING, "Error reading certificate file(s): ", e);
-      return null;
-    }
   }
 }

@@ -92,8 +92,11 @@ public class SamlIdentityProviderTest {
     assertTrue(samlResponse.contains("https://entyo36.hot.corp.google.com/"
         + "security-manager/samlassertionconsumer"));
     assertTrue(samlResponse.contains("user1"));
-    assertTrue(samlResponse.contains("group1"));
-    assertTrue(samlResponse.contains("group2"));
+    assertTrue(samlResponse.contains(
+        "<saml2:AttributeStatement><saml2:Attribute Name=\"member-of\">"
+        + "<saml2:AttributeValue>group1</saml2:AttributeValue>"
+        + "<saml2:AttributeValue>group2</saml2:AttributeValue>"
+        + "</saml2:Attribute></saml2:AttributeStatement>"));
   }
 
   @Test

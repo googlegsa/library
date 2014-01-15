@@ -28,14 +28,13 @@ import org.opensaml.ws.transport.http.HTTPOutTransport;
 import org.opensaml.ws.transport.http.HTTPTransportUtils;
 import org.opensaml.xml.XMLObjectBuilderFactory;
 import org.opensaml.xml.util.XMLHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.w3c.dom.Element;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.util.logging.Logger;
 
 /**
  * SAML 2.0 SOAP 1.1 over HTTP MultiContext binding encoder.
@@ -48,7 +47,7 @@ public class HTTPSOAP11MultiContextEncoder extends BaseSAML2MessageEncoder {
   private HTTPOutTransport outTransport;
 
   /** Class logger. */
-  private final Logger log = LoggerFactory.getLogger(HTTPSOAP11MultiContextEncoder.class);
+  private static final Logger log = Logger.getLogger(HTTPSOAP11MultiContextEncoder.class.getName());
 
   /** Constructor. */
   public HTTPSOAP11MultiContextEncoder() {
@@ -78,7 +77,6 @@ public class HTTPSOAP11MultiContextEncoder extends BaseSAML2MessageEncoder {
   @Override
   protected void doEncode(MessageContext messageContext) throws MessageEncodingException {
     if (!(messageContext instanceof SAMLMessageContext<?, ?, ?>)) {
-      log.error("Invalid message context type, this encoder only supports SAMLMessageContext");
       throw new MessageEncodingException(
           "Invalid message context type, this encoder only supports SAMLMessageContext");
     }
@@ -87,8 +85,6 @@ public class HTTPSOAP11MultiContextEncoder extends BaseSAML2MessageEncoder {
         (SAMLMessageContext<SAMLObject, SAMLObject, SAMLObject>) messageContext;
 
     if (!(messageContext.getOutboundMessageTransport() instanceof HTTPOutTransport)) {
-      log.error(
-          "Invalid outbound message transport type, this encoder only supports HTTPOutTransport");
       throw new MessageEncodingException(
           "Invalid outbound message transport type, this encoder only supports HTTPOutTransport");
     }
@@ -106,9 +102,7 @@ public class HTTPSOAP11MultiContextEncoder extends BaseSAML2MessageEncoder {
     signMessage(samlMsgCtx);
     samlMsgCtx.setOutboundMessage(envelope);
 
-    if (log.isDebugEnabled()) {
-      log.debug("Adding SAML message to the SOAP message's body");
-    }
+    log.fine("Adding SAML message to the SOAP message's body");
 
     body.getUnknownXMLObjects().add(samlMessage);
   }
@@ -124,10 +118,8 @@ public class HTTPSOAP11MultiContextEncoder extends BaseSAML2MessageEncoder {
       XMLHelper.writeNode(envelopeElem, out);
       out.flush();
     } catch (UnsupportedEncodingException e) {
-      log.error("JVM does not support required UTF-8 encoding");
       throw new MessageEncodingException("JVM does not support required UTF-8 encoding");
     } catch (IOException e) {
-      log.error("Unable to write message content to outbound stream", e);
       throw new MessageEncodingException("Unable to write message content to outbound stream", e);
     }
   }
@@ -136,9 +128,7 @@ public class HTTPSOAP11MultiContextEncoder extends BaseSAML2MessageEncoder {
    * Builds the SOAP message to be encoded.
    */
   protected void buildSOAPMessage() {
-    if (log.isDebugEnabled()) {
-      log.debug("Building SOAP message");
-    }
+    log.fine("Building SOAP message");
     XMLObjectBuilderFactory builderFactory = Configuration.getBuilderFactory();
 
     @SuppressWarnings("unchecked")

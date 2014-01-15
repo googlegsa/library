@@ -27,11 +27,11 @@ import org.opensaml.xml.AttributeExtensibleXMLObject;
 import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.parse.ParserPool;
 import org.opensaml.xml.util.DatatypeHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.namespace.QName;
 
@@ -42,7 +42,7 @@ import javax.xml.namespace.QName;
 public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
 
   /** Class logger. */
-  private final Logger log = LoggerFactory.getLogger(HTTPSOAP11MultiContextDecoder.class);
+  private static final Logger log = Logger.getLogger(HTTPSOAP11MultiContextDecoder.class.getName());
 
   /** QNames of understood SOAP headers. */
   private final List<QName> understoodHeaders = new ArrayList<QName>();
@@ -102,7 +102,6 @@ public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
   @Override
   protected void doDecode(MessageContext messageContext) throws MessageDecodingException {
     if (!(messageContext instanceof SAMLMessageContext<?, ?, ?>)) {
-      log.error("Invalid message context type, this decoder only support SAMLMessageContext");
       throw new MessageDecodingException(
           "Invalid message context type, this decoder only support SAMLMessageContext");
     }
@@ -116,10 +115,9 @@ public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
     }
 
     if (soapBodyChildren.size() < 1) {
-      log.error("Unexpected number of children in the SOAP body, " + soapBodyChildren.size()
-          + ".  Unable to extract SAML message");
       throw new MessageDecodingException(
-          "Unexpected number of children in the SOAP body, unable to extract SAML message");
+          "Unexpected number of children in the SOAP body, " + soapBodyChildren.size()
+          + ". Unable to extract SAML message");
     }
 
     if (thisChild >= soapBodyChildren.size()) {
@@ -132,16 +130,15 @@ public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
     thisChild++;
 
     if (!(incomingMessage instanceof SAMLObject)) {
-      log.error("Unexpected SOAP body content.  Expected a SAML request but recieved {}",
-          incomingMessage.getElementQName());
       throw new MessageDecodingException(
           "Unexpected SOAP body content.  Expected a SAML request but recieved "
               + incomingMessage.getElementQName());
     }
     SAMLObject samlMessage = (SAMLObject) incomingMessage;
 
-    log.debug("Decoded SOAP messaged which included SAML message of type {}",
-              samlMessage.getElementQName());
+    log.log(Level.FINE,
+        "Decoded SOAP messaged which included SAML message of type {}",
+        samlMessage.getElementQName());
     samlMsgCtx.setInboundSAMLMessage(samlMessage);
 
     populateMessageContext(samlMsgCtx);
@@ -183,8 +180,6 @@ public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
   private void start(SAMLMessageContext<SAMLObject, SAMLObject, SAMLObject> samlMsgCtx)
       throws MessageDecodingException {
     if (!(samlMsgCtx.getInboundMessageTransport() instanceof HTTPInTransport)) {
-      log.error(
-          "Invalid inbound message transport type, this decoder only support HTTPInTransport");
       throw new MessageDecodingException(
           "Invalid inbound message transport type, this decoder only support HTTPInTransport");
     }
@@ -195,7 +190,7 @@ public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
           "This message deocoder only supports the HTTP POST method");
     }
 
-    log.debug("Unmarshalling SOAP message");
+    log.fine("Unmarshalling SOAP message");
     soapMessage = Envelope.class.cast(unmarshallMessage(inTransport.getIncomingStream()));
 
     Header messageHeader = soapMessage.getHeader();
