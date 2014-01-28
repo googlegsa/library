@@ -20,7 +20,6 @@ import org.apache.commons.daemon.DaemonContext;
 import org.apache.commons.daemon.DaemonController;
 
 import java.util.Arrays;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 /**
