@@ -16,7 +16,6 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
-import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
@@ -276,51 +275,5 @@ public class GsaFeedFileSenderTest {
   public void testGroupsInvalidGroupSource() throws Exception {
     thrown.expect(IllegalArgumentException.class);
     sender.sendGroups("bad#source", "<payload/>", false);
-  }
-
-  private static class MockHttpHandler implements HttpHandler {
-    private final int responseCode;
-    private final byte[] responseBytes;
-    private String requestMethod;
-    private URI requestUri;
-    private Headers requestHeaders;
-    private byte[] requestBytes;
-
-    public MockHttpHandler(int responseCode, byte[] responseBytes) {
-      this.responseCode = responseCode;
-      this.responseBytes = responseBytes;
-    }
-
-    @Override
-    public void handle(HttpExchange ex) throws IOException {
-      requestMethod = ex.getRequestMethod();
-      requestUri = ex.getRequestURI();
-      requestHeaders = new Headers();
-      requestHeaders.putAll(ex.getRequestHeaders());
-      requestBytes = IOHelper.readInputStreamToByteArray(ex.getRequestBody());
-      ex.sendResponseHeaders(responseCode, responseBytes == null ? -1 : 0);
-      if (responseBytes != null) {
-        ex.getResponseBody().write(responseBytes);
-        ex.getResponseBody().flush();
-        ex.getResponseBody().close();
-      }
-      ex.close();
-    }
-
-    public String getRequestMethod() {
-      return requestMethod;
-    }
-
-    public URI getRequestUri() {
-      return requestUri;
-    }
-
-    public Headers getRequestHeaders() {
-      return requestHeaders;
-    }
-
-    public byte[] getRequestBytes() {
-      return requestBytes;
-    }
   }
 }

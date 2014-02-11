@@ -32,7 +32,7 @@ public class LoggingFilterTest {
   private LoggingFilter filter = new LoggingFilter();
   private List<Filter> filters = Arrays.<Filter>asList(filter);
   private MockHttpExchange ex = new MockHttpExchange("GET", "/",
-      new MockHttpContext(new MockHttpHandler(), "/"));
+      new MockHttpContext(new MockHttpHandler(200, null), "/"));
 
   @Test
   public void testDescription() {

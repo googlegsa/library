@@ -14,23 +14,68 @@
 
 package com.google.enterprise.adaptor;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.Headers;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import java.io.IOException;
+import java.net.URI;
+import java.util.*;
 
 /**
  * Mock {@link HttpHandler}.
  */
 public class MockHttpHandler implements HttpHandler {
-  private int executed;
+  private final int responseCode;
+  private final byte[] responseBytes;
+  private final Map<String, List<String>> responseHeaders;
+  private String requestMethod;
+  private URI requestUri;
+  private Headers requestHeaders;
+  private byte[] requestBytes;
+
+  public MockHttpHandler(int responseCode, byte[] responseBytes) {
+    this(responseCode, responseBytes,
+        Collections.<String, List<String>>emptyMap());
+  }
+
+  public MockHttpHandler(int responseCode, byte[] responseBytes,
+      Map<String, List<String>> responseHeaders) {
+    this.responseCode = responseCode;
+    this.responseBytes = responseBytes;
+    this.responseHeaders = responseHeaders;
+  }
 
   @Override
   public void handle(HttpExchange ex) throws IOException {
-    executed++;
-    ex.sendResponseHeaders(200, -1);
+    requestMethod = ex.getRequestMethod();
+    requestUri = ex.getRequestURI();
+    requestHeaders = new Headers();
+    requestHeaders.putAll(ex.getRequestHeaders());
+    requestBytes = IOHelper.readInputStreamToByteArray(ex.getRequestBody());
+    ex.getResponseHeaders().putAll(responseHeaders);
+    ex.sendResponseHeaders(responseCode, responseBytes == null ? -1 : 0);
+    if (responseBytes != null) {
+      ex.getResponseBody().write(responseBytes);
+      ex.getResponseBody().flush();
+      ex.getResponseBody().close();
+    }
+    ex.close();
   }
 
-  public int getTimesExecuted() {
-    return executed;
+  public String getRequestMethod() {
+    return requestMethod;
+  }
+
+  public URI getRequestUri() {
+    return requestUri;
+  }
+
+  public Headers getRequestHeaders() {
+    return requestHeaders;
+  }
+
+  public byte[] getRequestBytes() {
+    return requestBytes;
   }
 }

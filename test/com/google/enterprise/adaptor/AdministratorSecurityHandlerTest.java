@@ -16,7 +16,8 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.*;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpExchange;
+import com.sun.net.httpserver.HttpHandler;
 
 import org.junit.Test;
 
@@ -29,7 +30,7 @@ public class AdministratorSecurityHandlerTest {
   private SessionManager<HttpExchange> sessionManager
       = new SessionManager<HttpExchange>(new MockTimeProvider(),
           new SessionManager.HttpExchangeClientStore(), 10000, 1000);
-  private MockHttpHandler mockHandler = new MockHttpHandler();
+  private CountingHttpHandler mockHandler = new CountingHttpHandler();
   private AdministratorSecurityHandler handler
       = new AdministratorSecurityHandler(mockHandler, sessionManager,
           new MockAuthnClient());
@@ -140,6 +141,20 @@ public class AdministratorSecurityHandlerTest {
       } else {
         return AuthzStatus.DENY;
       }
+    }
+  }
+
+  private static class CountingHttpHandler implements HttpHandler {
+    private int executed;
+
+    @Override
+    public void handle(HttpExchange ex) throws IOException {
+      executed++;
+      ex.sendResponseHeaders(200, -1);
+    }
+
+    public int getTimesExecuted() {
+      return executed;
     }
   }
 }
