@@ -234,6 +234,29 @@ public final class HttpExchanges {
   }
 
   /**
+   * Parses multi-valued header fields that can also be represented as
+   * comma-separated lists. Leading and trailing whitespace is removed from each
+   * value. This is the required format for any repeated header, as specified in
+   * RFC 2616 Section 4.2.
+   *
+   * @return list of split and cleaned values, or {@code null} if no such
+   *   headers were specified
+   */
+  static List<String> splitHeaderValues(List<String> values) {
+    if (values == null) {
+      return null;
+    }
+    List<String> parsed = new ArrayList<String>(values.size());
+    for (String value : values) {
+      String[] parts = value.split(",", -1);
+      for (String part : parts) {
+        parsed.add(part.trim());
+      }
+    }
+    return Collections.unmodifiableList(parsed);
+  }
+
+  /**
    * If the client supports it, set the correct headers and streams to provide
    * GZIPed response data to the client. Because the content may become
    * compressed, users of this method should generally use a {@code
@@ -243,11 +266,11 @@ public final class HttpExchanges {
    */
   public static void enableCompressionIfSupported(HttpExchange ex)
       throws IOException {
-    String encodingList = ex.getRequestHeaders().getFirst("Accept-Encoding");
-    if (encodingList == null) {
+    Collection<String> encodings
+        = splitHeaderValues(ex.getRequestHeaders().get("Accept-Encoding"));
+    if (encodings == null) {
       return;
     }
-    Collection<String> encodings = Arrays.asList(encodingList.split(","));
     if (encodings.contains("gzip")) {
       log.finer("Enabling gzip compression for response");
       ex.getResponseHeaders().set("Content-Encoding", "gzip");
