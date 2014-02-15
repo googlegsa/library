@@ -24,6 +24,9 @@ import java.util.*;
  * Mock {@link HttpExchange} for testing.
  */
 public class MockHttpExchange extends HttpExchange {
+  public static final String HEADER_DATE_VALUE
+      = "Sun, 06 Nov 1994 08:49:37 GMT";
+
   private final String method;
   private final URI uri;
   private final Map<String, Object> attributes = new HashMap<String, Object>();
@@ -40,13 +43,14 @@ public class MockHttpExchange extends HttpExchange {
       = new ClosingFilterOutputStream(responseBodyOrig);
   private int responseCode = -1;
   private HttpContext httpContext;
+  private InetSocketAddress remoteAddress;
 
   public MockHttpExchange(String method, String path,
                           HttpContext context) {
     this(method, "localhost", path, context);
   }
 
-  private MockHttpExchange(String method, String host, String path,
+  public MockHttpExchange(String method, String host, String path,
       HttpContext context) {
     if (method == null || host == null || path == null) {
       throw new NullPointerException();
@@ -63,6 +67,14 @@ public class MockHttpExchange extends HttpExchange {
     }
     this.httpContext = context;
     getRequestHeaders().add("Host", host);
+
+    try {
+      remoteAddress = new InetSocketAddress(
+          InetAddress.getByAddress("remotehost", new byte[] {127, 0, 0, 3}),
+          65000);
+    } catch (UnknownHostException ex) {
+      throw new AssertionError(ex);
+    }
   }
 
   @Override
@@ -110,13 +122,11 @@ public class MockHttpExchange extends HttpExchange {
 
   @Override
   public InetSocketAddress getRemoteAddress() {
-    try {
-      return new InetSocketAddress(
-          InetAddress.getByAddress("remotehost", new byte[] {127, 0, 0, 3}),
-          65000);
-    } catch (UnknownHostException ex) {
-      throw new IllegalStateException(ex);
-    }
+    return remoteAddress;
+  }
+
+  public void setRemoteAddress(InetSocketAddress remoteAddress) {
+    this.remoteAddress = remoteAddress;
   }
 
   @Override
@@ -162,7 +172,8 @@ public class MockHttpExchange extends HttpExchange {
     if (responseCode != -1) {
       throw new IllegalStateException();
     }
-    getResponseHeaders().add("Date", "Sun, 06 Nov 1994 08:49:37 GMT");
+    // The handler gets no choice of the date.
+    getResponseHeaders().set("Date", HEADER_DATE_VALUE);
     responseCode = rCode;
     // TODO(ejona): handle responseLengeth
   }
@@ -191,6 +202,7 @@ public class MockHttpExchange extends HttpExchange {
   public void setRequestBody(InputStream i) {
     requestBodyOrig = i;
     requestBody = requestBodyOrig;
+    getRequestHeaders().add("Transfer-Encoding", "chunked");
   }
 
   public byte[] getResponseBytes() {
