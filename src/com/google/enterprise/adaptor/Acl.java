@@ -589,7 +589,7 @@ public class Acl {
 
     private <P extends Principal> Set<P> sanitizeSet(Collection<P> set) {
       if (set.isEmpty()) {
-        Collections.emptySet();
+        return Collections.emptySet();
       }
       // Check all the values to make sure they are valid.
       for (P item : set) {
