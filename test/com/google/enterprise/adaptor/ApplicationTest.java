@@ -14,12 +14,20 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.Reader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.TimeUnit;
@@ -71,6 +79,28 @@ public class ApplicationTest {
     configFile.setFileContents("gsa.hostname=notreal\n");
     Application.autoConfig(config, new String[0], configFile);
     assertEquals("notreal", config.getGsaHostname());
+  }
+
+  @Test
+  public void testConfigReload() throws Exception {
+    app.start();
+    assertTrue(adaptor.inited);
+    assertFalse(adaptor.hasBeenShutdownAtSomePoint);
+    configFile.setFileContents("server.hostname=127.0.0.10\n");
+    config.load(configFile);
+    assertTrue(adaptor.inited);
+    assertTrue(adaptor.hasBeenShutdownAtSomePoint);
+  }
+
+  @Test
+  public void testConfigReloadNoRestart() throws Exception {
+    app.start();
+    assertTrue(adaptor.inited);
+    assertFalse(adaptor.hasBeenShutdownAtSomePoint);
+    configFile.setFileContents("adaptor.fullListingSchedule=1 1 1 1 1\n");
+    config.load(configFile);
+    assertTrue(adaptor.inited);
+    assertFalse(adaptor.hasBeenShutdownAtSomePoint);
   }
 
   @Test
@@ -163,8 +193,19 @@ public class ApplicationTest {
     assertTrue(adaptor.started);
   }
 
+  @Test
+  public void testRestart() throws Exception {
+    app.start();
+    assertTrue(adaptor.inited);
+    app.stop(0, TimeUnit.SECONDS);
+    assertFalse(adaptor.inited);
+    app.start();
+    assertTrue(adaptor.inited);
+  }
+
   private static class NullAdaptor extends AbstractAdaptor {
     private boolean inited;
+    private boolean hasBeenShutdownAtSomePoint;
 
     @Override
     public void init(AdaptorContext context) {
@@ -174,6 +215,7 @@ public class ApplicationTest {
     @Override
     public void destroy() {
       inited = false;
+      hasBeenShutdownAtSomePoint = true;
     }
 
     @Override
