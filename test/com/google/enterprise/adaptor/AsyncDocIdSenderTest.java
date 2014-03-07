@@ -117,11 +117,11 @@ public class AsyncDocIdSenderTest {
 
   private static class AccumulatingPusher
       implements AsyncDocIdSender.ItemPusher {
-    private final List<DocIdSender.Item> items
-        = new LinkedList<DocIdSender.Item>();
+    private final List<DocIdPusher.Item> items
+        = new LinkedList<DocIdPusher.Item>();
 
     @Override
-    public <T extends DocIdSender.Item> T pushItems(Iterator<T> items,
+    public <T extends DocIdPusher.Item> T pushItems(Iterator<T> items,
         ExceptionHandler handler) throws InterruptedException {
       while (items.hasNext()) {
         this.items.add(items.next());
@@ -129,7 +129,7 @@ public class AsyncDocIdSenderTest {
       return null;
     }
 
-    public List<DocIdSender.Item> getItems() {
+    public List<DocIdPusher.Item> getItems() {
       return items;
     }
   }

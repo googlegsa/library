@@ -204,10 +204,10 @@ class GsaFeedFileMaker {
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
   private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<? extends DocIdSender.Item> items) {
+      Element root, List<? extends DocIdPusher.Item> items) {
     Element group = doc.createElement("group");
     root.appendChild(group);
-    for (DocIdSender.Item item : items) {
+    for (DocIdPusher.Item item : items) {
       if (item instanceof DocIdPusher.Record) {
         constructSingleMetadataAndUrlFeedFileRecord(doc, group,
                                                     (DocIdPusher.Record) item);
@@ -223,7 +223,7 @@ class GsaFeedFileMaker {
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
   private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<? extends DocIdSender.Item> items) {
+      String srcName, List<? extends DocIdPusher.Item> items) {
     Element root = doc.createElement("gsafeed");
     doc.appendChild(root);
     constructMetadataAndUrlFeedFileHead(doc, root, srcName);
@@ -252,7 +252,7 @@ class GsaFeedFileMaker {
      provided DocIds and source name.  Is used by
      GsaCommunicationHandler.pushDocIds(). */
   public String makeMetadataAndUrlXml(String srcName,
-      List<? extends DocIdSender.Item> items) {
+      List<? extends DocIdPusher.Item> items) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();

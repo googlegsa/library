@@ -1026,6 +1026,6 @@ class DocumentHandler implements HttpHandler {
   }
 
   interface AsyncPusher {
-    public void asyncPushItem(DocIdSender.Item item);
+    public void asyncPushItem(DocIdPusher.Item item);
   }
 }

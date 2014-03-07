@@ -31,7 +31,7 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
   private final int maxBatchSize;
   private final long maxLatency;
   private final TimeUnit maxLatencyUnit;
-  private final BlockingQueue<DocIdSender.Item> queue;
+  private final BlockingQueue<DocIdPusher.Item> queue;
   private final Runnable worker = new WorkerRunnable();
 
   /**
@@ -53,7 +53,7 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
     this.maxBatchSize = maxBatchSize;
     this.maxLatency = maxLatency;
     this.maxLatencyUnit = maxLatencyUnit;
-    this.queue = new ArrayBlockingQueue<DocIdSender.Item>(queueCapacity);
+    this.queue = new ArrayBlockingQueue<DocIdPusher.Item>(queueCapacity);
   }
 
   /**
@@ -61,7 +61,7 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
    * item will be dropped and a warning will be logged.
    */
   @Override
-  public void asyncPushItem(final DocIdSender.Item item) {
+  public void asyncPushItem(final DocIdPusher.Item item) {
     if (!queue.offer(item)) {
       log.log(Level.WARNING, "Failed to queue item: {0}", item);
     }
@@ -74,7 +74,7 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
   private class WorkerRunnable implements Runnable {
     @Override
     public void run() {
-      Set<DocIdSender.Item> items = new LinkedHashSet<DocIdSender.Item>();
+      Set<DocIdPusher.Item> items = new LinkedHashSet<DocIdPusher.Item>();
       try {
         while (true) {
           BlockingQueueBatcher.take(
@@ -112,7 +112,7 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
      * @returns {@code null} for success, or the first item that failed if not
      *     all items were sent
      */
-    public <T extends DocIdSender.Item> T pushItems(Iterator<T> items,
+    public <T extends DocIdPusher.Item> T pushItems(Iterator<T> items,
         ExceptionHandler handler) throws InterruptedException;
   }
 }
