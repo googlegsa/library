@@ -67,6 +67,11 @@ class ReverseProxyHandler implements HttpHandler {
       throw new NullPointerException();
     }
     this.destinationBase = destinationBase;
+    if (destinationBase.getScheme() == null || destinationBase.getHost() == null
+        || destinationBase.getPath() == null) {
+      throw new IllegalArgumentException(
+          "destinationBase must contain a scheme, host, and path");
+    }
   }
 
   @Override
@@ -206,6 +211,48 @@ class ReverseProxyHandler implements HttpHandler {
     }
   }
 
+  /**
+   * Compute the equivalent URI to this proxy provided a possible URI pointing
+   * to the destination server.
+   *
+   * <p>Redirects and similar require absolute URIs, so the destination server
+   * is forced to expose its hostname and IP. We could pass the original
+   * Host in the request (a la Apache's ProxyPreserveHost), but that is not
+   * sufficent because it can't specify the path. So instead, we rewrite
+   * such response headers when they match the destinationUri so they point to
+   * the proxy instead of the destination (a la Apache's ProxyPassReverse).
+   */
+  private String computeReverseProxyDestination(HttpExchange ex,
+      String location) {
+    URI uri = null;
+    try {
+      uri = new URI(location);
+    } catch (URISyntaxException e) {
+      log.log(Level.INFO, "Could not parse value from header: " + location, e);
+      return location;
+    }
+    URI base = destinationBase;
+    // Check if the value starts with destinationBase. Use URI so that we
+    // can correctly take case into consideration as appropriate.
+    if (!(base.getScheme().equalsIgnoreCase(uri.getScheme())
+        && base.getHost().equalsIgnoreCase(uri.getHost())
+        && base.getPort() == uri.getPort()
+        && uri.getPath() != null
+        // This is correctly case-sensitive.
+        && uri.getPath().startsWith(base.getPath()))) {
+      return location;
+    }
+    String lastPartOfPath = uri.getPath().substring(base.getPath().length());
+    URI requestUri = HttpExchanges.getRequestUri(ex);
+    try {
+      return new URI(requestUri.getScheme(), requestUri.getAuthority(),
+          ex.getHttpContext().getPath() + lastPartOfPath, uri.getQuery(),
+          uri.getFragment()).toASCIIString();
+    } catch (URISyntaxException e) {
+      throw new AssertionError(e);
+    }
+  }
+
   private void copyRequestHeaders(HttpExchange from, HttpURLConnection to) {
     Set<String> requestHopByHopHeaders
         = getHopByHopHeaders(from.getRequestHeaders().get("Connection"));
@@ -238,6 +285,11 @@ class ReverseProxyHandler implements HttpHandler {
       }
       if (responseHopByHopHeaders.contains(key)) {
         continue;
+      }
+      if ("Location".equalsIgnoreCase(key)
+          || "Content-Location".equalsIgnoreCase(key)
+          || "URI".equalsIgnoreCase(key)) {
+        value = computeReverseProxyDestination(to, value);
       }
       to.getResponseHeaders().add(key, value);
     }

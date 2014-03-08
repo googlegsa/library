@@ -40,7 +40,7 @@ import javax.net.ssl.SSLParameters;
  */
 public final class Application {
   private static final String SLEEP_PATH = "/sleep";
-  private static final String DEFAULT_CONFIG_FILE
+  static final String DEFAULT_CONFIG_FILE
       = "adaptor-config.properties";
 
   private static final Logger log
@@ -215,7 +215,7 @@ public final class Application {
     dashboardServer = null;
   }
 
-  private static void httpServerShutdown(HttpServer server, long time,
+  static void httpServerShutdown(HttpServer server, long time,
       TimeUnit unit) {
     // Workaround Java Bug 7105369.
     SleepHandler sleepHandler = new SleepHandler(100 /* millis */);
@@ -280,7 +280,7 @@ public final class Application {
     }).start();
   }
 
-  private static HttpServer createHttpServer(Config config) throws IOException {
+  static HttpServer createHttpServer(Config config) throws IOException {
     HttpServer server;
     if (!config.isServerSecure()) {
       server = HttpServer.create();
@@ -321,7 +321,7 @@ public final class Application {
     return server;
   }
 
-  private static HttpServer createDashboardHttpServer(Config config)
+  static HttpServer createDashboardHttpServer(Config config)
       throws IOException {
     boolean secure = config.isServerSecure();
     HttpServer server;
@@ -374,7 +374,6 @@ public final class Application {
    * @return unused command line arguments
    * @throws IllegalStateException when not all configuration keys have values
    */
-  @VisibleForTesting
   static String[] autoConfig(Config config, String[] args, File configFile) {
     int i;
     for (i = 0; i < args.length; i++) {

@@ -276,6 +276,29 @@ public class ReverseProxyHandlerTest {
     assertArrayEquals(response, ex.getResponseBytes());
   }
 
+  @Test
+  public void testReverseRedirect() throws IOException {
+    byte[] response = "test response".getBytes(charset);
+    Headers goldenResponseHeaders = new Headers();
+    goldenResponseHeaders.add("Date", MockHttpExchange.HEADER_DATE_VALUE);
+    goldenResponseHeaders.add("Location", "http://example.com/proxy/page");
+
+    Map<String, List<String>> responseHeaders
+        = new HashMap<String, List<String>>();
+    responseHeaders.put("Location",
+        Arrays.asList("http://localhost:" + port + "/page"));
+    MockHttpHandler mockHandler
+        = new MockHttpHandler(307, response, responseHeaders);
+    server.createContext("/get", mockHandler);
+    MockHttpExchange ex = new MockHttpExchange("GET", "example.com",
+        "/proxy/get", context);
+    handler.handle(ex);
+
+    assertEquals(307, ex.getResponseCode());
+    assertHeadersEquals(goldenResponseHeaders, ex.getResponseHeaders());
+    assertArrayEquals(response, ex.getResponseBytes());
+  }
+
   private static void assertHeadersEquals(Headers golden, Headers header) {
     if (!Objects.equal(golden, header)) {
       fail("expected:" + new TreeMap<String, List<String>>(golden)
