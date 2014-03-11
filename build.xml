@@ -366,6 +366,26 @@
       basedir="${build.dir}/dist/adaptor${adaptorlib.suffix}"/>
   </target>
 
+  <!-- Build stand-alone AdaptorTemplate.jar for testing purposes. -->
+  <target name="adaptor-template" description="AdaptorTemplate jar"
+    depends="package">
+    <jar destfile="${build.dir}/dist/adaptor${adaptorlib.suffix}/AdaptorTemplate.jar"
+      basedir="${build-src.dir}"
+      includes="${adaptor.pkg.dir}/**/AdaptorTemplate.class">
+      <manifest>
+        <attribute name="Implementation-Title"
+          value="Google Adaptor Template"/>
+        <attribute name="Implementation-Vendor" value="Google Inc."/>
+        <attribute name="Implementation-Version"
+          value="${adaptorlib.version}"/>
+        <attribute name="Main-Class"
+          value="com.google.enterprise.adaptor.examples.AdaptorTemplate" />
+        <attribute name="Class-Path"
+          value="adaptor${adaptorlib.suffix}-withlib.jar" />
+      </manifest>
+    </jar>
+  </target>
+
   <target name="-javadoc-test-uptodate">
     <uptodate property="javadoc.uptodate"
       targetfile="${javadoc.dir}/index.html">
