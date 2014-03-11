@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import javax.management.ObjectName;
 
 /** Unit tests for {@link JavaExec}. */
 public class JavaExecTest {
@@ -238,6 +239,11 @@ public class JavaExecTest {
 
     @Override
     public boolean isBootClassPathSupported() {
+      throw new UnsupportedOperationException();
+    }
+
+    /* @Override in Java 7 */
+    public ObjectName getObjectName() {
       throw new UnsupportedOperationException();
     }
   }
