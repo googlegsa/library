@@ -59,7 +59,9 @@ class JavaExec {
       throws IOException, InterruptedException {
     Properties props = System.getProperties();
     String javaHome = props.getProperty("java.home");
-    File java = new File(new File(new File(javaHome), "bin"), "java");
+    String javaExe = props.getProperty("os.name").startsWith("Windows")
+        ? "java.exe" : "java";
+    File java = new File(new File(new File(javaHome), "bin"), javaExe);
     if (!java.exists()) {
       throw new IOException("Could not find java executable at "
           + java.getPath());

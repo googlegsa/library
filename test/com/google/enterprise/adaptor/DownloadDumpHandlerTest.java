@@ -285,7 +285,8 @@ public class DownloadDumpHandlerTest {
     ZipEntry ze = null;
     while ((ze = zis.getNextEntry()) != null) {
       if (ze.getName().equals(filename)) {
-        return IOHelper.readInputStreamToString(zis, Charset.forName("UTF-8"));
+        return IOHelper.readInputStreamToString(zis, Charset.forName("UTF-8"))
+            .replace("\r\n", "\n");
       }
     }
     return null; // file not found

@@ -105,7 +105,7 @@ public class JavaExecTest {
     assertEquals(3, resp.length);
     assertEquals("[-Xmx123m,", resp[0]);
     assertTrue(resp[1].startsWith("-Djava.util.logging.config.file="));
-    assertTrue(resp[1].endsWith("/logging-config-file,"));
+    assertTrue(resp[1].endsWith(File.separator + "logging-config-file,"));
     assertEquals("-Djava.util.logging.not-file=not-file]", resp[2]);
     assertEquals("", bytesToString(stderrBytes));
   }
