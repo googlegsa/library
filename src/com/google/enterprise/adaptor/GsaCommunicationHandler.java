@@ -90,6 +90,7 @@ public final class GsaCommunicationHandler {
   private ExecutorService backgroundExecutor;
   private DocIdCodec docIdCodec;
   private DocIdSender docIdSender;
+  private AsyncDocIdSender asyncDocIdSender;
   private HttpServerScope dashboardScope;
   private Dashboard dashboard;
   private SensitiveValueCodec secureValueCodec;
@@ -192,6 +193,10 @@ public final class GsaCommunicationHandler {
         config.isGsa70AuthMethodWorkaroundEnabled());
     docIdSender
         = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
+    asyncDocIdSender = new AsyncDocIdSender(docIdSender,
+        config.getFeedMaxUrls() /* batch size */,
+        5 /* max latency */, TimeUnit.MINUTES,
+        2 * config.getFeedMaxUrls() /* queue size */);
 
     // Could be done during start(), but then we would have to save
     // dashboardServer and contextPrefix.
@@ -252,10 +257,6 @@ public final class GsaCommunicationHandler {
         new ThreadFactoryBuilder().setDaemon(true).setNameFormat("schedule")
         .build());
     Watchdog watchdog = new Watchdog(scheduleExecutor);
-    AsyncDocIdSender asyncDocIdSender = new AsyncDocIdSender(docIdSender,
-        config.getFeedMaxUrls() /* batch size */,
-        5 /* max latency */, TimeUnit.MINUTES,
-        2 * config.getFeedMaxUrls() /* queue size */);
 
     // The cachedThreadPool implementation created here is considerably better
     // than using ThreadPoolExecutor. ThreadPoolExecutor does not create threads
@@ -803,6 +804,11 @@ public final class GsaCommunicationHandler {
     @Override
     public DocIdPusher getDocIdPusher() {
       return docIdSender;
+    }
+
+    @Override
+    public AsyncDocIdPusher getAsyncDocIdPusher() {
+      return asyncDocIdSender;
     }
 
     @Override

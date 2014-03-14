@@ -77,6 +77,7 @@ public class GsaCommunicationHandlerTest {
     AdaptorContext context = gsa.setup(mockServer, mockServer, null);
     assertSame(config, context.getConfig());
     assertNotNull(context.getDocIdPusher());
+    assertNotNull(context.getAsyncDocIdPusher());
     assertNotNull(context.getDocIdEncoder());
     assertNotNull(context.getSensitiveValueDecoder());
     ExceptionHandler originalHandler

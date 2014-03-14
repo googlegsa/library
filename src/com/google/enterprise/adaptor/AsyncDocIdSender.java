@@ -23,7 +23,8 @@ import java.util.logging.Logger;
  * Asynchronous sender of feed items. {@code worker()} must be started by client
  * and running for items to be sent.
  */
-class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
+class AsyncDocIdSender implements AsyncDocIdPusher,
+    DocumentHandler.AsyncPusher {
   private static final Logger log
       = Logger.getLogger(AsyncDocIdSender.class.getName());
 
@@ -65,6 +66,21 @@ class AsyncDocIdSender implements DocumentHandler.AsyncPusher {
     if (!queue.offer(item)) {
       log.log(Level.WARNING, "Failed to queue item: {0}", item);
     }
+  }
+
+  @Override
+  public void pushDocId(DocId docId) {
+    asyncPushItem(new DocIdPusher.Record.Builder(docId).build());
+  }
+
+  @Override
+  public void pushRecord(DocIdPusher.Record record) {
+    asyncPushItem(record);
+  }
+
+  @Override
+  public void pushNamedResource(DocId docId, Acl acl) {
+    asyncPushItem(new DocIdSender.AclItem(docId, null, acl));
   }
 
   public Runnable worker() {

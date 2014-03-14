@@ -115,6 +115,55 @@ public class AsyncDocIdSenderTest {
     assertEquals(golden, pusher.getItems());
   }
 
+  @Test
+  public void testPushDocId() throws Exception {
+    AsyncDocIdSender sender = new AsyncDocIdSender(pusher, 3, 1,
+        TimeUnit.SECONDS, 3);
+    DocId docId = new DocId("1");
+    final List<DocIdPusher.Record> golden = Arrays.asList(
+        new DocIdPusher.Record.Builder(docId).build());
+    sender.pushDocId(docId);
+    verifyPushedItems(sender, golden);
+  }
+
+  @Test
+  public void testPushRecord() throws Exception {
+    AsyncDocIdSender sender = new AsyncDocIdSender(pusher, 3, 1,
+        TimeUnit.SECONDS, 3);
+    DocIdPusher.Record record =
+        new DocIdPusher.Record.Builder(new DocId("1")).build();
+    final List<DocIdPusher.Record> golden = Arrays.asList(record);
+    sender.pushRecord(record);
+    verifyPushedItems(sender, golden);
+  }
+
+  @Test
+  public void testPushNamedResource() throws Exception {
+    AsyncDocIdSender sender = new AsyncDocIdSender(pusher, 3, 1,
+        TimeUnit.SECONDS, 3);
+    DocId docId = new DocId("1");
+    Acl acl = new Acl.Builder().setInheritFrom(new DocId("2")).build();
+    final List<DocIdSender.AclItem> golden = Arrays.asList( 
+        new DocIdSender.AclItem(docId, null, acl));
+    sender.pushNamedResource(docId, acl);
+    verifyPushedItems(sender, golden);
+  }
+
+  private void verifyPushedItems(AsyncDocIdSender sender,
+      List<? extends DocIdPusher.Item> expected) throws Exception {
+    final Runnable worker = sender.worker();
+    Thread workerThread = new Thread(new Runnable() {
+      @Override
+      public void run() {
+        Thread.currentThread().interrupt();
+        worker.run();
+      }
+    });
+    workerThread.start();
+    workerThread.join();
+    assertEquals(expected, pusher.getItems());
+  }
+
   private static class AccumulatingPusher
       implements AsyncDocIdSender.ItemPusher {
     private final List<DocIdPusher.Item> items

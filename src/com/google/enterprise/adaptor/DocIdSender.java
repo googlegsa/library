@@ -391,7 +391,25 @@ class DocIdSender extends AbstractDocIdPusher
     public Acl getAcl() {
       return acl;
     }
-   
+
+    @Override
+    public boolean equals(Object o) {
+      boolean same = false;
+      if (null != o && this.getClass().equals(o.getClass())) {
+        AclItem other = (AclItem) o;
+        same = id.equals(other.id) && acl.equals(other.acl)
+            && (docIdFragment == null ? other.docIdFragment == null :
+                docIdFragment.equals(other.docIdFragment));
+      }
+      return same;
+    }
+
+    @Override
+    public int hashCode() {
+      Object members[] = new Object[] { id, acl, docIdFragment };
+      return Arrays.hashCode(members);
+    }
+
     @Override 
     public String toString() {
       return "AclItem(" + id + "," + docIdFragment + "," + acl + ")";

@@ -35,6 +35,12 @@ public interface AdaptorContext {
   public DocIdPusher getDocIdPusher();
 
   /**
+   * Callback object for asynchronously pushing {@code DocId}s to the GSA
+   * at any time.
+   */
+  public AsyncDocIdPusher getAsyncDocIdPusher();
+
+  /**
    * A way to construct URIs from DocIds.
    */
   public DocIdEncoder getDocIdEncoder();
