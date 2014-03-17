@@ -17,9 +17,9 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.*;
 
 import com.google.enterprise.adaptor.SamlServiceProvider.AuthnState;
-import com.google.enterprise.secmgr.http.HttpClientInterface;
-import com.google.enterprise.secmgr.modules.SamlClient;
-import com.google.enterprise.secmgr.saml.OpenSamlUtil;
+import com.google.enterprise.adaptor.secmgr.http.HttpClientInterface;
+import com.google.enterprise.adaptor.secmgr.modules.SamlClient;
+import com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil;
 
 import com.sun.net.httpserver.HttpExchange;
 

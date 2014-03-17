@@ -15,10 +15,10 @@
 package com.google.enterprise.adaptor;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.enterprise.secmgr.authncontroller.ExportedState;
-import com.google.enterprise.secmgr.http.HttpClientInterface;
-import com.google.enterprise.secmgr.modules.SamlClient;
-import com.google.enterprise.secmgr.servlets.ResponseParser;
+import com.google.enterprise.adaptor.secmgr.authncontroller.ExportedState;
+import com.google.enterprise.adaptor.secmgr.http.HttpClientInterface;
+import com.google.enterprise.adaptor.secmgr.modules.SamlClient;
+import com.google.enterprise.adaptor.secmgr.servlets.ResponseParser;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

@@ -15,8 +15,8 @@
 package com.google.enterprise.adaptor;
 
 import com.google.common.collect.ListMultimap;
-import com.google.enterprise.secmgr.http.HttpClientInterface;
-import com.google.enterprise.secmgr.http.HttpExchange;
+import com.google.enterprise.adaptor.secmgr.http.HttpClientInterface;
+import com.google.enterprise.adaptor.secmgr.http.HttpExchange;
 
 import java.io.IOException;
 import java.io.InputStream;

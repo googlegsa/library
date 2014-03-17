@@ -14,9 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.secmgr.saml.HTTPSOAP11MultiContextDecoder;
-import com.google.enterprise.secmgr.saml.HTTPSOAP11MultiContextEncoder;
-import com.google.enterprise.secmgr.saml.OpenSamlUtil;
+import com.google.enterprise.adaptor.secmgr.saml.HTTPSOAP11MultiContextDecoder;
+import com.google.enterprise.adaptor.secmgr.saml.HTTPSOAP11MultiContextEncoder;
+import com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

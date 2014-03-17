@@ -14,8 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.enterprise.secmgr.authncontroller.ExportedState;
-import com.google.enterprise.secmgr.config.ConfigSingleton;
+import com.google.enterprise.adaptor.secmgr.authncontroller.ExportedState;
+import com.google.enterprise.adaptor.secmgr.config.ConfigSingleton;
 import com.google.gson.GsonBuilder;
 
 class SecurityManagerConfig {

@@ -14,24 +14,24 @@
 
 package com.google.enterprise.adaptor;
 
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAssertion;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAttribute;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAttributeStatement;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAttributeValue;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAssertion;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAttribute;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAttributeStatement;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAttributeValue;
 
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAudienceRestriction;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeAuthnStatement;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeConditions;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeResponse;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeStatus;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeStatusCode;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeStatusMessage;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeSubject;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeSubjectConfirmation;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeSubjectConfirmationData;
-import static com.google.enterprise.secmgr.saml.OpenSamlUtil.makeSuccessfulStatus;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAudienceRestriction;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAuthnStatement;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeConditions;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeResponse;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeStatus;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeStatusCode;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeStatusMessage;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeSubject;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeSubjectConfirmation;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeSubjectConfirmationData;
+import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeSuccessfulStatus;
 
-import com.google.enterprise.secmgr.saml.OpenSamlUtil;
+import com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
