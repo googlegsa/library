@@ -49,7 +49,7 @@ class DocumentHandler implements HttpHandler {
   private final Adaptor adaptor;
   private final AuthzAuthority authzAuthority;
   private final Watchdog watchdog;
-  private final AsyncPusher pusher;
+  private final AsyncDocIdPusher pusher;
   /**
    * List of Common Names of Subjects that are provided full access when in
    * secure mode. All entries should be lower case.
@@ -79,7 +79,7 @@ class DocumentHandler implements HttpHandler {
                          SamlServiceProvider samlServiceProvider,
                          TransformPipeline transform, AclTransform aclTransform,
                          boolean useCompression,
-                         Watchdog watchdog, AsyncPusher pusher,
+                         Watchdog watchdog, AsyncDocIdPusher pusher,
                          boolean sendDocControls, long headerTimeoutMillis,
                          long contentTimeoutMillis, String scoringType) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
@@ -807,7 +807,7 @@ class DocumentHandler implements HttpHandler {
           if (displayUrl != null || crawlOnce || lock) {
             // Emulate these crawl-time values by sending them in feeds
             // since they aren't supported at crawl-time on GSA 7.0.
-            pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
+            pusher.pushItem(new DocIdPusher.Record.Builder(docId)
                 .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
                 .build());
             // TODO(ejona): figure out how to notice that a true went false
@@ -849,7 +849,7 @@ class DocumentHandler implements HttpHandler {
       HttpExchanges.startResponse(
           ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
-        pusher.asyncPushItem(new DocIdSender.AclItem(docId,
+        pusher.pushItem(new DocIdSender.AclItem(docId,
             fragment.getKey(), fragment.getValue()));
       }
     }
@@ -886,7 +886,7 @@ class DocumentHandler implements HttpHandler {
         // CHILD_OVERRIDES and PARENT_OVERRIDES are fine as-is.
       }
       final String fragment = "generated";
-      pusher.asyncPushItem(
+      pusher.pushItem(
           new DocIdSender.AclItem(docId, fragment, namedResourceAcl.build()));
       return new Acl.Builder()
           .setInheritanceType(acl.getInheritanceType())
@@ -1023,9 +1023,5 @@ class DocumentHandler implements HttpHandler {
       // Write to buffer.
       buffer.write(b, off, len);
     }
-  }
-
-  interface AsyncPusher {
-    public void asyncPushItem(DocIdPusher.Item item);
   }
 }
