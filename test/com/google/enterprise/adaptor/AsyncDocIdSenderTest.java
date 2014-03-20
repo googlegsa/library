@@ -64,11 +64,11 @@ public class AsyncDocIdSenderTest {
         new DocIdPusher.Record.Builder(new DocId("2")).build(),
         new DocIdPusher.Record.Builder(new DocId("3")).build());
     for (DocIdPusher.Record record : golden) {
-      sender.pushItem(record);
+      sender.asyncPushItem(record);
     }
     // We shouldn't block while adding this item, even though the queue is full.
     // Instead, it should simply be dropped.
-    sender.pushItem(
+    sender.asyncPushItem(
         new DocIdPusher.Record.Builder(new DocId("4")).build());
     Thread workerThread = new Thread(sender.worker());
     workerThread.start();
@@ -85,7 +85,7 @@ public class AsyncDocIdSenderTest {
         1, TimeUnit.SECONDS, 1 /* queueCapacity */);
     final List<DocIdPusher.Record> golden = Arrays.asList(
         new DocIdPusher.Record.Builder(new DocId("1")).build());
-    sender.pushItem(golden.get(0));
+    sender.asyncPushItem(golden.get(0));
     Thread workerThread = new Thread(sender.worker());
     workerThread.start();
     // We want to trigger the code that waits on maxLatency.
@@ -101,7 +101,7 @@ public class AsyncDocIdSenderTest {
         1, TimeUnit.SECONDS, 1 /* queueCapacity */);
     final List<DocIdPusher.Record> golden = Arrays.asList(
         new DocIdPusher.Record.Builder(new DocId("1")).build());
-    sender.pushItem(golden.get(0));
+    sender.asyncPushItem(golden.get(0));
     final Runnable worker = sender.worker();
     Thread workerThread = new Thread(new Runnable() {
       @Override

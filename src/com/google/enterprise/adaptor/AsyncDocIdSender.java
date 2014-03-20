@@ -23,7 +23,8 @@ import java.util.logging.Logger;
  * Asynchronous sender of feed items. {@code worker()} must be started by client
  * and running for items to be sent.
  */
-class AsyncDocIdSender implements AsyncDocIdPusher {
+class AsyncDocIdSender implements AsyncDocIdPusher,
+    DocumentHandler.AsyncPusher {
   private static final Logger log
       = Logger.getLogger(AsyncDocIdSender.class.getName());
 
@@ -56,8 +57,12 @@ class AsyncDocIdSender implements AsyncDocIdPusher {
     this.queue = new ArrayBlockingQueue<DocIdPusher.Item>(queueCapacity);
   }
 
+  /**
+   * Enqueue {@code item} to be sent by worker. If the queue is full, then the
+   * item will be dropped and a warning will be logged.
+   */
   @Override
-  public void pushItem(final DocIdPusher.Item item) {
+  public void asyncPushItem(final DocIdPusher.Item item) {
     if (!queue.offer(item)) {
       log.log(Level.WARNING, "Failed to queue item: {0}", item);
     }
@@ -65,17 +70,17 @@ class AsyncDocIdSender implements AsyncDocIdPusher {
 
   @Override
   public void pushDocId(DocId docId) {
-    pushItem(new DocIdPusher.Record.Builder(docId).build());
+    asyncPushItem(new DocIdPusher.Record.Builder(docId).build());
   }
 
   @Override
   public void pushRecord(DocIdPusher.Record record) {
-    pushItem(record);
+    asyncPushItem(record);
   }
 
   @Override
   public void pushNamedResource(DocId docId, Acl acl) {
-    pushItem(new DocIdSender.AclItem(docId, null, acl));
+    asyncPushItem(new DocIdSender.AclItem(docId, null, acl));
   }
 
   public Runnable worker() {

@@ -1163,9 +1163,9 @@ public class DocumentHandlerTest {
         response.getOutputStream();
       }
     };
-    AsyncDocIdPusher pusher = new MockPusher() {
+    DocumentHandler.AsyncPusher pusher = new DocumentHandler.AsyncPusher() {
       @Override
-      public void pushItem(DocIdPusher.Item item) {
+      public void asyncPushItem(DocIdPusher.Item item) {
         assertTrue(item instanceof DocIdPusher.Record);
         DocIdPusher.Record record = (DocIdPusher.Record) item;
         assertEquals(URI.create("http://example.com"), record.getResultLink());
@@ -1203,9 +1203,9 @@ public class DocumentHandlerTest {
         .setPermitUsers(Arrays.asList(
             new UserPrincipal("user2"), new UserPrincipal("user", "ns")))
         .build());
-    handler = builder.setPusher(new MockPusher() {
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void pushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdPusher.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1227,9 +1227,9 @@ public class DocumentHandlerTest {
         .setDenyUsers(Arrays.asList(new UserPrincipal("user", "ns")))
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
         .build());
-    handler = builder.setPusher(new MockPusher() {
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void pushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdPusher.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1250,9 +1250,9 @@ public class DocumentHandlerTest {
         .setPermitGroups(Arrays.asList(new GroupPrincipal("group", "ns")))
         .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
         .build());
-    handler = builder.setPusher(new MockPusher() {
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void pushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdPusher.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1273,9 +1273,9 @@ public class DocumentHandlerTest {
         .setDenyGroups(Arrays.asList(new GroupPrincipal("group", "ns")))
         .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
         .build());
-    handler = builder.setPusher(new MockPusher() {
+    handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void pushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdPusher.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1312,7 +1312,12 @@ public class DocumentHandlerTest {
     };
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setPusher(new MockPusher())
+        .setPusher(new DocumentHandler.AsyncPusher() {
+          @Override
+          public void asyncPushItem(DocIdPusher.Item item) {
+            fail("Should not have been called");
+          }
+        })
         .setFullAccessHosts(new String[] {remoteIp})
         .build();
     ex = new MockHttpExchange("GET", defaultPath, new MockHttpContext("/"));
@@ -1348,21 +1353,9 @@ public class DocumentHandlerTest {
       }
     };
 
-  private static class MockPusher implements AsyncDocIdPusher {
+  private static class MockPusher implements DocumentHandler.AsyncPusher {
     @Override
-    public void pushItem(DocIdPusher.Item item) {
-      fail("Should not have been called");
-    }
-    @Override
-    public void pushDocId(DocId docId) {
-      fail("Should not have been called");
-    }
-    @Override
-    public void pushRecord(DocIdPusher.Record record) {
-      fail("Should not have been called");
-    }
-    @Override
-    public void pushNamedResource(DocId docId, Acl acl) {
+    public void asyncPushItem(DocIdPusher.Item item) {
       fail("Should not have been called");
     }
   }
@@ -1419,7 +1412,7 @@ public class DocumentHandlerTest {
     private boolean transformRequired;
     private boolean useCompression;
     private Watchdog watchdog;
-    private AsyncDocIdPusher pusher;
+    private DocumentHandler.AsyncPusher pusher;
     private boolean sendDocControls;
     private long headerTimeoutMillis = 30 * 1000;
     private long contentTimeoutMillis = 180 * 1000;
@@ -1488,7 +1481,7 @@ public class DocumentHandlerTest {
     }
 
     public DocumentHandlerBuilder setPusher(
-        AsyncDocIdPusher pusher) {
+        DocumentHandler.AsyncPusher pusher) {
       this.pusher = pusher;
       return this;
     }

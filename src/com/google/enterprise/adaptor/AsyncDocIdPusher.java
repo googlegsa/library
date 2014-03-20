@@ -20,13 +20,6 @@ package com.google.enterprise.adaptor;
  */
 public interface AsyncDocIdPusher {
   /**
-   * Push a {@code Item} asynchronously to the GSA. The {@code Item} is
-   * enqueued and sent in the next batch to the GSA. If the queue is full,
-   * then the item will be dropped and a warning will be logged.
-   */
-  public void pushItem(DocIdPusher.Item item);
-
-  /**
    * Push a {@code DocId} asynchronously to the GSA. The {@code DocId} is
    * enqueued and sent in the next batch to the GSA. If the queue is full,
    * then the item will be dropped and a warning will be logged.
