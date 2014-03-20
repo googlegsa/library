@@ -234,7 +234,7 @@ public class GsaFeedFileMakerTest {
 
   @Test
   public void testUnsupportedDocIdSenderItemMetadataAndUrl() {
-    class UnsupportedItem implements DocIdPusher.Item {};
+    class UnsupportedItem implements DocIdSender.Item {};
     List<UnsupportedItem> items = new ArrayList<UnsupportedItem>();
     items.add(new UnsupportedItem());
     thrown.expect(IllegalArgumentException.class);

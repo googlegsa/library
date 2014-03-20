@@ -169,13 +169,10 @@ public interface DocIdPusher {
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException;
 
-  /** Marker interface for an item that can exist in a feed. */
-  interface Item {}
-
   /**
    * Immutable feed attributes for a document identified by its {@code DocId}.
    */
-  public static final class Record implements Item {
+  public static final class Record implements DocIdSender.Item {
     private final DocId id;
     private final boolean delete;
     private final Date lastModified;

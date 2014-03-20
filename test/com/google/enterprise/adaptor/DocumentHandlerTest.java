@@ -1165,7 +1165,7 @@ public class DocumentHandlerTest {
     };
     DocumentHandler.AsyncPusher pusher = new DocumentHandler.AsyncPusher() {
       @Override
-      public void asyncPushItem(DocIdPusher.Item item) {
+      public void asyncPushItem(DocIdSender.Item item) {
         assertTrue(item instanceof DocIdPusher.Record);
         DocIdPusher.Record record = (DocIdPusher.Record) item;
         assertEquals(URI.create("http://example.com"), record.getResultLink());
@@ -1205,7 +1205,7 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1229,7 +1229,7 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1252,7 +1252,7 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1275,7 +1275,7 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1314,7 +1314,7 @@ public class DocumentHandlerTest {
         .setAdaptor(adaptor)
         .setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdPusher.Item item) {
+          public void asyncPushItem(DocIdSender.Item item) {
             fail("Should not have been called");
           }
         })
@@ -1355,7 +1355,7 @@ public class DocumentHandlerTest {
 
   private static class MockPusher implements DocumentHandler.AsyncPusher {
     @Override
-    public void asyncPushItem(DocIdPusher.Item item) {
+    public void asyncPushItem(DocIdSender.Item item) {
       fail("Should not have been called");
     }
   }

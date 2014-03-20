@@ -107,7 +107,7 @@ class Journal {
     }
   }
 
-  synchronized void recordDocIdPush(List<? extends DocIdPusher.Item> pushed) {
+  synchronized void recordDocIdPush(List<? extends DocIdSender.Item> pushed) {
     for (Object item : pushed) {
       if (item instanceof DocIdPusher.Record) {
         DocIdPusher.Record record = (DocIdPusher.Record) item;

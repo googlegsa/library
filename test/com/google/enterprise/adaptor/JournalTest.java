@@ -59,7 +59,7 @@ public class JournalTest {
 
   @Test
   public void testUnsupportedDocIdPush() {
-    class UnsupportedItem implements DocIdPusher.Item {};
+    class UnsupportedItem implements DocIdSender.Item {};
     Journal journal = new Journal(true, new MockTimeProvider());
     thrown.expect(IllegalArgumentException.class);
     journal.recordDocIdPush(Collections.singletonList(new UnsupportedItem()));

@@ -359,6 +359,9 @@ class DocIdSender extends AbstractDocIdPusher
     return success ? null : items.get(0);
   }
 
+  /** Marker interface for an item that can exist in a feed. */
+  interface Item {}
+
   /**
    * Represents the ACL tag sent in feeds.
    */

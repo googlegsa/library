@@ -318,8 +318,8 @@ public class DocIdSenderTest {
 
   private static class MockGsaFeedFileMaker extends GsaFeedFileMaker {
     List<String> names = new ArrayList<String>();
-    List<List<? extends DocIdPusher.Item>> recordses
-        = new ArrayList<List<? extends DocIdPusher.Item>>();
+    List<List<? extends DocIdSender.Item>> recordses
+        = new ArrayList<List<? extends DocIdSender.Item>>();
     // Don't use generics because of limitations in Java
     List<Object> groupses = new ArrayList<Object>();
     int i;
@@ -330,7 +330,7 @@ public class DocIdSenderTest {
 
     @Override
     public String makeMetadataAndUrlXml(String name,
-        List<? extends DocIdPusher.Item> items) {
+        List<? extends DocIdSender.Item> items) {
       names.add(name);
       recordses.add(items);
       return "" + i++;
