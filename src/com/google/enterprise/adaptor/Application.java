@@ -420,6 +420,8 @@ public final class Application {
    * @return the application instance in use
    */
   public static Application main(Adaptor adaptor, String[] args) {
+    log.info(new Dashboard.JavaVersionStatusSource().retrieveStatus()
+        .getMessage(Locale.ENGLISH));
     Application app = daemonMain(adaptor, args);
 
     // Setup providing content.

@@ -49,6 +49,7 @@ class Dashboard {
     this.sessionManager = sessionManager;
 
     List<StatusSource> sources = new LinkedList<StatusSource>();
+    sources.add(new JavaVersionStatusSource());
     sources.add(new LastPushStatusSource(journal));
     sources.add(new RetrieverStatusSource(journal));
     sources.add(new GsaCrawlingStatusSource(journal));
@@ -240,6 +241,59 @@ class Dashboard {
       return secureValueCodec.encodeValue(readable, security);
     }
   }
+
+  static class JavaVersionStatusSource implements StatusSource {
+
+    @Override
+    public Status retrieveStatus() {
+      return retrieveStatus(System.getProperty("java.version"),
+          System.getProperty("os.name").startsWith("Windows"));
+    }
+
+    Status retrieveStatus(String version, boolean isWindows) {
+      final String allowedDelimiters = "[\\._\\-]"; // dot, _, or hyphen OK
+      final String UnixMinimumJVM = "1.6.0_27";
+      final String WindowsMinimumJVM = "1.7.0_6";
+      final String minVersion = isWindows ? WindowsMinimumJVM : UnixMinimumJVM;
+
+      Scanner versionScanner = new Scanner(version);
+      Scanner minScanner = new Scanner(minVersion);
+      versionScanner.useDelimiter(allowedDelimiters);
+      minScanner.useDelimiter(allowedDelimiters);
+
+      while (versionScanner.hasNextInt() && minScanner.hasNextInt()) {
+        int mine = versionScanner.nextInt();
+        int needed = minScanner.nextInt();
+        if (mine < needed) {
+          return new TranslationStatus(Status.Code.ERROR,
+              Translation.STATUS_JAVA_VERSION_UNSUPPORTED, version,
+              minVersion);
+        }
+        if (mine > needed) {
+          return new TranslationStatus(Status.Code.NORMAL,
+              Translation.STATUS_JAVA_VERSION_SUPPORTED, version);
+        }
+      }
+
+      /** does supplied version have non-digit component (and thus
+         {@code hasNextInt()} returns {@code false})? */
+      if (minScanner.hasNextInt()) {
+        return new TranslationStatus(Status.Code.WARNING,
+            Translation.STATUS_JAVA_VERSION_UNKNOWN, version, minVersion);
+      }
+
+      // if we made it here, either the supplied version matched the minimum
+      // allowed (exactly), or contains additional digit parts -- either is OK.
+      return new TranslationStatus(Status.Code.NORMAL,
+          Translation.STATUS_JAVA_VERSION_SUPPORTED, version);
+    }
+
+    @Override
+    public String getName(Locale locale) {
+      return Translation.STATUS_JAVA_VERSION.toString(locale);
+    }
+  }
+
 
   static class LastPushStatusSource implements StatusSource {
     private final Journal journal;
