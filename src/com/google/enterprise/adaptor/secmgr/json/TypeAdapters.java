@@ -107,8 +107,6 @@ public final class TypeAdapters {
   private abstract static class AbstractIterableTypeAdapter<T, I extends Iterable<T>>
       implements JsonSerializer<I>, JsonDeserializer<I> {
 
-    protected static final JsonNull JSON_NULL = new JsonNull();
-
     protected final Class<?> rawType;
 
     protected AbstractIterableTypeAdapter(Class<?> rawType) {
@@ -119,13 +117,13 @@ public final class TypeAdapters {
     @Override
     public JsonElement serialize(I iterable, Type typeOfI, JsonSerializationContext context) {
       if (iterable == null) {
-        return JSON_NULL;
+        return JsonNull.INSTANCE;
       }
       JsonArray ja = new JsonArray();
       Type typeOfElement = GsonTypes.getParameterTypes(typeOfI, rawType)[0];
       for (T element : iterable) {
         ja.add((element == null)
-            ? JSON_NULL
+            ? JsonNull.INSTANCE
             : context.serialize(element,
                 (typeOfElement == Object.class)
                 ? element.getClass()
