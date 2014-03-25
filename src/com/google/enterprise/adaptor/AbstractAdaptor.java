@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
 import java.util.logging.Logger;
 
 /**

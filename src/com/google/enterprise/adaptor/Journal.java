@@ -14,7 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Contains registers and stats regarding runtime.

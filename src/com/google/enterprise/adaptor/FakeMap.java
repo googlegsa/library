@@ -14,7 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import java.util.AbstractMap;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Fake modifiable map that doesn't store anything.

@@ -20,10 +20,15 @@ import com.google.enterprise.adaptor.secmgr.http.HttpExchange;
 
 import com.sun.net.httpserver.Headers;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.net.URL;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Mock {@link HttpClientInterface}.

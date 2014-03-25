@@ -15,7 +15,8 @@
 package com.google.enterprise.adaptor;
 
 import java.text.MessageFormat;
-import java.util.*;
+import java.util.Locale;
+import java.util.ResourceBundle;
 
 /**
  * Enum for all translation keys. All user-visible messages should exist in our

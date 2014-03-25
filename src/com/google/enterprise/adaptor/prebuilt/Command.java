@@ -14,7 +14,10 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Exec helper that allows easy handling of stdin, stdout, and stderr. Normally

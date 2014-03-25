@@ -24,7 +24,10 @@ import com.google.enterprise.adaptor.UserPrincipal;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.logging.Logger;
 
 /** Demonstrates sending group definitions to GSA. */

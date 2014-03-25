@@ -14,8 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.*;
-import java.util.*;
+import java.io.IOException;
+import java.io.Reader;
+import java.util.Properties;
+import java.util.Set;
 
 /**
  * Mock of {@link Config}.

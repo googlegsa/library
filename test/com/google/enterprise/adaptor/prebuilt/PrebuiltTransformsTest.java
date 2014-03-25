@@ -14,15 +14,18 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.Metadata;
 
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /** Unit tests for {@link PrebuiltTransfors}. */
 public class PrebuiltTransformsTest {

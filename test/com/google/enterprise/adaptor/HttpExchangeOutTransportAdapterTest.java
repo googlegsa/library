@@ -14,9 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assert.*;
-
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 /**

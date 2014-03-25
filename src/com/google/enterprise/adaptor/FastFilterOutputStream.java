@@ -14,7 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * {@link FilterOutputStream} replacement that uses {@link

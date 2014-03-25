@@ -14,7 +14,11 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.File;
+import java.io.Reader;
+import java.io.StringReader;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 

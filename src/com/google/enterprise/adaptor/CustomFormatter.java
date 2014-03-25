@@ -14,10 +14,14 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.Writer;
 import java.text.MessageFormat;
 import java.util.Date;
-import java.util.logging.*;
+import java.util.logging.Formatter;
+import java.util.logging.LogManager;
+import java.util.logging.LogRecord;
 
 /**
  * Custom log formatter for ease of development. It is specifically targeted to

@@ -23,8 +23,11 @@ import org.json.simple.JSONValue;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
-import java.util.*;
-import java.util.logging.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * JSON-RPC handler for communication with the dashboard.

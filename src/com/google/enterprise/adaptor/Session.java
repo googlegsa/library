@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
-
 /**
  * Generic session-state container, but intended for authn bookkeeping.
  */

@@ -16,7 +16,11 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import com.google.enterprise.adaptor.IOHelper;
 
-import java.io.*;
+import java.io.Closeable;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Exec helper that allows easy handling of stdin, stdout, and stderr. Normally

@@ -20,10 +20,20 @@ import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Metadata;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
-import java.util.*;
-import java.util.logging.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * A conduit that allows a simple way to create a document transform based on

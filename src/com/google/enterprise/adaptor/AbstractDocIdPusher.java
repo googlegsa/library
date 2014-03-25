@@ -14,7 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract class providing most methods required for a {@code DocIdPusher}.

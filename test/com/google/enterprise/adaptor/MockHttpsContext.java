@@ -14,7 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import com.sun.net.httpserver.*;
+import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.HttpServer;
 
 /**
  * Mock {@link HttpContext}.

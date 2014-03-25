@@ -14,7 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.EventObject;
+import java.util.Set;
 
 /**
  * Represents configuration modification event information.

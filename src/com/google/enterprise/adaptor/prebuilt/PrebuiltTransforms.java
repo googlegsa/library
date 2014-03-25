@@ -17,9 +17,20 @@ package com.google.enterprise.adaptor.prebuilt;
 import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.Metadata;
 
-import java.util.*;
-import java.util.logging.*;
-import java.util.regex.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Common transforms that you would expect to have available.

@@ -19,7 +19,8 @@ import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
 
 import java.io.Closeable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Provides a scope within an HttpServer. The current implementation simply

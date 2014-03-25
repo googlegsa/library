@@ -14,7 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Mock of {@link Adaptor} that denies all users.

@@ -14,7 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Generic session-state container, but intended for authn bookkeeping.

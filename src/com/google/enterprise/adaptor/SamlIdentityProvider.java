@@ -68,8 +68,10 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
-import java.util.*;
-import java.util.logging.*;
+import java.util.List;
+import java.util.Collections;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Provides ability to recieve and respond to SAML authn requests.

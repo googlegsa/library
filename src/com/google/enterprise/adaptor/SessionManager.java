@@ -17,7 +17,13 @@ package com.google.enterprise.adaptor;
 import com.sun.net.httpserver.HttpExchange;
 
 import java.security.SecureRandom;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
+import java.util.WeakHashMap;
 import javax.xml.bind.DatatypeConverter;
 
 /**

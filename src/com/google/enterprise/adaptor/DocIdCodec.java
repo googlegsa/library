@@ -14,7 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import java.net.*;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 /**
  * Codec for encoding and decoding {@code DocId}s to {@code URI}s.

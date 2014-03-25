@@ -20,10 +20,15 @@ import com.google.gdata.util.AuthenticationException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
-import java.io.*;
-import java.net.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ConnectException;
+import java.net.HttpURLConnection;
+import java.net.URLDecoder;
+import java.net.UnknownHostException;
 import java.nio.charset.Charset;
-import java.util.logging.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Require GSA-Administrator authentication before allowing requests.

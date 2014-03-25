@@ -20,7 +20,8 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.nio.charset.Charset;
-import java.util.logging.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /** Handler that simply sleeps for a given amount of time. */
 class SleepHandler implements HttpHandler {

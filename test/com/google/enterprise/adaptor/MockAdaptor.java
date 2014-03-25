@@ -15,7 +15,10 @@
 package com.google.enterprise.adaptor;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Mock of {@link Adaptor}. All documents authz as PERMIT.

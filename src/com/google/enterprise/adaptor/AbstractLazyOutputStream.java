@@ -14,7 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 
 /**
  * OutputStream that passes all calls to the {@code OutputStream} provided by

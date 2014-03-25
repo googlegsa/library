@@ -14,9 +14,11 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assume.*;
+import static org.junit.Assume.assumeTrue;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;

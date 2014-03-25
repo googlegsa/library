@@ -14,14 +14,18 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 
 import com.google.enterprise.adaptor.AclTransform.MatchData;
 import com.google.enterprise.adaptor.AclTransform.Rule;
 
 import org.junit.Test;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 /** Unit tests for {@link AclTransform}. */
 public class AclTransformTest {

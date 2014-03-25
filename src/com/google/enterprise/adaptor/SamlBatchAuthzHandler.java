@@ -39,9 +39,15 @@ import org.opensaml.ws.message.encoder.MessageEncodingException;
 import org.opensaml.xml.security.SecurityException;
 
 import java.io.IOException;
-import java.net.*;
-import java.util.*;
-import java.util.logging.*;
+import java.net.HttpURLConnection;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Handler for responding to late-binding, SAML batch authorization requests

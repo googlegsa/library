@@ -20,9 +20,10 @@ import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.ArrayList;
 import java.util.logging.Logger;
 
 /**

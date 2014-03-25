@@ -16,7 +16,8 @@ package com.google.enterprise.adaptor;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import java.util.concurrent.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 /** Empty watchdog implementation that never interrupts other threads. */
 class MockWatchdog extends Watchdog {

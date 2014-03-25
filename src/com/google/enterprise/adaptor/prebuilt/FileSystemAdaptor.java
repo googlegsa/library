@@ -23,10 +23,15 @@ import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 
-import java.io.*;
-import java.util.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.logging.Logger;
-import java.util.regex.*;
+import java.util.regex.Pattern;
 
 /**
  * Adaptor serving files from current directory

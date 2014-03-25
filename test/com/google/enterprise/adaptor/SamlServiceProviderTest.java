@@ -14,7 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.google.enterprise.adaptor.SamlServiceProvider.AuthnState;
 import com.google.enterprise.adaptor.secmgr.http.HttpClientInterface;
@@ -23,7 +26,9 @@ import com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil;
 
 import com.sun.net.httpserver.HttpExchange;
 
-import org.junit.*;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import org.opensaml.common.binding.SAMLMessageContext;
@@ -36,7 +41,13 @@ import org.opensaml.saml2.core.NameID;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Test cases for {@link SamlServiceProvider}.

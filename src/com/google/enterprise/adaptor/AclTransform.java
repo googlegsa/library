@@ -17,7 +17,11 @@ package com.google.enterprise.adaptor;
 import com.google.common.base.Objects;
 import com.google.enterprise.adaptor.Principal.ParsedPrincipal;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * Transforms Principals in ACLs based on provided rules.

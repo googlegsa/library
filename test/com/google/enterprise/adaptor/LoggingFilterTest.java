@@ -14,7 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 
 import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.Headers;

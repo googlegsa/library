@@ -14,7 +14,7 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.TestHelper;
@@ -23,7 +23,9 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Tests for {@link CommandLineTransform}.

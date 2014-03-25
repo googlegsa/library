@@ -17,8 +17,12 @@ package com.google.enterprise.adaptor.examples;
 import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.Metadata;
 
-import java.util.*;
-import java.util.logging.*;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Example transform which will move values from one key to another.
