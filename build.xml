@@ -47,7 +47,6 @@
   <path id="adaptorlib.run.classpath">
     <path refid="adaptorlib.build.classpath"/>
     <pathelement location="${resource.dir}"/>
-    <path refid="secmgr.run.classpath"/>
     <path refid="opensaml.run.classpath"/>
   </path>
 
@@ -67,28 +66,6 @@
       <include name="jersey-client-1.3.jar"/>
       <include name="jersey-core-1.3.jar"/>
       <include name="jsr311-api-1.1.1.jar"/>
-    </fileset>
-  </path>
-
-  <path id="secmgr.build.classpath">
-    <path refid="secmgr.run.classpath"/>
-
-    <fileset dir="${lib.dir}">
-      <!--include name="guice-3.0.jar"/-->
-      <include name="jsr305.jar"/>
-
-      <!-- Dependencies that are in common with opensaml. -->
-      <include name="joda-time-1.6.jar"/>
-      <include name="opensaml-2.3.2.jar"/>
-      <include name="openws-1.3.1.jar"/>
-      <include name="xmltooling-1.2.2.jar"/>
-    </fileset>
-  </path>
-
-  <path id="secmgr.run.classpath">
-    <fileset dir="${lib.dir}">
-      <include name="guava-11.0.2.jar"/>
-      <include name="gson-2.0.jar"/>
     </fileset>
   </path>
 
@@ -146,13 +123,6 @@
 
   <target name="-real-build">
     <mkdir dir="${build-src.dir}"/>
-
-    <!-- Compile secmgr. -->
-    <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
-      <classpath refid="secmgr.build.classpath"/>
-      <exclude name="${adaptor.pkg.dir}/**"/>
-    </javac>
 
     <!-- Compile adaptorlib. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
@@ -399,7 +369,6 @@
         overview="${src.dir}/overview.html"
         packagenames="${adaptor.pkg.name},${adaptor.pkg.name}.**">
       <classpath refid="adaptorlib.build.classpath"/>
-      <classpath refid="secmgr.build.classpath"/>
       <classpath refid="examples.build.classpath"/>
       <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
