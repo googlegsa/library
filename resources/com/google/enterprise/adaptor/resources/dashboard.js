@@ -281,6 +281,7 @@ function startIncrementalFeedPush() {
   });
 }
 
+// TODO(myk): button removed - code to follow suit
 function checkConfig() {
   var sending = $('#gaf-check-config-sending');
   sending.show();
@@ -420,6 +421,5 @@ $(document).ready(function() {
   rpc('encodeSensitiveValue', ["", "ENCRYPTED"], isEncryptionSupportedCallback);
   $('#gaf-incremental-feed-push').click(startIncrementalFeedPush);
   $('#gaf-start-feed-push').click(startFeedPush);
-  $('#gaf-check-config').click(checkConfig);
   $('#gaf-sec-runenc').click(encodeSensitiveValue);
 });
