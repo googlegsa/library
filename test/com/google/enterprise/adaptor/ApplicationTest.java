@@ -103,7 +103,6 @@ public class ApplicationTest {
     assertFalse(adaptor.hasBeenShutdownAtSomePoint);
   }
 
-  /* TODO (pjo): FLAKEY This fails on windows with took a long time...
   @Test
   public void testFastShutdownWhenStarting() throws Exception {
     class FailAlwaysAdaptor extends NullAdaptor {
@@ -134,7 +133,6 @@ public class ApplicationTest {
           + duration);
     }
   }
-  */
 
   @Test
   public void testFastShutdown() throws Exception {

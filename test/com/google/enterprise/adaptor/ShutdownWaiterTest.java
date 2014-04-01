@@ -55,7 +55,8 @@ public class ShutdownWaiterTest {
     long timeTakenUs = TimeUnit.MICROSECONDS.convert(
         System.nanoTime() - start, TimeUnit.NANOSECONDS);
     assertFalse(Thread.currentThread().isInterrupted());
-    assertTrue("shutdown took " + timeTakenUs + "µs", timeTakenUs < 1300);
+    assertTrue("shutdown took " + timeTakenUs + " microseconds",
+        timeTakenUs < 1300);
   }
 
   @Test
@@ -65,7 +66,6 @@ public class ShutdownWaiterTest {
     waiter.processingStarting(Thread.currentThread());
   }
 
-  /* TODO (pjo): FLAKEY Test taking 58000+ on Windows
   @Test
   public void testInterruptFullWait() throws Exception {
     final AtomicBoolean interrupted = new AtomicBoolean();
@@ -90,11 +90,11 @@ public class ShutdownWaiterTest {
     assertTrue(interrupted.get());
     waiter.processingCompleted(testThread);
     // Because the test blocks, it causes noticeable variation occasionally.
-    // Thus the high amount of slop.
-    assertTrue("shutdown took " + timeTakenUs + "µs",
-        timeTakenUs > 48000 && timeTakenUs < 58000);
+    // Thus the high amount of slop.  Consider bumping the maximum to
+    // 75000 or even 100000 if this test continues to fail frequently.
+    assertTrue("shutdown took " + timeTakenUs + " microseconds",
+        timeTakenUs > 48000 && timeTakenUs < 65000);
   }
-  */
 
   @Test
   public void testInterruptNonfullWait() throws Exception {
@@ -128,6 +128,7 @@ public class ShutdownWaiterTest {
     long timeTakenUs = TimeUnit.MICROSECONDS.convert(
         System.nanoTime() - start, TimeUnit.NANOSECONDS);
     assertTrue(completed.get());
-    assertTrue("shutdown took " + timeTakenUs + "µs", timeTakenUs < 1000);
+    assertTrue("shutdown took " + timeTakenUs + " microseconds",
+        timeTakenUs < 1000);
   }
 }
