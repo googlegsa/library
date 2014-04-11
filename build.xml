@@ -415,6 +415,23 @@
     </java>
   </target>
 
+  <target name="groups_from_csv" depends="build"
+      description="Run groups from csv">
+    <java classpath="${build-src.dir}" fork="true"
+      classname="${adaptor.pkg.name}.examples.GroupDefinitionsFromCsv">
+      <classpath refid="adaptorlib.run.classpath"/>
+      <sysproperty key="java.util.logging.config.file"
+        value="${src.dir}/logging.properties"/>
+      <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
+      <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
+      <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
+      <sysproperty key="javax.net.ssl.trustStore" file="cacerts.jks"/>
+      <sysproperty key="javax.net.ssl.trustStoreType" value="jks"/>
+      <sysproperty key="javax.net.ssl.trustStorePassword" value="changeit"/>
+      <arg line="${adaptor.args}"/>
+    </java>
+  </target>
+
   <target name="sim" depends="build" description="run simulator">
     <java classpath="${build-src.dir}" fork="true"
         classname="com.google.enterprise.adaptor.experimental.Sim">
