@@ -62,15 +62,7 @@ public class GroupDefinitionsFromCsv extends AbstractAdaptor {
   }
   
   @Override
-  public void getDocIds(DocIdPusher pusher) throws InterruptedException {
-    try {
-      getDocIdsHelper(pusher);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  private void getDocIdsHelper(DocIdPusher pusher) throws InterruptedException,
+  public void getDocIds(DocIdPusher pusher) throws InterruptedException,
       IOException {
     BufferedReader br = new BufferedReader(new FileReader(csvFile));
     String line = br.readLine();
