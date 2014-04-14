@@ -44,11 +44,13 @@ public class GroupDefinitionsFromCsv extends AbstractAdaptor {
 
   private File csvFile;
   private String domain;
+  private String namespace;
 
   @Override
   public void initConfig(Config config) {
     config.addKey("csv.filename", null);
     config.addKey("csv.domain", null);
+    config.addKey("csv.namespace", Principal.DEFAULT_NAMESPACE);
   }
 
   @Override
@@ -59,6 +61,7 @@ public class GroupDefinitionsFromCsv extends AbstractAdaptor {
       throw new IllegalStateException("cannot find file: " + fname);
     }
     domain =  context.getConfig().getValue("csv.domain");
+    namespace =  context.getConfig().getValue("csv.namespace");
   }
   
   @Override
@@ -118,12 +121,12 @@ public class GroupDefinitionsFromCsv extends AbstractAdaptor {
         String name = makeName(id);
         boolean entityIsGroup = src.containsKey(id);
         if (entityIsGroup) {
-          entities.add(new GroupPrincipal(name));
+          entities.add(new GroupPrincipal(name, namespace));
         } else {
-          entities.add(new UserPrincipal(name));
+          entities.add(new UserPrincipal(name, namespace));
         }
       }
-      dest.put(new GroupPrincipal(makeName(e.getKey())), entities);
+      dest.put(new GroupPrincipal(makeName(e.getKey()), namespace), entities);
     }
     return dest;
   }
