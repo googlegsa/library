@@ -93,6 +93,13 @@ function formatChartData(stats, timeResolution) {
   return data;
 }
 
+function notAvailableInReducedMemMode(statValue) {
+  if (statValue < 0) {
+    return "Not available because journal.reducedMem is set to true";
+  }
+  return statValue.toString();
+}
+
 function getStatsCallback(result, error) {
   if (result === null) {
     throw error;
@@ -111,13 +118,14 @@ function getStatsCallback(result, error) {
   $('#gaf-num-total-doc-ids-pushed').text(
       data.simpleStats.numTotalDocIdsPushed);
   $('#gaf-num-unique-doc-ids-pushed').text(
-      data.simpleStats.numUniqueDocIdsPushed);
+      notAvailableInReducedMemMode(data.simpleStats.numUniqueDocIdsPushed));
   $('#gaf-num-total-gsa-requests').text(data.simpleStats.numTotalGsaRequests);
-  $('#gaf-num-unique-gsa-requests').text(data.simpleStats.numUniqueGsaRequests);
+  $('#gaf-num-unique-gsa-requests').text(
+      notAvailableInReducedMemMode(data.simpleStats.numUniqueGsaRequests));
   $('#gaf-num-total-non-gsa-requests').text(
       data.simpleStats.numTotalNonGsaRequests);
   $('#gaf-num-unique-non-gsa-requests').text(
-      data.simpleStats.numUniqueNonGsaRequests);
+      notAvailableInReducedMemMode(data.simpleStats.numUniqueNonGsaRequests));
   $('#gaf-when-started').text(String(new Date(data.simpleStats.whenStarted)));
   $('#gaf-time-resolution').text(data.simpleStats.timeResolution);
 
