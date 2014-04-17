@@ -38,7 +38,7 @@ public class CustomFormatter extends Formatter {
       + " \u001b[3{6}m{1}\u001b[3{5}m {2} {3}:\u001b[m {4}");
   /** Is identical to {@link #formatter} except for colors */
   private MessageFormat noColorFormatter = new MessageFormat(
-      "{0,date,HH:mm:ss.SSS} {1} {2} {3}: {4}");
+      "{0,date,MM-dd HH:mm:ss.SSS} {1} {2} {3}: {4}");
   private StringBuffer buffer = new StringBuffer();
   private PrintWriter writer = new PrintWriter(new StringBufferWriter(buffer));
   /**
