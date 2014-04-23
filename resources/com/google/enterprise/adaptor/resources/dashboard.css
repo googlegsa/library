@@ -216,7 +216,7 @@ input[type=text], input[type=password] {
 }
 
 #gaf-log {
-  height: 20em;
+  height: 100em;
   overflow: auto;
 }
 
