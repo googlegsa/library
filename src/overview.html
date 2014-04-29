@@ -1,28 +1,37 @@
 <body>
   <p>Easily provide repository data to a Google Search Appliance (GSA).
 
-  <p> If you'd like to use a language other than Java or if you have command
-  line programs that can provide repository access, see if {@link
-  com.google.enterprise.adaptor.prebuilt.CommandLineAdaptor} fits your needs.
+  <p> Note: If instead of Java you'd like to use another language take a look
+  at {@link com.google.enterprise.adaptor.prebuilt.CommandLineAdaptor}.
   </p>
 
-  <h3>Basic GSA Setup</h3>
+  <h1>Table Of Contents</h1>
+  <ul>
+  <li> <a href=#gsasetup>Basic GSA Setup </a></li>
+  <li> <a href=#runtempl>Running the Adaptor Template, as an initial test </a></li>
+  <li> <a href=#createown>Creating your own Adaptor </a></li>
+  <li> <a href=#testtip>Testing Tip </a></li>
+  <li> <a href=#admintip>Admin Tip </a></li>
+  <li> <a href=#service>Running as a Windows Service </a></li>
+  <li> <a href=#secure>Enabling Security </a></li>
+  </ul>
+
+  <h1><a name=gsasetup>Basic GSA Setup </a></h1>
   <ol>
     <li>Add the IP address of the computer that hosts the adaptor to the <b>List
       of Trusted IP Addresses</b> on the GSA.
-      <p>In the GSA's Admin Console, go to <b>Crawl and Index &gt; Feeds</b>,
+      <p>In the GSA's Admin Console, go to <b>Content Sources &gt; Feeds</b>,
       and scroll down to <b>List of Trusted IP Addresses</b>. Add the IP address
       for the adaptor to the list.</p>
-    <li>Add the URLs provided by the adaptor to the <b>Follow and Crawl Only
-      URLs with the Following Patterns</b> on the GSA.
-      <p>In the Admin console, go to <b>Crawl And Index &gt; Crawl URLs</b>, and
-      scroll down to <b>Follow and Crawl Only URLs with the Following
-      Patterns</b>. Add an entry like {@code hostname:port/} where {@code
-      hostname} is the hostname of the machine that hosts the adaptor and {@code
-      port} defaults to 5678 (read on to change port number).</p>
+    <li>Add the URLs provided by the adaptor to the <b>Follow Patterns</b> on the GSA.
+      <p>In the Admin console, go to <b>Content Sources &gt; Web Crawl &gt Start and
+      Block URLs </b>, and scroll down to <b>Follow Patterns</b>. Add an entry like
+      {@code hostname:port/} where {@code hostname} is the hostname of the machine
+      that hosts the adaptor and {@code port} defaults to 5678 (read on to 
+      change port number).</p>
   </ol>
 
-  <h3>Running the Adaptor Template, as an initial test</h3>
+  <h1><a name=runtempl>Running the Adaptor Template, as an initial test </a></h1>
   <ol>
     <li>You should have already installed JDK 6 or higher and gotten a plexi
       release (download from https://code.google.com/p/plexi/). From the 
@@ -59,12 +68,12 @@ feed.name=mydocfeedtogsa</pre>
       <pre>java -cp adaptor-20130612-withlib.jar:examples/adaptor-20130612-examples.jar com.google.enterprise.adaptor.examples.AdaptorTemplate</pre>
     <li> Ensure crawling is enabled on your GSA.
       <p>
-      Go to <b>Status and Reports</b> and click <b>Resume Crawl</b>  if
-      crawling system is currently paused.
+      Go to <b>Content Sources &gt; Diagnostics &gt; Crawl Status </b>
+      and click <b>Resume Crawl</b> if crawling system is currently paused.
       
     <li> Confirm things ran successfully.
       <p>
-      In the GSA, go to <b>Crawl and Index &gt; Feeds</b>.
+      In the GSA, go to <b>Contents Sources &gt; Feeds</b>.
       In the <b>Current Feeds</b> section, you should see an entry for a
       "adaptor_HOSTNAME_PORT" (which can be changed by setting the
       <code>feed.name</code> configuration variable).
@@ -73,7 +82,7 @@ feed.name=mydocfeedtogsa</pre>
       requests for document contents being served.
   </ol>
 
-  <h3>Creating your own Adaptor</h3>
+  <h1><a name=createown>Creating your own Adaptor </a></h1>
   <ol>
     <li>Review JavaDoc for {@link com.google.enterprise.adaptor.Adaptor}
       and {@link com.google.enterprise.adaptor.AbstractAdaptor}.
@@ -90,7 +99,7 @@ feed.name=mydocfeedtogsa</pre>
       GSA.
   </ol>
 
-  <h3>Testing Tip</h3>
+  <h1><a name=testtip>Testing Tip </a></h1>
   <p>An adaptor, by default, will deny all document accesses, except from the
     GSA. To allow debugging and testing an adaptor without a GSA, you can add a
     hostname to the <code>server.fullAccessHosts</code> config key to allow that
@@ -99,7 +108,7 @@ feed.name=mydocfeedtogsa</pre>
     HTTP headers. This can be very useful when combined with Firebug or the Web
     Inspector in your browser to observe an Adaptor's behavior.
 
-  <h3>Advanced</h3>
+  <h1><a name=admintip>Admin Tip </a></h1>
   <p>You can set configuration variables on the command line instead of in
     <code>adaptor-config.properties</code>. You are allowed multiple arguments
     of the form "-Dconfigkey=configvalue". When providing a value on the command
@@ -109,7 +118,7 @@ feed.name=mydocfeedtogsa</pre>
     com.google.enterprise.adaptor.examples.AdaptorTemplate -Dgsa.hostname=mygsahostname 
     -Dserver.port=6677</pre>
 
-  <h3 id="windows-service">Running as a Windows Service</h3>
+  <h1><a name=service>Running as a Windows Service </a></h1>
   <p>Download and extract prunsrv.exe from the
     <a href="http://www.us.apache.org/dist/commons/daemon/binaries/windows/">
     latest Windows binary download</a> of Apache Commons Daemon. If you are
@@ -135,7 +144,7 @@ feed.name=mydocfeedtogsa</pre>
   <p>Where {@code someadaptor} is the same service name used during
     registration.</p>
 
-  <h3 id="secure-mode">Enabling Security</h3>
+  <h1><a name=secure>Enabling Security </a></h1>
   <p>Security is not enabled by default because it requires a reasonable amount
     of setup, on both the GSA and adaptor. The GSA needs a valid certificate for
     the hostname you are accessing it with (<code>gsa.hostname</code>). Thus,
@@ -143,7 +152,7 @@ feed.name=mydocfeedtogsa</pre>
     one. Setting up security is required before users can access non-public
     documents directly from the adaptor.
 
-  <h4>Creating Self-Signed Certificates</h4>
+  <h3>Creating Self-Signed Certificates</h3>
   <p>In the GSA's Admin Console, go to <b>Administration &gt; SSL Settings</b>.
     Under the <b>Create a New SSL Certificate</b> heading change <b>Host
     Name</b> to GSA's hostname written exactly as the adaptor will use.
@@ -202,7 +211,7 @@ feed.name=mydocfeedtogsa</pre>
   <pre>keytool -importcert -keystore cacerts.jks -storepass changeit -file adaptor.crt -alias adaptor</pre>
   <p>Answer "yes" to "Trust this certificate?"
 
-  <h4>Exchanging Certificates</h4>
+  <h3>Exchanging Certificates</h3>
   <p>To allow the adaptor to trust the GSA, execute:
   <pre>keytool -importcert -keystore cacerts.jks -storepass changeit -file gsa.crt -alias gsa</pre>
   <p>Answer "yes" to "Trust this certificate?"
@@ -214,7 +223,7 @@ feed.name=mydocfeedtogsa</pre>
     Choose "adaptor.crt" in the adaptor's directory and click <b>Save
     Settings</b>.
 
-  <h4>Flipping the Switch</h4>
+  <h3>Flipping the Switch</h3>
   <p>Now that everything is prepared, you can flip the security switch with the
     adaptor by adding a line to your <code>adaptor-config.properties</code>:
   <pre>server.secure=true</pre>
@@ -234,7 +243,7 @@ feed.name=mydocfeedtogsa</pre>
     com.google.enterprise.adaptor.examples.AdaptorWithCrawlTimeMetadataTemplate
   </pre>
 
-  <h4>Enable Stricter Security (optional)</h4>
+  <h3>Enable Stricter Security (optional)</h3>
   <p>There are additional security options you can control on the GSA.
     You may want to try running an adaptor with server.secure set before
     enabling these stricter features.
