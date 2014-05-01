@@ -87,7 +87,8 @@ public final class Application {
    * manual shutdown. A shutdown hook is automatically installed that calls
    * {@code stop()}.
    */
-  public synchronized void start() throws IOException, InterruptedException {
+  public synchronized void start() throws IOException, InterruptedException,
+      StartupException {
     synchronized (this) {
       daemonInit();
 
@@ -122,14 +123,16 @@ public final class Application {
   /**
    * Really start. This must be called after a successful {@link #daemonInit}.
    */
-  synchronized void daemonStart() throws IOException, InterruptedException {
+  synchronized void daemonStart() throws IOException, InterruptedException,
+      StartupException {
     AdaptorContext context = gsa.setup(primaryServer, dashboardServer, null);
 
     long sleepDurationMillis = 8000;
     // An hour.
     long maxSleepDurationMillis = 60 * 60 * 1000;
-    // Loop until 1) the adaptor starts successfully, 2) stop() is called, or
-    // 3) Thread.interrupt() is called on this thread (which we don't do).
+    // Loop until 1) the adaptor starts successfully, 2) an unrecoverable
+    // StartupException is thrown, 3) stop() is called, or 4) Thread.interrupt()
+    // is called on this thread (which we don't do).
     // Retrying to start the adaptor is helpful in cases where it needs
     // initialization data from a repository that is temporarily down; if the
     // adaptor is running as a service, we don't want to stop starting simply
@@ -143,6 +146,9 @@ public final class Application {
         gsa.getAdaptor().init(context);
         break;
       } catch (InterruptedException ex) {
+        throw ex;
+      } catch (StartupException ex) {        
+        log.log(Level.WARNING, "Failed to initialize adaptor", ex);
         throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Failed to initialize adaptor", ex);
@@ -445,14 +451,35 @@ public final class Application {
 
     // Setup providing content.
     try {
-      app.start();
-      log.info("doc content serving started");
+      try {
+        app.start();
+        log.info("doc content serving started");
+      } catch (StartupException e) {
+        throw new RuntimeException("could not start serving", e);
+      } catch (IOException e) {
+        throw new RuntimeException("could not start serving", e);
+      }
     } catch (InterruptedException e) {
+      // Do not call stop - it has already been called.
       throw new RuntimeException("could not start serving", e);
-    } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
+    } catch (Throwable t) {
+      // Abnormal termination. Make sure any services that may have been
+      // started are shut down.
+      try {
+        app.stop(3, TimeUnit.SECONDS);
+      } catch (Throwable ignored) {
+        // It was a noble try. Just get out.
+      }
+      // Now rethrow.
+      if (t instanceof RuntimeException) {
+        throw (RuntimeException) t;
+      } else if (t instanceof Error) {
+        throw (Error) t;
+      } else {
+        // Very unlikely to happen.
+        throw new RuntimeException(t);
+      }
     }
-
     return app;
   }
 

@@ -227,6 +227,31 @@ public class ApplicationTest {
   }
 
   @Test
+  public void testFailWithStartupException() throws Exception {
+    class FailStartupAdaptor extends NullAdaptor {
+      @Override
+      public void init(AdaptorContext context) throws Exception {
+        throw new StartupException("Unrecoverable error.");
+      }
+    }
+    FailStartupAdaptor adaptor = new FailStartupAdaptor();
+    app = new Application(adaptor, config);
+
+    // Make sure StartupException bypasses the retry after wait logic.
+    long startTime = System.nanoTime();
+    try {
+      app.start();
+      fail("Expected a StartupException, but got none.");
+    } catch (StartupException expected) {
+      long duration = System.nanoTime() - startTime;
+      final long nanosInAMilli = 1000 * 1000;
+      if (duration > 1000 * nanosInAMilli) {
+        fail("StartupException took a long time: " + duration);
+      }
+    }
+  }
+
+  @Test
   public void testFailOnceInitAdaptor() throws Exception {
     class FailFirstAdaptor extends NullAdaptor {
       private int count = 0;
@@ -262,7 +287,7 @@ public class ApplicationTest {
     private boolean hasBeenShutdownAtSomePoint;
 
     @Override
-    public void init(AdaptorContext context) {
+    public void init(AdaptorContext context) throws Exception {
       inited = true;
     }
 
