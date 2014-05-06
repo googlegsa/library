@@ -400,7 +400,11 @@ public final class Application {
       if (parts.length < 2) {
         break;
       }
-      config.setValue(parts[0], parts[1]);
+      if ("adaptor.configfile".equals(parts[0])) {
+        configFile = new File(parts[1]);
+      } else {
+        config.setValue(parts[0], parts[1]);
+      }
     }
     loadConfigFile(config, configFile);
     config.validate();

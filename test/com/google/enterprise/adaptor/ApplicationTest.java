@@ -26,11 +26,13 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Reader;
 import java.net.URL;
 import java.net.URLConnection;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Logger;
 
 /** Tests for {@link Application}. */
 public class ApplicationTest {
@@ -38,6 +40,8 @@ public class ApplicationTest {
   private NullAdaptor adaptor = new NullAdaptor();
   private MockFile configFile = new MockFile("non-existent-file");
   private Application app;
+  private static final Logger log
+      = Logger.getLogger(ApplicationTest.class.getName());
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -79,6 +83,56 @@ public class ApplicationTest {
     configFile.setFileContents("gsa.hostname=notreal\n");
     Application.autoConfig(config, new String[0], configFile);
     assertEquals("notreal", config.getGsaHostname());
+  }
+
+  @Test
+  public void testConfigFileOverrideArgumentParse() {
+    config = new ModifiedConfig();
+    configFile.setFileContents("gsa.hostname=notreal\n");
+    thrown.expect(java.lang.IllegalStateException.class);
+    // provide config file name and above config isn't read; validate fails
+    Application.autoConfig(config, new String[] {"-Dadaptor.configfile=NFE"},
+        configFile);
+  }
+
+  private static void addContent(File f, String content) throws IOException {
+    FileOutputStream fw = null;
+    try {
+      fw = new FileOutputStream(f);
+      fw.write(content.getBytes("UTF-8"));
+      fw.flush();
+    } finally {
+      if (null != fw) {
+        fw.close();
+      }
+    }
+  }
+
+  @Test
+  public void testConfigOverrideFileContentIsUsed() throws IOException {
+    config = new Config();
+    configFile.setFileContents("gsa.hostname=override-me\n");
+    File override = null;
+    try {
+      override = File.createTempFile("adaptor-test-config", ".cfg");
+      addContent(override, "gsa.hostname=flavourful\n");
+      String n = override.getAbsolutePath();
+      log.info("made real file to override configuration: " + n);      
+      Application.autoConfig(config, new String[] {"-Dadaptor.configfile=" + n},
+          configFile);
+      // getting hostname from the override file passed by -D argument
+      assertEquals("flavourful", config.getGsaHostname());
+    } finally {
+      if (null != override) {
+        String n = override.getAbsolutePath();
+        boolean deleted = override.delete();
+        if (deleted) {
+          log.info("deleted real file that overrode configuration: " + n);
+        } else {
+          log.info("didn't delete real file that overrode configuration: " + n);
+        }
+      }
+    }
   }
 
   @Test
