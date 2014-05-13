@@ -261,6 +261,9 @@ function startFeedPush() {
   rpc('startFeedPush', null, function(result, error) {
     sending.hide();
     if (result === null) {
+      alert("Disconnected from adaptor.  Press the 'OK' button to return to "
+            + "the login page.");
+      location.reload();
       throw error !== null ? error : "Invalid response from server";
     }
     var notificationSpan = result ? $('#gaf-start-feed-push-success')
@@ -278,6 +281,9 @@ function startIncrementalFeedPush() {
   rpc('startIncrementalFeedPush', null, function(result, error) {
     sending.hide();
     if (result === null) {
+      alert("Disconnected from adaptor.  Press the 'OK' button to return to "
+            + "the login page.");
+      location.reload();
       throw error !== null ? error : "Invalid response from server";
     }
     var notificationSpan = result ? $('#gaf-incremental-feed-push-success')
