@@ -20,7 +20,7 @@ package com.google.enterprise.adaptor;
  * the retry with back-off recovery logic and immediately terminate the
  * adaptor.
  */
-public class StartupException extends Exception {
+public class StartupException extends RuntimeException {
   /**
    * Constructs a new StartupException with no message and no root
    * cause.

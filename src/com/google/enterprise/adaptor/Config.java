@@ -687,7 +687,7 @@ public class Config {
       }
     }
     if (unset.size() != 0) {
-      throw new IllegalStateException("Missing configuration values: " + unset);
+      throw new InvalidConfigurationException("Missing configuration values: " + unset);
     }
   }
 
@@ -701,7 +701,7 @@ public class Config {
   public String getRawValue(String key) {
     String value = config.getProperty(key);
     if (value == null) {
-      throw new IllegalStateException(MessageFormat.format(
+      throw new InvalidConfigurationException(MessageFormat.format(
           "You must set configuration key ''{0}''.", key));
     }
     return value;
