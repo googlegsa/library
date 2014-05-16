@@ -331,6 +331,9 @@ function encodeSensitiveValue() {
       function(result, error) {
         processing.hide();
         if (result === null) {
+          alert("Disconnected from adaptor.  Press the 'OK' button to return "
+              + "to the login page.");
+          location.reload();
           throw error !== null ? error : "Invalid response from server";
         }
         encvalue.val(result);
