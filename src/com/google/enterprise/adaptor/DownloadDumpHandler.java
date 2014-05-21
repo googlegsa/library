@@ -245,8 +245,8 @@ class DownloadDumpHandler implements HttpHandler {
       Map<String, Object> sMap = (Map<String, Object>) map.get("simpleStats");
       Set<String> expectedDateAttrs = ImmutableSet.of("whenStarted",
           "lastSuccessfulFullPushStart", "lastSuccessfulFullPushEnd",
-          "currentFullPushStart", "lastSuccessfulIncremementalPushStart",
-          "lastSuccessfulIncremementalPushEnd", "currentIncrementalPushEnd");
+          "currentFullPushStart", "lastSuccessfulIncrementalPushStart",
+          "lastSuccessfulIncrementalPushEnd");
       DateFormat dateFormat = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss Z");
       dateFormat.setTimeZone(TimeZone.getTimeZone("GMT"));
       for (String key : expectedDateAttrs) {

@@ -227,8 +227,7 @@ public class DownloadDumpHandlerTest {
         simpleStats.put("whenStarted", "non-numeric value");
         simpleStats.put("lastSuccessfulFullPushEnd", null);
         simpleStats.put("currentFullPushStart", 0);
-        simpleStats.put("lastSuccessfulIncremementalPushStart", -5);
-        simpleStats.put("currentIncrementalPushEnd", 1389735897000L);
+        simpleStats.put("lastSuccessfulIncrementalPushStart", -5);
         // rest omitted
         results.put("simpleStats", simpleStats);
 
@@ -248,11 +247,10 @@ public class DownloadDumpHandlerTest {
     assertEquals(3, entries); /* 0 log files + thread dump + config + stats */
 
     // verify contents of stats file
-    String goldenStats = "currentFullPushStart                 = 0\n"
-        + "currentIncrementalPushEnd            = 01/14/2014 21:44:57 +0000\n"
-        + "lastSuccessfulFullPushEnd            = [null]\n"
-        + "lastSuccessfulIncremementalPushStart = -5\n"
-        + "whenStarted                          = non-numeric value\n\n";
+    String goldenStats = "currentFullPushStart               = 0\n"
+        + "lastSuccessfulFullPushEnd          = [null]\n"
+        + "lastSuccessfulIncrementalPushStart = -5\n"
+        + "whenStarted                        = non-numeric value\n\n";
     String statsContents = extractFileFromZip("stats.txt", zipContents);
     assertEquals(goldenStats, statsContents);
   }
