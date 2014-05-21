@@ -294,6 +294,7 @@ public final class GsaCommunicationHandler {
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
         config.doesGsaAcceptDocControlsHeader(),
+        config.markAllDocsAsPublic(),
         config.getAdaptorDocHeaderTimeoutMillis(),
         config.getAdaptorDocContentTimeoutMillis(),
         config.getScoringType());

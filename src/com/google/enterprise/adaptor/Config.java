@@ -52,6 +52,9 @@ import java.util.logging.Logger;
  *      If not set, then an attempt to compute from gsa.version is made.
  *      Defaults to true for 7.2.0-0 and later, and false for earlier,
  *      as defined by gsa.version.
+ * <tr><td> </td><td>adaptor.markAllDocsAsPublic </td><td> Tells GSA all
+        documents are public.  Overrides all ACLs and even the setting of
+        {@code Response.setSecure()}.  Defaults to false
  * <tr><td> </td><td>adaptor.fullListingSchedule </td><td> when to invoke 
  *     {@link Adaptor#getDocIds Adaptor.getDocIds}, in cron format (minute,
  *     hour,  day of month, month, day of week).  Defaults to 0 3 * * *
@@ -251,6 +254,7 @@ public class Config {
             }
           }
         });
+    addKey("adaptor.markAllDocsAsPublic", "false");
   }
 
   public Set<String> getAllKeys() {
@@ -434,6 +438,14 @@ public class Config {
    */
   boolean isAdaptorPushDocIdsOnStartup() {
     return Boolean.parseBoolean(getValue("adaptor.pushDocIdsOnStartup"));
+  }
+
+  /**
+   * Whether adaptor tells GSA all documents are public, regardless of their
+   * ACLs. Defaults to {@code false}.
+   */
+  boolean markAllDocsAsPublic() {
+    return Boolean.parseBoolean(getValue("adaptor.markAllDocsAsPublic"));
   }
 
   /**
