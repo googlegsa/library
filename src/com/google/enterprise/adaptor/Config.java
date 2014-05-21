@@ -99,7 +99,7 @@ import java.util.logging.Logger;
  *     Defaults to true
  * <tr><td> </td><td>gsa.scoringType</td><td> type of relevance algorithm
  *      GSA utilizes to rank documents.  Either content or web.  Is sent
- *      when adaptor.acceptsDocControlsHeader is true.  Defaults to content
+ *      when gsa.acceptsDocControlsHeader is true.  Defaults to content
  * <tr><td> </td><td>server.dashboardPort </td><td> port on adaptor's
  *     machine for accessing adaptor's dashboard.   Defaults to  5679
  * <tr><td> </td><td>server.docIdPath </td><td> part of URL preceding
