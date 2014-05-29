@@ -44,7 +44,7 @@ public class ConfigTest {
   @Test
   public void testNoInputLoad() {
     // Requires gsa.hostname to be set
-    thrown.expect(IllegalStateException.class);
+    thrown.expect(InvalidConfigurationException.class);
     config.validate();
   }
 

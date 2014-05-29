@@ -79,6 +79,7 @@ class DocumentHandler implements HttpHandler {
   private final AclTransform aclTransform;
   private final boolean useCompression;
   private final boolean sendDocControls;
+  private final boolean markDocsPublic;
   private final long headerTimeoutMillis;
   private final long contentTimeoutMillis;
   private final String scoring;
@@ -94,7 +95,8 @@ class DocumentHandler implements HttpHandler {
                          TransformPipeline transform, AclTransform aclTransform,
                          boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
-                         boolean sendDocControls, long headerTimeoutMillis,
+                         boolean sendDocControls, boolean markDocsPublic,
+                         long headerTimeoutMillis,
                          long contentTimeoutMillis, String scoringType) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || aclTransform == null || watchdog == null
@@ -113,6 +115,7 @@ class DocumentHandler implements HttpHandler {
     this.watchdog = watchdog;
     this.pusher = pusher;
     this.sendDocControls = sendDocControls;
+    this.markDocsPublic = markDocsPublic;
     this.headerTimeoutMillis = headerTimeoutMillis;
     this.contentTimeoutMillis = contentTimeoutMillis;
     this.scoring = scoringType;
@@ -796,7 +799,12 @@ class DocumentHandler implements HttpHandler {
       if (transform != null) {
         transform();  
       } 
-      acl = aclTransform.transform(acl);
+      if (markDocsPublic) {
+        acl = null;
+        secure = false;
+      } else {
+        acl = aclTransform.transform(acl);
+      }
       if (requestIsFromFullyTrustedClient(ex)) {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.

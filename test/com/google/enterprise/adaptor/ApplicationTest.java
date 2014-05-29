@@ -89,7 +89,7 @@ public class ApplicationTest {
   public void testConfigFileOverrideArgumentParse() {
     config = new ModifiedConfig();
     configFile.setFileContents("gsa.hostname=notreal\n");
-    thrown.expect(java.lang.IllegalStateException.class);
+    thrown.expect(InvalidConfigurationException.class);
     // provide config file name and above config isn't read; validate fails
     Application.autoConfig(config, new String[] {"-Dadaptor.configfile=NFE"},
         configFile);

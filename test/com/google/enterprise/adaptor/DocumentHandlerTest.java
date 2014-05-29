@@ -1165,6 +1165,84 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testMarkPublicOverridesAclDocControlsVersion() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setAcl(new Acl.Builder()
+                .setPermitUsers(Arrays.asList(
+                    new UserPrincipal("usr2"), new UserPrincipal("usr", "ns")))
+                .setInheritFrom(new DocId("testing")).build());
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setMarkDocsPublic(true)
+        .setSendDocControls(true)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("public",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
+    assertEquals("acl=",
+        ex.getResponseHeaders().get("X-Gsa-Doc-Controls").get(0));
+  }
+
+  @Test
+  public void testMarkPublicOverridesAclMetadataVersion() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setAcl(new Acl.Builder()
+                .setPermitUsers(Arrays.asList(
+                    new UserPrincipal("usr2"), new UserPrincipal("usr", "ns")))
+                .setInheritFrom(new DocId("testing")).build());
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setMarkDocsPublic(true)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("public",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
+    assertEquals("",
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(0));
+  }
+
+  @Test
+  public void testMarkPublicOverridesExplicitSecure() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.setSecure(true);
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setMarkDocsPublic(true)
+        .setSendDocControls(true)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("public",
+        ex.getResponseHeaders().getFirst("X-Gsa-Serve-Security"));
+  }
+
+  @Test
   public void testEmulatedFields() throws Exception {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     MockAdaptor adaptor = new MockAdaptor() {
@@ -1428,6 +1506,7 @@ public class DocumentHandlerTest {
     private Watchdog watchdog;
     private DocumentHandler.AsyncPusher pusher;
     private boolean sendDocControls;
+    private boolean markDocsPublic;
     private long headerTimeoutMillis = 30 * 1000;
     private long contentTimeoutMillis = 180 * 1000;
     private String scoring = "content";
@@ -1505,6 +1584,11 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setMarkDocsPublic(boolean markDocsPublic) {
+      this.markDocsPublic = markDocsPublic;
+      return this;
+    }
+
     public DocumentHandlerBuilder setHeaderTimeoutMillis(
         long headerTimeoutMillis) {
       this.headerTimeoutMillis = headerTimeoutMillis;
@@ -1526,7 +1610,9 @@ public class DocumentHandlerTest {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
           transform, aclTransform, useCompression, watchdog, pusher,
-          sendDocControls, headerTimeoutMillis, contentTimeoutMillis, scoring);
+          sendDocControls, markDocsPublic, headerTimeoutMillis,
+          contentTimeoutMillis, scoring);
     }
   }
 }
+
