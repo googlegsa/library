@@ -130,6 +130,30 @@ public class DocIdCodecTest {
   }
 
   @Test
+  public void testBumperSlashes() {
+    String docId = "/mnt/winser/";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.startsWith("http://"));
+    assertFalse(uriStr.substring("http://".length()).contains("//"));
+    assertTrue(uriStr.contains("/.../"));
+    assertTrue(uriStr.endsWith("/"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
+  public void testBumperSlashes2() {
+    String docId = "///mnt/winser///";
+    URI uri = codec.encodeDocId(new DocId(docId));
+    String uriStr = uri.toString();
+    assertTrue(uriStr.startsWith("http://"));
+    assertFalse(uriStr.substring("http://".length()).contains("//"));
+    assertTrue(uriStr.contains("/.../.../.../"));
+    assertTrue(uriStr.endsWith("r/.../.../"));
+    assertEquals(docId, codec.decodeDocId(uri).getUniqueId());
+  }
+
+  @Test
   public void testDoubleSlashAfterColon3() {
     String docId = "//d:////t//://NOW://.//";
     URI uri = codec.encodeDocId(new DocId(docId));
