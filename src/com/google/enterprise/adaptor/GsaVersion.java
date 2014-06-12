@@ -51,7 +51,7 @@ final class GsaVersion {
   /* Requsts entire detailed version string and returns it. */
   static GsaVersion get(String host, boolean securely) throws IOException {
     String protocol = securely ? "https" : "http";
-    URL url = new URL("http", host, "/sw_version.txt");
+    URL url = new URL(protocol, host, "/sw_version.txt");
     log.log(Level.FINE, "about to ask GSA for {0}", url);
     URLConnection conn = url.openConnection();
     InputStream in = conn.getInputStream();
