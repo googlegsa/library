@@ -196,6 +196,7 @@ public final class Service {
                 // DISABLES ALL SECURITY.
                 "-Dserver.fullAccessHosts=127.0.0.1",
                 "-Dgsa.hostname=" + config.getGsaHostname(),
+                "-Dgsa.admin.hostname=" + config.getGsaAdminHostname(),
                 "-Dserver.reverseProxyProtocol=" + scheme,
                 "-Dserver.reverseProxyPort=" + config.getServerPort()));
             if (ret != 0) {

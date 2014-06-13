@@ -123,6 +123,20 @@ public class ConfigTest {
     assertEquals("notreal", config.getGsaHostname());
   }
 
+  public void testAdminHostname() throws Exception {
+    configFile.setFileContents(
+        "gsa.hostname=feedhost\n" + "gsa.admin.hostname=admin\n");
+    config.load(configFile);
+    assertEquals("feedhost", config.getGsaHostname());
+    assertEquals("admin", config.getGsaAdminHostname());
+  }
+
+  public void testNoAdminHostname() throws Exception {
+    configFile.setFileContents("gsa.hostname=feedhost\n");
+    config.load(configFile);
+    assertEquals(config.getGsaHostname(), config.getGsaAdminHostname());
+  }
+
   // TODO(ejona): Enable test once config allows gsa.hostname changes.
   /* **DISABLED** @Test*/
   public void testConfigModifiedInvalid() throws Exception {

@@ -102,7 +102,7 @@ class Dashboard {
       HttpHandler handler, Config config,
       SessionManager<HttpExchange> sessionManager, boolean secure) {
     return new AdministratorSecurityHandler(handler, sessionManager,
-        config.getGsaHostname(), secure);
+        config.getGsaAdminHostname(), secure);
   }
 
   public void stop() {

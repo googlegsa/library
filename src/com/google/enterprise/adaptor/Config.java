@@ -94,6 +94,10 @@ import java.util.logging.Logger;
  *     in feed files. Defaults to  UTF-8
  * <tr><td align="center"> yes </td><td>gsa.hostname </td><td> machine to
  *     send feed files to.  Process errors if not provided 
+ * <tr><td> </td><td>gsa.admin.hostname </td><td> administrative host for
+ *     the GSA. This may be different from gsa.hostname if the GSA's dedicated
+ *     administrative network interface is enabled. Defaults to the same
+ *     value as gsa.hostname.
  * <tr><td> </td><td>gsa.samlEntityId </td><td> The SAML Entity ID that
  *     identifies the GSA. Defaults to
  *     http://google.com/enterprise/gsa/security-manager
@@ -206,6 +210,7 @@ public class Config {
     addKey("server.useCompression", "true");
     addKey("server.samlEntityId", "http://google.com/enterprise/gsa/adaptor");
     addKey("gsa.hostname", null);
+    addKey("gsa.admin.hostname", "");
     addKey("gsa.characterEncoding", "UTF-8");
     addKey("gsa.version", "GENERATE");
     addKey("gsa.614FeedWorkaroundEnabled", "false");
@@ -271,6 +276,16 @@ public class Config {
   }
 
   /* Preferences suggested you set them: */
+
+  /**
+   * If your GSA has a dedicated administrative network interface configured,
+   * this is hostname for that GSA's admin NIC.  If not set, defaults to the
+   * same as gsa.hostname.
+   */
+  String getGsaAdminHostname() {
+    String hostname = getValue("gsa.admin.hostname").trim();
+    return (hostname.length() > 0)? hostname : getGsaHostname();
+  }
 
   String getFeedName() {
     return getValue("feed.name");
