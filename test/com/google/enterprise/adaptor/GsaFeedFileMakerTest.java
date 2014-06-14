@@ -328,21 +328,21 @@ public class GsaFeedFileMakerTest {
   }
 
   @Test
-  public void testEmptyGroupsDefinitions() {
+  public void testEmptyGroupDefinitions() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
         + "<xmlgroups>\n"
         + "<!--GSA EasyConnector-->\n"
         + "</xmlgroups>\n";
-    String xml = meker.makeGroupsDefinitionsXml(
+    String xml = meker.makeGroupDefinitionsXml(
         new TreeMap<GroupPrincipal, List<Principal>>().entrySet(), true);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 
   @Test
-  public void testSimpleGroupsDefinitions() {
+  public void testSimpleGroupDefinitions() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -364,13 +364,13 @@ public class GsaFeedFileMakerTest {
     List<Principal> members = new ArrayList<Principal>();
     members.add(new UserPrincipal("MacLeod\\Duncan"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
-    String xml = meker.makeGroupsDefinitionsXml(groupDefs.entrySet(), false);
+    String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 
   @Test
-  public void testMultipleGroupsDefinitions() {
+  public void testMultipleGroupDefinitions() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -417,13 +417,13 @@ public class GsaFeedFileMakerTest {
     members2.add(new UserPrincipal("splat"));
     members2.add(new UserPrincipal("plump"));
     groupDefs.put(new GroupPrincipal("sounds"), members2);
-    String xml = meker.makeGroupsDefinitionsXml(groupDefs.entrySet(), false);
+    String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 
   @Test
-  public void testNestedGroupsDefinitions() {
+  public void testNestedGroupDefinitions() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -451,13 +451,13 @@ public class GsaFeedFileMakerTest {
     members.add(new UserPrincipal("MacLeod\\Duncan", "goodguys"));
     members.add(new GroupPrincipal("badguys", "3vil"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
-    String xml = meker.makeGroupsDefinitionsXml(groupDefs.entrySet(), true);
+    String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), true);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
 
   @Test
-  public void testGroupsDefinitionsAclTransform() {
+  public void testGroupDefinitionsAclTransform() {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE xmlgroups PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -485,7 +485,7 @@ public class GsaFeedFileMakerTest {
           new AclTransform.MatchData(null, "immortals", null, null),
           new AclTransform.MatchData(null, "Clan MacLeod", null, null))));
     meker = new GsaFeedFileMaker(encoder, aclTransform);
-    String xml = meker.makeGroupsDefinitionsXml(groupDefs.entrySet(), false);
+    String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }

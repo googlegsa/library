@@ -302,7 +302,7 @@ class DocIdSender extends AbstractDocIdPusher
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException {
     String groupsDefXml
-        = fileMaker.makeGroupsDefinitionsXml(defs, caseSensitive);
+        = fileMaker.makeGroupDefinitionsXml(defs, caseSensitive);
     boolean keepGoing = true;
     boolean success = false;
     log.log(Level.INFO, "pushing groups");

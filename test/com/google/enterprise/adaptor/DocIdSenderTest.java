@@ -347,7 +347,7 @@ public class DocIdSenderTest {
     }
 
     @Override
-    public <T extends Collection<Principal>> String makeGroupsDefinitionsXml(
+    public <T extends Collection<Principal>> String makeGroupDefinitionsXml(
         Collection<Map.Entry<GroupPrincipal, T>> items,
         boolean caseSensitiveMembers) {
       groupses.add(new ArrayList<Map.Entry<GroupPrincipal, T>>(items));

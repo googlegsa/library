@@ -318,7 +318,7 @@ class GsaFeedFileMaker {
 
   /** Adds all the groups' definitions into body. */
   private <T extends Collection<Principal>> void
-      constructGroupsDefinitionsFileBody(Document doc, Element root,
+      constructGroupDefinitionsFileBody(Document doc, Element root,
       Collection<Map.Entry<GroupPrincipal, T>> items,
       boolean caseSensitiveMembers) {
     for (Map.Entry<GroupPrincipal, T> group : items) {
@@ -329,28 +329,28 @@ class GsaFeedFileMaker {
 
   /** Puts all groups' definitions into document. */
   private <T extends Collection<Principal>> void
-      constructGroupsDefinitionsFeedFile(Document doc,
+      constructGroupDefinitionsFeedFile(Document doc,
       Collection<Map.Entry<GroupPrincipal, T>> items,
       boolean caseSensitiveMembers) {
     Element root = doc.createElement("xmlgroups");
     doc.appendChild(root);
     Comment comment = doc.createComment("GSA EasyConnector");
     root.appendChild(comment);
-    constructGroupsDefinitionsFileBody(doc, root, items, caseSensitiveMembers);
+    constructGroupDefinitionsFileBody(doc, root, items, caseSensitiveMembers);
   }
 
   // This and all the methods it calls with things from 'items' requires the
   // parameter T even though ? would normally suffice. See comment in
   // DocIdSender to learn about the Java limitation causing the need for T.
   /** Makes feed file with groups and their definitions. */
-  public <T extends Collection<Principal>> String makeGroupsDefinitionsXml(
+  public <T extends Collection<Principal>> String makeGroupDefinitionsXml(
       Collection<Map.Entry<GroupPrincipal, T>> items,
       boolean caseSensitiveMembers) {
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
       Document doc = docBuilder.newDocument();
-      constructGroupsDefinitionsFeedFile(doc, items, caseSensitiveMembers);
+      constructGroupDefinitionsFeedFile(doc, items, caseSensitiveMembers);
       String xmlString = documentToString(doc); 
       return xmlString;
     } catch (TransformerConfigurationException tce) {
