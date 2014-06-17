@@ -54,7 +54,7 @@ public class GroupDefinitionsScaleTester extends AbstractAdaptor {
     config.addKey("test.numusers", null);
     config.addKey("test.numgroups", null);
     config.addKey("test.userspergroup", null);
-    config.addKey("test.grouppergroup", null);
+    config.addKey("test.groupspergroup", null);
     config.addKey("test.namespace", "duper-draper-scarlet-and-bond");
     config.addKey("test.domain", "duperduperdomain.net");
   }
@@ -68,7 +68,7 @@ public class GroupDefinitionsScaleTester extends AbstractAdaptor {
     nusers = toInt(context.getConfig().getValue("test.numusers"));
     ngroups = toInt(context.getConfig().getValue("test.numgroups"));
     nuserspergroup = toInt(context.getConfig().getValue("test.userspergroup"));
-    ngroupspergroup = toInt(context.getConfig().getValue("test.grouppergroup"));
+    ngroupspergroup = toInt(context.getConfig().getValue("test.groupspergroup"));
     namespace = context.getConfig().getValue("test.namespace");
     domain = context.getConfig().getValue("test.domain");
   }
