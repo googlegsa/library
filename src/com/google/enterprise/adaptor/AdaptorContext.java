@@ -127,4 +127,11 @@ public interface AdaptorContext {
    * for the GSA. Registration may not occur after {@link Adaptor#init}.
    */
   public void setAuthzAuthority(AuthzAuthority authzAuthority);
+
+  /**
+   * Returns the {@link FeedArchiver}, which saves feeds destined for the GSA
+   * in the configured feed archive directory.  The feed archive directory is
+   * specified using the {@code feed.archiveDirectory} configuration property.
+   */
+  public FeedArchiver getFeedArchiver();
 }

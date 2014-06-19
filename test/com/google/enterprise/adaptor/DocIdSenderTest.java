@@ -41,11 +41,12 @@ import java.util.concurrent.atomic.AtomicLong;
 public class DocIdSenderTest {
   private MockGsaFeedFileMaker fileMaker = new MockGsaFeedFileMaker();
   private MockGsaFeedFileSender fileSender = new MockGsaFeedFileSender();
+  private MockFeedArchiver fileArchiver = new MockFeedArchiver();
   private Journal journal = new Journal(new MockTimeProvider());
   private Config config = new Config();
   private DocIdsMockAdaptor adaptor = new DocIdsMockAdaptor();
-  private DocIdSender docIdSender
-      = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
+  private DocIdSender docIdSender = new DocIdSender(fileMaker, fileSender, 
+      fileArchiver, journal, config, adaptor);
   private ExceptionHandler runtimeExceptionHandler
       = new RuntimeExceptionExceptionHandler();
 
@@ -97,6 +98,10 @@ public class DocIdSenderTest {
     assertEquals(Arrays.asList(new String[] {
       "0", "1", "2", "3",
     }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1", "2", "3",
+    }), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
@@ -115,8 +120,8 @@ public class DocIdSenderTest {
         throw new InterruptedException();
       }
     };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
     thrown.expect(InterruptedException.class);
     docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
   }
@@ -142,8 +147,8 @@ public class DocIdSenderTest {
 
     FailureAdaptor adaptor = new FailureAdaptor();
     ExceptionHandler errorHandler = new TryTwiceExceptionHandler();
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
     docIdSender.pushFullDocIdsFromAdaptor(errorHandler);
     assertEquals(2, adaptor.times);
   }
@@ -158,13 +163,14 @@ public class DocIdSenderTest {
         throw new IOException();
       }
     };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
     List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
     NeverRetryExceptionHandler errorHandler = new NeverRetryExceptionHandler();
 
     docIdSender.pushDocIds(ids, errorHandler);
     assertEquals(1, errorHandler.failed);
+    assertTrue(fileArchiver.feeds.isEmpty());
   }
 
   public void testPushSizedBatchRetrying() throws Exception {
@@ -176,8 +182,8 @@ public class DocIdSenderTest {
         throw new IOException();
       }
     };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
     List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
     NeverRetryExceptionHandler errorHandler = new NeverRetryExceptionHandler() {
       @Override
@@ -189,6 +195,7 @@ public class DocIdSenderTest {
 
     docIdSender.pushDocIds(ids, errorHandler);
     assertEquals(2, errorHandler.failed);
+    assertTrue(fileArchiver.feeds.isEmpty());
   }
 
   @Test
@@ -201,13 +208,14 @@ public class DocIdSenderTest {
         throw new IOException();
       }
     };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
     List<DocId> ids = Arrays.asList(new DocId("test"), new DocId("test2"));
 
     Thread.currentThread().interrupt();
     thrown.expect(InterruptedException.class);
     docIdSender.pushDocIds(ids);
+    assertTrue(fileArchiver.feeds.isEmpty());
   }
 
   @Test
@@ -225,8 +233,8 @@ public class DocIdSenderTest {
       }
     };
     config.setValue("feed.maxUrls", "1");
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
     List<DocId> ids = Arrays.asList(new DocId("test"), new DocId("test2"));
 
     Thread.currentThread().interrupt();
@@ -274,6 +282,10 @@ public class DocIdSenderTest {
     assertEquals(Arrays.asList(new String[] {
       "0", "1",
     }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1",
+    }), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
@@ -294,8 +306,8 @@ public class DocIdSenderTest {
         throw new IOException();
       }
     };
-    docIdSender = new DocIdSender(fileMaker, fileSender, journal, config,
-                                  adaptor);
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
 
     Map<DocId, Acl> resources = new TreeMap<DocId, Acl>();
     resources.put(new DocId("aaa"), Acl.EMPTY);
@@ -377,6 +389,21 @@ public class DocIdSenderTest {
         boolean useCompression) throws IOException {
       groupsources.add(groupsource);
       xmlStrings.add(xmlString);
+    }
+  }
+
+  private static class MockFeedArchiver implements FeedArchiver {
+    List<String> feeds = new ArrayList<String>();
+    List<String> failedFeeds = new ArrayList<String>();
+
+    @Override
+    public void saveFeed(String feedName, String feedXml) {
+      feeds.add(feedXml);
+    }
+
+    @Override
+    public void saveFailedFeed(String feedName, String feedXml) {
+      failedFeeds.add(feedXml);
     }
   }
 

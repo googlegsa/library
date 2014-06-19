@@ -117,6 +117,8 @@ public final class GsaCommunicationHandler {
   private SensitiveValueCodec secureValueCodec;
   private KeyPair keyPair;
   private AclTransform aclTransform;
+  private FeedArchiver feedArchiver;
+
   /**
    * Used to stop startup prematurely. When greater than 0, start() should abort
    * immediately because stop() is currently processing. This allows cancelling
@@ -212,8 +214,9 @@ public final class GsaCommunicationHandler {
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec, aclTransform,
         config.isGsa614FeedWorkaroundEnabled(),
         config.isGsa70AuthMethodWorkaroundEnabled());
-    docIdSender
-        = new DocIdSender(fileMaker, fileSender, journal, config, adaptor);
+    feedArchiver = new GsaFeedFileArchiver(config.getFeedArchiveDirectory());
+    docIdSender = new DocIdSender(fileMaker, fileSender, feedArchiver, journal,
+        config, adaptor);
     asyncDocIdSender = new AsyncDocIdSender(docIdSender,
         config.getFeedMaxUrls() /* batch size */,
         5 /* max latency */, TimeUnit.MINUTES,
@@ -838,6 +841,11 @@ public final class GsaCommunicationHandler {
       return docIdCodec;
     }
 
+    @Override
+    public FeedArchiver getFeedArchiver() {
+      return feedArchiver;
+    }
+    
     @Override
     public synchronized void addStatusSource(StatusSource source) {
       if (!mutable) {

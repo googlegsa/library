@@ -82,6 +82,10 @@ import java.util.logging.Logger;
  *     if not provided
  * <tr><td> </td><td>feed.noRecrawlBitEnabled </td><td> send bit telling
  *     GSA to crawl your documents only once.  Defaults to  false
+ * <tr><td> </td><td>feed.archiveDirectory </td><td> specifies a directory in
+ *     which all feeds sent to the GSA will be archived.  Feeds that failed to
+ *     be sent to the GSA will be tagged with "FAILED" in the file name.
+ *     If no directory is specified, feed files will not be saved.
  * <tr><td> </td><td>gsa.version </td><td> version number used to configure
  *     expected GSA features.  Defaults to acquiring from GSA.
  *     Uses 7.0.14-114 if acquiring fails.
@@ -219,6 +223,7 @@ public class Config {
         "http://google.com/enterprise/gsa/security-manager");
     addKey("gsa.scoringType", "content");
     addKey("docId.isUrl", "false");
+    addKey("feed.archiveDirectory", "");
     addKey("feed.name", "GENERATE", new ValueComputer() {
           public String compute(String rawValue) {
             if ("GENERATE".equals(rawValue)) {
@@ -285,6 +290,10 @@ public class Config {
   String getGsaAdminHostname() {
     String hostname = getValue("gsa.admin.hostname").trim();
     return (hostname.length() > 0)? hostname : getGsaHostname();
+  }
+
+  String getFeedArchiveDirectory() {
+    return getValue("feed.archiveDirectory");
   }
 
   String getFeedName() {

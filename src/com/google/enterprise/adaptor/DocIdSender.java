@@ -34,6 +34,7 @@ class DocIdSender extends AbstractDocIdPusher
 
   private final GsaFeedFileMaker fileMaker;
   private final GsaFeedFileSender fileSender;
+  private final FeedArchiver fileArchiver;
   private final Journal journal;
   private final Config config;
   private final Adaptor adaptor;
@@ -41,9 +42,11 @@ class DocIdSender extends AbstractDocIdPusher
       = ExceptionHandlers.defaultHandler();
 
   public DocIdSender(GsaFeedFileMaker fileMaker, GsaFeedFileSender fileSender,
-                     Journal journal, Config config, Adaptor adaptor) {
+      FeedArchiver fileArchiver, Journal journal, Config config,
+      Adaptor adaptor) {
     this.fileMaker = fileMaker;
     this.fileSender = fileSender;
+    this.fileArchiver = fileArchiver;
     this.journal = journal;
     this.config = config;
     this.adaptor = adaptor;
@@ -301,6 +304,7 @@ class DocIdSender extends AbstractDocIdPusher
       List<Map.Entry<GroupPrincipal, T>> defs,
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException {
+    String feedSourceName = config.getFeedName();
     String groupsDefXml
         = fileMaker.makeGroupDefinitionsXml(defs, caseSensitive);
     boolean keepGoing = true;
@@ -309,7 +313,7 @@ class DocIdSender extends AbstractDocIdPusher
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("sending groups to GSA host name: " + config.getGsaHostname());
-        fileSender.sendGroups(config.getFeedName(),
+        fileSender.sendGroups(feedSourceName,
             groupsDefXml, config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;
@@ -324,9 +328,11 @@ class DocIdSender extends AbstractDocIdPusher
     GroupPrincipal last = null;
     if (success) {
       log.info("pushing groups batch succeeded");
+      fileArchiver.saveFeed(feedSourceName, groupsDefXml);
     } else {
       last = defs.get(0).getKey();  // checked in pushGroupDefinitionsInternal()
       log.log(Level.WARNING, "gave up pushing groups. First item: {0}", last);
+      fileArchiver.saveFailedFeed(feedSourceName, groupsDefXml);
     }
     log.info("finished pushing batch of groups");
     return last;
@@ -358,8 +364,10 @@ class DocIdSender extends AbstractDocIdPusher
     }
     if (success) {
       log.info("Pushing batch succeeded");
+      fileArchiver.saveFeed(feedSourceName, xmlFeedFile);
     } else {
       log.log(Level.WARNING, "Gave up. First item in list: {0}", items.get(0));
+      fileArchiver.saveFailedFeed(feedSourceName, xmlFeedFile);
     }
     log.info("Finished pushing batch of items");
     return success ? null : items.get(0);
