@@ -32,6 +32,8 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Method;
+import java.net.ConnectException;
+import java.net.UnknownHostException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.Key;
@@ -58,6 +60,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLException;
 
 /** This class handles the communications with GSA. */
 public final class GsaCommunicationHandler {
@@ -356,7 +359,9 @@ public final class GsaCommunicationHandler {
       // we're talking to a GSA whose version we don't understand 
       log.log(Level.FINE, "gsa provided incomprehensible version", iae);
       config.setValue("gsa.version", "7.0.14-114");
-    } // other IOException propagates out
+    } catch (IOException ioe) {
+      throw handleGsaException(config.getGsaHostname(), ioe);
+    }
   }
 
   private TransformPipeline createTransformPipeline() {
@@ -722,6 +727,26 @@ public final class GsaCommunicationHandler {
     context.getFilters().add(waiter.filter());
     context.getFilters().addAll(commonFilters);
     return context;
+  }
+
+  /** Wrap certain GSA communication problems with more descriptive messages. */
+  static IOException handleGsaException(String gsa, IOException e) {
+    if (e instanceof ConnectException) {
+      return new IOException("Failed to connect to the GSA at " + gsa + " . "
+          + "Please verify that the gsa.hostname configuration property "
+          + "is correct and the GSA is online, and is configured to accept "
+          + "feeds from this computer.", e);
+    } else if (e instanceof UnknownHostException) {
+      return new IOException("Failed to locate the GSA at " + gsa + " . "
+          + "Please verify that the gsa.hostname configuration property "
+          + "is correct.", e);
+    } else if (e instanceof SSLException) {
+      return new IOException("Failed to connect to the GSA at " + gsa + " . "
+          + "Please verify that the your SSL Certificates are properly "
+          + "configured for secure communication with the GSA.", e);
+    } else {
+      return e;
+    }
   }
 
   /**

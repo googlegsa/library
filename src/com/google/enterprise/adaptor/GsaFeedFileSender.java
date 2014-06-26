@@ -228,8 +228,13 @@ class GsaFeedFileSender {
 
   private void sendMessage(URL destUrl, byte msg[], boolean useCompression)
       throws IOException {
-    HttpURLConnection uc = setupConnection(destUrl, msg.length, useCompression);
-    uc.connect();
+    HttpURLConnection uc;
+    try {
+      uc = setupConnection(destUrl, msg.length, useCompression);
+      uc.connect();
+    } catch (IOException ioe) {
+      throw GsaCommunicationHandler.handleGsaException(destUrl.toString(), ioe);
+    }
     try {
       writeToGsa(uc, msg, useCompression);
       String reply = readGsaReply(uc);
