@@ -24,11 +24,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.net.URLDecoder;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import javax.net.ssl.SSLException;
 
 /**
  * Require GSA-Administrator authentication before allowing requests.
@@ -197,15 +200,40 @@ class AdministratorSecurityHandler implements HttpHandler {
       try {
         new GsaClient(protocol, gsaHostname, port, username, password);
       } catch (AuthenticationException e) {
-        log.log(Level.FINE, "AuthenticationException", e);
         if (e.getCause() instanceof ConnectException) {
+          log.log(Level.WARNING, "Failed to connect to the GSA Administrative "
+              + "Console at " + adminUrl() + " . If the GSA is online and the "
+              + "GSA's dedicated administrative network interface is enabled, "
+              + "please verify that the gsa.admin.hostname property is "
+              + "properly configured.", e);
           return AuthzStatus.INDETERMINATE;
         } else if (e.getCause() instanceof UnknownHostException) {
+          log.log(Level.WARNING, "Failed to locate the GSA Administrative "
+              + "Console at " + adminUrl() + " . Please verify that the "
+              + "gsa.hostname and/or the gsa.admin.hostname configuration "
+              + "properties are correct.", e);
           return AuthzStatus.INDETERMINATE;
+        } else if (e.getCause() instanceof SSLException && useHttps) {
+          log.log(Level.WARNING, "Failed to connect to the GSA Administrative "
+              + "Console at " + adminUrl() + " . Please verify that the your "
+              + "SSL Certificates are properly configured for secure "
+              + "communication with the GSA.", e);
+        } else {
+          log.log(Level.FINE, "AuthenticationException", e);
         }
         return AuthzStatus.DENY;
       }
       return AuthzStatus.PERMIT;
+    }
+
+    private String adminUrl() {
+      try {
+        String protocol = useHttps ? "https" : "http";
+        int port = useHttps ? 8443 : 8000;
+        return new URL(protocol, gsaHostname, port, "").toString();
+      } catch (MalformedURLException e) {
+        return e.toString();
+      }
     }
   }
 }
