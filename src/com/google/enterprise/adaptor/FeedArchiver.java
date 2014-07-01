@@ -19,7 +19,7 @@ package com.google.enterprise.adaptor;
  * configured feed archive directory.  The feed archive directory is
  * specified using the {@code feed.archiveDirectory} configuration property.
  */
-public interface FeedArchiver {
+interface FeedArchiver {
   /**
    * Save the supplied XML string as a file in the feed archive
    * directory.  The file's name will start with the feed name

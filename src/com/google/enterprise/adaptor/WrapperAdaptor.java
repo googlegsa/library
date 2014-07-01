@@ -496,10 +496,5 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setAuthzAuthority(AuthzAuthority authzAuthority) {
       context.setAuthzAuthority(authzAuthority);
     }
-
-    @Override
-    public FeedArchiver getFeedArchiver() {
-      return context.getFeedArchiver();
-    }
   }
 }
