@@ -142,6 +142,11 @@ class DocIdSender extends AbstractDocIdPusher
   public DocId pushNamedResources(Map<DocId, Acl> resources,
                                   ExceptionHandler handler)
       throws InterruptedException {
+    if (config.markAllDocsAsPublic()) {
+      log.finest("Ignoring attempt to send ACLs to the GSA because "
+                 + "markAllDocsAsPublic is true.");
+      return null;
+    }
     List<AclItem> acls = new ArrayList<AclItem>(resources.size());
     for (Map.Entry<DocId, Acl> me : resources.entrySet()) {
       acls.add(new AclItem(me.getKey(), me.getValue()));
@@ -202,6 +207,11 @@ class DocIdSender extends AbstractDocIdPusher
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, ExceptionHandler handler) 
       throws InterruptedException {
+    if (config.markAllDocsAsPublic()) {
+      log.finest("Ignoring attempt to send groups to the GSA because "
+                 + "markAllDocsAsPublic is true.");
+      return null;
+    }
     return pushGroupDefinitionsInternal(defs, caseSensitive, handler);
   }
 

@@ -275,7 +275,7 @@ public class DocIdSenderTest {
     }
 
     config.setValue("feed.maxUrls", "2");
-    docIdSender.pushGroupDefinitions(groups, false, null);
+    assertNull(docIdSender.pushGroupDefinitions(groups, false, null));
 
     assertEquals(2, fileMaker.i);
     assertEquals(goldenGroups, fileMaker.groupses);
@@ -289,11 +289,59 @@ public class DocIdSenderTest {
   }
 
   @Test
+  public void testPushGroupsAllDocsPublic() throws Exception {
+    // Order of iteration matters
+    Map<GroupPrincipal, Collection<Principal>> groups
+        = new TreeMap<GroupPrincipal, Collection<Principal>>();
+    groups.put(new GroupPrincipal("g1"),
+        Arrays.asList(new UserPrincipal("u1"), new GroupPrincipal("g2")));
+    groups.put(new GroupPrincipal("g2"),
+        Arrays.asList(new UserPrincipal("u2"), new GroupPrincipal("g3")));
+    groups.put(new GroupPrincipal("g3"),
+        Arrays.asList(new UserPrincipal("u3"), new GroupPrincipal("g4")));
+    groups = Collections.unmodifiableMap(groups);
+
+    config.setValue("adaptor.markAllDocsAsPublic", "true");
+    assertNull(docIdSender.pushGroupDefinitions(groups, false, null));
+
+    assertEquals(0, fileMaker.i);
+    assertTrue(fileMaker.groupses.isEmpty());
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
   public void testNamedResources() throws Exception {
     config.setValue("feed.name", "testing");
     assertNull(docIdSender.pushNamedResources(
         Collections.singletonMap(new DocId("test"), Acl.EMPTY),
         new NeverRetryExceptionHandler()));
+    assertEquals(1, fileMaker.i);
+    assertEquals(Collections.singletonList(Collections.singletonList(
+        new DocIdSender.AclItem(new DocId("test"), Acl.EMPTY)
+    )), fileMaker.recordses);
+    assertEquals(Arrays.asList(new String[] {
+      "0"
+    }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {
+      "0"
+    }), fileArchiver.feeds);
+    assertTrue(fileMaker.groupses.isEmpty());
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
+  public void testNamedResourcesAllDocsPublic() throws Exception {
+    config.setValue("adaptor.markAllDocsAsPublic", "true");
+    config.setValue("feed.name", "testing");
+    assertNull(docIdSender.pushNamedResources(
+        Collections.singletonMap(new DocId("test"), Acl.EMPTY),
+        new NeverRetryExceptionHandler()));
+    assertEquals(0, fileMaker.i);
+    assertTrue(fileMaker.recordses.isEmpty());
+    assertTrue(fileMaker.groupses.isEmpty());
+    assertTrue(fileSender.xmlStrings.isEmpty());
+    assertTrue(fileArchiver.feeds.isEmpty());
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
