@@ -136,6 +136,54 @@ public class ApplicationTest {
   }
 
   @Test
+  public void testSystemPropertiesExtra() throws IOException {
+    System.setProperty("bogus-system-property", "fugazi");
+    assertEquals("fugazi", System.getProperty("bogus-system-property"));
+    System.clearProperty("bogus_2nd");
+    assertEquals(null, System.getProperty("bogus_2nd"));
+    File extras = null;
+    try {
+      extras = File.createTempFile("adaptor-test-sysprops", ".props");
+      // add sys properties to to file 
+      addContent(extras, "bogus-system-property=bigfoot\n"
+          + "bogus_2nd=55");
+      String n = extras.getAbsolutePath();
+      log.info("made file with extra system properties: " + n);      
+      Config cfg = new Config();
+      Application.autoConfig(cfg, new String[] {"-Dsys.properties.file=" + n,
+          "-Dgsa.hostname=not-a-real-host"}, null);
+      assertEquals("bigfoot", System.getProperty("bogus-system-property"));
+      assertEquals("55", System.getProperty("bogus_2nd"));
+      try {
+        assertEquals(null, cfg.getValue("bogus-system-property"));
+        fail("system property ended up being added to config");
+      } catch (InvalidConfigurationException e) {
+        // system property should not end up in config
+      }
+      try {
+        assertEquals(null, cfg.getValue("bogus_2nd"));
+        fail("system property ended up being added to config");
+      } catch (InvalidConfigurationException e) {
+        // system property should not end up in config
+      }
+    } finally {
+      if (null != extras) {
+        String n = extras.getAbsolutePath();
+        boolean deleted = extras.delete();
+        if (deleted) {
+          log.warning("deleted file that added system properties: " + n);
+        } else {
+          log.warning("didn't delete file that added system properties: " + n);
+        }
+      }
+      System.clearProperty("bogus-system-property");
+      assertEquals(null, System.getProperty("bogus-system-property"));
+      System.clearProperty("bogus_2nd");
+      assertEquals(null, System.getProperty("bogus_2nd"));
+    }
+  }
+
+  @Test
   public void testConfigReload() throws Exception {
     app.start();
     assertTrue(adaptor.inited);

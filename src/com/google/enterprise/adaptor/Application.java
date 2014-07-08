@@ -22,7 +22,9 @@ import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -32,8 +34,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+import java.util.Map.Entry;
+import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
@@ -44,6 +46,8 @@ import java.util.concurrent.RejectedExecutionHandler;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLParameters;
@@ -396,6 +400,7 @@ public final class Application {
    * @throws IllegalStateException when not all configuration keys have values
    */
   static String[] autoConfig(Config config, String[] args, File configFile) {
+    File sysPropertiesAdditions = null;
     int i;
     for (i = 0; i < args.length; i++) {
       if (!args[i].startsWith("-D")) {
@@ -408,10 +413,13 @@ public final class Application {
       }
       if ("adaptor.configfile".equals(parts[0])) {
         configFile = new File(parts[1]);
+      } else if ("sys.properties.file".equals(parts[0])) {
+        sysPropertiesAdditions = new File(parts[1]);
       } else {
         config.setValue(parts[0], parts[1]);
       }
     }
+    processSystemProperties(sysPropertiesAdditions);
     loadConfigFile(config, configFile);
     config.validate();
     if (i == 0) {
@@ -421,13 +429,39 @@ public final class Application {
     }
   }
 
+  private static void processSystemProperties(File extraProps) {
+    if (null == extraProps) {
+      log.log(Level.CONFIG, "no extra system properties to load");
+      return;
+    }
+    try {
+      FileInputStream extras = new FileInputStream(extraProps);
+      processSystemProperties(extras);
+      extras.close();
+    } catch (IOException e) {
+      log.log(Level.CONFIG, "could not read system properties file {0}",
+          extraProps.getAbsolutePath());
+    }
+  }
+
+  private static void processSystemProperties(InputStream extraProps) 
+      throws IOException {
+    Properties extra = new Properties();
+    extra.load(extraProps);
+    for (Entry<Object, Object> e : extra.entrySet()) {
+      String previous = System.setProperty("" + e.getKey(), "" + e.getValue());
+      log.log(Level.FINE, "sys property {0} set to {1}; was {2}",
+          new Object[] {e.getKey(), e.getValue(), previous}); 
+    }
+  }
+
   /**
    * Loads the provided config file, if it exists. It squelches any errors so
    * that you are free to call it without error handling, since this is
    * typically non-fatal.
    */
   private static void loadConfigFile(Config config, File configFile) {
-    if (configFile.exists() && configFile.isFile()) {
+    if (null != configFile && configFile.exists() && configFile.isFile()) {
       try {
         config.load(configFile);
       } catch (IOException ex) {
