@@ -148,6 +148,8 @@ import java.util.logging.Logger;
  *     and modify principals as described. Defaults no modifications
  * <tr><td> </td><td>transform.pipeline </td><td> sequence of
  *     transformation steps.  Defaults to no-pipeline
+ * <tr><td> </td><td>saml.idpExpirationMillis </td><td> Expiration time
+ *     sent in SAML Authentication response. Defaults to 30,000 milliseconds.
  * </table>
  */
 public class Config {
@@ -265,6 +267,7 @@ public class Config {
           }
         });
     addKey("adaptor.markAllDocsAsPublic", "false");
+    addKey("saml.idpExpirationMillis", "30000");
   }
 
   public Set<String> getAllKeys() {
@@ -611,6 +614,10 @@ public class Config {
    */
   String getScoringType() {
     return getValue("gsa.scoringType");
+  }
+
+  int getSamlIdpExpirationMillis() {
+    return Integer.parseInt(getValue("saml.idpExpirationMillis"));
   }
 
   /**

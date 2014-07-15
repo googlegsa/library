@@ -262,7 +262,8 @@ public final class GsaCommunicationHandler {
       if (adaptorContext.authnAuthority != null) {
         log.config("Adaptor-based authentication supported");
         SamlIdentityProvider samlIdentityProvider = new SamlIdentityProvider(
-            adaptorContext.authnAuthority, metadata, keyPair);
+            adaptorContext.authnAuthority, metadata, keyPair,
+            config.getSamlIdpExpirationMillis());
         addFilters(scope.createContext("/samlip",
             samlIdentityProvider.getSingleSignOnHandler()));
       } else {

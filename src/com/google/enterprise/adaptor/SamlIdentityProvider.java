@@ -104,9 +104,10 @@ class SamlIdentityProvider {
   private final Credential cred;
   private final SamlMetadata metadata;
   private final SsoHandler ssoHandler = new SsoHandler();
+  private final int expirationMillis;
 
   public SamlIdentityProvider(AuthnAuthority adaptor, SamlMetadata metadata,
-      KeyPair key) {
+      KeyPair key, int expirationMilliseconds) {
     if (adaptor == null || metadata == null) {
       throw new NullPointerException();
     }
@@ -114,6 +115,10 @@ class SamlIdentityProvider {
     this.metadata = metadata;
     this.cred = (key == null) ? null
         : SecurityHelper.getSimpleCredential(key.getPublic(), key.getPrivate());
+    if (expirationMilliseconds <= 0) {
+      throw new IllegalArgumentException("expiration needs to be positive"); 
+    }
+    this.expirationMillis = expirationMilliseconds;
   }
 
   public void respond(HttpExchange ex,
@@ -149,8 +154,8 @@ class SamlIdentityProvider {
     String inResponseTo = context.getInboundSAMLMessage().getID();
     String issuer = context.getLocalEntityId();
     DateTime now = new DateTime();
-    // Expiration time is 30 seconds in the future.
-    DateTime expirationTime = now.plusMillis(30 * 1000);
+    // Expiration time in the future.
+    DateTime expirationTime = now.plusMillis(expirationMillis);
 
     if (identity == null) {
       return makeResponse(issuer, now,

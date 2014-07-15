@@ -49,7 +49,7 @@ public class SamlIdentityProviderTest {
       "group1", "group2"));
   private AuthnAuthority adaptor = new AuthnAuthorityImpl();
   private SamlIdentityProvider identityProvider = new SamlIdentityProvider(
-      adaptor, metadata, null);
+      adaptor, metadata, null, 30000);
   private MockHttpContext httpContext = new MockHttpsContext(null, "/samlip");
 
   @BeforeClass
@@ -60,13 +60,25 @@ public class SamlIdentityProviderTest {
   @Test
   public void testNullAdaptor() {
     thrown.expect(NullPointerException.class);
-    new SamlIdentityProvider(null, metadata, null);
+    new SamlIdentityProvider(null, metadata, null, 30000);
   }
 
   @Test
   public void testNullMetadata() {
     thrown.expect(NullPointerException.class);
-    new SamlIdentityProvider(adaptor, null, null);
+    new SamlIdentityProvider(adaptor, null, null, 30000);
+  }
+
+  @Test
+  public void testNegativeExpiration() {
+    thrown.expect(IllegalArgumentException.class);
+    new SamlIdentityProvider(adaptor, metadata, null, -5);
+  }
+
+  @Test
+  public void testZeroExpiration() {
+    thrown.expect(IllegalArgumentException.class);
+    new SamlIdentityProvider(adaptor, metadata, null, 0);
   }
 
   @Test
