@@ -425,8 +425,9 @@ class DocIdSender extends AbstractDocIdPusher
       if (null != o && this.getClass().equals(o.getClass())) {
         AclItem other = (AclItem) o;
         same = id.equals(other.id) && acl.equals(other.acl)
-            && (docIdFragment == null ? other.docIdFragment == null :
-                docIdFragment.equals(other.docIdFragment));
+            && (docIdFragment == null
+                    ? other.docIdFragment == null
+                    : docIdFragment.equals(other.docIdFragment));
       }
       return same;
     }

@@ -15,10 +15,10 @@
 package com.google.enterprise.adaptor;
 
 import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.Reader;
 import java.net.InetAddress;
 import java.net.URI;
@@ -292,7 +292,7 @@ public class Config {
    */
   String getGsaAdminHostname() {
     String hostname = getValue("gsa.admin.hostname").trim();
-    return (hostname.length() > 0)? hostname : getGsaHostname();
+    return (hostname.length() > 0) ? hostname : getGsaHostname();
   }
 
   String getFeedArchiveDirectory() {

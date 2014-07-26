@@ -16,7 +16,6 @@ package com.google.enterprise.adaptor;
 
 import java.io.File;
 import java.io.IOException;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -142,13 +141,13 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
 
   private String getAdaptorLibraryVersion(Locale locale) {
     String version = this.getClass().getPackage().getImplementationVersion();
-    return version == null ?
-        Translation.STATS_VERSION_UNKNOWN.toString(locale) : version;
+    return version == null
+        ? Translation.STATS_VERSION_UNKNOWN.toString(locale) : version;
   }
 
   private String getAdaptorVersion(Locale locale) {
-    return adaptorVersion == null ?
-        Translation.STATS_VERSION_UNKNOWN.toString(locale) : adaptorVersion;
+    return adaptorVersion == null
+        ? Translation.STATS_VERSION_UNKNOWN.toString(locale) : adaptorVersion;
   }
 
   private String getConfigFilename(Locale locale) {
@@ -163,8 +162,8 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
       // treat file as if it were not specified -- leave it null below
     }
 
-    return canonicalConfigFile == null ?
-        Translation.STATS_CONFIG_NONE.toString(locale) :
-        canonicalConfigFile.toString();
+    return canonicalConfigFile == null
+        ? Translation.STATS_CONFIG_NONE.toString(locale)
+        : canonicalConfigFile.toString();
   }
 }

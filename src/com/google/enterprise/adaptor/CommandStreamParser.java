@@ -425,13 +425,14 @@ public class CommandStreamParser {
           try {
             authzStatus = AuthzStatus.valueOf(authzStatusString);
           } catch (IllegalArgumentException ex) {
-            log.warning("Unrecognized authz-status of '" + authzStatusString + "' for document: '" +
-                docId + "'");
+            log.warning("Unrecognized authz-status of '" + authzStatusString + "' for document: '"
+                + docId + "'");
           }
           break;
         default:
-          throw new IOException("Authorizer Error: invalid operation: '" + command.getOperation() +
-              (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
+          throw new IOException("Authorizer Error: invalid operation: '" + command.getOperation()
+              + (command.hasArgument() ? "' with argument: '"  + command.getArgument() : "")
+              + "'");
       }
       command = readCommand();
     }
@@ -569,8 +570,9 @@ public class CommandStreamParser {
           aclBuilder.setEverythingCaseInsensitive();
           break;
         default:
-          throw new IOException("Retriever Error: invalid operation: '" + command.getOperation() +
-              (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
+          throw new IOException("Retriever Error: invalid operation: '" + command.getOperation()
+              + (command.hasArgument() ? "' with argument: '"  + command.getArgument() : "")
+              + "'");
       }
       command = readCommand();
     }
@@ -647,8 +649,9 @@ public class CommandStreamParser {
           builder.setDeleteFromIndex(true);
           break;
         default:
-          throw new IOException("Lister Error: invalid operation: '" + command.getOperation() +
-              (command.hasArgument() ? "' with argument: '"  + command.getArgument() + "'" : "'"));
+          throw new IOException("Lister Error: invalid operation: '" + command.getOperation()
+              + (command.hasArgument() ? "' with argument: '"  + command.getArgument() : "'")
+              + "'");
       }
       command = readCommand();
     }
@@ -725,15 +728,16 @@ public class CommandStreamParser {
     }
 
     String line = readCharsUntilMarker("[");
-    if ((line == null) || (line.length() < HEADER_PREFIX.length()) ||
-        !line.substring(0, HEADER_PREFIX.length()).equals(HEADER_PREFIX)) {
+    if ((line == null) || (line.length() < HEADER_PREFIX.length())
+        || !line.substring(0, HEADER_PREFIX.length()).equals(HEADER_PREFIX)) {
       throw new IOException("Adaptor data must begin with '" + HEADER_PREFIX + "'");
     }
 
     String versionNumberString = line.substring(HEADER_PREFIX.length());
     if (versionNumberString.length() < 3) {
-      throw new IOException("Format version '" + versionNumberString + "' is invalid. " +
-          "The version must be at least one digit with one leading space and one trailing space.");
+      throw new IOException("Format version '" + versionNumberString + "' is invalid. "
+          + "The version must be at least one digit with one leading space"
+          + " and one trailing space.");
     }
 
     delimiter = readCharsUntilMarker("]");

@@ -22,8 +22,8 @@ public class UnsupportedPlatformException extends StartupException {
    * Constructs a new UnsupportedPlatformException with a default message.
    */
   public UnsupportedPlatformException() {
-    this(System.getProperty("os.name") +
-         " is not a supported platform for this adaptor.");
+    this(System.getProperty("os.name")
+        + " is not a supported platform for this adaptor.");
   }
 
   /**

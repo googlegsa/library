@@ -23,8 +23,8 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
@@ -144,7 +144,7 @@ class DownloadDumpHandler implements HttpHandler {
       log.log(Level.FINER, "Unable to find logs directory {0}", logsDir);
       return;
     }
-    for (File f: files) {
+    for (File f : files) {
       // avoid zipping the (empty) lock file
       if (f.getName().endsWith(".lck")) {
         log.log(Level.FINEST, "Skipping lock file: {0}", f.getName());

@@ -56,7 +56,7 @@ final class GsaVersion {
     URLConnection conn = url.openConnection();
     InputStream in = conn.getInputStream();
     String ver = IOHelper.readInputStreamToString(in, charset);
-    ver = ver.replaceAll("\\s","");
+    ver = ver.replaceAll("\\s", "");
     return new GsaVersion(ver);
   }
 

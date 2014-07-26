@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;

@@ -26,7 +26,6 @@ import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.RequestContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
@@ -360,7 +359,7 @@ public class Sim implements Runnable {
       FileItemIterator iterator = upload.getItemIterator(req);
       while (iterator.hasNext()) {
         FileItemStream item = iterator.next();
-        String field = item.getFieldName();        	    
+        String field = item.getFieldName();
         byte value[] = 
             IOHelper.readInputStreamToByteArray(item.openStream());
         parts.put(field, value);
@@ -373,11 +372,11 @@ public class Sim implements Runnable {
 
   private static int hexToInt(byte b) {
     if (b >= '0' && b <= '9') {
-      return (byte)(b - '0');
+      return (byte) (b - '0');
     } else if (b >= 'a' && b <= 'f') {
-      return (byte)(b - 'a') + 10;
+      return (byte) (b - 'a') + 10;
     } else if (b >= 'A' && b <= 'F') {
-      return (byte)(b - 'A') + 10;
+      return (byte) (b - 'A') + 10;
     } else {
       throw new IllegalArgumentException("invalid hex byte: " + b);
     }
