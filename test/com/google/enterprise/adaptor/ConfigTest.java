@@ -49,6 +49,22 @@ public class ConfigTest {
   }
 
   @Test
+  public void testEmptyGsaHostname() {
+    // Requires gsa.hostname to be non-empty
+    config.setValue("gsa.hostname", "");
+    thrown.expect(InvalidConfigurationException.class);
+    config.validate();
+  }
+
+  @Test
+  public void testWhitespaceOnlyGsaHostname() {
+    // Requires gsa.hostname to be non-empty
+    config.setValue("gsa.hostname", "  ");
+    thrown.expect(InvalidConfigurationException.class);
+    config.validate();
+  }
+
+  @Test
   public void testAddDuplicateKeyWithValue() {
     config.addKey("somekey", "value");
     thrown.expect(IllegalStateException.class);

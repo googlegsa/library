@@ -720,6 +720,9 @@ public class Config {
 
   public void validate() {
     validate(config);
+    if ("".equals(getGsaHostname().trim())) {
+      throw new InvalidConfigurationException("gsa.hostname cannot be empty");
+    }
   }
 
   private void validate(Properties config) {
