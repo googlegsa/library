@@ -89,8 +89,7 @@ public final class Application {
    * manual shutdown. A shutdown hook is automatically installed that calls
    * {@code stop()}.
    */
-  public synchronized void start() throws IOException, InterruptedException,
-      StartupException {
+  public synchronized void start() throws IOException, InterruptedException {
     synchronized (this) {
       daemonInit();
 
@@ -100,7 +99,16 @@ public final class Application {
       Runtime.getRuntime().addShutdownHook(shutdownHook);
     }
 
-    daemonStart();
+    boolean success = false;
+    try {
+      daemonStart();
+      success = true;
+    } finally {
+      if (!success) {
+        // Call daemonDestroy() and remove shutdown hook.
+        stop(0, TimeUnit.SECONDS);
+      }
+    }
   }
 
   /**
@@ -112,21 +120,41 @@ public final class Application {
     if (primaryServer != null) {
       throw new IllegalStateException("Already started");
     }
-    primaryServer = createHttpServer(config);
-    dashboardServer = createDashboardHttpServer(config);
-    // Because once stopped the server can't be reused, we can't reuse its
-    // bind()ed socket if we stop it. So although ideally we would start/stop in
-    // daemonStart/daemonStop, we instead must do it in
-    // daemonInit/daemonDestroy.
-    primaryServer.start();
-    dashboardServer.start();
+    boolean success = false;
+    try {
+      primaryServer = createHttpServer(config);
+      dashboardServer = createDashboardHttpServer(config);
+      // Because once stopped the server can't be reused, we can't reuse its
+      // bind()ed socket if we stop it. So although ideally we would start/stop
+      // in daemonStart/daemonStop, we instead must do it in
+      // daemonInit/daemonDestroy.
+      primaryServer.start();
+      dashboardServer.start();
+      success = true;
+    } finally {
+      if (!success) {
+        daemonDestroy(0, TimeUnit.SECONDS);
+      }
+    }
   }
 
   /**
    * Really start. This must be called after a successful {@link #daemonInit}.
    */
-  synchronized void daemonStart() throws IOException, InterruptedException,
-      StartupException {
+  synchronized void daemonStart() throws IOException, InterruptedException {
+    boolean success = false;
+    try {
+      realDaemonStart();
+      success = true;
+    } finally {
+      if (!success) {
+        daemonStop(0, TimeUnit.SECONDS);
+      }
+    }
+  }
+
+  private synchronized void realDaemonStart() throws IOException,
+        InterruptedException {
     AdaptorContext context = gsa.setup(primaryServer, dashboardServer, null);
 
     long sleepDurationMillis = 8000;
@@ -150,8 +178,7 @@ public final class Application {
       } catch (InterruptedException ex) {
         throw ex;
       } catch (StartupException ex) {        
-        log.log(Level.WARNING, "Failed to initialize adaptor", ex);
-        throw ex;
+        throw new RuntimeException("Failed to initialize adaptor", ex);
       } catch (Exception ex) {
         log.log(Level.WARNING, "Failed to initialize adaptor", ex);
         if (shutdownSemaphore.tryAcquire(sleepDurationMillis,
@@ -483,34 +510,13 @@ public final class Application {
 
     // Setup providing content.
     try {
-      try {
-        app.start();
-        log.info("doc content serving started");
-      } catch (StartupException e) {
-        throw new RuntimeException("could not start serving", e);
-      } catch (IOException e) {
-        throw new RuntimeException("could not start serving", e);
-      }
+      app.start();
+      log.info("doc content serving started");
     } catch (InterruptedException e) {
-      // Do not call stop - it has already been called.
+      Thread.currentThread().interrupt();
       throw new RuntimeException("could not start serving", e);
-    } catch (Throwable t) {
-      // Abnormal termination. Make sure any services that may have been
-      // started are shut down.
-      try {
-        app.stop(3, TimeUnit.SECONDS);
-      } catch (Throwable ignored) {
-        // It was a noble try. Just get out.
-      }
-      // Now rethrow.
-      if (t instanceof RuntimeException) {
-        throw (RuntimeException) t;
-      } else if (t instanceof Error) {
-        throw (Error) t;
-      } else {
-        // Very unlikely to happen.
-        throw new RuntimeException(t);
-      }
+    } catch (IOException e) {
+      throw new RuntimeException("could not start serving", e);
     }
     return app;
   }

@@ -57,7 +57,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.net.ssl.SSLException;
@@ -121,12 +120,6 @@ public final class GsaCommunicationHandler {
   private KeyPair keyPair;
   private AclTransform aclTransform;
 
-  /**
-   * Used to stop startup prematurely. When greater than 0, start() should abort
-   * immediately because stop() is currently processing. This allows cancelling
-   * new start() calls before stop() is done processing.
-   */
-  private final AtomicInteger shutdownCount = new AtomicInteger();
   private ShutdownWaiter waiter;
   private final List<Filter> commonFilters = Arrays.asList(new Filter[] {
     new AbortImmediatelyFilter(),

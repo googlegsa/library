@@ -21,7 +21,7 @@ package com.google.enterprise.adaptor;
  */
 public class InvalidConfigurationException extends StartupException {
   /**
-   * Constructs a new InvalidConfigurationException with no message and no root
+   * Constructs a new InvalidConfigurationException with no message and no
    * cause.
    */
   public InvalidConfigurationException() {
@@ -29,8 +29,8 @@ public class InvalidConfigurationException extends StartupException {
   }
 
   /**
-   * Constructs a InvalidConfigurationException with a supplied message
-   * but no root cause.
+   * Constructs a InvalidConfigurationException with a supplied message but no
+   * cause.
    *
    * @param message the message. Can be retrieved by the {@link #getMessage()}
    *        method.
@@ -40,13 +40,25 @@ public class InvalidConfigurationException extends StartupException {
   }
 
   /**
-   * Constructs a InvalidConfigurationException with message and root cause.
+   * Constructs a InvalidConfigurationException with message and cause.
    *
    * @param message the message. Can be retrieved by the {@link #getMessage()}
    *        method.
-   * @param rootCause root failure cause
+   * @param cause failure cause
    */
-  public InvalidConfigurationException(String message, Throwable rootCause) {
-    super(message, rootCause);
+  public InvalidConfigurationException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  /**
+   * Constructs a InvalidConfigurationException with specified cause, copying
+   * its message if cause is non-{@code null}.
+   *
+   * @param message the message. Can be retrieved by the {@link #getMessage()}
+   *        method.
+   * @param cause failure cause
+   */
+  public InvalidConfigurationException(Throwable cause) {
+    super(cause);
   }
 }
