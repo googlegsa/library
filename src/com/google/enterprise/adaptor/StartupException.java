@@ -17,21 +17,19 @@ package com.google.enterprise.adaptor;
 /**
  * Thrown for unrecoverable startup errors, such as fatal configuration
  * errors or running on the wrong platform.  StartupExceptions will bypass
- * the retry with back-off recovery logic and immediately terminate the
- * adaptor.
+ * the retry with back-off recovery logic of {@link Application} and immediately
+ * terminate the adaptor.
  */
 public class StartupException extends RuntimeException {
   /**
-   * Constructs a new StartupException with no message and no root
-   * cause.
+   * Constructs a new StartupException with no message and no cause.
    */
   public StartupException() {
     super();
   }
 
   /**
-   * Constructs a StartupException with a supplied message but no root
-   * cause.
+   * Constructs a StartupException with a supplied message but no cause.
    *
    * @param message the message. Can be retrieved by the {@link #getMessage()}
    *        method.
@@ -41,13 +39,23 @@ public class StartupException extends RuntimeException {
   }
 
   /**
-   * Constructs a StartupException with message and root cause.
+   * Constructs a StartupException with message and cause.
    *
    * @param message the message. Can be retrieved by the {@link #getMessage()}
    *        method.
-   * @param rootCause root failure cause
+   * @param cause failure cause
    */
-  public StartupException(String message, Throwable rootCause) {
-    super(message, rootCause);
+  public StartupException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  /**
+   * Constructs a StartupException with specified cause, copying its message if
+   * cause is non-{@code null}.
+   *
+   * @param cause failure cause
+   */
+  public StartupException(Throwable cause) {
+    super(cause);
   }
 }

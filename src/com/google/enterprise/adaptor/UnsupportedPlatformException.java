@@ -19,11 +19,10 @@ package com.google.enterprise.adaptor;
  */
 public class UnsupportedPlatformException extends StartupException {
   /**
-   * Constructs a new UnsupportedPlatformException with a default message.
+   * Constructs a new UnsupportedPlatformException with no message.
    */
   public UnsupportedPlatformException() {
-    this(System.getProperty("os.name")
-        + " is not a supported platform for this adaptor.");
+    super();
   }
 
   /**
@@ -34,5 +33,27 @@ public class UnsupportedPlatformException extends StartupException {
    */
   public UnsupportedPlatformException(String message) {
     super(message);
+  }
+
+  /**
+   * Constructs a UnsupportedPlatformException with a supplied message and
+   * cause.
+   *
+   * @param message the message. Can be retrieved by the {@link #getMessage()}
+   *        method.
+   * @param cause failure cause
+   */
+  public UnsupportedPlatformException(String message, Throwable cause) {
+    super(message, cause);
+  }
+
+  /**
+   * Constructs a UnsupportedPlatformException with specified cause, copying its
+   * message if cause is non-{@code null}.
+   *
+   * @param cause failure cause
+   */
+  public UnsupportedPlatformException(Throwable cause) {
+    super(cause);
   }
 }

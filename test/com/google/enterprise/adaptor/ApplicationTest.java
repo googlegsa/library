@@ -276,10 +276,12 @@ public class ApplicationTest {
 
   @Test
   public void testFailWithStartupException() throws Exception {
+    final StartupException startupException
+        = new StartupException("Unrecoverable error.");
     class FailStartupAdaptor extends NullAdaptor {
       @Override
       public void init(AdaptorContext context) throws Exception {
-        throw new StartupException("Unrecoverable error.");
+        throw startupException;
       }
     }
     FailStartupAdaptor adaptor = new FailStartupAdaptor();
@@ -289,12 +291,13 @@ public class ApplicationTest {
     long startTime = System.nanoTime();
     try {
       app.start();
-      fail("Expected a StartupException, but got none.");
-    } catch (StartupException expected) {
+      fail("Expected a RuntimeException, but got none.");
+    } catch (RuntimeException expected) {
+      assertEquals(startupException, expected.getCause());
       long duration = System.nanoTime() - startTime;
       final long nanosInAMilli = 1000 * 1000;
       if (duration > 1000 * nanosInAMilli) {
-        fail("StartupException took a long time: " + duration);
+        fail("RuntimeException took a long time: " + duration);
       }
     }
   }
