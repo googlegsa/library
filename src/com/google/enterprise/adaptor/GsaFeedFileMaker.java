@@ -65,6 +65,10 @@ class GsaFeedFileMaker {
   private final AclTransform aclTransform;
   private final boolean separateClosingRecordTagWorkaround;
   private final boolean useAuthMethodWorkaround;
+  private final boolean crawlImmediatelyIsOverriden;
+  private final boolean crawlImmediatelyOverrideValue;
+  private final boolean crawlOnceIsOverriden;
+  private final boolean crawlOnceOverrideValue;
 
   public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform) {
     this(encoder, aclTransform, false, false);
@@ -73,11 +77,26 @@ class GsaFeedFileMaker {
   public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform,
       boolean separateClosingRecordTagWorkaround,
       boolean useAuthMethodWorkaround) {
+    this(encoder, aclTransform, separateClosingRecordTagWorkaround,
+        useAuthMethodWorkaround, false, false, false, false);
+  }
+
+  public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform,
+      boolean separateClosingRecordTagWorkaround,
+      boolean useAuthMethodWorkaround,
+      boolean overrideCrawlImmediately,
+      boolean crawlImmediately,
+      boolean overrideCrawlOnce,
+      boolean crawlOnce) {
     this.idEncoder = encoder;
     this.aclTransform = aclTransform;
     this.separateClosingRecordTagWorkaround
         = separateClosingRecordTagWorkaround;
     this.useAuthMethodWorkaround = useAuthMethodWorkaround;
+    this.crawlImmediatelyIsOverriden = overrideCrawlImmediately;
+    this.crawlImmediatelyOverrideValue = crawlImmediately;
+    this.crawlOnceIsOverriden = overrideCrawlOnce;
+    this.crawlOnceOverrideValue = crawlOnce;
   }
 
   /** Adds header to document's root.
@@ -123,10 +142,15 @@ class GsaFeedFileMaker {
     if (docRecord.isToBeLocked()) {
       record.setAttribute("lock", "true");
     }
-    if (docRecord.isToBeCrawledImmediately()) {
+    if (crawlImmediatelyIsOverriden) {
+      record.setAttribute("crawl-immediately",
+          "" + crawlImmediatelyOverrideValue);
+    } else if (docRecord.isToBeCrawledImmediately()) {
       record.setAttribute("crawl-immediately", "true");
     }
-    if (docRecord.isToBeCrawledOnce()) {
+    if (crawlOnceIsOverriden) {
+      record.setAttribute("crawl-once", "" + crawlOnceOverrideValue);
+    } else if (docRecord.isToBeCrawledOnce()) {
       record.setAttribute("crawl-once", "true");
     }
     if (useAuthMethodWorkaround) {

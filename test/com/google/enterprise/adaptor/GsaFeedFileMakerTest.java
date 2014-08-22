@@ -489,4 +489,174 @@ public class GsaFeedFileMakerTest {
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);
   }
+
+  @Test
+  public void testCrawlImmediatelyOverride() throws java.net.URISyntaxException {
+    GsaFeedFileMaker lclMeker = new GsaFeedFileMaker(encoder, aclTransform,
+        false, false,
+        /*override crawl-immediately?*/ true,
+        /*crawl-immediately value*/ false,
+        /*override crawl-once?*/ false,
+        /*crawl-once value*/ false);
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<header>\n"
+        + "<datasource>t3sT</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group>\n"
+
+        // (1)
+        + "<record crawl-immediately=\"false\""
+        + " displayurl=\"http://f000nkey.net\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/E11\"/>\n"
+
+        // (2)
+        + "<record crawl-immediately=\"false\""
+        + " displayurl=\"http://yankee.doodle.com\""
+        + " last-modified=\"Thu, 01 Jan 1970 00:00:00 +0000\""
+        + " mimetype=\"text/plain\" url=\"http://localhost/elefenta\"/>\n"
+
+        // (3)
+        + "<record crawl-immediately=\"false\""
+        + " displayurl=\"http://google.com/news\""
+        + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
+        + " mimetype=\"text/plain\" url=\"http://localhost/gone\"/>\n"
+
+        // (4)
+        + "<record crawl-immediately=\"false\" crawl-once=\"true\""
+        + " lock=\"true\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/flagson\"/>\n"
+
+        // (5)
+        + "<record action=\"delete\" crawl-immediately=\"false\""
+        + " mimetype=\"text/plain\""
+        + " url=\"http://localhost/deleted\"/>\n"
+
+        + "</group>\n"
+        + "</gsafeed>\n";
+
+    ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
+    DocIdPusher.Record.Builder attrBuilder 
+        = new DocIdPusher.Record.Builder(new DocId("E11"));
+
+    // (1)
+    attrBuilder.setResultLink(new URI("http://f000nkey.net"));
+    ids.add(attrBuilder.build());
+
+    // (2)
+    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    
+    attrBuilder.setLastModified(new Date(0));    
+    attrBuilder.setCrawlImmediately(true);    
+    attrBuilder.setDocId(new DocId("elefenta"));
+    ids.add(attrBuilder.build());
+
+    // (3)
+    attrBuilder.setResultLink(new URI("http://google.com/news"));    
+    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
+    attrBuilder.setCrawlImmediately(false);    
+    attrBuilder.setCrawlOnce(false);    
+    attrBuilder.setDocId(new DocId("gone"));
+    ids.add(attrBuilder.build());
+
+    // (4)
+    ids.add(new DocIdPusher.Record.Builder(new DocId("flagson"))
+        .setLock(true).setCrawlImmediately(true).setCrawlOnce(true).build());
+
+    // (5)
+    ids.add(new DocIdPusher.Record.Builder(new DocId("deleted"))
+        .setDeleteFromIndex(true).build());
+
+    String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testCrawlOnceOverride() throws java.net.URISyntaxException {
+    GsaFeedFileMaker lclMeker = new GsaFeedFileMaker(encoder, aclTransform,
+        false, false,
+        /*override crawl-immediately?*/ false,
+        /*crawl-immediately value*/ false,
+        /*override crawl-once?*/ true,
+        /*crawl-once value*/ false);
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--GSA EasyConnector-->\n"
+        + "<header>\n"
+        + "<datasource>t3sT</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group>\n"
+
+        // (1)
+        + "<record crawl-once=\"false\""
+        + " displayurl=\"http://f000nkey.net\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/E11\"/>\n"
+
+        // (2)
+        + "<record crawl-immediately=\"true\" crawl-once=\"false\""
+        + " displayurl=\"http://yankee.doodle.com\""
+        + " last-modified=\"Thu, 01 Jan 1970 00:00:00 +0000\""
+        + " mimetype=\"text/plain\" url=\"http://localhost/elefenta\"/>\n"
+
+        // (3)
+        + "<record crawl-once=\"false\""
+        + " displayurl=\"http://google.com/news\""
+        + " last-modified=\"Fri, 02 Jan 1970 00:00:00 +0000\""
+        + " mimetype=\"text/plain\" url=\"http://localhost/gone\"/>\n"
+
+        // (4)
+        + "<record crawl-immediately=\"true\" crawl-once=\"false\""
+        + " lock=\"true\" mimetype=\"text/plain\""
+        + " url=\"http://localhost/flagson\"/>\n"
+
+        // (5)
+        + "<record action=\"delete\" crawl-once=\"false\""
+        + " mimetype=\"text/plain\""
+        + " url=\"http://localhost/deleted\"/>\n"
+
+        + "</group>\n"
+        + "</gsafeed>\n";
+
+    ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
+    DocIdPusher.Record.Builder attrBuilder 
+        = new DocIdPusher.Record.Builder(new DocId("E11"));
+
+    // (1)
+    attrBuilder.setResultLink(new URI("http://f000nkey.net"));
+    ids.add(attrBuilder.build());
+
+    // (2)
+    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    
+    attrBuilder.setLastModified(new Date(0));    
+    attrBuilder.setCrawlImmediately(true);    
+    attrBuilder.setDocId(new DocId("elefenta"));
+    ids.add(attrBuilder.build());
+
+    // (3)
+    attrBuilder.setResultLink(new URI("http://google.com/news"));    
+    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
+    attrBuilder.setCrawlImmediately(false);    
+    attrBuilder.setCrawlOnce(false);    
+    attrBuilder.setDocId(new DocId("gone"));
+    ids.add(attrBuilder.build());
+
+    // (4)
+    ids.add(new DocIdPusher.Record.Builder(new DocId("flagson"))
+        .setLock(true).setCrawlImmediately(true).setCrawlOnce(true).build());
+
+    // (5)
+    ids.add(new DocIdPusher.Record.Builder(new DocId("deleted"))
+        .setDeleteFromIndex(true).build());
+
+    String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
 }

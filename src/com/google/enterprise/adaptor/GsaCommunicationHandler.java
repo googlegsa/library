@@ -215,7 +215,11 @@ public final class GsaCommunicationHandler {
     aclTransform = createAclTransform();
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec, aclTransform,
         config.isGsa614FeedWorkaroundEnabled(),
-        config.isGsa70AuthMethodWorkaroundEnabled());
+        config.isGsa70AuthMethodWorkaroundEnabled(),
+        config.isCrawlImmediatelyBitEnabled().isOverriden,
+        config.isCrawlImmediatelyBitEnabled().value,
+        config.isFeedNoRecrawlBitEnabled().isOverriden,
+        config.isFeedNoRecrawlBitEnabled().value);
     GsaFeedFileArchiver fileArchiver =
         new GsaFeedFileArchiver(config.getFeedArchiveDirectory());
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,

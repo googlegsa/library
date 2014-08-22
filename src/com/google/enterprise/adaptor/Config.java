@@ -75,13 +75,17 @@ import java.util.logging.Logger;
  *     are already URLs and avoid them being inserted into adaptor
        generated URLs.   Defaults to false
  * <tr><td> </td><td>feed.crawlImmediatelyBitEnabled </td><td> send bit telling
- *     GSA to crawl immediately.  Defaults to false
+ *     GSA to crawl immediately.
+ *     Defaults to not overriding adaptor's decision which is typically to send
+ *     updates as crawl-immediately and let GSA schedule crawl of all other ids
+ * <tr><td> </td><td>feed.noRecrawlBitEnabled </td><td> send bit telling
+ *     GSA to crawl your documents only once. 
+ *     Defaults to not overriding adaptor's decision which is typically to send
+ *     all documents as recrawlable (equivalent to value of false)
  * <tr><td> </td><td>feed.maxUrls </td><td> set max number of URLs included
  *     per feed file.    Defaults to 5000
  * <tr><td> </td><td>feed.name </td><td> source name used in feeds. Generated
  *     if not provided
- * <tr><td> </td><td>feed.noRecrawlBitEnabled </td><td> send bit telling
- *     GSA to crawl your documents only once.  Defaults to  false
  * <tr><td> </td><td>feed.archiveDirectory </td><td> specifies a directory in
  *     which all feeds sent to the GSA will be archived.  Feeds that failed to
  *     be sent to the GSA will be tagged with "FAILED" in the file name.
@@ -235,8 +239,8 @@ public class Config {
             return rawValue;
           }
         });
-    addKey("feed.noRecrawlBitEnabled", "false");
-    addKey("feed.crawlImmediatelyBitEnabled", "false");
+    addKey("feed.noRecrawlBitEnabled", "");
+    addKey("feed.crawlImmediatelyBitEnabled", "");
     //addKey("feed.noFollowBitEnabled", "false");
     addKey("feed.maxUrls", "5000");
     addKey("adaptor.pushDocIdsOnStartup", "true");
@@ -442,21 +446,43 @@ public class Config {
     return Boolean.parseBoolean(getValue("gsa.acceptsDocControlsHeader"));
   }
 
-  /**
-   * Optional (default false): Adds no-recrawl bit with sent records in feed
-   * file. If connector handles updates and deletes then GSA does not have to
-   * recrawl periodically to notice that a document is changed or deleted.
-   */
-  boolean isFeedNoRecrawlBitEnabled() {
-    return Boolean.getBoolean(getValue("feed.noRecrawlBitEnabled"));
+  static class OverridableBoolean {
+    final boolean isOverriden; // whether value is to be overriden
+    final boolean value; // the overriding value
+    private OverridableBoolean(boolean override) {
+      isOverriden = true;
+      value = override;
+    }
+    private OverridableBoolean() {
+      isOverriden = false;
+      value = false; // whatever
+    }
   }
 
   /**
-   * Optional (default false): Adds crawl-immediately bit with sent records in
+   * Optional: Adds crawl-immediately bit with sent records in
    * feed file.  This bit makes the sent URL get crawl priority.
    */
-  boolean isCrawlImmediatelyBitEnabled() {
-    return Boolean.parseBoolean(getValue("feed.crawlImmediatelyBitEnabled"));
+  OverridableBoolean isCrawlImmediatelyBitEnabled() {
+    String provided = getValue("feed.crawlImmediatelyBitEnabled");
+    if ("".equals(provided.trim())) {
+      return new OverridableBoolean();
+    }
+    return new OverridableBoolean(Boolean.parseBoolean(provided));
+  }
+
+  /**
+   * Optional: Adds no-recrawl bit with sent records in feed
+   * file. If connector handles updates and deletes then GSA
+   * does not have to recrawl periodically to notice that a
+   * document is changed or deleted.
+   */
+  OverridableBoolean isFeedNoRecrawlBitEnabled() {
+    String provided = getValue("feed.noRecrawlBitEnabled");
+    if ("".equals(provided.trim())) {
+      return new OverridableBoolean();
+    }
+    return new OverridableBoolean(Boolean.parseBoolean(provided));
   }
 
   /**
