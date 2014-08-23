@@ -1,3 +1,5 @@
+package com.google.enterprise.adaptor.examples.HelloWorldConnector;
+
 // Copyright 2014 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,23 +38,27 @@ import java.util.logging.Logger;
  */
 public class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority {
 
-  private static final Logger log = 
-      Logger.getLogger(HelloWorldConnector.class.getName());
+  private static final Logger log =
+      Logger.getLogger(HelloWorldAuthenticator.class.getName());
 
   AdaptorContext context;
 
   public HelloWorldAuthenticator(AdaptorContext adaptorContext) {
-    context = adaptorContext;
+    if (adaptorContext == null) {
+      throw new NullPointerException();
+    } else {
+      context = adaptorContext;
+    }
   }
 
   @Override
   public void authenticateUser(HttpExchange exchange, Callback callback)
       throws IOException {
-    
+
     log.info("redirect");
     context.getUserSession(exchange, true).setAttribute("callback",
         callback);
-    
+
     Headers responseHeaders = exchange.getResponseHeaders();
     responseHeaders.set("Content-Type", "text/html");
     exchange.sendResponseHeaders(200, 0);
@@ -66,14 +72,14 @@ public class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority {
     os.close();
     exchange.close();
   }
-  
+
   @Override
   public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
       Collection<DocId> ids) throws IOException {
 
-    HashMap<DocId, AuthzStatus> authorizedDocs = 
+    HashMap<DocId, AuthzStatus> authorizedDocs =
         new HashMap<DocId, AuthzStatus>();
-    
+
     for (Iterator<DocId> iterator = ids.iterator(); iterator.hasNext();) {
       DocId docId = iterator.next();
       // if authorized

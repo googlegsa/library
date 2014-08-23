@@ -1,3 +1,5 @@
+package com.google.enterprise.adaptor.examples.HelloWorldConnector;
+
 // Copyright 2014 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,22 +18,37 @@ import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.UserPrincipal;
 
+import java.util.Collection;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * Stub of AuthnIdentity
  */
 public class MyAuthnIdentity implements AuthnIdentity {
 
-  UserPrincipal user;
-  Set<GroupPrincipal> groups;
+  private UserPrincipal user;
+  private Set<GroupPrincipal> groups;
 
-  public void setGroups(Set<GroupPrincipal> groups) {
-    this.groups = groups;
+  // Constructor  with user only
+  public MyAuthnIdentity(String uid) {
+    this.user = new UserPrincipal(uid);
   }
 
-  public void setUser(UserPrincipal user) {
-    this.user = user;
+  //Constructor with user & single group
+  public MyAuthnIdentity(String uid, String gid) {
+    this.user = new UserPrincipal(uid);
+    this.groups = new TreeSet<GroupPrincipal>();
+    this.groups.add(new GroupPrincipal(gid));
+  }
+
+  // Constructor with user & groups
+  public MyAuthnIdentity(String uid, Collection<String> gids) {
+    this.user = new UserPrincipal(uid);
+    this.groups = new TreeSet<GroupPrincipal>();
+    for (String n : gids) {
+      this.groups.add(new GroupPrincipal(n));
+    }
   }
 
   @Override

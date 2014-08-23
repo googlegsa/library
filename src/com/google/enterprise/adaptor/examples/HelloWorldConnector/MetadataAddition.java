@@ -1,3 +1,5 @@
+package com.google.enterprise.adaptor.examples.HelloWorldConnector;
+
 // Copyright 2014 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +31,7 @@ import java.util.logging.Logger;
 public class MetadataAddition implements DocumentTransform {
   private static final Logger log = Logger.getLogger(MetadataAddition.class
       .getName());
-  private static String metaTaste = "taste";
+  private static final String META_TASTE = "taste";
   private Set<String> valuesToAdd = null;
 
   private MetadataAddition(String values) {
@@ -42,19 +44,19 @@ public class MetadataAddition implements DocumentTransform {
 
   /** Makes transform from config file with "taste". */
   public static MetadataAddition load(Map<String, String> cfg) {
-    return new MetadataAddition(cfg.get(metaTaste));
+    return new MetadataAddition(cfg.get(META_TASTE));
   }
 
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
-    Set<String> values = metadata.getAllValues(metaTaste);
+    Set<String> values = metadata.getAllValues(META_TASTE);
     if (values.isEmpty()) {
-      log.log(Level.INFO, "no metadata {0}. Skipping", metaTaste);
+      log.log(Level.INFO, "no metadata {0}. Skipping", META_TASTE);
     } else {
       log.log(Level.INFO,
               "adding values {1} for existing metadata {0}  ",
-              new Object[] { metaTaste, valuesToAdd });      
-      metadata.set(metaTaste, combine(values, valuesToAdd));
+              new Object[] { META_TASTE, valuesToAdd });
+      metadata.set(META_TASTE, combine(values, valuesToAdd));
     }
   }
 
@@ -66,6 +68,6 @@ public class MetadataAddition implements DocumentTransform {
 
   @Override
   public String toString() {
-    return "MetadataAddition(meta_taste=" + metaTaste + ")";
+    return "MetadataAddition(meta_taste=" + META_TASTE + ")";
   }
 }
