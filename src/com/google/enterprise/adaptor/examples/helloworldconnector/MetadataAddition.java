@@ -1,4 +1,4 @@
-package com.google.enterprise.adaptor.examples.HelloWorldConnector;
+package com.google.enterprise.adaptor.examples.helloworldconnector;
 
 // Copyright 2014 Google Inc. All Rights Reserved.
 //
@@ -25,9 +25,22 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Example transform which will add values to metadata "taste" if the document
- * has this metadata.
+ * Example transform which will add values to metadata key "taste" if the 
+ * document already has existing metdata key "taste"
+ * <p>
+ * A simple transformation can be added to the adaptor-config.properties file.
+ * This example combines "Mango" and "peach" with any existing "taste"
+ * metadata.  If the document does not have a meta taste key, no values will
+ * be added.
+ * <p>
+ * <code>
+ * transform.pipeline=step1<br>
+ * transform.pipeline.step1.taste=Mango,peach<br>
+ * transform.pipeline.step1.factoryMethod=com.google.enterprise.adaptor.examples.HelloWorldConnector.MetadataAddition.load<br>
+ * </code>
+ * <p>
  */
+
 public class MetadataAddition implements DocumentTransform {
   private static final Logger log = Logger.getLogger(MetadataAddition.class
       .getName());
@@ -38,15 +51,25 @@ public class MetadataAddition implements DocumentTransform {
     if (null == values) {
       throw new NullPointerException();
     }
-    String valueArray[] = values.split(",");
+    String valueArray[] = values.split(",", 0);
     valuesToAdd = new HashSet<String>(Arrays.asList(valueArray));
-}
+  }
 
-  /** Makes transform from config file with "taste". */
+  /**
+   * Called as <code>transfordm.pipeline.<stepX>.factoryMethod for this
+   * transformation pipline as specified in adaptor-config.properties.
+   * <p>
+   * This method simply returns a new object with the additional
+   * metadata as specified as values for step1.taste
+   */
   public static MetadataAddition load(Map<String, String> cfg) {
     return new MetadataAddition(cfg.get(META_TASTE));
   }
 
+  /**
+   * Here we check to see if the current doc contains a "taste" key
+   * and if so, add the additional values from the config file
+   */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
     Set<String> values = metadata.getAllValues(META_TASTE);
@@ -64,10 +87,5 @@ public class MetadataAddition implements DocumentTransform {
     Set<String> combined = new HashSet<String>(s1);
     combined.addAll(s2);
     return combined;
-  }
-
-  @Override
-  public String toString() {
-    return "MetadataAddition(meta_taste=" + META_TASTE + ")";
   }
 }

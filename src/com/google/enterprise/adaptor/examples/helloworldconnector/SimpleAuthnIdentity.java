@@ -1,4 +1,4 @@
-package com.google.enterprise.adaptor.examples.HelloWorldConnector;
+package com.google.enterprise.adaptor.examples.helloworldconnector;
 
 // Copyright 2014 Google Inc. All Rights Reserved.
 //
@@ -19,36 +19,49 @@ import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.UserPrincipal;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * Stub of AuthnIdentity
+ * Simple implementation of AuthnIdentity
  */
-public class MyAuthnIdentity implements AuthnIdentity {
+class SimpleAuthnIdentity implements AuthnIdentity {
 
   private UserPrincipal user;
   private Set<GroupPrincipal> groups;
 
-  // Constructor  with user only
-  public MyAuthnIdentity(String uid) {
+  public SimpleAuthnIdentity(String uid) throws NullPointerException {
+    if (uid == null) {
+      throw(new NullPointerException("Null user not allowed"));
+    }
     this.user = new UserPrincipal(uid);
   }
 
   //Constructor with user & single group
-  public MyAuthnIdentity(String uid, String gid) {
-    this.user = new UserPrincipal(uid);
+  public SimpleAuthnIdentity(String uid, String gid)
+      throws NullPointerException {
+    this(uid);
     this.groups = new TreeSet<GroupPrincipal>();
-    this.groups.add(new GroupPrincipal(gid));
+    if (gid != null && !"".equals(gid)) {
+      this.groups.add(new GroupPrincipal(gid));
+    }
+    this.groups =
+        (Set<GroupPrincipal>) Collections.unmodifiableCollection(this.groups);
   }
 
   // Constructor with user & groups
-  public MyAuthnIdentity(String uid, Collection<String> gids) {
-    this.user = new UserPrincipal(uid);
+  public SimpleAuthnIdentity(String uid, Collection<String> gids)
+      throws NullPointerException {
+    this(uid);
     this.groups = new TreeSet<GroupPrincipal>();
     for (String n : gids) {
-      this.groups.add(new GroupPrincipal(n));
+      if (n != null && !"".equals(n)) {
+        this.groups.add(new GroupPrincipal(n));
+      }
     }
+    this.groups =
+        (Set<GroupPrincipal>) Collections.unmodifiableCollection(this.groups);
   }
 
   @Override
@@ -56,6 +69,10 @@ public class MyAuthnIdentity implements AuthnIdentity {
     return user;
   }
 
+  /**
+   * Returns null in this example since we don't do anything with the
+   * password, but getPassword() must be implemented for AuthnIdentity
+   */
   @Override
   public String getPassword() {
     return null;

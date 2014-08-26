@@ -1,4 +1,4 @@
-package com.google.enterprise.adaptor.examples.HelloWorldConnector;
+package com.google.enterprise.adaptor.examples.helloworldconnector;
 
 // Copyright 2014 Google Inc. All Rights Reserved.
 //
@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.logging.Logger;
 
 /**
- * Demonstrates what code is necessary for putting public content onto a GSA.
+ * Demonstrates what code is necessary for putting content onto a GSA.
  * The key operations are:
  * <ol>
  * <li>providing document ids either by Lister or Graph Traversal
@@ -59,19 +59,19 @@ public class HelloWorldConnector extends AbstractAdaptor implements
         new HelloWorldAuthenticator(context);
     context.setAuthnAuthority(authenticator);
     context.setAuthzAuthority(authenticator);
-    context.createHttpContext("/google-response",
-        new AuthNResponseHandler(context));
+    context.createHttpContext("/google-response",authenticator);
   }
 
   /**
    * This example shows how to use both the Lister & Graph Traversal.
    * The root document ("") is a virtual doc which will contain a list of
    * links to other docs when returned by the Retriever.
-   * If you aren't using Graph Traversal, all docid's would be pushed in
-   * like 1001 and 1002
+   * If you aren't using Graph Traversal, all docids would be pushed in
+   * here, like 1001 and 1002 are.
    */
   @Override
   public void getDocIds(DocIdPusher pusher) throws InterruptedException {
+    log.entering("HelloWorldConnector", "getDocIds");
     ArrayList<DocId> mockDocIds = new ArrayList<DocId>();
     // push docids
     mockDocIds.add(new DocId(""));
@@ -97,10 +97,11 @@ public class HelloWorldConnector extends AbstractAdaptor implements
   /** Gives the bytes of a document referenced with id. */
   @Override
   public void getDocContent(Request req, Response resp) throws IOException {
+    log.entering("HelloWorldConnector", "getDocContent");
     DocId id = req.getDocId();
     log.info("DocId '" + id.getUniqueId() + "'");
 
-    // Hard-coded list of our doc id's
+    // Hard-coded list of our doc ids
     if ("".equals(id.getUniqueId())) {
       // this is a the root folder, write some URLs
       Writer writer = new OutputStreamWriter(resp.getOutputStream());
@@ -126,16 +127,20 @@ public class HelloWorldConnector extends AbstractAdaptor implements
       writer.close();
     } else if ("1001".equals(id.getUniqueId())) {
       // Example with If-Modified-Since
-      Date lastModifiedDate = req.getLastAccessTime();
-      if (req.hasChangedSinceLastAccess(lastModifiedDate) ||
-          lastModifiedDate == null) {
-        log.info("First Access or no LastModified");
+      // Set lastModifiedDate to 10 minutes ago
+      Date lastModifiedDate = new Date(System.currentTimeMillis() - 600000);
+      if (req.hasChangedSinceLastAccess(lastModifiedDate)) {
+        if (req.getLastAccessTime() == null) {
+          log.info("Requested docid 1001 with No If-Modified-Since");
+        } else {
+          log.info("Requested docid 1001 with If-Modified-Since < 10 minutes");
+        }
         resp.setLastModified(new Date());
         Writer writer = new OutputStreamWriter(resp.getOutputStream());
         writer.write("Menu 1001 says latte");
         writer.close();
       } else {
-        log.info("Not Modified");
+        log.info("Docid 1001 Not Modified");
         resp.respondNotModified();
       }
     } else if ("1002".equals(id.getUniqueId())) {
@@ -149,24 +154,24 @@ public class HelloWorldConnector extends AbstractAdaptor implements
         Writer writer = new OutputStreamWriter(resp.getOutputStream());
         writer.write("Menu 1003 says machiato");
         writer.close();
-        provideBodyOfDoc1003 = !provideBodyOfDoc1003;
       } else {
         resp.respondNotFound();
-        provideBodyOfDoc1003 = !provideBodyOfDoc1003;
       }
+      provideBodyOfDoc1003 = !provideBodyOfDoc1003;
     } else if ("1004".equals(id.getUniqueId())) {
       // doc with metdata & different display URL
-        resp.addMetadata("flavor", "vanilla");
-        resp.addMetadata("flavor", "hazel nuts");
-        resp.addMetadata("taste", "strawberry");
-        try {
-          resp.setDisplayUrl(new URI("http://fake.com/a"));
-        } catch (URISyntaxException e) {
-          log.info(e.getMessage());
-        }
-        Writer writer = new OutputStreamWriter(resp.getOutputStream());
-        writer.write("Menu 1004 says espresso");
-        writer.close();
+      resp.addMetadata("flavor", "vanilla");
+      resp.addMetadata("flavor", "hazel nuts");
+      resp.addMetadata("taste", "strawberry");
+
+      try {
+        resp.setDisplayUrl(new URI("http://fake.com/a"));
+      } catch (URISyntaxException e) {
+        log.info(e.getMessage());
+      }
+      Writer writer = new OutputStreamWriter(resp.getOutputStream());
+      writer.write("Menu 1004 says espresso");
+      writer.close();
     } else if ("1005".equals(id.getUniqueId())) {
       // doc with ACLs
       ArrayList<Principal> permits = new ArrayList<Principal>();
@@ -233,10 +238,10 @@ public class HelloWorldConnector extends AbstractAdaptor implements
       denies.add(new GroupPrincipal("group5", "Default"));
 
       resp.setAcl(new Acl.Builder()
-      .setEverythingCaseInsensitive()
-      .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
-      .setInheritFrom(new DocId("1007"), "Whatever")
-      .setDenies(denies).build());
+          .setEverythingCaseInsensitive()
+          .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+          .setInheritFrom(new DocId("1007"), "Whatever")
+          .setDenies(denies).build());
       Writer writer = new OutputStreamWriter(resp.getOutputStream());
       writer.write("Menu 1008 says coffee");
       writer.close();
