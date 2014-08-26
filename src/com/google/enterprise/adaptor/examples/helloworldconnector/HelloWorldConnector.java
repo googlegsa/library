@@ -59,7 +59,7 @@ public class HelloWorldConnector extends AbstractAdaptor implements
         new HelloWorldAuthenticator(context);
     context.setAuthnAuthority(authenticator);
     context.setAuthzAuthority(authenticator);
-    context.createHttpContext("/google-response",authenticator);
+    context.createHttpContext("/google-response", authenticator);
   }
 
   /**
@@ -230,7 +230,7 @@ public class HelloWorldConnector extends AbstractAdaptor implements
           .setDenies(denies).build());
 
       Writer writer = new OutputStreamWriter(resp.getOutputStream());
-      writer.write("Menu 1006 says frappuccino");
+      writer.write("Menu 1007 says frappuccino");
       writer.close();
     } else if ("1008".equals(id.getUniqueId())) {
       // Inherit ACLs from 1007

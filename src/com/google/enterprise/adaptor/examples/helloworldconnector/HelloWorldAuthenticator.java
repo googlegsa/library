@@ -14,7 +14,6 @@ package com.google.enterprise.adaptor.examples.helloworldconnector;
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//import com.google.enterprise.adaptor.*;
 import com.google.enterprise.adaptor.AdaptorContext;
 import com.google.enterprise.adaptor.AuthnAuthority;
 import com.google.enterprise.adaptor.AuthnIdentity;
@@ -40,14 +39,14 @@ import java.util.logging.Logger;
 /**
  * Simple AuthN/AuthZ implementation
  */
-class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority, HttpHandler {
+class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority, 
+    HttpHandler {
 
   private static final Logger log =
       Logger.getLogger(HelloWorldAuthenticator.class.getName());
 
   private AdaptorContext context;
   private Callback callback;
-
 
   public HelloWorldAuthenticator(AdaptorContext adaptorContext) {
     if (adaptorContext == null) {
@@ -60,7 +59,7 @@ class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority, HttpHan
   public void authenticateUser(HttpExchange exchange, Callback callback)
       throws IOException {
 
-    log.entering("HelloWorldAuthenticator", "redirect");
+    log.entering("HelloWorldAuthenticator", "authenticateUser");
     context.getUserSession(exchange, true).setAttribute("callback",
         callback);
 
@@ -141,7 +140,7 @@ class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority, HttpHan
     }
     Callback callback = (Callback) session.getAttribute("callback");
     if (callback == null) {
-      log.warning("Something is wrong, callback object is misssing");
+      log.warning("Something is wrong, callback object is missing");
       sendResponseMessage("No Callback Specified", ex);
     }
     return callback;
