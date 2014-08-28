@@ -33,7 +33,7 @@ class SimpleAuthnIdentity implements AuthnIdentity {
 
   public SimpleAuthnIdentity(String uid) throws NullPointerException {
     if (uid == null) {
-      throw(new NullPointerException("Null user not allowed"));
+      throw new NullPointerException("Null user not allowed");
     }
     this.user = new UserPrincipal(uid);
   }
@@ -44,10 +44,10 @@ class SimpleAuthnIdentity implements AuthnIdentity {
     this(uid);
     this.groups = new TreeSet<GroupPrincipal>();
     if (gid != null && !"".equals(gid)) {
-      this.groups.add(new GroupPrincipal(gid));
+      this.groups.addAll(Collections.singleton(new GroupPrincipal(gid)));
     }
     this.groups =
-        (Set<GroupPrincipal>) Collections.unmodifiableCollection(this.groups);
+        Collections.unmodifiableSet(this.groups);
   }
 
   // Constructor with user & groups
@@ -57,11 +57,11 @@ class SimpleAuthnIdentity implements AuthnIdentity {
     this.groups = new TreeSet<GroupPrincipal>();
     for (String n : gids) {
       if (n != null && !"".equals(n)) {
-        this.groups.add(new GroupPrincipal(n));
+        this.groups.addAll(Collections.singleton(new GroupPrincipal(n)));
       }
     }
     this.groups =
-        (Set<GroupPrincipal>) Collections.unmodifiableCollection(this.groups);
+        Collections.unmodifiableSet(this.groups);
   }
 
   @Override

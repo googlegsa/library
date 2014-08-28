@@ -99,7 +99,7 @@ class HelloWorldAuthenticator implements AuthnAuthority, AuthzAuthority,
    */
   @Override
   public void handle(HttpExchange ex) throws IOException {
-    log.entering("AuthNResponseHandler", "handle");
+    log.entering("HelloWorldAuthenticator", "handle");
 
     callback = getCallback(ex);
     if (callback == null) {
