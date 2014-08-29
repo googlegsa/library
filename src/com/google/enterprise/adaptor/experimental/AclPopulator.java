@@ -45,6 +45,7 @@ public class AclPopulator extends AbstractAdaptor {
 
   @Override
   public void getDocIds(DocIdPusher pusher) throws InterruptedException {
+    // no lister; 100% graph traversal
   }
 
   private static final String TOP_LEVEL_DIRS[] = new String[] {
@@ -85,7 +86,7 @@ public class AclPopulator extends AbstractAdaptor {
     // make index.html or make content
     String content = null;
     String parts[] = uniqueId.split("/", 0); // drop trailing empties
-    DocId parentId = makeParentId(parts); // ends with slash; parent is a dir
+    DocId parentId = makeParentId(parts); // is a dir; ends in "/" or is ""
 
     Acl.Builder aclBuilder = new Acl.Builder()
         .setInheritFrom(parentId)
@@ -133,6 +134,7 @@ public class AclPopulator extends AbstractAdaptor {
           .append("/")
           .append("\">")
           .append(filename)
+          .append("/")
           .append("</a></br>\n");
     }
     sb.append("</body>\n");
@@ -156,9 +158,9 @@ public class AclPopulator extends AbstractAdaptor {
 
   private String makeContent() {
     StringBuilder sb = new StringBuilder();
-    int tenBillion = 1000 * 1000 * 1000;
+    int big = 1000 * 1000 * 1000;
     for (int i = 0; i < 5000; ++i) {
-      sb.append(rnd.get().nextInt(tenBillion));
+      sb.append(rnd.get().nextInt(big));
       sb.append("\n");
     }
     return sb.toString();
@@ -192,6 +194,7 @@ public class AclPopulator extends AbstractAdaptor {
     return new DocId(sb.toString());
   }
 
+  // input is not root; that is input is not ""
   private static void ensureValidId(String id) {
     // make sure doc id makes sense; we know it is not root.
     // examples of valid ids:
