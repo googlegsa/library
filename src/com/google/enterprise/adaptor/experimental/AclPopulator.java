@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.experimental;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.Acl;
+import com.google.enterprise.adaptor.AdaptorContext;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.Request;
@@ -26,41 +27,66 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
-import java.util.Random;
+import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Tool to populate GSA with lots of ACLs.
+ * Result of running this adaptor: 
+ *   1. CHILD_OVERRIDES ACLs with inheritance chain of depth 10 
+ *   2. 500K docs, say 20KB in size 
+ *   3. There is a special user who has access to roughly 100 files and will be 
+ *      denied access to all other files. The 100 files are uniformly 
+ *      distributed around all leaves.
+ *   4. For all the files/directories other than the 100 files which the 
+ *      special user has access to, they will have 2 random permitted users and
+ *      2 unique denied users. The users' names are uniquely made up, e.g., 
+ *      user1, user123. Note that the unique users get changed with every 
+ *      recrawl.
+ * 
  */
 public class AclPopulator extends AbstractAdaptor {
-  private static final Logger log
+  private static final Logger log 
       = Logger.getLogger(AclPopulator.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
-  private ThreadLocal<Random> rnd = new ThreadLocal<Random>() {
-    public Random initialValue() {
-      return new Random();
-    }
-  };
+  private final String specialUser = "specialUser";
+  private final int specialFileCount = 100;
+  /*
+   * 2000 means roughly 20KB. Each file has 2000 lines and each line contains
+   * one 9-digit number and a newline. So the file is roughly 20KB.
+   */
+  private final int numberOfTenByteLines = 2000;
+
+  private List<Integer> branches;
+  private int aclChainLength;
+  private int depth; // since root (/) also has ACL,
+                     // so the folder depth is aclChainLength - 1
+
+  private int userCount;
+  private int totalNumberOfFiles;
 
   @Override
-  public void getDocIds(DocIdPusher pusher) throws InterruptedException {
-    // no lister; 100% graph traversal
+  public void init(AdaptorContext context) throws Exception {
+    // 2 * 2 * 2 * 5 * 5 * 5 * 5 * 10 * 10 = 500,000
+    branches = Arrays.asList(2, 2, 2, 5, 5, 5, 5, 10, 10);
+    if (branches.size() <= 0) {
+      // Here we throw AssertionError because if branches is not in a good
+      // shape, this is really an error in code instead of a user input.
+      throw new AssertionError("Bad folder structure. "
+          + "The depth should be at least 1.");
+    }
+
+    aclChainLength = branches.size() + 1;
+    depth = branches.size();
+    userCount = 0;
+    totalNumberOfFiles = 1;
+    for (int i = 0; i < branches.size(); ++i) {
+      totalNumberOfFiles *= branches.get(i);
+    }
   }
 
-  private static final String TOP_LEVEL_DIRS[] = new String[] {
-      "eng",
-      "pm",
-      "qa",
-      "googlers",
-      "test",
-      "abcde",
-      "enterprise",
-      "ops",
-      "cowboys",
-      "cowgirls"
-  };
-  private static final String SPECIAL_PERMIT_DIR = "googlers/";
+  @Override
+  public void getDocIds(DocIdPusher pusher) throws InterruptedException {}
 
   @Override
   public void getDocContent(Request req, Response resp) throws IOException {
@@ -68,11 +94,22 @@ public class AclPopulator extends AbstractAdaptor {
     String uniqueId = id.getUniqueId();
 
     if ("".equals(uniqueId)) {
-      String content = makeTopLevelIndexFile();
-      Acl.Builder aclBuilder = new Acl.Builder()
-          .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
-          .setPermitUsers(Arrays.asList(new UserPrincipal("vin")))
-          .setDenyUsers(Arrays.asList(new UserPrincipal("joker")));
+      String content = null;
+      if (branches.size() == 1) {
+        content = makeFiles(branches.get(0));
+      } else {
+        content = makeSubfolders(branches.get(0));
+      }
+      Acl.Builder aclBuilder =
+          new Acl.Builder()
+              .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
+              .setPermitUsers(Arrays.asList(
+                  new UserPrincipal(produceUsername()),
+                  new UserPrincipal(produceUsername())))
+              .setDenyUsers(Arrays.asList(
+                  new UserPrincipal(produceUsername()),
+                  new UserPrincipal(produceUsername()), 
+                  new UserPrincipal(this.specialUser)));
       resp.setAcl(aclBuilder.build());
 
       resp.setContentType("text/html");
@@ -88,33 +125,41 @@ public class AclPopulator extends AbstractAdaptor {
     String parts[] = uniqueId.split("/", 0); // drop trailing empties
     DocId parentId = makeParentId(parts); // is a dir; ends in "/" or is ""
 
-    Acl.Builder aclBuilder = new Acl.Builder()
-        .setInheritFrom(parentId)
-        .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
-        .setPermitUsers(Arrays.asList(new UserPrincipal("vin")))
-        .setDenyUsers(Arrays.asList(new UserPrincipal("joker")));
+    Acl.Builder aclBuilder =
+        new Acl.Builder()
+            .setInheritFrom(parentId)
+            .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
+            .setPermitUsers(Arrays.asList(
+                new UserPrincipal(produceUsername()),
+                new UserPrincipal(produceUsername())))
+            .setDenyUsers(Arrays.asList(
+                new UserPrincipal(produceUsername()),
+                new UserPrincipal(produceUsername()), 
+                new UserPrincipal(this.specialUser)));
 
     if (!uniqueId.endsWith("/")) {
       // is file
-      if (uniqueId.contains(SPECIAL_PERMIT_DIR)) {
-        aclBuilder.setPermitUsers(Arrays.asList(new UserPrincipal("siyu")));
+      aclBuilder.setInheritanceType(Acl.InheritanceType.LEAF_NODE);
+      if (isSpecialFile(uniqueId)) {
+        aclBuilder
+            .setPermitUsers(Arrays.asList(
+                new UserPrincipal(this.specialUser)))
+            .setDenyUsers(Arrays.asList(
+                new UserPrincipal(produceUsername()),
+                new UserPrincipal(produceUsername())));
       }
       content = makeContent();
       resp.setContentType("text/plain; charset=utf-8");
     } else {
       // is directory
-      switch(parts.length) {  // number of parts with empties at end stripped
-        case 1:
-          content = makeSubfolders(3);
-          break;
-        case 2:
-          content = makeSubfolders(2);
-          break;
-        case 3:
-          content = makeFiles(4);
-          break;
-        default:
-          throw new IllegalStateException("bad id: " + uniqueId);
+      // number of parts with empties at end stripped
+      if (parts.length >= this.depth || parts.length < 1) {
+        throw new IllegalStateException("Bad id: " + id);
+      }
+      if ((this.depth - 1) == parts.length) {
+        content = makeFiles(this.branches.get(parts.length));
+      } else {
+        content = makeSubfolders(this.branches.get(parts.length));
       }
       resp.setContentType("text/html");
     }
@@ -134,7 +179,6 @@ public class AclPopulator extends AbstractAdaptor {
           .append("/")
           .append("\">")
           .append(filename)
-          .append("/")
           .append("</a></br>\n");
     }
     sb.append("</body>\n");
@@ -158,27 +202,11 @@ public class AclPopulator extends AbstractAdaptor {
 
   private String makeContent() {
     StringBuilder sb = new StringBuilder();
-    int big = 1000 * 1000 * 1000;
-    for (int i = 0; i < 5000; ++i) {
-      sb.append(rnd.get().nextInt(big));
-      sb.append("\n");
+    for (int i = 0; i < this.numberOfTenByteLines; ++i) {
+      // make it %09d so that we a number takes roughly 10 bytes, including the
+      // trailing \n
+      sb.append(String.format("%09d", i)).append("\n");
     }
-    return sb.toString();
-  }
-
-  private String makeTopLevelIndexFile() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("<body>\n");
-    for (String topLevelDir : TOP_LEVEL_DIRS) {
-      sb.append("<a href=\"")
-          .append(topLevelDir)
-          .append("/")
-          .append("\">")
-          .append(topLevelDir)
-          .append("/")
-          .append("</a></br>\n");
-    }
-    sb.append("</body>\n");
     return sb.toString();
   }
 
@@ -194,21 +222,42 @@ public class AclPopulator extends AbstractAdaptor {
     return new DocId(sb.toString());
   }
 
-  // input is not root; that is input is not ""
-  private static void ensureValidId(String id) {
+  private void ensureValidId(String id) {
     // make sure doc id makes sense; we know it is not root.
     // examples of valid ids:
-    //    "eng/"
-    //    "test/15/"
-    //    "test/15/10/"
-    //    "test/15/10/filename"
+    // "test/"
+    // "test/15/"
+    // "test/<some more folders>/
+    // "test/15/10/<some more folders>/filename"
+
+    // -1 means we want number of parts with empties at end kept
     String parts[] = id.split("/", -1);
-    switch(parts.length) {  // number of parts with empties at end kept
-      case 2:
-      case 3:
-      case 4: break;
-      default: throw new IllegalStateException("bad id: " + id);
+    if (parts.length > this.depth || parts.length < 2) {
+      throw new IllegalStateException("Bad id: " + id);
     }
+  }
+
+  // Note this method is NOT thread-safe, but the users other than the special
+  // user are not important in our case.
+  private String produceUsername() {
+    this.userCount++;
+
+    if (this.userCount < 0) {
+      // in case of integer overflow, we just reset it to 0
+      this.userCount = 0;
+    }
+    return "user" + this.userCount;
+  }
+
+  private boolean isSpecialFile(String docId) {
+    int hashcode = docId.hashCode();
+    int mod = this.totalNumberOfFiles / this.specialFileCount;
+    int result = hashcode % mod;
+    if (result < 0) {
+      result += mod;
+    }
+
+    return result == 1;
   }
 
   /** Call default main for adaptors. */
