@@ -65,6 +65,9 @@ public class AclPopulator extends AbstractAdaptor {
   private int userCount;
   private int totalNumberOfFiles;
 
+  // pre-computed format string to be used in making up url
+  private String padByLength[];
+
   @Override
   public void init(AdaptorContext context) throws Exception {
     // 2 * 2 * 2 * 5 * 5 * 5 * 5 * 10 * 10 = 500,000
@@ -83,6 +86,12 @@ public class AclPopulator extends AbstractAdaptor {
     for (int i = 0; i < branches.size(); ++i) {
       totalNumberOfFiles *= branches.get(i);
     }
+
+    padByLength = new String[branches.size() + 1];
+    padByLength[0] = "";
+    for (int i = 1; i <= branches.size(); ++i) {
+      padByLength[i] = padByLength[i - 1] + "x";
+    }
   }
 
   @Override
@@ -98,21 +107,22 @@ public class AclPopulator extends AbstractAdaptor {
       if (branches.size() == 1) {
         content = makeFiles(branches.get(0));
       } else {
-        content = makeSubfolders(branches.get(0));
+        content = makeSubfolders(branches.get(0), uniqueId);
       }
       Acl.Builder aclBuilder =
           new Acl.Builder()
               .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
               .setPermitUsers(Arrays.asList(
-                  new UserPrincipal(produceUsername()),
-                  new UserPrincipal(produceUsername())))
+                  new UserPrincipal(produceUsername("userP1", uniqueId)),
+                  new UserPrincipal(produceUsername("userP2", uniqueId))))
               .setDenyUsers(Arrays.asList(
-                  new UserPrincipal(produceUsername()),
-                  new UserPrincipal(produceUsername()), 
+                  new UserPrincipal(produceUsername("userD1", uniqueId)),
+                  new UserPrincipal(produceUsername("userD2", uniqueId)),
                   new UserPrincipal(this.specialUser)));
       resp.setAcl(aclBuilder.build());
 
       resp.setContentType("text/html");
+      resp.setCrawlOnce(true);
       OutputStream os = resp.getOutputStream();
       os.write(content.getBytes(encoding));
       return;
@@ -130,11 +140,11 @@ public class AclPopulator extends AbstractAdaptor {
             .setInheritFrom(parentId)
             .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
             .setPermitUsers(Arrays.asList(
-                new UserPrincipal(produceUsername()),
-                new UserPrincipal(produceUsername())))
+                new UserPrincipal(produceUsername("userP1", uniqueId)),
+                new UserPrincipal(produceUsername("userP2", uniqueId))))
             .setDenyUsers(Arrays.asList(
-                new UserPrincipal(produceUsername()),
-                new UserPrincipal(produceUsername()), 
+                new UserPrincipal(produceUsername("userD1", uniqueId)),
+                new UserPrincipal(produceUsername("userD2", uniqueId)),
                 new UserPrincipal(this.specialUser)));
 
     if (!uniqueId.endsWith("/")) {
@@ -145,8 +155,8 @@ public class AclPopulator extends AbstractAdaptor {
             .setPermitUsers(Arrays.asList(
                 new UserPrincipal(this.specialUser)))
             .setDenyUsers(Arrays.asList(
-                new UserPrincipal(produceUsername()),
-                new UserPrincipal(produceUsername())));
+                new UserPrincipal(produceUsername("userD1", uniqueId)),
+                new UserPrincipal(produceUsername("userD2", uniqueId))));
       }
       content = makeContent();
       resp.setContentType("text/plain; charset=utf-8");
@@ -159,21 +169,25 @@ public class AclPopulator extends AbstractAdaptor {
       if ((this.depth - 1) == parts.length) {
         content = makeFiles(this.branches.get(parts.length));
       } else {
-        content = makeSubfolders(this.branches.get(parts.length));
+        content = makeSubfolders(this.branches.get(parts.length), uniqueId);
       }
       resp.setContentType("text/html");
     }
 
     resp.setAcl(aclBuilder.build());
+    resp.setCrawlOnce(true);
     OutputStream os = resp.getOutputStream();
     os.write(content.getBytes(encoding));
   }
 
-  private String makeSubfolders(int numOfFolders) {
+  private String makeSubfolders(int numOfFolders, String uniqueId) {
+    // if uniqueId is 0/0x/0xx/, then the filename to be made here should be
+    // 0xxx, 1xxx, 2xxx, etc.
+    int folderDepth = uniqueId.split("/", -1).length; // keep trailing empties
     StringBuilder sb = new StringBuilder();
     sb.append("<body>\n");
     for (int i = 0; i < numOfFolders; ++i) {
-      int filename = i;
+      String filename = i + this.padByLength[folderDepth];
       sb.append("<a href=\"")
           .append(filename)
           .append("/")
@@ -237,16 +251,8 @@ public class AclPopulator extends AbstractAdaptor {
     }
   }
 
-  // Note this method is NOT thread-safe, but the users other than the special
-  // user are not important in our case.
-  private String produceUsername() {
-    this.userCount++;
-
-    if (this.userCount < 0) {
-      // in case of integer overflow, we just reset it to 0
-      this.userCount = 0;
-    }
-    return "user" + this.userCount;
+  private String produceUsername(String prefix, String uniqueId) {
+    return prefix + Math.abs(uniqueId.hashCode());
   }
 
   private boolean isSpecialFile(String docId) {
