@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  */
 class StatRpcMethod implements RpcHandler.RpcMethod {
   private String adaptorVersion = null;
-  private String adaptorType;
+  private String adaptorType = null;
   private Journal journal;
   private boolean isAdaptorIncremental;
   private File configFile;
@@ -46,8 +46,11 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
     Class adaptorClass = adaptor.getClass();
     if (adaptorClass.getPackage() != null) {
       adaptorVersion = adaptorClass.getPackage().getImplementationVersion();
+      adaptorType = adaptorClass.getPackage().getImplementationTitle();
     }
-    adaptorType = adaptorClass.getSimpleName();
+    if (adaptorType == null) {
+      adaptorType = adaptorClass.getSimpleName();
+    }
   }
 
   @Override

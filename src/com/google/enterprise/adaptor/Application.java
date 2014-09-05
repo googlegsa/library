@@ -504,6 +504,8 @@ public final class Application {
    * @return the application instance in use
    */
   public static Application main(Adaptor adaptor, String[] args) {
+    logProductVersion(adaptor.getClass());
+    logProductVersion(Application.class);
     log.info(new Dashboard.JavaVersionStatusSource().retrieveStatus()
         .getMessage(Locale.ENGLISH));
     Application app = daemonMain(adaptor, args);
@@ -530,6 +532,26 @@ public final class Application {
     adaptor.initConfig(config);
     autoConfig(config, args, new File(DEFAULT_CONFIG_FILE));
     return new Application(adaptor, config);
+  }
+
+  private static void logProductVersion(Class <?> clazz) {
+    String title = null;
+    String version = null;
+    String vendor = null;
+    Package pkg = clazz.getPackage();
+    if (pkg != null) {
+      title = pkg.getImplementationTitle();
+      version = pkg.getImplementationVersion();
+      vendor = pkg.getImplementationVendor();
+    }
+    StringBuilder builder = new StringBuilder("Product Version: ");
+    builder.append((title != null) ? title : clazz.getSimpleName());
+    builder.append("  ");
+    builder.append((version != null) ? version : "(unknown version)");
+    if (vendor != null) {
+      builder.append(",  ").append(vendor);
+    }
+    log.info(builder.toString());
   }
 
   private class ShutdownHook implements Runnable {
