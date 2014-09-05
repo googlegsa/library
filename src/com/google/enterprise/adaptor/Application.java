@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -256,13 +257,17 @@ public final class Application {
    * #daemonInit}.
    */
   synchronized void daemonDestroy(long time, TimeUnit unit) {
-    httpServerShutdown(primaryServer, time, unit);
-    log.finer("Completed primary server stop");
-    primaryServer = null;
+    if (primaryServer != null) {
+      httpServerShutdown(primaryServer, time, unit);
+      log.finer("Completed primary server stop");
+      primaryServer = null;
+    }
 
-    httpServerShutdown(dashboardServer, time, unit);
-    log.finer("Completed dashboard stop");
-    dashboardServer = null;
+    if (dashboardServer != null) {
+      httpServerShutdown(dashboardServer, time, unit);
+      log.finer("Completed dashboard stop");
+      dashboardServer = null;
+    }
   }
 
   static void httpServerShutdown(HttpServer server, long time,
@@ -365,7 +370,13 @@ public final class Application {
         1, TimeUnit.MINUTES, blockingQueue, policy);
     server.setExecutor(executor);
 
-    server.bind(new InetSocketAddress(config.getServerPort()), 0);
+    try {
+      server.bind(new InetSocketAddress(config.getServerPort()), 0);
+    } catch (BindException ex) {
+      log.log(Level.WARNING,
+          "Server port {0} is in use.", config.getServerPort());
+      throw ex;
+    }
     log.info("GSA host name: " + config.getGsaHostname());
     log.info("server is listening on port #" + server.getAddress().getPort());
     return server;
@@ -392,7 +403,14 @@ public final class Application {
     // in the user's repository from performing admin actions with
     // XMLHttpRequest or the like, as the HTML page will then be blocked by
     // same-origin policies.
-    server.bind(new InetSocketAddress(config.getServerDashboardPort()), 0);
+    try {
+      server.bind(new InetSocketAddress(config.getServerDashboardPort()), 0);
+    } catch (BindException ex) {
+      log.log(Level.WARNING,
+          "Server dashboard port {0} is in use.", 
+          config.getServerDashboardPort());
+      throw ex;
+    }
 
     // Use separate Executor for Dashboard to allow the administrator to
     // investigate why things are going wrong without waiting on the normal work
