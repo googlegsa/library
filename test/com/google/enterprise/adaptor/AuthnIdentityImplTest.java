@@ -59,7 +59,7 @@ public class AuthnIdentityImplTest {
         .Builder(new UserPrincipal("testing")).build();
     assertEquals("testing", identity.getUser().getName());
     assertNull(identity.getPassword());
-    assertNull(identity.getGroups());
+    assertEquals(Collections.emptySet(), identity.getGroups());
   }
 
   @Test
