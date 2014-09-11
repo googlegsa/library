@@ -220,7 +220,7 @@ public final class GsaCommunicationHandler {
     asyncDocIdSender = new AsyncDocIdSender(docIdSender,
         config.getFeedMaxUrls() /* batch size */,
         5 /* max latency */, TimeUnit.MINUTES,
-        config.getAsyncDocIdSenderQueueSize() /* queue size */);
+        config.getAsyncDocIdSenderQueueSize());
 
     // Could be done during start(), but then we would have to save
     // dashboardServer and contextPrefix.
