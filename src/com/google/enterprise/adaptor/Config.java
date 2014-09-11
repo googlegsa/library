@@ -115,6 +115,8 @@ import java.util.logging.Logger;
  * <tr><td> </td><td>gsa.scoringType</td><td> type of relevance algorithm
  *      GSA utilizes to rank documents.  Either content or web.  Is sent
  *      when gsa.acceptsDocControlsHeader is true.  Defaults to content
+ * <tr><td> </td><td>server.asyncDocIdSenderQueueSize </td><td> queue size of
+ *     the asynchronous DocId sender.  Defaults to 2 * feed.maxUrls
  * <tr><td> </td><td>server.dashboardPort </td><td> port on adaptor's
  *     machine for accessing adaptor's dashboard.   Defaults to  5679
  * <tr><td> </td><td>server.docIdPath </td><td> part of URL preceding
@@ -218,6 +220,16 @@ public class Config {
     // for each request.
     addKey("server.queueCapacity", "160");
     addKey("server.useCompression", "true");
+    addKey("server.asyncDocIdSenderQueueSize", "GENERATE",
+        new ValueComputer() {
+          public String compute(String rawValue) {
+            if ("GENERATE".equals(rawValue)) {
+              int feedMaxUrls = Integer.parseInt(getValue("feed.maxUrls"));
+              return String.valueOf(2 * feedMaxUrls);
+            }
+            return rawValue;
+          }
+        });
     addKey("server.samlEntityId", "http://google.com/enterprise/gsa/adaptor");
     addKey("gsa.hostname", null);
     addKey("gsa.admin.hostname", "");
@@ -305,6 +317,10 @@ public class Config {
 
   String getFeedName() {
     return getValue("feed.name");
+  }
+
+  int getAsyncDocIdSenderQueueSize() {
+    return Integer.parseInt(getValue("server.asyncDocIdSenderQueueSize"));
   }
 
   /**
