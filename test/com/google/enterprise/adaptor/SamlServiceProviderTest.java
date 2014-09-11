@@ -271,7 +271,7 @@ public class SamlServiceProviderTest {
     assertTrue(isAuthned(exArtifact));
     AuthnIdentity identity = serviceProvider.getUserIdentity(exArtifact);
     assertEquals("CN=Polly Hedra", identity.getUser().getName());
-    assertEquals(Collections.emptySet(), identity.getGroups());
+    assertNull(identity.getGroups());
     assertNull(identity.getPassword());
   }
 

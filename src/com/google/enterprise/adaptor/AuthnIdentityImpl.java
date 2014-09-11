@@ -83,7 +83,6 @@ class AuthnIdentityImpl implements AuthnIdentity {
     }
 
     public AuthnIdentityImpl build() {
-      checkArgs();
       return new AuthnIdentityImpl(user, password, groups);
     }
 
@@ -108,12 +107,6 @@ class AuthnIdentityImpl implements AuthnIdentity {
       this.groups = Collections.unmodifiableSet(
           new HashSet<GroupPrincipal>(groups));
       return this;
-    }
-
-    private void checkArgs() {
-      if (this.groups == null) {
-        this.groups = Collections.emptySet();
-      }
     }
   }
 }
