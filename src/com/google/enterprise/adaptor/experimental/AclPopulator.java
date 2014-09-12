@@ -181,8 +181,8 @@ public class AclPopulator extends AbstractAdaptor {
   }
 
   private String makeSubfolders(int numOfFolders, String uniqueId) {
-    // if uniqueId is 0/0x/0xx/, then the filename to be made here should be
-    // 0xxx, 1xxx, 2xxx, etc.
+    // if uniqueId is 0x/0xx/0xxx/, then the filename to be made here should be
+    // 0xxxx, 1xxxx, 2xxxx, etc.
     int folderDepth = uniqueId.split("/", -1).length; // keep trailing empties
     StringBuilder sb = new StringBuilder();
     sb.append("<body>\n");
