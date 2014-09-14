@@ -1510,6 +1510,7 @@ public class DocumentHandlerTest {
     private long headerTimeoutMillis = 30 * 1000;
     private long contentTimeoutMillis = 180 * 1000;
     private String scoring = "content";
+    private boolean alwaysGiveAclsAndMetadata = false;
 
     public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
       this.docIdDecoder = docIdDecoder;
@@ -1611,8 +1612,7 @@ public class DocumentHandlerTest {
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
           transform, aclTransform, useCompression, watchdog, pusher,
           sendDocControls, markDocsPublic, headerTimeoutMillis,
-          contentTimeoutMillis, scoring);
+          contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata);
     }
   }
 }
-

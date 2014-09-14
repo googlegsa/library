@@ -148,6 +148,15 @@ import java.util.logging.Logger;
  *     http://google.com/enterprise/gsa/adaptor
  * <tr><td> </td><td>server.secure </td><td> enables https and certificate
  *     checking. Defaults to false
+ * <tr><td> </td><td>server.httpBasic.username </td><td> enables http basic
+ *     authentication on all content requests. When enabled, requests receive
+ *     HTTP 401 if correct username and password are not provided.  Once 
+ *     http basic authentication is satified requestor receives content and
+ *     ACLs and metadata.  Defaults to empty string "" and means that http
+ *     basic is not used.
+ * <tr><td> </td><td>server.httpBasic.password </td><td> if http basic is
+ *     enabled then this is the password that the requester must provide.
+ *     Defaults to empty string "".
  * <tr><td> </td><td>server.useCompression </td><td> compress retrieval
  *     responses. Defaults to true
  * <tr><td> </td><td>transform.acl.X </td><td> where X is an integer, match
@@ -214,6 +223,8 @@ public class Config {
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
     addKey("server.secure", "false");
+    addKey("server.httpBasic.username", "");
+    addKey("server.httpBasic.password", "");
     addKey("server.keyAlias", "adaptor");
     addKey("server.maxWorkerThreads", "16");
     // A queue that takes one second to drain, assuming 16 threads and 100 ms
@@ -426,6 +437,18 @@ public class Config {
    */
   boolean isServerSecure() {
     return Boolean.parseBoolean(getValue("server.secure"));
+  }
+
+  String getHttpBasicUsername() {
+    return getValue("server.httpBasic.username");
+  }
+
+  String getHttpBasicPassword() {
+    return getValue("server.httpBasic.password");
+  }
+
+  boolean requireHttpBasicAuthn() {
+    return !("".equals(getHttpBasicUsername().trim()));
   }
 
   /**

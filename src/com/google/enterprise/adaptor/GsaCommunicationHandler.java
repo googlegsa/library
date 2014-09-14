@@ -21,6 +21,7 @@ import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
+import com.sun.net.httpserver.BasicAuthenticator;
 import com.sun.net.httpserver.HttpServer;
 import com.sun.net.httpserver.HttpsServer;
 
@@ -301,10 +302,25 @@ public final class GsaCommunicationHandler {
         config.markAllDocsAsPublic(),
         config.getAdaptorDocHeaderTimeoutMillis(),
         config.getAdaptorDocContentTimeoutMillis(),
-        config.getScoringType());
+        config.getScoringType(),
+        config.requireHttpBasicAuthn());
     String handlerPath = config.getServerBaseUri().getPath()
         + config.getServerDocIdPath();
-    addFilters(scope.createContext(handlerPath, docHandler));
+    HttpContext docContext
+        = addFilters(scope.createContext(handlerPath, docHandler));
+    if (config.requireHttpBasicAuthn()) {
+      final String requiredUser = config.getHttpBasicUsername();
+      final String requiredPasswd = config.getHttpBasicPassword();
+
+      docContext.setAuthenticator(new BasicAuthenticator(config.getFeedName()) {
+          @Override
+          public boolean checkCredentials(String user, String passwd) {
+            boolean decision = user.equals(requiredUser)
+                && passwd.equals(requiredPasswd);
+            return decision;
+          }
+      });
+    }
 
     // Start communicating with other services. As a general rule, by this time
     // we want all services we provide to be up and running. However, note that

@@ -83,6 +83,7 @@ class DocumentHandler implements HttpHandler {
   private final long headerTimeoutMillis;
   private final long contentTimeoutMillis;
   private final String scoring;
+  private final boolean alwaysGiveAcl;
 
   /**
    * {@code samlServiceProvider} and {@code transform} may be {@code null}.
@@ -97,7 +98,8 @@ class DocumentHandler implements HttpHandler {
                          Watchdog watchdog, AsyncPusher pusher,
                          boolean sendDocControls, boolean markDocsPublic,
                          long headerTimeoutMillis,
-                         long contentTimeoutMillis, String scoringType) {
+                         long contentTimeoutMillis, String scoringType,
+                         boolean provideAclsAndMetadata) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || aclTransform == null || watchdog == null
         || pusher == null || scoringType == null) {
@@ -119,6 +121,7 @@ class DocumentHandler implements HttpHandler {
     this.headerTimeoutMillis = headerTimeoutMillis;
     this.contentTimeoutMillis = contentTimeoutMillis;
     this.scoring = scoringType;
+    this.alwaysGiveAcl = provideAclsAndMetadata;
 
     initFullAccess(gsaHostname, fullAccessHosts);
   }
@@ -805,7 +808,7 @@ class DocumentHandler implements HttpHandler {
       } else {
         acl = aclTransform.transform(acl);
       }
-      if (requestIsFromFullyTrustedClient(ex)) {
+      if (requestIsFromFullyTrustedClient(ex) || alwaysGiveAcl) {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
