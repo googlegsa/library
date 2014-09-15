@@ -312,6 +312,8 @@ public final class GsaCommunicationHandler {
       final String requiredUser = config.getHttpBasicUsername();
       final String requiredPasswd = config.getHttpBasicPassword();
 
+      log.info("guarding doc content handler with http basic");
+      
       docContext.setAuthenticator(new BasicAuthenticator(config.getFeedName()) {
           @Override
           public boolean checkCredentials(String user, String passwd) {

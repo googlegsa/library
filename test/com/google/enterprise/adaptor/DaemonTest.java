@@ -24,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
@@ -32,10 +33,23 @@ import java.nio.charset.Charset;
 
 /** Tests for {@link Daemon}. */
 public class DaemonTest {
+
+  private static final String GUARANTEED_CONFIGEMPTY_FILEPATH;
+  static {
+    try {
+      File f = File.createTempFile("adaptor-test-config", ".props");
+      f.deleteOnExit();
+      GUARANTEED_CONFIGEMPTY_FILEPATH = f.getAbsolutePath();
+    } catch (IOException ioe) {
+      throw new RuntimeException("failed to make temp file");
+    }
+  }
+
   private String[] arguments = new String[] {
       SingleDocAdaptor.class.getName(), "-Dgsa.hostname=localhost",
       "-Dserver.port=0", "-Dserver.dashboardPort=0",
-      "-Dgsa.version=7.2.0-0"};
+      "-Dgsa.version=7.2.0-0",
+      "-Dadaptor.configfile=" + GUARANTEED_CONFIGEMPTY_FILEPATH };
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
