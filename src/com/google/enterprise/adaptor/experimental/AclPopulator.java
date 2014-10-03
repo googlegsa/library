@@ -31,21 +31,21 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Result of running this adaptor: 
- *   1. CHILD_OVERRIDES ACLs with inheritance chain of depth 10 
- *   2. 500K docs, say 20KB in size 
- *   3. There is a special user who has access to roughly 100 files and will be 
- *      denied access to all other files. The 100 files are uniformly 
+ * Result of running this adaptor:
+ *   1. CHILD_OVERRIDES ACLs with inheritance chain of depth 10
+ *   2. 500K docs, say 20KB in size
+ *   3. There is a special user who has access to roughly 100 files and will be
+ *      denied access to all other files. The 100 files are uniformly
  *      distributed around all leaves.
- *   4. For all the files/directories other than the 100 files which the 
+ *   4. For all the files/directories other than the 100 files which the
  *      special user has access to, they will have 2 random permitted users and
- *      2 unique denied users. The users' names are uniquely made up, e.g., 
- *      user1, user123. Note that the unique users get changed with every 
+ *      2 unique denied users. The users' names are uniquely made up, e.g.,
+ *      user1, user123. Note that the unique users get changed with every
  *      recrawl.
- * 
+ *
  */
 public class AclPopulator extends AbstractAdaptor {
-  private static final Logger log 
+  private static final Logger log
       = Logger.getLogger(AclPopulator.class.getName());
   private Charset encoding = Charset.forName("UTF-8");
 
