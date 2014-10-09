@@ -16,14 +16,17 @@ package com.google.enterprise.adaptor.secmgr.authncontroller;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.enterprise.adaptor.secmgr.config.ConfigSingleton;
+import com.google.enterprise.adaptor.secmgr.identity.Group;
 import com.google.enterprise.adaptor.secmgr.json.ProxyTypeAdapter;
 import com.google.enterprise.adaptor.secmgr.json.TypeAdapters;
 import com.google.enterprise.adaptor.secmgr.json.TypeProxy;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
@@ -33,8 +36,8 @@ import javax.annotation.ParametersAreNonnullByDefault;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * This is the state exported from the security manager to the GSA after a
- * successful authentication.  It is also the format that the security manager
+ * This is the state exported from the security manager to its clients after a
+ * successful authentication. It is also the format that the security manager
  * accepts from client SAML providers if they choose to provide this
  * information.
  */
@@ -54,15 +57,15 @@ public final class ExportedState {
   @ParametersAreNonnullByDefault
   public static final class Credentials {
     @Nonnull public static final Credentials EMPTY
-        = new Credentials(null, null, null, ImmutableSet.<String>of());
+        = new Credentials(null, null, null, ImmutableSet.<Group>of());
 
     @Nullable private final String username;
     @Nullable private final String domain;
     @Nullable private final String password;
-    @Nonnull private final ImmutableSet<String> groups;
+    @Nonnull private final ImmutableSet<Group> groups;
 
     private Credentials(@Nullable String username, @Nullable String domain,
-        @Nullable String password, ImmutableSet<String> groups) {
+        @Nullable String password, ImmutableSet<Group> groups) {
       this.username = username;
       this.domain = domain;
       this.password = password;
@@ -81,7 +84,7 @@ public final class ExportedState {
     @CheckReturnValue
     @Nonnull
     public static Credentials make(@Nullable String username, @Nullable String domain,
-        @Nullable String password, Iterable<String> groups) {
+        @Nullable String password, Iterable<Group> groups) {
       return new Credentials(username, domain, password, ImmutableSet.copyOf(groups));
     }
 
@@ -97,7 +100,7 @@ public final class ExportedState {
     @Nonnull
     public static Credentials make(@Nullable String username, @Nullable String domain,
         @Nullable String password) {
-      return make(username, domain, password, ImmutableSet.<String>of());
+      return make(username, domain, password, ImmutableSet.<Group>of());
     }
 
     /**
@@ -132,8 +135,20 @@ public final class ExportedState {
      */
     @CheckReturnValue
     @Nonnull
-    public ImmutableSet<String> getGroups() {
+    public ImmutableSet<Group> getGroups() {
       return groups;
+    }
+
+    /**
+     * Gets this instance's groups names as an immutable set.
+     */
+    @Nonnull
+    public ImmutableSet<String> getGroupsNames() {
+      Set<String> groupNames = new HashSet<String>();
+      for (Group g : groups) {
+        groupNames.add(g.getName());
+      }
+      return ImmutableSet.copyOf(groupNames);
     }
 
     @Override
@@ -161,7 +176,7 @@ public final class ExportedState {
       String username;
       String domain;
       String password;
-      ImmutableSet<String> groups;
+      ImmutableSet<Group> groups;
 
       @SuppressWarnings("unused")
       LocalProxy() {
@@ -186,16 +201,13 @@ public final class ExportedState {
   @Nonnegative private final long timeStamp;
   @Nonnull private final Credentials pviCredentials;
   @Nonnull private final Credentials basicCredentials;
-  @Nonnull private final ImmutableMap<String, Credentials> connectorCredentials;
 
   private ExportedState(@Nonnegative int version, @Nonnegative long timeStamp,
-      Credentials pviCredentials, Credentials basicCredentials,
-      ImmutableMap<String, Credentials> connectorCredentials) {
+      Credentials pviCredentials, Credentials basicCredentials) {
     this.version = version;
     this.timeStamp = timeStamp;
     this.pviCredentials = pviCredentials;
     this.basicCredentials = basicCredentials;
-    this.connectorCredentials = connectorCredentials;
   }
 
   /**
@@ -227,16 +239,6 @@ public final class ExportedState {
   }
 
   /**
-   * If the security manager is configured for connector authentication, this
-   * gets the credentials corresponding to each configured connector.
-   */
-  @CheckReturnValue
-  @Nonnull
-  public ImmutableMap<String, Credentials> getConnectorCredentials() {
-    return connectorCredentials;
-  }
-
-  /**
    * Gets a JSON string representation for this object.
    */
   @CheckReturnValue
@@ -259,10 +261,8 @@ public final class ExportedState {
         ProxyTypeAdapter.make(Credentials.class, Credentials.LocalProxy.class));
     builder.registerTypeAdapter(ExportedState.class,
         ProxyTypeAdapter.make(ExportedState.class, LocalProxy.class));
-    builder.registerTypeAdapter(new TypeToken<ImmutableSet<String>>() {}.getType(),
+    builder.registerTypeAdapter(new TypeToken<ImmutableSet<Group>>() {}.getType(),
         TypeAdapters.immutableSet());
-    builder.registerTypeAdapter(new TypeToken<ImmutableMap<String, Credentials>>() {}.getType(),
-        TypeAdapters.immutableMap());
   }
 
   private static final class LocalProxy implements TypeProxy<ExportedState> {
@@ -270,7 +270,6 @@ public final class ExportedState {
     long timeStamp;
     Credentials pviCredentials;
     Credentials basicCredentials;
-    ImmutableMap<String, Credentials> connectorCredentials;
 
     @SuppressWarnings("unused")
     LocalProxy() {
@@ -282,15 +281,13 @@ public final class ExportedState {
       timeStamp = state.timeStamp;
       pviCredentials = state.getPviCredentials();
       basicCredentials = state.getBasicCredentials();
-      connectorCredentials = state.getConnectorCredentials();
     }
 
     @Override
     public ExportedState build() {
       Preconditions.checkArgument(version >= MIN_VERSION && version <= MAX_VERSION);
       Preconditions.checkArgument(timeStamp >= 0);
-      return new ExportedState(version, timeStamp, pviCredentials, basicCredentials,
-          ImmutableMap.copyOf(connectorCredentials));
+      return new ExportedState(version, timeStamp, pviCredentials, basicCredentials);
     }
   }
 }

@@ -259,7 +259,7 @@ public final class ResponseParser {
   public static ImmutableSet<String> getGroups(Assertion assertion) {
     ExportedState state = getExportedState(assertion);
     return (state != null)
-        ? state.getPviCredentials().getGroups()
+        ? state.getPviCredentials().getGroupsNames()
         : ImmutableSet.<String>of();
   }
 

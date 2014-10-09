@@ -257,7 +257,7 @@ class SamlServiceProvider {
       if (state != null) {
         // Groups is also available via parser.getGroups, but this handles the
         // state == null case more appropriately for our usage.
-        groups = state.getPviCredentials().getGroups();
+        groups = state.getPviCredentials().getGroupsNames();
         password = state.getPviCredentials().getPassword();
       }
       DateTime expirationDateTime = parser.getExpirationTime();
