@@ -56,6 +56,16 @@ public interface Response {
    * communicated to the clients cleanly.
    */
   public void respondNotFound() throws IOException;
+  
+  /**
+   * Respond to the GSA or other client that it already has the latest content 
+   * of a file but not necessarily the latest ACLs or metadata.
+   * 
+   * <p>If called, this must be the last call to this interface. Once you call
+   * this method, for the rest of the processing, exceptions may no longer be
+   * communicated to the clients cleanly.
+   */
+  public void respondNoContent() throws IOException;
 
   /**
    * Get stream to write document contents to. There is no need to flush or

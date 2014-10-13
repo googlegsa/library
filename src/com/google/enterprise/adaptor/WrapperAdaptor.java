@@ -111,6 +111,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void respondNotFound() throws IOException {
       response.respondNotFound();
     }
+    
+    @Override
+    public void respondNoContent() throws IOException {
+      response.respondNoContent();
+    }
 
     @Override
     public OutputStream getOutputStream() throws IOException {
@@ -227,6 +232,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private List<String> anchorTexts = new ArrayList<String>();
     private boolean notFound;
     private boolean notModified;
+    private boolean noContent;
     private boolean noIndex;
     private boolean noFollow;
     private boolean noArchive;
@@ -247,6 +253,11 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void respondNotFound() {
       notFound = true;
+    }
+    
+    @Override
+    public void respondNoContent() {
+      noContent = true;
     }
 
     @Override
@@ -355,6 +366,10 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public boolean isNotModified() {
       return notModified;
+    }
+    
+    public boolean isNoContent() {
+      return noContent;
     }
 
     public boolean isNoIndex() {

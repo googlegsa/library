@@ -269,6 +269,7 @@ public class CommandLineAdaptorTest {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private boolean noContent;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
     public ContentsResponseTestMock(OutputStream os) {
@@ -284,6 +285,11 @@ public class CommandLineAdaptorTest {
     @Override
     public void respondNotFound() {
       notFound = true;
+    }
+    
+    @Override
+    public void respondNoContent() throws IOException {
+      noContent = true;
     }
 
     @Override
@@ -380,6 +386,10 @@ public class CommandLineAdaptorTest {
 
     public boolean getNotFound() {
       return notFound;
+    }
+    
+    public boolean getNoContent() {
+      return noContent;
     }
 
     public boolean isNoIndex() {

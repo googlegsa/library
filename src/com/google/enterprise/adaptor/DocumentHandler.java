@@ -544,6 +544,8 @@ class DocumentHandler implements HttpHandler {
     HEAD,
     /** No need to buffer contents before sending. */
     SEND_BODY,
+    /** No file content to send but we can send updated metadata and acls */
+    NO_CONTENT,
   }
 
   /**
@@ -605,6 +607,15 @@ class DocumentHandler implements HttpHandler {
       }
       state = State.NOT_FOUND;
     }
+    
+    @Override
+    public void respondNoContent() throws IOException{
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      state = State.NO_CONTENT;
+      startSending(false);
+    }
 
     @Override
     public OutputStream getOutputStream() throws IOException {
@@ -620,6 +631,8 @@ class DocumentHandler implements HttpHandler {
           throw new IllegalStateException("respondNotModified already called");
         case NOT_FOUND:
           throw new IllegalStateException("respondNotFound already called");
+        case NO_CONTENT:
+          throw new IllegalStateException("respondNoContent already called");
         default:
           throw new IllegalStateException("Already responded");
       }
@@ -629,7 +642,7 @@ class DocumentHandler implements HttpHandler {
         // watchdog.
         state = State.HEAD;
         startSending(false);
-        os = new SinkOutputStream();
+        os = new SinkOutputStream();      
       } else {
         state = State.SEND_BODY;
         startSending(true);
@@ -767,6 +780,8 @@ class DocumentHandler implements HttpHandler {
           HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
               Translation.HTTP_NOT_FOUND);
           break;
+        case NO_CONTENT:
+          break;
 
         case SEND_BODY:
           if (!responseBodyClosed) {
@@ -859,6 +874,10 @@ class DocumentHandler implements HttpHandler {
         if (noArchive) {
           ex.getResponseHeaders().add("X-Robots-Tag", "noarchive");
         }
+        
+        if (state == State.NO_CONTENT) {
+          ex.getResponseHeaders().add("X-Gsa-Skip-Updating-Content", "true");
+        }
       }
       if (useCompression) {
         // TODO(ejona): decide when to use compression based on mime-type
@@ -868,11 +887,12 @@ class DocumentHandler implements HttpHandler {
         HttpExchanges.setLastModified(ex, lastModified);
       }
       // There are separate timeouts for sending headers and sending content.
-      // Here we stop the headers timer and start the content timer.
+      // Here we stop the headers timer and start the content timer.     
       watchdog.processingCompleted(workingThread);
       watchdog.processingStarting(workingThread, contentTimeoutMillis);
-      HttpExchanges.startResponse(
-          ex, HttpURLConnection.HTTP_OK, contentType, hasContent);
+      int responseCode =  state == State.NO_CONTENT 
+          ? HttpURLConnection.HTTP_NO_CONTENT : HttpURLConnection.HTTP_OK;
+      HttpExchanges.startResponse(ex, responseCode, contentType, hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
         pusher.asyncPushItem(new DocIdSender.AclItem(docId,
             fragment.getKey(), fragment.getValue()));

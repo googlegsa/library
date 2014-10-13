@@ -476,7 +476,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.respondNotModified();
+            response.respondNotModified();            
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -498,6 +498,74 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
+  
+  @Test
+  public void testNoContent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.respondNoContent();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(204, ex.getResponseCode());
+    assertEquals(Collections.singletonList("true"),
+        ex.getResponseHeaders().get("X-Gsa-Skip-Updating-Content"));
+  }
+  
+  @Test
+  public void testNoContentWithUpdatedMetadataAndAcls() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.addMetadata("DocTitle", "updated");
+            response.setAcl(new Acl.Builder()
+                    .setInheritFrom(new DocId("parent"))
+                    .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+                    .build());
+            response.respondNoContent();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(204, ex.getResponseCode());
+    assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("acl=%7B%22inherit_from%22%3A%22http%3A%5C%2F%5C%2F"
+            + "localhost%5C%2Fparent%22%2C%22"
+            + "inheritance_type%22%3A%22PARENT_OVERRIDES%22%7D"));
+    assertTrue(ex.getResponseHeaders().get("X-gsa-external-metadata")
+        .contains("DocTitle=updated"));
+    assertEquals(Collections.singletonList("true"),
+        ex.getResponseHeaders().get("X-Gsa-Skip-Updating-Content"));
+  }
+
+  @Test
+  public void testNoContentThenOutputStream() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.respondNoContent();
+            response.getOutputStream();
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
+    handler.handle(ex);
+  }
 
   @Test
   public void testOutputStreamThenNotModified() throws Exception {
@@ -507,6 +575,21 @@ public class DocumentHandlerTest {
               throws IOException {
             response.getOutputStream();
             response.respondNotModified();
+          }
+        };
+    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    thrown.expect(RuntimeException.class);
+    handler.handle(ex);
+  }
+  
+  @Test
+  public void testOutputStreamThenNoContent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+            response.respondNoContent();
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
