@@ -95,7 +95,10 @@ public class AclPopulator extends AbstractAdaptor {
   }
 
   @Override
-  public void getDocIds(DocIdPusher pusher) throws InterruptedException {}
+  public void getDocIds(DocIdPusher pusher) throws InterruptedException {
+    List<DocId> rootDocId = Arrays.asList(new DocId(""));
+    pusher.pushDocIds(rootDocId);
+  }
 
   @Override
   public void getDocContent(Request req, Response resp) throws IOException {
