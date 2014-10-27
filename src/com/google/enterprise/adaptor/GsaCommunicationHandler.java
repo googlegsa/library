@@ -303,7 +303,8 @@ public final class GsaCommunicationHandler {
         config.getAdaptorDocHeaderTimeoutMillis(),
         config.getAdaptorDocContentTimeoutMillis(),
         config.getScoringType(),
-        config.requireHttpBasicAuthn());
+        config.requireHttpBasicAuthn(),
+        new GsaVersion(config.getGsaVersion()));
     String handlerPath = config.getServerBaseUri().getPath()
         + config.getServerDocIdPath();
     HttpContext docContext
