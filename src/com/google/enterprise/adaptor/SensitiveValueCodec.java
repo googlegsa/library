@@ -14,12 +14,15 @@
 
 package com.google.enterprise.adaptor;
 
+import java.io.Console;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.Key;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.util.Random;
+import java.util.logging.Logger;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -36,6 +39,9 @@ import javax.xml.bind.DatatypeConverter;
  * <p>This class is thread-safe.
  */
 class SensitiveValueCodec implements SensitiveValueDecoder {
+  private static final Logger log
+      = Logger.getLogger(SensitiveValueCodec.class.getName());
+  
   private static final SecretKey OBFUSCATING_KEY = new SecretKeySpec(
       new byte[] {
         (byte) 0x7d, (byte) 0xec, (byte) 0xbd, (byte) 0x31, (byte) 0x4e,
@@ -244,5 +250,63 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
     String getPrefix() {
       return prefix;
     }
+  }
+  
+  /**
+   * <p>This class allows adaptor administrators to get encoded sensitive value
+   * from command line.
+   * 
+   * Example command line to run:
+   * <pre>
+   * java \
+   * -Djavax.net.ssl.keyStore=keys.jks \
+   * -Djavax.net.ssl.keyStoreType=jks \
+   * -Djavax.net.ssl.keyStorePassword=changeit \
+   * -DsecurityLevel=ENCRYPTED \
+   * -Dserver.keyAlias=adaptor \
+   * -Dserver.secure=true \
+   * -classpath 'adaptor-20130612-withlib.jar' \
+   * com.google.enterprise.adaptor.SensitiveValueCodec
+   * </pre>
+   */
+  public static void main(String[] args) throws IOException {
+    Config config = new Config();
+    config.addKey("securityLevel", SecurityLevel.PLAIN_TEXT.toString());
+    config.setValue("gsa.hostname", "not-used");
+    Application.autoConfig(config, args, null);
+    
+    SecurityLevel securityLevel =
+        SecurityLevel.valueOf(config.getValue("securityLevel"));
+    log.config("securityLevel=" + securityLevel.toString());
+    String serverKeyAlias = config.getServerKeyAlias();
+    log.config("server.keyAlias=" + serverKeyAlias);
+    boolean secure = config.isServerSecure();
+    log.config("server.secure=" + secure);
+    
+    KeyPair keyPair = null;
+    try {
+      keyPair = GsaCommunicationHandler.getKeyPair(serverKeyAlias);
+    } catch (IOException ex) {
+      // The exception is only fatal if we are in secure mode.
+      if (secure) {
+        throw ex;
+      }
+    } catch (RuntimeException ex) {
+      // The exception is only fatal if we are in secure mode.
+      if (secure) {
+        throw ex;
+      }
+    }
+    SensitiveValueCodec codec = new SensitiveValueCodec(keyPair);
+    
+    Console console = System.console();
+    if (console == null) {
+      log.warning("Couldn't get Console instance");
+      return;
+    }
+    char passwordArray[] = console.readPassword("Sensitive Value: ");
+    String password = new String(passwordArray);
+    String encodedValue = codec.encodeValue(password, securityLevel);
+    console.printf("Encoded value is: %s%n", encodedValue);
   }
 }

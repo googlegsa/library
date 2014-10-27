@@ -531,7 +531,7 @@ public final class GsaCommunicationHandler {
    * Retrieve our default KeyPair from the default keystore. The key should have
    * the same password as the keystore.
    */
-  private static KeyPair getKeyPair(String alias) throws IOException {
+  static KeyPair getKeyPair(String alias) throws IOException {
     final String keystoreKey = "javax.net.ssl.keyStore";
     final String keystorePasswordKey = "javax.net.ssl.keyStorePassword";
     String keystore = System.getProperty(keystoreKey);
