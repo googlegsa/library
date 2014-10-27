@@ -238,7 +238,7 @@ public final class GsaCommunicationHandler {
    * Start servicing incoming requests. This makes use of the
    * previously-provided HttpServers and configuration.
    */
-  public synchronized void start() {
+  public synchronized void start(Runnable shutdownHook) {
     // Since the Adaptor has been started, we can now issue other calls to it.
     // Usages of 'adaptor' are completely safe after this point.
     adaptorContext.freeze();
@@ -357,7 +357,7 @@ public final class GsaCommunicationHandler {
     }
 
     dashboard = new Dashboard(config, this, journal, sessionManager,
-        secureValueCodec, adaptor, adaptorContext.statusSources);
+        secureValueCodec, adaptor, adaptorContext.statusSources, shutdownHook);
     dashboard.start(dashboardScope);
   }
    

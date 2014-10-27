@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
@@ -43,6 +44,7 @@ class Dashboard {
   private final CircularLogRpcMethod circularLogRpcMethod
       = new CircularLogRpcMethod();
   private final GsaCommunicationHandler gsaCommHandler;
+  private final Runnable shutdownHook;
   private final SessionManager<HttpExchange> sessionManager;
   private final RpcHandler rpcHandler;
   private final StatRpcMethod statRpcMethod;
@@ -50,11 +52,12 @@ class Dashboard {
   public Dashboard(Config config, GsaCommunicationHandler gsaCommHandler,
                    Journal journal, SessionManager<HttpExchange> sessionManager,
                    SensitiveValueCodec secureValueCodec, Adaptor adaptor,
-                   List<StatusSource> adaptorSources) {
+                   List<StatusSource> adaptorSources, Runnable shutdownHook) {
     this.config = config;
     this.gsaCommHandler = gsaCommHandler;
     this.journal = journal;
     this.sessionManager = sessionManager;
+    this.shutdownHook = shutdownHook;
 
     List<StatusSource> sources = new LinkedList<StatusSource>();
     sources.add(new JavaVersionStatusSource());
@@ -77,6 +80,7 @@ class Dashboard {
     statRpcMethod = new StatRpcMethod(journal, adaptor,
         gsaCommHandler.isAdaptorIncremental(), config.getConfigFile());
     rpcHandler.registerRpcMethod("getStats", statRpcMethod);
+    rpcHandler.registerRpcMethod("stopAdaptor", new StopAdaptorRpcMethod());
   }
 
   /** Starts listening for connections to the dashboard. */
@@ -117,6 +121,16 @@ class Dashboard {
     @Override
     public Object run(List request) {
       return gsaCommHandler.checkAndScheduleImmediatePushOfDocIds();
+    }
+  }
+  
+  private class StopAdaptorRpcMethod implements RpcHandler.RpcMethod {
+    @Override
+    public Object run(List request) {
+      Thread thread = new Thread(shutdownHook);
+      thread.start();
+      // return true as an indication that server accepted request to stop
+      return true;
     }
   }
 

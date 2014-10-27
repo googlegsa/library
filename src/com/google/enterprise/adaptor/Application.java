@@ -195,7 +195,7 @@ public final class Application {
     }
 
     config.addConfigModificationListener(configModListener);
-    gsa.start();
+    gsa.start(new ShutdownHook());
   }
 
   /**

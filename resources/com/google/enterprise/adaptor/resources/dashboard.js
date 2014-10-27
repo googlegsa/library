@@ -255,6 +255,25 @@ function rpc(method, params, callback) {
   });
 }
 
+function stopAdaptor() {
+  var sending = $('#gaf-stop-adaptor-sending');
+  sending.show();
+  rpc('stopAdaptor', null, function(result, error) {
+    sending.hide();
+    if (result === null) {
+      alert("Disconnected from adaptor.  Press the 'OK' button to return to "
+            + "the login page.");
+      location.reload();
+      throw error !== null ? error : "Invalid response from server";
+    }
+    var notificationSpan = $('#gaf-stop-adaptor-received');
+    notificationSpan.show();
+    window.setTimeout(function() {
+      notificationSpan.fadeOut();
+    }, 5000);
+  });
+}
+
 function startFeedPush() {
   var sending = $('#gaf-start-feed-push-sending');
   sending.show();
@@ -439,4 +458,5 @@ $(document).ready(function() {
   $('#gaf-incremental-feed-push').click(startIncrementalFeedPush);
   $('#gaf-start-feed-push').click(startFeedPush);
   $('#gaf-sec-runenc').click(encodeSensitiveValue);
+  $('#gaf-stop-adaptor').click(stopAdaptor);
 });

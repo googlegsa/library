@@ -123,7 +123,7 @@ public class GsaCommunicationHandlerTest {
         queue.offer(new Object());
       }
     });
-    gsa.start();
+    gsa.start(null);
     assertNotNull(queue.poll(1, TimeUnit.SECONDS));
   }
 
@@ -133,9 +133,9 @@ public class GsaCommunicationHandlerTest {
     config.setValue("adaptor.pushDocIdsOnStartup", "false");
     gsa = new GsaCommunicationHandler(adaptor, config);
     gsa.setup(mockServer, mockServer, null);
-    gsa.start();
+    gsa.start(null);
     gsa.stop(1, TimeUnit.SECONDS);
-    gsa.start();
+    gsa.start(null);
     assertTrue(gsa.checkAndScheduleImmediatePushOfDocIds());
   }
 
@@ -163,10 +163,10 @@ public class GsaCommunicationHandlerTest {
     config.setValue("adaptor.pushDocIdsOnStartup", "false");
     gsa = new GsaCommunicationHandler(adaptor, config);
     gsa.setup(mockServer, mockServer, "/path");
-    gsa.start();
+    gsa.start(null);
     GsaCommunicationHandler gsa2 = new GsaCommunicationHandler(adaptor, config);
     gsa2.setup(mockServer, mockServer, "/path2");
-    gsa2.start();
+    gsa2.start(null);
 
     try {
       MockHttpExchange ex = mockServer.createExchange("GET", "/path/doc/1");
