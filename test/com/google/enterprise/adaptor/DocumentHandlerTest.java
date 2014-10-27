@@ -513,6 +513,7 @@ public class DocumentHandlerTest {
         .setAdaptor(adaptor)
         .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
         .build();
     handler.handle(ex);
     assertEquals(204, ex.getResponseCode());
@@ -539,6 +540,7 @@ public class DocumentHandlerTest {
         .setAdaptor(adaptor)
         .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
         .build();
     handler.handle(ex);
     assertEquals(204, ex.getResponseCode());
@@ -562,7 +564,13 @@ public class DocumentHandlerTest {
             response.getOutputStream();
           }
         };
-    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
+        .build();
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
@@ -592,7 +600,13 @@ public class DocumentHandlerTest {
             response.respondNoContent();
           }
         };
-    DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
+        .build();
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
@@ -1594,7 +1608,8 @@ public class DocumentHandlerTest {
     private long contentTimeoutMillis = 180 * 1000;
     private String scoring = "content";
     private boolean alwaysGiveAclsAndMetadata = false;
-
+    private GsaVersion gsaVersion = new GsaVersion("7.2.0-0");
+    
     public DocumentHandlerBuilder setDocIdDecoder(DocIdDecoder docIdDecoder) {
       this.docIdDecoder = docIdDecoder;
       return this;
@@ -1689,13 +1704,18 @@ public class DocumentHandlerTest {
       this.scoring = scoringType;
       return this;
     }
+    
+    public DocumentHandlerBuilder setGsaVersion(String gsaVersion) {
+      this.gsaVersion = new GsaVersion(gsaVersion);
+      return this;
+    }
 
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
           transform, aclTransform, useCompression, watchdog, pusher,
           sendDocControls, markDocsPublic, headerTimeoutMillis,
-          contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata);
+          contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata, gsaVersion);
     }
   }
 }

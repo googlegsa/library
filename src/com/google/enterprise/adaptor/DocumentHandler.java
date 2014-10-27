@@ -84,6 +84,7 @@ class DocumentHandler implements HttpHandler {
   private final long contentTimeoutMillis;
   private final String scoring;
   private final boolean alwaysGiveAcl;
+  private final GsaVersion gsaVersion;
 
   /**
    * {@code samlServiceProvider} and {@code transform} may be {@code null}.
@@ -99,10 +100,11 @@ class DocumentHandler implements HttpHandler {
                          boolean sendDocControls, boolean markDocsPublic,
                          long headerTimeoutMillis,
                          long contentTimeoutMillis, String scoringType,
-                         boolean provideAclsAndMetadata) {
+                         boolean provideAclsAndMetadata,
+                         GsaVersion gsaVersion) {
     if (docIdDecoder == null || docIdEncoder == null || journal == null
         || adaptor == null || aclTransform == null || watchdog == null
-        || pusher == null || scoringType == null) {
+        || pusher == null || scoringType == null || gsaVersion == null) {
       throw new NullPointerException();
     }
     this.docIdDecoder = docIdDecoder;
@@ -122,7 +124,7 @@ class DocumentHandler implements HttpHandler {
     this.contentTimeoutMillis = contentTimeoutMillis;
     this.scoring = scoringType;
     this.alwaysGiveAcl = provideAclsAndMetadata;
-
+    this.gsaVersion = gsaVersion;
     initFullAccess(gsaHostname, fullAccessHosts);
   }
 
@@ -613,6 +615,12 @@ class DocumentHandler implements HttpHandler {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
       }
+
+      if (!gsaVersion.isAtLeast("7.4.0-0")) {
+        log.log(Level.WARNING,
+            "GSA ver {0} doesn't support respondNoContent.", gsaVersion);
+      }
+
       state = State.NO_CONTENT;
       startSending(false);
     }
@@ -642,7 +650,7 @@ class DocumentHandler implements HttpHandler {
         // watchdog.
         state = State.HEAD;
         startSending(false);
-        os = new SinkOutputStream();      
+        os = new SinkOutputStream();
       } else {
         state = State.SEND_BODY;
         startSending(true);
@@ -780,6 +788,7 @@ class DocumentHandler implements HttpHandler {
           HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
               Translation.HTTP_NOT_FOUND);
           break;
+
         case NO_CONTENT:
           break;
 
@@ -890,7 +899,7 @@ class DocumentHandler implements HttpHandler {
       // Here we stop the headers timer and start the content timer.     
       watchdog.processingCompleted(workingThread);
       watchdog.processingStarting(workingThread, contentTimeoutMillis);
-      int responseCode =  state == State.NO_CONTENT 
+      int responseCode = state == State.NO_CONTENT 
           ? HttpURLConnection.HTTP_NO_CONTENT : HttpURLConnection.HTTP_OK;
       HttpExchanges.startResponse(ex, responseCode, contentType, hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
