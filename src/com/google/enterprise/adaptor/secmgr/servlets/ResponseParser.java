@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor.secmgr.servlets;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.enterprise.adaptor.secmgr.authncontroller.ExportedState;
 import com.google.enterprise.adaptor.secmgr.common.SecurityManagerUtil;
@@ -237,30 +236,6 @@ public final class ResponseParser {
       }
     }
     return null;
-  }
-
-  /**
-   * Get any groups that are provided by the assertions.
-   * This information is a security manager extension.
-   * Must satisfy {@link #areAssertionsValid} prior to calling.
-   */
-  public ImmutableSet<String> getGroups() {
-    return getGroups(assertion);
-  }
-
-  /**
-   * Gets any groups that are provided by a given assertion.  This information
-   * is a security manager extension.
-   *
-   * @param assertion An assertion to get the groups from.
-   * @return An immutable set of the groups found; may be empty.
-   */
-  @VisibleForTesting
-  public static ImmutableSet<String> getGroups(Assertion assertion) {
-    ExportedState state = getExportedState(assertion);
-    return (state != null)
-        ? state.getPviCredentials().getGroupsNames()
-        : ImmutableSet.<String>of();
   }
 
   // **************** Validation primitives ****************

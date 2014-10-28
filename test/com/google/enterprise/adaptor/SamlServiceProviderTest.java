@@ -393,28 +393,12 @@ public class SamlServiceProviderTest {
             +     "\"username\": \"CN=Polly Hedra\","
             +     "\"password\": \"p0ck3t\","
             +     "\"groups\": ["
-            +       "{"
-            +         "\"name\": \"group1\","
-            +         "\"namespace\": \"Default\""
-            +       "},"
-            +       "{"
-            +         "\"name\": \"pollysGroup\","
-            +         "\"namespace\": \"Default\""
-            +       "}"
             +     "]"
             +   "},"
             +   "\"basicCredentials\": {"
             +     "\"username\": \"CN=Polly Hedra\","
             +     "\"password\": \"p0ck3t\","
             +     "\"groups\": ["
-            +       "{"
-            +         "\"name\": \"group1\","
-            +         "\"namespace\": \"Default\""
-            +       "},"
-            +       "{"
-            +         "\"name\": \"pollysGroup\","
-            +         "\"namespace\": \"Default\""
-            +       "}"
             +     "]"
             +   "},"
             +   "\"verifiedCredentials\": ["
@@ -424,11 +408,13 @@ public class SamlServiceProviderTest {
             +       "\"groups\": ["
             +         "{"
             +           "\"name\": \"group1\","
-            +           "\"namespace\": \"Default\""
+            +           "\"namespace\": \"Default\","
+            +           "\"domain\": \"test.com\""
             +         "},"
             +         "{"
             +           "\"name\": \"pollysGroup\","
-            +           "\"namespace\": \"Default\""
+            +           "\"namespace\": \"Default\","
+            +           "\"domain\": \"test.com\""
             +         "}"
             +       "]"
             +     "}"
@@ -459,8 +445,8 @@ public class SamlServiceProviderTest {
     // Make sure that the information from the extensions was parsed out and
     // made available for later use.
     Set<String> groups = new HashSet<String>();
-    groups.add("group1");
-    groups.add("pollysGroup");
+    groups.add("group1@test.com");
+    groups.add("pollysGroup@test.com");
     assertEquals(GroupPrincipal.makeSet(groups), identity.getGroups());
     assertEquals("p0ck3t", identity.getPassword());
   }

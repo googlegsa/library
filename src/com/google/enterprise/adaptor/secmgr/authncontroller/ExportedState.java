@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.secmgr.authncontroller;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.enterprise.adaptor.secmgr.config.ConfigSingleton;
 import com.google.enterprise.adaptor.secmgr.identity.Group;
@@ -146,7 +147,11 @@ public final class ExportedState {
     public ImmutableSet<String> getGroupsNames() {
       Set<String> groupNames = new HashSet<String>();
       for (Group g : groups) {
-        groupNames.add(g.getName());
+        if (null == g.getDomain() || "".equals(g.getDomain())) {
+          groupNames.add(g.getName());
+        } else {
+          groupNames.add(g.getName() + "@" + g.getDomain());
+        }
       }
       return ImmutableSet.copyOf(groupNames);
     }
@@ -201,13 +206,16 @@ public final class ExportedState {
   @Nonnegative private final long timeStamp;
   @Nonnull private final Credentials pviCredentials;
   @Nonnull private final Credentials basicCredentials;
+  @Nonnull private final ImmutableList<Credentials> verifiedCredentials;
 
   private ExportedState(@Nonnegative int version, @Nonnegative long timeStamp,
-      Credentials pviCredentials, Credentials basicCredentials) {
+      Credentials pviCredentials, Credentials basicCredentials,
+      ImmutableList<Credentials> verifiedCredentials) {
     this.version = version;
     this.timeStamp = timeStamp;
     this.pviCredentials = pviCredentials;
     this.basicCredentials = basicCredentials;
+    this.verifiedCredentials = verifiedCredentials;
   }
 
   /**
@@ -237,6 +245,15 @@ public final class ExportedState {
   public Credentials getBasicCredentials() {
     return basicCredentials;
   }
+  
+  /**
+   * Returns all non-connector verified credentials from the security manager,
+   * or an empty list if there is none.
+   */
+  @Nonnull
+  public ImmutableList<Credentials> getAllVerifiedCredentials() {
+    return verifiedCredentials;
+  }
 
   /**
    * Gets a JSON string representation for this object.
@@ -263,6 +280,8 @@ public final class ExportedState {
         ProxyTypeAdapter.make(ExportedState.class, LocalProxy.class));
     builder.registerTypeAdapter(new TypeToken<ImmutableSet<Group>>() {}.getType(),
         TypeAdapters.immutableSet());
+    builder.registerTypeAdapter(new TypeToken<ImmutableList<Credentials>>() {}.getType(),
+        TypeAdapters.immutableList());
   }
 
   private static final class LocalProxy implements TypeProxy<ExportedState> {
@@ -270,6 +289,7 @@ public final class ExportedState {
     long timeStamp;
     Credentials pviCredentials;
     Credentials basicCredentials;
+    ImmutableList<Credentials> verifiedCredentials;
 
     @SuppressWarnings("unused")
     LocalProxy() {
@@ -281,13 +301,15 @@ public final class ExportedState {
       timeStamp = state.timeStamp;
       pviCredentials = state.getPviCredentials();
       basicCredentials = state.getBasicCredentials();
+      verifiedCredentials = state.getAllVerifiedCredentials();
     }
 
     @Override
     public ExportedState build() {
       Preconditions.checkArgument(version >= MIN_VERSION && version <= MAX_VERSION);
       Preconditions.checkArgument(timeStamp >= 0);
-      return new ExportedState(version, timeStamp, pviCredentials, basicCredentials);
+      return new ExportedState(version, timeStamp, pviCredentials, basicCredentials,
+          ImmutableList.copyOf(verifiedCredentials));
     }
   }
 }

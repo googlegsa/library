@@ -19,7 +19,6 @@ import com.google.enterprise.adaptor.secmgr.authncontroller.ExportedState;
 import com.google.enterprise.adaptor.secmgr.http.HttpClientInterface;
 import com.google.enterprise.adaptor.secmgr.modules.SamlClient;
 import com.google.enterprise.adaptor.secmgr.servlets.ResponseParser;
-
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
@@ -255,16 +254,21 @@ class SamlServiceProvider {
 
       ExportedState state = parser.getExportedState();
       if (state != null) {
-        // Groups is also available via parser.getGroups, but this handles the
-        // state == null case more appropriately for our usage.
-        groups = state.getPviCredentials().getGroupsNames();
-        password = state.getPviCredentials().getPassword();
+        if (state.getAllVerifiedCredentials().size() == 0) {
+          log.info("No verified credentials.");
+        } else {
+          if (state.getAllVerifiedCredentials().size() > 1) {
+            log.info("More than one verified credential. Using the first one.");
+          }
+          groups = state.getAllVerifiedCredentials().get(0).getGroupsNames();
+          password = state.getAllVerifiedCredentials().get(0).getPassword();
+        }
       }
       DateTime expirationDateTime = parser.getExpirationTime();
       long expirationTime = (expirationDateTime == null)
           ? Long.MAX_VALUE : expirationDateTime.getMillis();
-      log.log(Level.INFO, "SAML subject {0} verified {1}",
-              new Object[] {subjectName, new Date(expirationTime)});
+      log.log(Level.INFO, "SAML subject {0}, groups={1}, verified until {2}",
+          new Object[] {subjectName, groups, new Date(expirationTime)});
       AuthnIdentity identity = new AuthnIdentityImpl
           .Builder(new UserPrincipal(subjectName))
           .setGroups(GroupPrincipal.makeSet(groups))
