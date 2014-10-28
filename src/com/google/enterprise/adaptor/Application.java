@@ -19,15 +19,17 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
+import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -478,7 +480,9 @@ public final class Application {
       return;
     }
     try {
-      FileInputStream extras = new FileInputStream(extraProps);
+      InputStreamReader extras = new InputStreamReader(
+          new BufferedInputStream(new FileInputStream(extraProps)),
+          Charset.forName("UTF-8"));
       processSystemProperties(extras);
       extras.close();
     } catch (IOException e) {
@@ -487,7 +491,7 @@ public final class Application {
     }
   }
 
-  private static void processSystemProperties(InputStream extraProps) 
+  private static void processSystemProperties(InputStreamReader extraProps) 
       throws IOException {
     Properties extra = new Properties();
     extra.load(extraProps);
