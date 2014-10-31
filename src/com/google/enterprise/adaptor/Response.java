@@ -65,7 +65,7 @@ public interface Response {
    * this method, for the rest of the processing, exceptions may no longer be
    * communicated to the clients cleanly.
    */
-  public void respondNoContent() throws IOException;
+  /* public void respondNoContent() throws IOException; */
 
   /**
    * Get stream to write document contents to. There is no need to flush or

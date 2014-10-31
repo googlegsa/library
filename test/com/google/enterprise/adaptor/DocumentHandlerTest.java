@@ -498,7 +498,8 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
-  
+ 
+/* 
   @Test
   public void testNoContent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -574,6 +575,7 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
+*/
 
   @Test
   public void testOutputStreamThenNotModified() throws Exception {
@@ -589,7 +591,8 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
-  
+ 
+/* 
   @Test
   public void testOutputStreamThenNoContent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -610,6 +613,7 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
+*/
 
   @Test
   public void testOutputStreamTwice() throws Exception {

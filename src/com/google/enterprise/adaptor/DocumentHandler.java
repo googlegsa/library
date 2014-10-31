@@ -609,7 +609,8 @@ class DocumentHandler implements HttpHandler {
       }
       state = State.NOT_FOUND;
     }
-    
+   
+/* 
     @Override
     public void respondNoContent() throws IOException{
       if (state != State.SETUP) {
@@ -624,6 +625,7 @@ class DocumentHandler implements HttpHandler {
       state = State.NO_CONTENT;
       startSending(false);
     }
+*/
 
     @Override
     public OutputStream getOutputStream() throws IOException {
