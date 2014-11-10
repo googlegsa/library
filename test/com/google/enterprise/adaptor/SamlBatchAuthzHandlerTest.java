@@ -16,15 +16,19 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.charset.Charset;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Test cases for {@link SamlBatchAuthzHandler}.
@@ -38,6 +42,7 @@ public class SamlBatchAuthzHandlerTest {
   private static final String SOAP_FOOTER
       =   "</soap11:Body>"
       + "</soap11:Envelope>";
+  private static final String DEFAULT_SUBJECT = "Polly Hedra";
 
   private AuthzAuthority adaptor = new MockAdaptor();
   private SamlMetadata samlMetadata = new SamlMetadata("localhost", 80,
@@ -75,13 +80,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Permit")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Permit")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -100,13 +104,142 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Deny")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Deny")
+        + SOAP_FOOTER;
+    ex.setRequestBody(stringToStream(request));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    response = massageResponse(response);
+    assertEquals(goldenResponse, response);
+  }
+  
+  @Test
+  public void testAuthzByPassword() throws Exception {
+    Map<String, String> usernamePasswordMap =
+        ImmutableMap.<String, String>builder()
+            .put("joe@test", "p@ssw0rd")
+            .put("vin@test", "test")
+            .build();
+    SamlBatchAuthzHandler handler =
+        new SamlBatchAuthzHandler(new AuthzByPasswordMockAdaptor(
+            usernamePasswordMap), new MockDocIdCodec(), samlMetadata);
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
+        new MockHttpContext(handler, "/"));
+
+    // try good password leading to Permit
+    String extensionStr = ""
+        + "<saml2p:Extensions xmlns:goog=\"http://www.google.com/\" "
+        +   "xmlns:saml2p=\"urn:oasis:names:tc:SAML:2.0:protocol\">"
+        +   "<goog:SecmgrCredential "
+        +     "domain=\"test\" "
+        +     "name=\"joe\" "
+        +     "namespace=\"Default\" "
+        +     "password=\"p@ssw0rd\" "
+        +     "xmlns:goog=\"http://www.google.com/\"/>"
+        + "</saml2p:Extensions>";
+    
+    String request
+        = SOAP_HEADER
+        + generateAuthzDecisionQuery("http://localhost/doc/1234",
+                                     "aoeuaoeu", "joe", extensionStr)
+        + SOAP_FOOTER;
+    String goldenResponse
+        = SOAP_HEADER
+        + generateGoldenResponse("http://localhost/doc/1234",
+                                 "aoeuaoeu", "joe", "Permit")
+        + SOAP_FOOTER;
+    ex.setRequestBody(stringToStream(request));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    response = massageResponse(response);
+    assertEquals(goldenResponse, response);
+    
+    // try wrong password leading to Deny
+    extensionStr = ""
+        + "<saml2p:Extensions xmlns:goog=\"http://www.google.com/\" "
+        +   "xmlns:saml2p=\"urn:oasis:names:tc:SAML:2.0:protocol\">"
+        +   "<goog:SecmgrCredential "
+        +     "domain=\"test\" "
+        +     "name=\"vin\" "
+        +     "namespace=\"Default\" "
+        +     "password=\"p@ssw0rd\" "
+        +     "xmlns:goog=\"http://www.google.com/\"/>"
+        + "</saml2p:Extensions>";
+    request
+        = SOAP_HEADER
+        + generateAuthzDecisionQuery("http://localhost/doc/1234",
+                                     "aoeuaoeu", "vin", null)
+        + SOAP_FOOTER;
+    goldenResponse
+        = SOAP_HEADER
+        + generateGoldenResponse("http://localhost/doc/1234",
+                                 "aoeuaoeu", "vin", "Deny")
+        + SOAP_FOOTER;
+    MockHttpExchange ex2 = new MockHttpExchange("POST", "/",
+        new MockHttpContext(handler, "/"));
+    ex2.setRequestBody(stringToStream(request));
+    handler.handle(ex2);
+    assertEquals(200, ex2.getResponseCode());
+    response = new String(ex2.getResponseBytes(), charset);
+    response = massageResponse(response);
+    assertEquals(goldenResponse, response);
+  }
+  
+  @Test
+  public void testAuthzByAcl() throws Exception {
+    Map<String, Acl> aclMap = new TreeMap<String, Acl>();
+    Acl.Builder builder1 = new Acl.Builder()
+        .setPermitGroups(Arrays.asList(new GroupPrincipal("group1@test")))
+        .setDenyGroups(Arrays.asList(new GroupPrincipal("group2@test")));
+    aclMap.put("doc/1234", builder1.build());
+    Acl.Builder builder2 = new Acl.Builder()
+        .setPermitGroups(Arrays.asList(new GroupPrincipal("group2@test")))
+        .setDenyGroups(Arrays.asList(new GroupPrincipal("group1@test")));
+    aclMap.put("doc/1235", builder2.build());
+    
+    SamlBatchAuthzHandler handler =
+        new SamlBatchAuthzHandler(new AuthzByAclMockAdaptor(aclMap),
+            new MockDocIdCodec(), samlMetadata);
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
+        new MockHttpContext(handler, "/"));
+
+    String extensionStr = ""
+        + "<saml2p:Extensions xmlns:goog=\"http://www.google.com/\" "
+        +   "xmlns:saml2p=\"urn:oasis:names:tc:SAML:2.0:protocol\">"
+        +   "<goog:SecmgrCredential "
+        +     "domain=\"test\" "
+        +     "name=\"joe\" "
+        +     "namespace=\"Default\" "
+        +     "password=\"p@ssw0rd\" "
+        +     "xmlns:goog=\"http://www.google.com/\">"
+        +       "<goog:Group "
+        +         "domain=\"test\" "
+        +         "name=\"group1\" "
+        +         "namespace=\"Default\" "
+        +         "xmlns:goog=\"http://www.google.com/\"/>"
+        +   "</goog:SecmgrCredential>"
+        + "</saml2p:Extensions>";
+    
+    String request
+        = SOAP_HEADER
+        + generateAuthzDecisionQuery("http://localhost/doc/1234",
+                                     "aoeuaoeu", "joe", extensionStr)
+        + generateAuthzDecisionQuery("http://localhost/doc/1235",
+                                     "aoeuaoeu2", "joe", null)
+        + SOAP_FOOTER;
+    String goldenResponse
+        = SOAP_HEADER
+        + generateGoldenResponse("http://localhost/doc/1234",
+                                 "aoeuaoeu", "joe", "Permit")
+        + generateGoldenResponse("http://localhost/doc/1235",
+                                 "aoeuaoeu2", "joe", "Deny")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -132,13 +265,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Deny")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Deny")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -166,13 +298,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Deny")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Deny")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -198,13 +329,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Deny")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Deny")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -219,13 +349,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://wronghost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://wronghost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Indeterminate")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Indeterminate")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -240,13 +369,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost:81/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost:81/doc/1234",
-                                 "aoeuaoeu",
-                                 "Indeterminate")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Indeterminate")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -261,13 +389,12 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("https://localhost/doc/1234",
-                                     "aoeuaoeu")
+                                     "aoeuaoeu", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("https://localhost/doc/1234",
-                                 "aoeuaoeu",
-                                 "Indeterminate")
+                                 "aoeuaoeu", DEFAULT_SUBJECT, "Indeterminate")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -282,23 +409,20 @@ public class SamlBatchAuthzHandlerTest {
     String request
         = SOAP_HEADER
         + generateAuthzDecisionQuery("http://localhost/doc/1234",
-                                     "aoeuaoeu1")
+                                     "aoeuaoeu1", DEFAULT_SUBJECT, null)
         + generateAuthzDecisionQuery("http://localhost/doc/1235",
-                                     "aoeuaoeu2")
+                                     "aoeuaoeu2", DEFAULT_SUBJECT, null)
         + generateAuthzDecisionQuery("http://localhost/doc/1236",
-                                     "aoeuaoeu3")
+                                     "aoeuaoeu3", DEFAULT_SUBJECT, null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
-                                 "aoeuaoeu1",
-                                 "Permit")
+                                 "aoeuaoeu1", DEFAULT_SUBJECT, "Permit")
         + generateGoldenResponse("http://localhost/doc/1235",
-                                 "aoeuaoeu2",
-                                 "Permit")
+                                 "aoeuaoeu2", DEFAULT_SUBJECT, "Permit")
         + generateGoldenResponse("http://localhost/doc/1236",
-                                 "aoeuaoeu3",
-                                 "Permit")
+                                 "aoeuaoeu3", DEFAULT_SUBJECT, "Permit")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
     handler.handle(ex);
@@ -468,9 +592,10 @@ public class SamlBatchAuthzHandlerTest {
     return response.replaceAll("ID=\"[^\"]+\"", "ID=\"someid\"")
         .replaceAll("IssueInstant=\"[^\"]+\"", "IssueInstant=\"sometime\"");
   }
-
-  private String generateAuthzDecisionQuery(String resource, String id) {
-    return "<samlp:AuthzDecisionQuery "
+  
+  private String generateAuthzDecisionQuery(String resource, String id,
+      String subject, String extensions) {
+    String query = "<samlp:AuthzDecisionQuery "
         +     "ID=\"" + id + "\" "
         +     "IssueInstant=\"2009-10-20T17:52:29Z\" "
         +     "Version=\"2.0\" "
@@ -478,17 +603,22 @@ public class SamlBatchAuthzHandlerTest {
         +     "xmlns:saml=\"urn:oasis:names:tc:SAML:2.0:assertion\" "
         +     "xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\">"
         +     "<saml:Subject>"
-        +       "<saml:NameID>Polly Hedra</saml:NameID>"
+        +       "<saml:NameID>" + subject + "</saml:NameID>"
         +     "</saml:Subject>"
         +     "<saml:Action "
         +       "Namespace=\"urn:oasis:names:tc:SAML:1.0:action:ghpp\">"
         +       "GET"
-        +     "</saml:Action>"
-        +   "</samlp:AuthzDecisionQuery>";
+        +     "</saml:Action>";
+    if (extensions != null) {
+      query = query + extensions;
+    }
+    query += "</samlp:AuthzDecisionQuery>";
+    
+    return query;
   }
 
   private String generateGoldenResponse(String resource, String requestId,
-                                        String decision) {
+                                        String subject, String decision) {
     return "<saml2p:Response "
         +    "ID=\"someid\" "
         +    "InResponseTo=\"" + requestId + "\" "
@@ -512,7 +642,7 @@ public class SamlBatchAuthzHandlerTest {
         +        "http://google.com/enterprise/gsa/adaptor"
         +      "</saml2:Issuer>"
         +      "<saml2:Subject>"
-        +        "<saml2:NameID>Polly Hedra</saml2:NameID>"
+        +        "<saml2:NameID>" + subject + "</saml2:NameID>"
         +      "</saml2:Subject>"
         +      "<saml2:AuthzDecisionStatement "
         +        "Decision=\"" + decision + "\" "

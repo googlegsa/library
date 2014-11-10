@@ -205,6 +205,16 @@ public final class OpenSamlUtil {
         new AttributeValueBuilder(),
         new AttributeValueMarshaller(),
         new AttributeValueUnmarshaller());
+    Configuration.registerObjectProvider(
+        Group.DEFAULT_ELEMENT_NAME,
+        new GroupBuilder(),
+        new GroupMarshaller(),
+        new GroupUnmarshaller());
+    Configuration.registerObjectProvider(
+        SecmgrCredential.DEFAULT_ELEMENT_NAME,
+        new SecmgrCredentialBuilder(),
+        new SecmgrCredentialMarshaller(),
+        new SecmgrCredentialUnmarshaller());
   }
 
   private static final XMLObjectBuilderFactory objectBuilderFactory =

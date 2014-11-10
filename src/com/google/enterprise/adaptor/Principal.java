@@ -56,6 +56,10 @@ public abstract class Principal implements Comparable<Principal> {
 
   public abstract boolean isGroup();
 
+  // TODO: change equals/hashCode/compareTo to use ParsedPrincipal.
+  // GSA will send username and domain info but not any clue of the domainFormat
+  // (@, \\, /). So, as the receiver, we can not really tell the difference
+  // between a Principal of test@google.com and google.com\\test.
   @Override
   public boolean equals(Object other) {
     boolean same = other instanceof Principal;

@@ -14,16 +14,17 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.secmgr.saml.Group;
 import com.google.enterprise.adaptor.secmgr.saml.HTTPSOAP11MultiContextDecoder;
 import com.google.enterprise.adaptor.secmgr.saml.HTTPSOAP11MultiContextEncoder;
 import com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil;
-
+import com.google.enterprise.adaptor.secmgr.saml.SecmgrCredential;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import org.joda.time.DateTime;
-
 import org.opensaml.common.binding.SAMLMessageContext;
+import org.opensaml.saml2.common.Extensions;
 import org.opensaml.saml2.core.Action;
 import org.opensaml.saml2.core.Assertion;
 import org.opensaml.saml2.core.AuthzDecisionQuery;
@@ -36,6 +37,7 @@ import org.opensaml.saml2.core.StatusCode;
 import org.opensaml.saml2.core.Subject;
 import org.opensaml.ws.message.decoder.MessageDecodingException;
 import org.opensaml.ws.message.encoder.MessageEncodingException;
+import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.security.SecurityException;
 
 import java.io.IOException;
@@ -46,6 +48,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -149,6 +153,7 @@ class SamlBatchAuthzHandler implements HttpHandler {
     Map<AuthzDecisionQuery, DocId> docIds
         = new HashMap<AuthzDecisionQuery, DocId>(queries.size() * 2);
     String userIdentifier = null;
+    AuthnIdentity identityFromSecmgrCred = null; // First one found is captured
     for (AuthzDecisionQuery query : queries) {
       String resource = query.getResource();
       if (resource == null) {
@@ -183,13 +188,26 @@ class SamlBatchAuthzHandler implements HttpHandler {
       } else {
         docIds.put(query, docIdDecoder.decodeDocId(uri));
       }
+      if (identityFromSecmgrCred == null) {
+        identityFromSecmgrCred = extractCredInfo(query);
+      }
     }
 
     // Ask the Adaptor if the user is allowed.
-    // TODO(ejona): figure out how to get groups and password.
-    AuthnIdentity identity = new AuthnIdentityImpl
-        .Builder(new UserPrincipal(userIdentifier))
-        .build();
+    AuthnIdentity identity = null;
+    if (identityFromSecmgrCred == null) {
+      identity =
+          new AuthnIdentityImpl.Builder(new UserPrincipal(userIdentifier))
+              .build();
+    } else {
+      if (!userIdentifier
+          .equals(identityFromSecmgrCred.getUser().parse().plainName)) {
+        throw new TranslationIllegalArgumentException(
+            Translation.AUTHZ_BAD_QUERY_NOT_SAME_USER);
+      }
+      identity = identityFromSecmgrCred;
+    }
+    log.info(identity.toString());
     docIds = Collections.unmodifiableMap(docIds);
     Map<DocId, AuthzStatus> statuses;
     try {
@@ -224,6 +242,41 @@ class SamlBatchAuthzHandler implements HttpHandler {
       result.add(createResponse(query, status, now));
     }
     return result;
+  }
+  
+  private static AuthnIdentity extractCredInfo(AuthzDecisionQuery query) {
+    AuthnIdentity identity = null;
+    Extensions extensions = query.getExtensions();
+    if (extensions != null) {
+      List<XMLObject> objs = extensions.getOrderedChildren();
+      for (XMLObject obj : objs) {
+        if (obj instanceof SecmgrCredential) {
+          SecmgrCredential cred = (SecmgrCredential) obj;
+          String name = cred.getName();
+          String domain = cred.getDomain();
+          String userIdentity = name;
+          if (domain != null && !"".equals(domain.trim())) {
+            // TODO: change to use domain + "\\" + name
+            userIdentity = name + "@" + domain;
+          }
+          Set<GroupPrincipal> groups = new TreeSet<GroupPrincipal>();
+          for (Group g : cred.getGroups()) {
+            String groupIdentity = g.getName();
+            if (g.getDomain() != null && !"".equals(g.getDomain().trim())) {
+              // TODO: change to use domain + "\\" + name
+              groupIdentity = g.getName() + "@" + g.getDomain();
+            }
+            groups.add(new GroupPrincipal(groupIdentity, g.getNamespace()));
+          }
+          identity =
+              new AuthnIdentityImpl.Builder(new UserPrincipal(userIdentity,
+                  cred.getNamespace())).setPassword(cred.getPassword())
+                  .setGroups(groups).build();
+          break; // use the first SecmgrCredential
+        }
+      }
+    }
+    return identity;
   }
 
   private Response createResponse(AuthzDecisionQuery query,

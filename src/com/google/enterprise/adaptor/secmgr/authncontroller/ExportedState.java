@@ -150,6 +150,7 @@ public final class ExportedState {
         if (null == g.getDomain() || "".equals(g.getDomain())) {
           groupNames.add(g.getName());
         } else {
+          // TODO: change to domain + "\\" + name
           groupNames.add(g.getName() + "@" + g.getDomain());
         }
       }

@@ -14,10 +14,12 @@
 
 package com.google.enterprise.adaptor.secmgr.common;
 
+import org.w3c.dom.Attr;
 import org.w3c.dom.DOMConfiguration;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
 import org.w3c.dom.DocumentType;
+import org.w3c.dom.Node;
 import org.w3c.dom.bootstrap.DOMImplementationRegistry;
 import org.w3c.dom.ls.DOMImplementationLS;
 import org.w3c.dom.ls.LSException;
@@ -28,6 +30,7 @@ import java.io.IOException;
 import java.io.StringWriter;
 import java.io.Writer;
 
+import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 
 /**
@@ -212,5 +215,28 @@ public class XmlUtil {
     StringWriter output = new StringWriter();
     writeXmlDocument(document, output);
     return output.toString();
+  }
+  
+  /**
+   * Compare an attribute's tag name to a given name.
+   *
+   * @param attribute The attribute to get the tag name from.
+   * @param qname The qname to compare to.
+   * @return True if the attribute's tag name and namespace URI match those of the qname.
+   */
+  public static boolean attributeHasQname(Attr attribute, QName qname) {
+    return qname.getLocalPart().equals(attribute.getLocalName())
+        && qname.getNamespaceURI().equals(getNamespaceUri(attribute));
+  }
+  
+  /**
+   * Get the namespace URI of a given node.
+   *
+   * @param node The node to get the namespace URI of.
+   * @return The namespace URI, or the null namespace URI if the node has none.
+   */
+  public static String getNamespaceUri(Node node) {
+    String namespace = node.getNamespaceURI();
+    return (namespace != null) ? namespace : XMLConstants.NULL_NS_URI;
   }
 }
