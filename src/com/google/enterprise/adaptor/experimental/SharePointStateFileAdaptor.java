@@ -21,10 +21,15 @@ import com.google.enterprise.adaptor.Config;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdEncoder;
 import com.google.enterprise.adaptor.DocIdPusher;
+import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.StartupException;
 import com.google.enterprise.adaptor.UserPrincipal;
+
+import org.w3c.dom.Document;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
 
 import java.io.Closeable;
 import java.io.File;
@@ -38,20 +43,20 @@ import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import org.w3c.dom.Document;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -65,19 +70,23 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
   private static final Logger log
       = Logger.getLogger(SharePointStateFileAdaptor.class.getName());
   private static final DocId statsDoc = new DocId("stats");
+  private static final String SITE_COLLECTION_ADMIN_FRAGMENT = "admin";
 
   private AdaptorContext context;
   private Map<String, SharePointUrl> urlToTypeMapping;
   private Map<String, Set<String>> parentChildMapping;
-  private Set<String> rootCollection;
+  private Set<String> rootCollection;  
   private EnumMap<ObjectType, Integer> objectCount;
   private enum ObjectType {SITE_COLLECTION, SUB_SITE, LIST, FOLDER, DOCUMENT};
+  private int breakInheritanceThreshold;
+  private double inheritanceDepthFactor;
+  private double averageDocAccessPercentage;
 
   public SharePointStateFileAdaptor() {
     urlToTypeMapping = new HashMap<String, SharePointUrl>();
     parentChildMapping = new HashMap<String, Set<String>>();
     rootCollection = new HashSet<String>();
-    objectCount = new EnumMap<ObjectType, Integer>(ObjectType.class);
+    objectCount = new EnumMap<ObjectType, Integer>(ObjectType.class);    
   }
 
   @Override
@@ -85,6 +94,10 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     //Specify input directory path where state files are saved
     config.addKey("state.input", null);
     config.addKey("list.loadCount", "5");
+    config.addKey("acl.breakInheritanceThresold", "20");
+    config.addKey("acl.inheritanceDepthFactor", "0.9");
+    config.addKey("acl.superGroupCount", "30");
+    config.addKey("acl.averageDocAccessPercentage", "20");
   }
 
   @Override
@@ -103,6 +116,14 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     Config config = context.getConfig();
     String inputDirectoryPath = config.getValue("state.input");
     int listLoadCount = Integer.parseInt(config.getValue("list.loadCount"));
+    breakInheritanceThreshold = Integer.parseInt(
+        config.getValue("acl.breakInheritanceThresold"));
+    inheritanceDepthFactor = Double.valueOf(
+        config.getValue("acl.inheritanceDepthFactor"));
+    int superGroupCount
+        = Integer.parseInt(config.getValue("acl.superGroupCount"));
+    averageDocAccessPercentage
+        = Double.valueOf(config.getValue("acl.averageDocAccessPercentage"));
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     DocumentBuilder builder = factory.newDocumentBuilder();
     File inputDirectory = new File(inputDirectoryPath);
@@ -110,6 +131,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       throw new StartupException(
           String.format("Invalid directory path %s", inputDirectoryPath));
     }
+    // Read state file and create Site -> List structure.
     for (File stateFile : inputDirectory.listFiles()) {
       if (!stateFile.getName().endsWith(".xml")) {
         continue;
@@ -129,15 +151,10 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         }
         String rootUrl = getRootUrl(spUrlToUri(webStateUrl));
         rootCollection.add(rootUrl);
-        if (isSiteCollectionUrl(webStateUrl)) {
-          addToUrlTypeMapping(webStateUrl, ObjectType.SITE_COLLECTION);
-          addToParentMapping(rootUrl, webStateUrl);
-        } else {
-          addToUrlTypeMapping(webStateUrl, ObjectType.SUB_SITE);
-          String parentUrl
-              = webStateUrl.substring(0, webStateUrl.lastIndexOf("/"));
-          addToParentMapping(parentUrl, webStateUrl);
-        }
+        // Mark everything as site collection initially. This will allow
+        // orphaned web states in state file to be reachable from root.
+        addToUrlTypeMapping(webStateUrl, ObjectType.SITE_COLLECTION);
+        addToParentMapping(rootUrl, webStateUrl);
         addToParentMapping(webStateUrl, "");
         NodeList listStates = webState.getChildNodes();
         Random rand = new Random();
@@ -176,6 +193,8 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       }
     }
 
+    // Correct ObjectType for urls which are wrongly classified as
+    // SiteCollection urls.
     for (String url : urlToTypeMapping.keySet()) {
       if (urlToTypeMapping.get(url).type == ObjectType.SITE_COLLECTION) {
         String parentUrl = url.substring(0, url.lastIndexOf("/"));
@@ -188,7 +207,109 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
           addToParentMapping(parentUrl, url);
         }
       }
+    }    
+
+    // Break inheritance and assign super groups to ACLs.
+    List<SharePointUrl> objectsWithUniquePermissions
+        = new ArrayList<SharePointUrl>();
+    for(String root : rootCollection) {
+      calculateChildCountRecursively(root, 0);
+      breakInheritanceForNodeRecursively(root, new Random(),
+          breakInheritanceThreshold, "", objectsWithUniquePermissions);
+      populateAclInheritanceCountRecursively(root);
+      visitHierarchy(root);
     }
+    int nonReachableNodes = 0;
+    for (SharePointUrl url : urlToTypeMapping.values()) {
+      if (!url.visited) {
+        nonReachableNodes++;
+      }
+    }
+    if (nonReachableNodes > 0) {
+      log.log(Level.WARNING, "Non reachable node count = {0}",
+          nonReachableNodes);
+    }
+
+    Collections.sort(objectsWithUniquePermissions, new AclChildCountCompare());
+    Map<String, Integer> aclCountPerGroup = new HashMap<String, Integer>();
+    for (int i = 1; i <= superGroupCount; i++) {
+      aclCountPerGroup.put(String.format("google\\supergroup%d", i), 0);
+    }
+
+    Iterator<String> groupsIterator = aclCountPerGroup.keySet().iterator();
+    for (SharePointUrl u : objectsWithUniquePermissions) {
+      if (!groupsIterator.hasNext()) {
+        groupsIterator = aclCountPerGroup.keySet().iterator();
+      }
+      u.superGroup = groupsIterator.next();
+      aclCountPerGroup.put(u.superGroup, aclCountPerGroup.get(u.superGroup)+ 1 
+          + u.aclInheritanceChildCount);
+    }
+    int total = 0;
+    for (String s : aclCountPerGroup.keySet()) {
+      log.log(Level.FINE, "Group {0} has access to {1} items",
+          new Object[] { s, aclCountPerGroup.get(s)});
+      total += aclCountPerGroup.get(s);
+    }
+
+    Map<String, Double> accessPercentage = new HashMap<String, Double>();
+    for (String groupName : aclCountPerGroup.keySet()) {
+      accessPercentage.put(groupName,
+          (100 * (double) aclCountPerGroup.get(groupName) / (double) total));
+      log.log(Level.FINE, "Group {0} has access to {1} % items",
+          new Object[] { groupName, accessPercentage.get(groupName)});
+    }
+    
+    List<String> combinations = new ArrayList<String>();
+    for (String group : accessPercentage.keySet()) {
+      combinations.addAll(
+          getGroupCombinationsIncludingGroup(group, accessPercentage, 100));
+    }
+    Collections.sort(combinations);
+    //TODO : Use these combinations to generate group feeds for super groups
+    log.log(Level.FINE, "Total Group Combinations {0}", combinations.size());
+  }
+  
+  private void visitHierarchy(String url) {
+    if (!urlToTypeMapping.containsKey(url)) {
+      return;
+    }
+    urlToTypeMapping.get(url).visited = true;
+    if (!parentChildMapping.containsKey(url)) {
+      return;
+    }
+    for (String s : parentChildMapping.get(url)) {
+      visitHierarchy(s);
+    }
+  }
+
+  private List<String> getGroupCombinationsIncludingGroup(
+      String groupName, Map<String, Double> accessPercentage,
+      int maxCombinationCount) {
+    Map<String, Double> state = new HashMap<String, Double>();
+    List<String> combinations = new ArrayList<String>();
+    state.put(groupName, accessPercentage.get(groupName));
+    for (String group : accessPercentage.keySet()) {
+      if (group.equals(groupName)) {
+        continue;
+      }
+      HashMap<String, Double> newState = new HashMap<String, Double>();
+      for (String s : state.keySet()) {
+        String combination = s + ";" + group;
+        double percentage = state.get(s) + accessPercentage.get(group);
+        if (percentage >= averageDocAccessPercentage - 2 
+            || percentage <= averageDocAccessPercentage + 2) {
+          combinations.add(combination);
+          if (combinations.size() >= maxCombinationCount) {
+            return combinations;
+          }
+        } else if (percentage < averageDocAccessPercentage - 2) {
+          newState.put(combination, percentage);
+        }
+      }
+      state.putAll(newState);
+    }
+    return combinations;
   }
 
   @Override
@@ -210,33 +331,97 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       throws IOException, InterruptedException {
     String url = request.getDocId().getUniqueId();
     if (statsDoc.getUniqueId().equals(url)) {
-      getRootDocContent(request, response);
+      getStatsDocContent(request, response);
       return;
     }
     if (!urlToTypeMapping.containsKey(url)) {
       response.respondNotFound();
       return;
     }
-    SharePointUrl currentItem = urlToTypeMapping.get(url);
-    if (rootCollection.contains(url)) {
+    response.setCrawlOnce(true);
+    SharePointUrl currentItem = urlToTypeMapping.get(url);   
+    if (currentItem.type == ObjectType.SITE_COLLECTION) {
+      Acl.Builder siteAdmin = new Acl.Builder().setEverythingCaseInsensitive()
+          .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+          .setPermitUsers(getDummyUserPrincipals(
+              "google\\siteAdminUser", 5, ""))
+          .setPermitGroups(getDummyGroupPrincipals(
+              "google\\siteAdminGroup", 5, ""));
+      response.putNamedResource(SITE_COLLECTION_ADMIN_FRAGMENT,
+          siteAdmin.build());
+    }
+    if (currentItem.breakInheritance) {
+      response.setAcl(new Acl.Builder().setEverythingCaseInsensitive()
+          .setPermitGroups(getDummyGroupPrincipals(
+              "google\\dummyGroup", 5, currentItem.superGroup))
+          .setPermitUsers(getDummyUserPrincipals(
+              "google\\dummyUser", 10, ""))
+          .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+          .setInheritFrom(new DocId(getSiteCollectionUrl(url)),
+              SITE_COLLECTION_ADMIN_FRAGMENT).build());
+    } else {
       response.setAcl(new Acl.Builder().setEverythingCaseInsensitive()
           .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
-          .setPermitUsers(Collections.singletonList(
-              new UserPrincipal("google\\superuser"))).build());
+          .setInheritFrom(new DocId(currentItem.parent)).build());
     }
     HtmlResponseWriter writer = new HtmlResponseWriter(
         new OutputStreamWriter(response.getOutputStream()),
         context.getDocIdEncoder(), Locale.ENGLISH);
     writer.start(request.getDocId(), url, currentItem.type.name());
+    writer.addText(String.format("Break ACL Inheritance at current node %s",
+        currentItem.breakInheritance));
+    writer.addText(String.format("# Docs inheriting ACL from current node %d",
+        currentItem.aclInheritanceChildCount));
     if (parentChildMapping.containsKey(url)) {
       for (String child : parentChildMapping.get(url)) {
         writer.addLink(new DocId(child), child);
       }
     }
     writer.finish();
+    writer.close();
   }
 
-  public void getRootDocContent(Request request, Response response)
+  private List<UserPrincipal> getDummyUserPrincipals(String userPrefix,
+      int count, String principalToInclude) {
+
+    List<UserPrincipal> users = new ArrayList<UserPrincipal>();
+    Set<String> dummy = getDummyPrincipalNames(userPrefix, count);
+    if (!"".equals(principalToInclude)) {
+      dummy.add(principalToInclude);
+    }
+    for (String user : dummy) {
+      users.add(new UserPrincipal(user));
+    }
+    return users;
+  }
+
+  private List<GroupPrincipal> getDummyGroupPrincipals(String groupPrefix,
+      int count, String principalToInclude) {
+
+    List<GroupPrincipal> groups = new ArrayList<GroupPrincipal>();
+    Set<String> dummy = getDummyPrincipalNames(groupPrefix, count);
+    if (!"".equals(principalToInclude)) {
+      dummy.add(principalToInclude);
+    }
+    for (String group : dummy) {
+      groups.add(new GroupPrincipal(group));
+    }
+    return groups;
+  }
+
+  private Set<String> getDummyPrincipalNames(String prefix, int count) {
+    Set<String> dummy = new HashSet<String>();
+    int i = 0;
+    Random rand = new Random();
+    while (i < count) {
+      if(dummy.add(String.format("%s%d", prefix, rand.nextInt(1000)))) {
+        i++;
+      }      
+    }
+    return dummy;
+  }
+
+  public void getStatsDocContent(Request request, Response response)
       throws IOException {
     StringBuilder output = new StringBuilder();
     for (String root : rootCollection) {
@@ -266,20 +451,73 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
           "For Root %s Avg #sites %d Max #sites %d Min #sites %d\n",
           root, sum /(siteCollections.size()), max, min));
 
-      output.append(String.format("Root %s has %d childs\n", root,
-          calculateChildCount(root, 0)));
+      SharePointUrl rootUrl = urlToTypeMapping.get(root);
+      output.append(String.format("Root %s has %d child items\n",
+          root, rootUrl.childCount));
     }
 
+    int totalCount = 0;
     for (ObjectType type : objectCount.keySet()) {
+      totalCount = totalCount + objectCount.get(type);
       output.append(String.format("Object Type %s has %d count\n",
           type, objectCount.get(type)));
     }
+    output.append(String.format("Total Document Count = %d\n", totalCount));
 
     OutputStream os = response.getOutputStream();
     os.write(output.toString().getBytes(encoding));
   }
 
-  private int calculateChildCount(String url, int depth) {
+  private void breakInheritanceForNodeRecursively(String parentUrl, Random rand,
+      double threshold, String parent,
+      List<SharePointUrl> objectsWithUniquePermissions) {
+    if (!urlToTypeMapping.containsKey(parentUrl)) {
+      return;
+    }
+    int factor = rand.nextInt(100);
+    SharePointUrl currentNode = urlToTypeMapping.get(parentUrl);
+    currentNode.breakInheritance = (factor <= threshold
+        || currentNode.type == ObjectType.SITE_COLLECTION);
+    if (!currentNode.breakInheritance) {
+      currentNode.parent = parent;
+    } else {
+      objectsWithUniquePermissions.add(currentNode);
+    }
+    if (!parentChildMapping.containsKey(parentUrl)) {
+      return;
+    }
+    for (String c : parentChildMapping.get(parentUrl)) {
+      breakInheritanceForNodeRecursively(c, rand,
+          inheritanceDepthFactor * threshold, parentUrl,
+          objectsWithUniquePermissions);
+    }
+  }
+
+  private int populateAclInheritanceCountRecursively(String url) {
+    if (!urlToTypeMapping.containsKey(url)) {
+      // If current node is not available, return -1 so that
+      // current node is not counted as child inheriting ACL from parent.
+      return -1;
+    }
+    SharePointUrl current = urlToTypeMapping.get(url);
+    int aclInheritanceChildCount = 0;
+    if (parentChildMapping.containsKey(url)) {
+      for (String child : parentChildMapping.get(url)) {
+        aclInheritanceChildCount = aclInheritanceChildCount + 1
+            + populateAclInheritanceCountRecursively(child);
+      }
+    }
+    current.aclInheritanceChildCount = aclInheritanceChildCount;
+    if (current.breakInheritance) {
+      // If current node is breaking ACL inheritance, return -1 so that
+      // current node is not counted as child inheriting ACL from parent.
+      return -1;
+    } else {
+      return current.aclInheritanceChildCount;
+    }
+  }
+
+  private int calculateChildCountRecursively(String url, int depth) {
     if (!urlToTypeMapping.containsKey(url)) {
       return 0;
     }
@@ -294,7 +532,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     }
     int childCount = parentChildMapping.get(url).size();
     for (String child : parentChildMapping.get(url)) {
-      childCount += calculateChildCount(child, depth + 1);
+      childCount += calculateChildCountRecursively(child, depth + 1);
     }
     urlToTypeMapping.get(url).childCount = childCount;
     urlToTypeMapping.get(url).depth = depth;
@@ -367,10 +605,46 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     int depth = Integer.MIN_VALUE;
     String parent;
     int childCount = Integer.MIN_VALUE;
+    boolean breakInheritance = false;
+    int aclInheritanceChildCount = 0;
+    String superGroup;
+    boolean visited;
 
     public SharePointUrl(String url, ObjectType type) {
       this.url = url;
       this.type = type;
+    }
+
+    @Override
+    public int hashCode() {
+      return Arrays.hashCode(new Object[] {url, type, depth, parent, visited,
+          childCount, breakInheritance, aclInheritanceChildCount, superGroup});
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (null == o || !getClass().equals(o.getClass())) {
+        return false;
+      }
+      SharePointUrl urlToCheck = (SharePointUrl) o;
+      return this.url.equalsIgnoreCase(urlToCheck.url);
+    }
+
+    @Override
+    public String toString() {
+      return String.format("SharePointUrl (url = %s , breakInheritance = %s, "
+          + "aclInheritanceChildCount = %d)", url, breakInheritance,
+          aclInheritanceChildCount);
+    }
+  }
+
+  private static class AclChildCountCompare
+      implements Comparator<SharePointUrl> {
+
+    @Override
+    public int compare(SharePointUrl url1, SharePointUrl url2) {
+      return Integer.compare(url1.aclInheritanceChildCount,
+          url2.aclInheritanceChildCount);
     }
   }
 
@@ -402,6 +676,28 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       return true;
     }
     return url.split("/").length == 5;
+  }
+
+  private String getSiteCollectionUrl(String url) throws IOException{
+    try {
+      if (!urlToTypeMapping.containsKey(url)) {
+        return getRootUrl(spUrlToUri(url));
+      }
+      SharePointUrl current = urlToTypeMapping.get(url);
+      if (current.type == ObjectType.SITE_COLLECTION) {
+        return url;
+      }
+
+      String[] parts = url.split("/", 6);
+      if (parts.length < 6) {
+        return getRootUrl(spUrlToUri(url));
+      }
+      String possibleSiteCollectionUrl = parts[0] + "//" + parts[2] + "/"
+          + parts[3] + "/" + parts[4];
+      return getSiteCollectionUrl(possibleSiteCollectionUrl);
+    } catch (URISyntaxException ex) {
+      throw new IOException(ex);
+    }
   }
 
   private static String getRootUrl(URI uri) throws URISyntaxException {
@@ -486,6 +782,12 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       writer.write("\">");
       writer.write(escapeContent(computeLabel(label, doc)));
       writer.write("</a></li>");
+    }
+
+    public void addText(String comment) throws IOException {
+      writer.write("<p>");
+      writer.write(escapeContent(comment));
+      writer.write("</p>");
     }
 
     /**
