@@ -22,6 +22,7 @@ import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdEncoder;
 import com.google.enterprise.adaptor.DocIdPusher;
 import com.google.enterprise.adaptor.GroupPrincipal;
+import com.google.enterprise.adaptor.Principal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.StartupException;
@@ -44,6 +45,7 @@ import java.nio.charset.Charset;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -76,7 +78,8 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
   private Map<String, SharePointUrl> urlToTypeMapping;
   private Map<String, Set<String>> parentChildMapping;
   private Set<String> rootCollection;  
-  private EnumMap<ObjectType, Integer> objectCount;
+  private EnumMap<ObjectType, Integer> objectCount;  
+  Map<String, Set<String>> groupDefinations;
   private enum ObjectType {SITE_COLLECTION, SUB_SITE, LIST, FOLDER, DOCUMENT};
   private int breakInheritanceThreshold;
   private double inheritanceDepthFactor;
@@ -87,6 +90,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     parentChildMapping = new HashMap<String, Set<String>>();
     rootCollection = new HashSet<String>();
     objectCount = new EnumMap<ObjectType, Integer>(ObjectType.class);    
+    groupDefinations = new HashMap<String, Set<String>>();
   }
 
   @Override
@@ -98,6 +102,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     config.addKey("acl.inheritanceDepthFactor", "0.9");
     config.addKey("acl.superGroupCount", "30");
     config.addKey("acl.averageDocAccessPercentage", "20");
+    config.addKey("acl.searchUserCount", "1000");
   }
 
   @Override
@@ -107,6 +112,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     urlToTypeMapping.clear();
     parentChildMapping.clear();
     rootCollection.clear();
+    groupDefinations.clear();
     objectCount.put(ObjectType.SITE_COLLECTION, 0);
     objectCount.put(ObjectType.SUB_SITE, 0);
     objectCount.put(ObjectType.LIST, 0);
@@ -116,6 +122,8 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     Config config = context.getConfig();
     String inputDirectoryPath = config.getValue("state.input");
     int listLoadCount = Integer.parseInt(config.getValue("list.loadCount"));
+    int searchUserCount 
+        = Integer.parseInt(config.getValue("acl.searchUserCount"));
     breakInheritanceThreshold = Integer.parseInt(
         config.getValue("acl.breakInheritanceThresold"));
     inheritanceDepthFactor = Double.valueOf(
@@ -258,16 +266,23 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
           (100 * (double) aclCountPerGroup.get(groupName) / (double) total));
       log.log(Level.FINE, "Group {0} has access to {1} % items",
           new Object[] { groupName, accessPercentage.get(groupName)});
+    }    
+    List<List<String>> groupCombinations 
+        = generateGroupCombinations(accessPercentage);
+    for (String groupName : accessPercentage.keySet()) {
+      groupDefinations.put(groupName, new HashSet<String>());
     }
-    
-    List<String> combinations = new ArrayList<String>();
-    for (String group : accessPercentage.keySet()) {
-      combinations.addAll(
-          getGroupCombinationsIncludingGroup(group, accessPercentage, 100));
+    Iterator<List<String>> groupsCombinationIterator 
+        = groupCombinations.iterator();
+    for(int i = 1; i <= searchUserCount; i++) {
+      if (!groupsCombinationIterator.hasNext()) {
+        groupsCombinationIterator = groupCombinations.iterator();
+      }
+      for (String groupName : groupsCombinationIterator.next()) {
+        groupDefinations.get(groupName)
+            .add(String.format("google\\SearchUser%d", i));
+      }
     }
-    Collections.sort(combinations);
-    //TODO : Use these combinations to generate group feeds for super groups
-    log.log(Level.FINE, "Total Group Combinations {0}", combinations.size());
   }
   
   private void visitHierarchy(String url) {
@@ -283,33 +298,53 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     }
   }
 
-  private List<String> getGroupCombinationsIncludingGroup(
-      String groupName, Map<String, Double> accessPercentage,
-      int maxCombinationCount) {
-    Map<String, Double> state = new HashMap<String, Double>();
-    List<String> combinations = new ArrayList<String>();
-    state.put(groupName, accessPercentage.get(groupName));
-    for (String group : accessPercentage.keySet()) {
-      if (group.equals(groupName)) {
-        continue;
-      }
-      HashMap<String, Double> newState = new HashMap<String, Double>();
-      for (String s : state.keySet()) {
-        String combination = s + ";" + group;
-        double percentage = state.get(s) + accessPercentage.get(group);
-        if (percentage >= averageDocAccessPercentage - 2 
-            || percentage <= averageDocAccessPercentage + 2) {
-          combinations.add(combination);
-          if (combinations.size() >= maxCombinationCount) {
-            return combinations;
+  private List<List<String>> generateGroupCombinations(
+      Map<String, Double> accessPercentage) {
+    // There can be very large number of group combinations possible
+    // which provides desired document access percentage. To control number
+    // of combinations generated by particular group use 
+    // combinationsPerGroupLimitingFactor as threshold.
+    int combinationsPerGroupLimitingFactor = 100;
+    List<List<String>> groupCombinations = new ArrayList<List<String>>();
+    for (String groupName : accessPercentage.keySet()) {
+      Map<String, Double> state = new HashMap<String, Double>();     
+      state.put(groupName, accessPercentage.get(groupName));
+      int groupCombinationCount = 0;
+      for (String group : accessPercentage.keySet()) {
+        if (group.equals(groupName)) {
+          continue;
+        }
+        HashMap<String, Double> newState = new HashMap<String, Double>();
+        for (String s : state.keySet()) {
+          String combination = s + ";" + group;
+          double percentage = state.get(s) + accessPercentage.get(group);
+          if (percentage >= averageDocAccessPercentage - 2
+              && percentage <= averageDocAccessPercentage + 2) {
+            List<String> candidateCombination 
+                = Arrays.asList(combination.split(";"));
+            Collections.sort(candidateCombination);
+            if (!groupCombinations.contains(candidateCombination)) {
+              groupCombinations.add(candidateCombination);
+              groupCombinationCount++;
+            } else {
+              log.log(Level.FINE, "Group Combination {0} is already available",
+                  candidateCombination);
+              continue;
+            }
+            if (groupCombinationCount == combinationsPerGroupLimitingFactor) {
+              break;
+            }
+          } else if (percentage < averageDocAccessPercentage - 2) {
+            newState.put(combination, percentage);
           }
-        } else if (percentage < averageDocAccessPercentage - 2) {
-          newState.put(combination, percentage);
+        }
+        state.putAll(newState);
+        if (groupCombinationCount == combinationsPerGroupLimitingFactor) {
+          break;
         }
       }
-      state.putAll(newState);
     }
-    return combinations;
+    return groupCombinations;
   }
 
   @Override
@@ -321,6 +356,26 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         docIdsToPush.add(new DocId(url));
       }
       pusher.pushDocIds(docIdsToPush);
+      int membershipCount = 0;
+      Map<GroupPrincipal, Collection<Principal>> memberships 
+          = new HashMap<GroupPrincipal, Collection<Principal>>();
+      for (String groupName : groupDefinations.keySet()) {
+        GroupPrincipal group = new GroupPrincipal(groupName);
+        Collection<Principal> members = new ArrayList<Principal>();
+        for(String user : groupDefinations.get(groupName)) {
+          members.add(new UserPrincipal(user));
+        }
+        memberships.put(group, members);
+        membershipCount = membershipCount + members.size();
+        if (membershipCount > 5000) {
+          pusher.pushGroupDefinitions(memberships, false);
+          memberships.clear();
+          membershipCount = 0;
+        }
+      }
+      if (!memberships.isEmpty()) {
+        pusher.pushGroupDefinitions(memberships, false);
+      }
     } catch (Exception ex) {
       throw new IOException(ex);
     }
