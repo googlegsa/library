@@ -73,6 +73,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       = Logger.getLogger(SharePointStateFileAdaptor.class.getName());
   private static final DocId statsDoc = new DocId("stats");
   private static final String SITE_COLLECTION_ADMIN_FRAGMENT = "admin";
+  private static final DocId rootDocId = new DocId("");
 
   private AdaptorContext context;
   private Map<String, SharePointUrl> urlToTypeMapping;
@@ -351,11 +352,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
   public void getDocIds(DocIdPusher pusher)
       throws IOException, InterruptedException {
     try {
-      ArrayList<DocId> docIdsToPush =  new ArrayList<DocId>();
-      for (String url : rootCollection) {
-        docIdsToPush.add(new DocId(url));
-      }
-      pusher.pushDocIds(docIdsToPush);
+      pusher.pushDocIds(Arrays.asList(rootDocId));
       int membershipCount = 0;
       Map<GroupPrincipal, Collection<Principal>> memberships 
           = new HashMap<GroupPrincipal, Collection<Principal>>();
@@ -388,6 +385,9 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     if (statsDoc.getUniqueId().equals(url)) {
       getStatsDocContent(request, response);
       return;
+    } else if (rootDocId.getUniqueId().equals(url)) {
+      getRootDocumentContent(request, response);
+      return;
     }
     if (!urlToTypeMapping.containsKey(url)) {
       response.respondNotFound();
@@ -401,7 +401,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
           .setPermitUsers(getDummyUserPrincipals(
               "google\\siteAdminUser", 5, ""))
           .setPermitGroups(getDummyGroupPrincipals(
-              "google\\siteAdminGroup", 5, ""));
+              "google\\siteAdminGroup", 5, "")).setInheritFrom(rootDocId);
       response.putNamedResource(SITE_COLLECTION_ADMIN_FRAGMENT,
           siteAdmin.build());
     }
@@ -431,6 +431,24 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       for (String child : parentChildMapping.get(url)) {
         writer.addLink(new DocId(child), child);
       }
+    }
+    writer.finish();
+    writer.close();
+  }
+  
+  private void getRootDocumentContent(Request request, Response response)
+      throws IOException, InterruptedException {
+    response.setCrawlOnce(true);
+    response.setAcl(new Acl.Builder().setEverythingCaseInsensitive()
+        .setPermitGroups(getDummyGroupPrincipals("google\\rootGroup", 5, ""))
+        .setPermitUsers(getDummyUserPrincipals("google\\rootUser", 10, ""))
+        .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES).build());
+    HtmlResponseWriter writer = new HtmlResponseWriter(
+        new OutputStreamWriter(response.getOutputStream()),
+        context.getDocIdEncoder(), Locale.ENGLISH);
+    writer.start(request.getDocId(), "Root", "");
+    for(String sc : rootCollection) {
+      writer.addLink(new DocId(sc), sc);
     }
     writer.finish();
     writer.close();
