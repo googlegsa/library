@@ -74,6 +74,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
   private static final DocId statsDoc = new DocId("stats");
   private static final String SITE_COLLECTION_ADMIN_FRAGMENT = "admin";
   private static final DocId rootDocId = new DocId("");
+  private final Random randomNumberOfLines = new Random();
 
   private AdaptorContext context;
   private Map<String, SharePointUrl> urlToTypeMapping;
@@ -85,13 +86,14 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
   private int breakInheritanceThreshold;
   private double inheritanceDepthFactor;
   private double averageDocAccessPercentage;
+  private int averageNumberOfLinesInDocument;
 
   public SharePointStateFileAdaptor() {
     urlToTypeMapping = new HashMap<String, SharePointUrl>();
     parentChildMapping = new HashMap<String, Set<String>>();
     rootCollection = new HashSet<String>();
     objectCount = new EnumMap<ObjectType, Integer>(ObjectType.class);    
-    groupDefinations = new HashMap<String, Set<String>>();
+    groupDefinations = new HashMap<String, Set<String>>();   
   }
 
   @Override
@@ -104,6 +106,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     config.addKey("acl.superGroupCount", "30");
     config.addKey("acl.averageDocAccessPercentage", "20");
     config.addKey("acl.searchUserCount", "1000");
+    config.addKey("doc.averageSizeInKb", "120");
   }
 
   @Override
@@ -133,6 +136,9 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         = Integer.parseInt(config.getValue("acl.superGroupCount"));
     averageDocAccessPercentage
         = Double.valueOf(config.getValue("acl.averageDocAccessPercentage"));
+    // Each generated string e.g.<p>123456789</p> will roughly generate 16 bytes
+    averageNumberOfLinesInDocument 
+        = Integer.parseInt(config.getValue("doc.averageSizeInKb")) * 1000 / 16;
     DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
     DocumentBuilder builder = factory.newDocumentBuilder();
     File inputDirectory = new File(inputDirectoryPath);
@@ -419,6 +425,9 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
           .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
           .setInheritFrom(new DocId(currentItem.parent)).build());
     }
+    if (currentItem.type == ObjectType.DOCUMENT) {
+      response.setContentType("text/plain");
+    }
     HtmlResponseWriter writer = new HtmlResponseWriter(
         new OutputStreamWriter(response.getOutputStream()),
         context.getDocIdEncoder(), Locale.ENGLISH);
@@ -431,6 +440,13 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       for (String child : parentChildMapping.get(url)) {
         writer.addLink(new DocId(child), child);
       }
+    }
+    if (currentItem.type == ObjectType.DOCUMENT) {
+      // Assuming generated random number gives even distribution
+      // averageNumberOfLinesInDocument * 2 should give on average
+      // averageNumberOfLinesInDocument lines per document.
+      addRandomDocumentContent(10 + randomNumberOfLines.nextInt(
+              averageNumberOfLinesInDocument * 2), writer);
     }
     writer.finish();
     writer.close();
@@ -492,6 +508,16 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       }      
     }
     return dummy;
+  }
+  
+  private void addRandomDocumentContent(int numberOfLines,
+      HtmlResponseWriter writer) throws IOException {
+    writer.addText("Number of lines = " + numberOfLines);
+    Random rand = new Random();
+    for (int i = 0; i < numberOfLines; ++i) {
+      // Each generated string <p>123456789</p> will roughly generate 16 bytes
+      writer.addText(String.format("%09d", rand.nextInt(999999999)));
+    }
   }
 
   public void getStatsDocContent(Request request, Response response)
