@@ -17,6 +17,8 @@ package com.google.enterprise.adaptor.experimental;
 import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.AdaptorContext;
+import com.google.enterprise.adaptor.AuthnIdentity;
+import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.Config;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdEncoder;
@@ -82,6 +84,8 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
   private Set<String> rootCollection;  
   private EnumMap<ObjectType, Integer> objectCount;  
   Map<String, Set<String>> groupDefinations;
+  Map<String, List<String>> userGroupMembership;
+  private List<String> docIds;
   private enum ObjectType {SITE_COLLECTION, SUB_SITE, LIST, FOLDER, DOCUMENT};
   private int breakInheritanceThreshold;
   private double inheritanceDepthFactor;
@@ -93,7 +97,9 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     parentChildMapping = new HashMap<String, Set<String>>();
     rootCollection = new HashSet<String>();
     objectCount = new EnumMap<ObjectType, Integer>(ObjectType.class);    
-    groupDefinations = new HashMap<String, Set<String>>();   
+    groupDefinations = new HashMap<String, Set<String>>();
+    userGroupMembership = new HashMap<String, List<String>>();
+    docIds = new ArrayList<String>();
   }
 
   @Override
@@ -117,6 +123,8 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     parentChildMapping.clear();
     rootCollection.clear();
     groupDefinations.clear();
+    userGroupMembership.clear();
+    docIds.clear();
     objectCount.put(ObjectType.SITE_COLLECTION, 0);
     objectCount.put(ObjectType.SUB_SITE, 0);
     objectCount.put(ObjectType.LIST, 0);
@@ -285,9 +293,11 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       if (!groupsCombinationIterator.hasNext()) {
         groupsCombinationIterator = groupCombinations.iterator();
       }
-      for (String groupName : groupsCombinationIterator.next()) {
-        groupDefinations.get(groupName)
-            .add(String.format("google\\SearchUser%d", i));
+      String searchUser = String.format("google\\SearchUser%d", i);
+      List<String> groups = groupsCombinationIterator.next();
+      userGroupMembership.put(searchUser, groups);
+      for (String groupName : groups) {
+        groupDefinations.get(groupName).add(searchUser);
       }
     }
   }
@@ -394,6 +404,9 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     } else if (rootDocId.getUniqueId().equals(url)) {
       getRootDocumentContent(request, response);
       return;
+    } else if (url.startsWith("authz/")) {
+      getAuthzRequestDocContent(request, response);
+      return;
     }
     if (!urlToTypeMapping.containsKey(url)) {
       response.respondNotFound();
@@ -436,6 +449,10 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         currentItem.breakInheritance));
     writer.addText(String.format("# Docs inheriting ACL from current node %d",
         currentItem.aclInheritanceChildCount));
+    List<Acl> aclChain = getAclChainForDocId(request.getDocId().getUniqueId());
+    for(Acl acl : aclChain) {
+      writer.addText(acl.toString());
+    }
     if (parentChildMapping.containsKey(url)) {
       for (String child : parentChildMapping.get(url)) {
         writer.addLink(new DocId(child), child);
@@ -451,7 +468,96 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     writer.finish();
     writer.close();
   }
-  
+    
+  private List<Acl> getAclChainForDocId(String url) {
+    List<Acl> aclChain = new ArrayList<Acl>();
+    if (!urlToTypeMapping.containsKey(url)) {
+      return aclChain;
+    }
+    SharePointUrl node = urlToTypeMapping.get(url);
+    while (!node.breakInheritance) {
+      aclChain.add(0, new Acl.Builder().setEverythingCaseInsensitive()
+          .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+          .setInheritFrom(new DocId(node.parent)).build());
+      node = urlToTypeMapping.get(node.parent);
+    }
+    aclChain.add(0, new Acl.Builder().setEverythingCaseInsensitive()
+        .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+        .setPermitGroups(Collections.singletonList(
+            new GroupPrincipal(node.superGroup))).build());
+    // Ignoring SiteAdmin and root ACLs as those are dummy ACLs
+    // and search user is not directly or indirectly part of these ACLs
+    return aclChain;
+  }
+
+  private void getAuthzRequestDocContent(Request request, Response response)
+      throws IOException, InterruptedException {
+    // DocId for authz request will be e.g. authz/1234 for which adaptor will
+    // perform authz check for user google\\SearchUser1234 for 
+    // random 10000 documents.
+    String[] parts = request.getDocId().getUniqueId().split("/");
+    if (parts.length != 2) {
+      response.respondNotFound();
+      return;
+    }
+    String userId = parts[1];
+    String searchUser = String.format("google\\SearchUser%s", userId);
+    final Set<GroupPrincipal> groups = new HashSet<GroupPrincipal>();
+    if (!userGroupMembership.containsKey(searchUser)) {
+      response.respondNotFound();
+      return;
+    }
+    HtmlResponseWriter writer = new HtmlResponseWriter(new OutputStreamWriter(
+        response.getOutputStream()), context.getDocIdEncoder(), Locale.ENGLISH);
+    writer.start(request.getDocId(), searchUser, "");
+    for (String groupName : userGroupMembership.get(searchUser)) {
+      writer.addText(groupName);
+      groups.add(new GroupPrincipal(groupName));
+    }
+    final UserPrincipal user = new UserPrincipal(searchUser);
+    
+    AuthnIdentity identity = new AuthnIdentity(){
+      @Override
+      public UserPrincipal getUser() {
+        return user;
+      }
+
+      @Override
+      public String getPassword() {
+        throw new UnsupportedOperationException();
+      }
+
+      @Override
+      public Set<GroupPrincipal> getGroups() {
+        return groups;
+      }
+    };
+    int permitCount = 0;
+    int numberOfUrlsToVerify = docIds.size() < 10000 ? docIds.size() : 10000;
+    Random randomUrlIndex = new Random();   
+    Set<String> urlsVerified = new HashSet<String>();
+    while (numberOfUrlsToVerify > 0) {
+      String docUrl
+          = docIds.get(randomUrlIndex.nextInt(docIds.size() - 1));
+      if (!urlsVerified.add(docUrl)) {
+        // Already processed for current user.
+        continue;
+      }
+      List<Acl> aclChain = getAclChainForDocId(docUrl);
+      AuthzStatus authzStatus = Acl.isAuthorized(identity, aclChain);
+      writer.addText(String.format("DocId %s Authz Decision %s", docUrl,
+          authzStatus));
+      if (authzStatus == AuthzStatus.PERMIT) {
+        permitCount++;
+      }
+      numberOfUrlsToVerify--;
+    }
+    writer.addText(String.format("User %s has access to %.2f%% documents",
+        searchUser, ((double) permitCount) * 100 / urlsVerified.size()));
+    writer.finish();
+    writer.close();
+  }
+
   private void getRootDocumentContent(Request request, Response response)
       throws IOException, InterruptedException {
     response.setCrawlOnce(true);
@@ -696,6 +802,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     }
     urlToTypeMapping.put(url, new SharePointUrl(url, type));
     objectCount.put(type, objectCount.get(type) + 1);
+    docIds.add(url);
   }
 
   private static class SharePointUrl {
