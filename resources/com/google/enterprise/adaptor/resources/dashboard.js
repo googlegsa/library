@@ -261,8 +261,8 @@ function stopAdaptor() {
   rpc('stopAdaptor', null, function(result, error) {
     sending.hide();
     if (result === null) {
-      alert("Disconnected from adaptor.  Press the 'OK' button to return to "
-            + "the login page.");
+      alert("Disconnected from adaptor. Adaptor needs to be restarted. "
+          + "Then you can reconnect to dashboard.");
       location.reload();
       throw error !== null ? error : "Invalid response from server";
     }
