@@ -36,7 +36,7 @@ public class IOHelper {
    */
   public static void copyStream(InputStream in, OutputStream out)
       throws IOException {
-    byte[] buffer = new byte[1024];
+    byte[] buffer = new byte[8192];
     int read;
     while ((read = in.read(buffer)) != -1) {
       out.write(buffer, 0, read);
