@@ -262,11 +262,11 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * -Djavax.net.ssl.keyStore=keys.jks \
    * -Djavax.net.ssl.keyStoreType=jks \
    * -Djavax.net.ssl.keyStorePassword=changeit \
+   * -classpath 'adaptor-20130612-withlib.jar' \
+   * com.google.enterprise.adaptor.SensitiveValueCodec \
    * -DsecurityLevel=ENCRYPTED \
    * -Dserver.keyAlias=adaptor \
-   * -Dserver.secure=true \
-   * -classpath 'adaptor-20130612-withlib.jar' \
-   * com.google.enterprise.adaptor.SensitiveValueCodec
+   * -Dserver.secure=true
    * </pre>
    */
   public static void main(String[] args) throws IOException {
