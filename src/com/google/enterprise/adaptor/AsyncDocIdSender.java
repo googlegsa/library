@@ -64,27 +64,31 @@ class AsyncDocIdSender implements AsyncDocIdPusher,
   /**
    * Enqueue {@code item} to be sent by worker. If the queue is full, then the
    * item will be dropped and a warning will be logged.
+   *
+   * @return {@code true} if the item was accepted, {@code false} otherwise
    */
   @Override
-  public void asyncPushItem(final DocIdSender.Item item) {
+  public boolean asyncPushItem(final DocIdSender.Item item) {
     if (!queue.offer(item)) {
       log.log(Level.WARNING, "Failed to queue item: {0}", item);
+      return false;
     }
+    return true;
   }
 
   @Override
-  public void pushDocId(DocId docId) {
-    asyncPushItem(new DocIdPusher.Record.Builder(docId).build());
+  public boolean pushDocId(DocId docId) {
+    return asyncPushItem(new DocIdPusher.Record.Builder(docId).build());
   }
 
   @Override
-  public void pushRecord(DocIdPusher.Record record) {
-    asyncPushItem(record);
+  public boolean pushRecord(DocIdPusher.Record record) {
+    return asyncPushItem(record);
   }
 
   @Override
-  public void pushNamedResource(DocId docId, Acl acl) {
-    asyncPushItem(new DocIdSender.AclItem(docId, null, acl));
+  public boolean pushNamedResource(DocId docId, Acl acl) {
+    return asyncPushItem(new DocIdSender.AclItem(docId, null, acl));
   }
 
   public Runnable worker() {
