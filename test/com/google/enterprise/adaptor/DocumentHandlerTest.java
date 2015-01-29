@@ -1373,12 +1373,13 @@ public class DocumentHandlerTest {
     };
     DocumentHandler.AsyncPusher pusher = new DocumentHandler.AsyncPusher() {
       @Override
-      public void asyncPushItem(DocIdSender.Item item) {
+      public boolean asyncPushItem(DocIdSender.Item item) {
         assertTrue(item instanceof DocIdPusher.Record);
         DocIdPusher.Record record = (DocIdPusher.Record) item;
         assertEquals(URI.create("http://example.com"), record.getResultLink());
         assertTrue(record.isToBeCrawledOnce());
         assertTrue(record.isToBeLocked());
+        return true;
       }
     };
     DocumentHandler handler = createHandlerBuilder()
@@ -1413,7 +1414,7 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1422,6 +1423,7 @@ public class DocumentHandlerTest {
                 .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
                 .build(),
                 aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1437,12 +1439,13 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
             assertEquals("generated", aclItem.getDocIdFragment());
             assertEquals(providedAcl.get(), aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1460,12 +1463,13 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
             assertEquals("generated", aclItem.getDocIdFragment());
             assertEquals(providedAcl.get(), aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1483,12 +1487,13 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
             assertEquals("generated", aclItem.getDocIdFragment());
             assertEquals(providedAcl.get(), aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1522,8 +1527,9 @@ public class DocumentHandlerTest {
         .setAdaptor(adaptor)
         .setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             fail("Should not have been called");
+            return false;
           }
         })
         .setFullAccessHosts(new String[] {remoteIp})
@@ -1563,8 +1569,9 @@ public class DocumentHandlerTest {
 
   private static class MockPusher implements DocumentHandler.AsyncPusher {
     @Override
-    public void asyncPushItem(DocIdSender.Item item) {
+    public boolean asyncPushItem(DocIdSender.Item item) {
       fail("Should not have been called");
+      return false;
     }
   }
 
