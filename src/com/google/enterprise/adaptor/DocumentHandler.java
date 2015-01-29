@@ -508,7 +508,16 @@ class DocumentHandler implements HttpHandler {
       if (date == null) {
         return true;
       }
-      return date.before(lastModified);
+      if (lastModified == null) {
+        throw new NullPointerException("last modified is null");
+      }
+      // Adjust last modified date time by stripping milliseconds part as
+      // last access time will not have milliseconds part.
+      Date lastModifiedAdjusted 
+          = new Date(1000 * (lastModified.getTime() / 1000));
+      log.log(Level.FINEST, "Last modified date time value {0} adjusted to {1}",
+          new Object[] {lastModified.getTime(),lastModifiedAdjusted.getTime()});
+      return date.before(lastModifiedAdjusted);
     }
 
     @Override
@@ -610,7 +619,6 @@ class DocumentHandler implements HttpHandler {
       state = State.NOT_FOUND;
     }
    
-/* 
     @Override
     public void respondNoContent() throws IOException{
       if (state != State.SETUP) {
@@ -625,7 +633,6 @@ class DocumentHandler implements HttpHandler {
       state = State.NO_CONTENT;
       startSending(false);
     }
-*/
 
     @Override
     public OutputStream getOutputStream() throws IOException {
@@ -885,7 +892,6 @@ class DocumentHandler implements HttpHandler {
         if (noArchive) {
           ex.getResponseHeaders().add("X-Robots-Tag", "noarchive");
         }
-        
         if (state == State.NO_CONTENT) {
           ex.getResponseHeaders().add("X-Gsa-Skip-Updating-Content", "true");
         }
@@ -901,8 +907,20 @@ class DocumentHandler implements HttpHandler {
       // Here we stop the headers timer and start the content timer.     
       watchdog.processingCompleted(workingThread);
       watchdog.processingStarting(workingThread, contentTimeoutMillis);
-      int responseCode = state == State.NO_CONTENT 
-          ? HttpURLConnection.HTTP_NO_CONTENT : HttpURLConnection.HTTP_OK;
+      int responseCode;
+      if (state == State.SEND_BODY || state == State.HEAD) {
+        responseCode = HttpURLConnection.HTTP_OK;
+      } else if (state == State.NO_CONTENT) {
+        // Respond with 304 instead of 204 when talking with non GSA requests 
+        // such as browsers.
+        if (requestIsFromFullyTrustedClient(ex)) {
+          responseCode = HttpURLConnection.HTTP_NO_CONTENT;
+        } else {
+          responseCode = HttpURLConnection.HTTP_NOT_MODIFIED;
+        }
+      } else {
+        throw new IllegalStateException("Unexpected state " + state);
+      }
       HttpExchanges.startResponse(ex, responseCode, contentType, hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
         pusher.asyncPushItem(new DocIdSender.AclItem(docId,

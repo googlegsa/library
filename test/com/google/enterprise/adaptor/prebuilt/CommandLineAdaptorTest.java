@@ -287,12 +287,10 @@ public class CommandLineAdaptorTest {
       notFound = true;
     }
    
-/* 
     @Override
     public void respondNoContent() throws IOException {
       noContent = true;
     }
-*/
 
     @Override
     public OutputStream getOutputStream() {

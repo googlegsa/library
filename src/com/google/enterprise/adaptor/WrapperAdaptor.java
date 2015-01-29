@@ -112,12 +112,10 @@ abstract class WrapperAdaptor implements Adaptor {
       response.respondNotFound();
     }
    
-/* 
     @Override
     public void respondNoContent() throws IOException {
       response.respondNoContent();
     }
-*/
 
     @Override
     public OutputStream getOutputStream() throws IOException {
@@ -257,12 +255,10 @@ abstract class WrapperAdaptor implements Adaptor {
       notFound = true;
     }
    
-/* 
     @Override
     public void respondNoContent() {
       noContent = true;
     }
-*/
 
     @Override
     public OutputStream getOutputStream() {

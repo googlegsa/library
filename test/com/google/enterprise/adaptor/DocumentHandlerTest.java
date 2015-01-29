@@ -498,10 +498,9 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
- 
-/* 
+
   @Test
-  public void testNoContent() throws Exception {
+  public void testNoContentGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
           public void getDocContent(Request request, Response response)
@@ -511,7 +510,7 @@ public class DocumentHandlerTest {
         };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
+        .setAdaptor(adaptor)      
         .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
@@ -521,7 +520,26 @@ public class DocumentHandlerTest {
     assertEquals(Collections.singletonList("true"),
         ex.getResponseHeaders().get("X-Gsa-Skip-Updating-Content"));
   }
-  
+
+  @Test
+  public void testNoContentNonGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.respondNoContent();
+          }
+        };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
+        .build();
+    handler.handle(ex);
+    assertEquals(304, ex.getResponseCode());
+  }
+
   @Test
   public void testNoContentWithUpdatedMetadataAndAcls() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -575,7 +593,6 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
-*/
 
   @Test
   public void testOutputStreamThenNotModified() throws Exception {
@@ -591,8 +608,7 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
- 
-/* 
+
   @Test
   public void testOutputStreamThenNoContent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -613,7 +629,6 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
-*/
 
   @Test
   public void testOutputStreamTwice() throws Exception {
