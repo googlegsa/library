@@ -85,6 +85,7 @@ class DocumentHandler implements HttpHandler {
   private final String scoring;
   private final boolean alwaysGiveAcl;
   private final GsaVersion gsaVersion;
+  private final boolean gsaSupports204;
 
   /**
    * {@code samlServiceProvider} and {@code transform} may be {@code null}.
@@ -125,6 +126,7 @@ class DocumentHandler implements HttpHandler {
     this.scoring = scoringType;
     this.alwaysGiveAcl = provideAclsAndMetadata;
     this.gsaVersion = gsaVersion;
+    this.gsaSupports204 = gsaVersion.isAtLeast("7.4.0-0");
     initFullAccess(gsaHostname, fullAccessHosts);
   }
 
@@ -493,7 +495,7 @@ class DocumentHandler implements HttpHandler {
     return sb.toString();
   }
 
-  private static class DocumentRequest implements Request {
+  private class DocumentRequest implements Request {
     private final HttpExchange ex;
     private final DocId docId;
 
@@ -534,6 +536,23 @@ class DocumentHandler implements HttpHandler {
     public String toString() {
       return "Request(docId=" + docId
           + ",lastAccessTime=" + getLastAccessTime() + ")";
+    }
+    
+    @Override
+    public boolean canRespondWithNoContent(Date lastModified) {
+      if (hasChangedSinceLastAccess(lastModified) 
+          || ((requestIsFromFullyTrustedClient(ex) && !gsaSupports204))) {
+        // return false as 
+        // (1) document has changed or
+        // (2) we are talking to GSA < 7.4
+        return false;
+      } else {
+        // return true as
+        // (1) document has not changed
+        // (2) we are either talking to GSA >= 7.4 or web browser
+        // Note: for web browser startSending will convert 204 to 304
+        return true;
+      }
     }
   }
 
@@ -625,7 +644,7 @@ class DocumentHandler implements HttpHandler {
         throw new IllegalStateException("Already responded");
       }
 
-      if (!gsaVersion.isAtLeast("7.4.0-0")) {
+      if (!gsaSupports204) {
         log.log(Level.WARNING,
             "GSA ver {0} doesn't support respondNoContent.", gsaVersion);
       }

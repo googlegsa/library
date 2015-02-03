@@ -250,6 +250,11 @@ public class CommandLineAdaptorTest {
     public DocId getDocId() {
       return docId;
     }
+    
+    @Override
+    public boolean canRespondWithNoContent(Date lastModified) {
+      return !hasChangedSinceLastAccess(lastModified);
+    }
   }
 
   private static class ContentsResponseTestMock implements Response {

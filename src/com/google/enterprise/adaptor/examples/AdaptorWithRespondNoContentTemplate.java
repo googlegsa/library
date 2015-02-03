@@ -96,7 +96,7 @@ public class AdaptorWithRespondNoContentTemplate extends AbstractAdaptor
     response.setLastModified(document.getLastModified());
 
     // Check if document is modified
-    if (!request.hasChangedSinceLastAccess(document.getLastModified())) {
+    if (request.canRespondWithNoContent(document.getLastModified())) {
       log.log(Level.FINE, "Responding 204 since document has not been "
           + "modified since last access time.");
       response.respondNoContent();

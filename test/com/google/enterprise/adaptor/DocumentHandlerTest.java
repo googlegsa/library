@@ -539,6 +539,146 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
+  
+  @Test
+  public void testCanRespondWithNoContentNonGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              throw new UnsupportedOperationException();
+            }
+          }
+        };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setSendDocControls(true)       
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(304, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              throw new UnsupportedOperationException();
+            }
+          }
+        };
+        String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+        DocumentHandler handler = createHandlerBuilder()
+            .setAdaptor(adaptor)      
+            .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+            .setSendDocControls(true)
+            .setGsaVersion("7.4.0-0")
+            .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(204, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentPre74GSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              response.setContentType("text/plain");
+              response.setLastModified(new Date(1 * 1000));
+              response.addMetadata("not", "important");
+              response.setAcl(Acl.EMPTY);
+              response.getOutputStream();              
+              response.getOutputStream().close();
+            }
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .setGsaVersion("7.0.0-0")
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentPre74NonGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              throw new UnsupportedOperationException();
+            }
+          }
+        };    
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)       
+        .setSendDocControls(true)
+        .setAuthzAuthority(adaptor)
+        .setGsaVersion("7.0.0-0")
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(304, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentWithChangedContent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              throw new UnsupportedOperationException();
+            } else {
+              response.setContentType("text/plain");
+              response.setLastModified(new Date(1 * 1000));
+              response.addMetadata("not", "important");
+              response.setAcl(Acl.EMPTY);
+              response.getOutputStream();              
+              response.getOutputStream().close();
+            }
+          }
+        };    
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setSendDocControls(true)
+        .setGsaVersion("7.0.0-0")
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:00 GMT");
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
 
   @Test
   public void testNoContentWithUpdatedMetadataAndAcls() throws Exception {

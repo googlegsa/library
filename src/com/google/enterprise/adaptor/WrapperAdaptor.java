@@ -80,6 +80,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public boolean hasChangedSinceLastAccess(Date lastModified) {
       return request.hasChangedSinceLastAccess(lastModified);
     }
+    
+    @Override
+    public boolean canRespondWithNoContent(Date lastModified) {
+      return request.canRespondWithNoContent(lastModified);
+    }
 
     @Override
     public Date getLastAccessTime() {
@@ -204,6 +209,13 @@ abstract class WrapperAdaptor implements Adaptor {
     public boolean hasChangedSinceLastAccess(Date lastModified) {
       return true;
     }
+    
+    @Override
+    public boolean canRespondWithNoContent(Date lastModified) {
+      return false;
+    }
+    
+    
 
     @Override
     public Date getLastAccessTime() {
