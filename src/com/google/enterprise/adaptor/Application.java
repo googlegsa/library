@@ -107,6 +107,7 @@ public final class Application {
       daemonStart();
       success = true;
     } finally {
+      log.finest("start is leaving with success=" + success);
       if (!success) {
         // Call daemonDestroy() and remove shutdown hook.
         stop(0, TimeUnit.SECONDS);
@@ -135,6 +136,7 @@ public final class Application {
       dashboardServer.start();
       success = true;
     } finally {
+      log.finest("daemonInit is leaving with success=" + success);
       if (!success) {
         daemonDestroy(0, TimeUnit.SECONDS);
       }
@@ -150,6 +152,7 @@ public final class Application {
       realDaemonStart();
       success = true;
     } finally {
+      log.finest("daemonStart is leaving with success=" + success);
       if (!success) {
         daemonStop(0, TimeUnit.SECONDS);
       }
@@ -331,7 +334,10 @@ public final class Application {
           conn.getInputStream().close();
           log.finer("Closed shutdown GET");
         } catch (IOException ex) {
-          log.log(Level.WARNING, "Error closing stream of shutdown GET", ex);
+          // TODO: Investigate "java.net.ConnectException: Connection refused".
+          // Happens when startup cannot proceed (eg bad gsa.version).
+          // Why does it happen? and why here and not in connect?
+          // log.log(Level.WARNING, "Error closing stream of shutdown GET", ex);
         }
       }
     }).start();
@@ -608,6 +614,7 @@ public final class Application {
     }
   }
 
+  // TODO: remove all config mod listening code
   private class ConfigModListener implements ConfigModificationListener {
     @Override
     public void configModified(ConfigModificationEvent ev) {
