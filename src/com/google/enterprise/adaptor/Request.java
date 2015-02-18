@@ -32,7 +32,17 @@ public interface Request {
    * then call {@link Response#respondNotModified}.
    */
   public boolean hasChangedSinceLastAccess(Date lastModified);
-
+  /**
+   * Returns {@code true} if the GSA or other client's current copy of the
+   * document was retrieved after the {@code lastModified} date and GSA can 
+   * handle HTTP 204 response; {@code false} otherwise. {@code lastModified} 
+   * must be in GMT.
+   *
+   * <p>If {@code true}, the client does not need to be re-sent the file content
+   * , since what they have cached is the most recent version. In this case, 
+   * you should then call {@link Response#respondNoContent}.
+   */
+  public boolean canRespondWithNoContent(Date lastModified);
   /**
    * Returns the last time a GSA or other client retrieved the data, or {@code
    * null} if none was provided by the client. The returned {@code Date} is in

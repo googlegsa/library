@@ -15,6 +15,8 @@
 package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -68,12 +70,12 @@ public class AsyncDocIdSenderTest {
         new DocIdPusher.Record.Builder(new DocId("2")).build(),
         new DocIdPusher.Record.Builder(new DocId("3")).build());
     for (DocIdPusher.Record record : golden) {
-      sender.asyncPushItem(record);
+      assertTrue(sender.asyncPushItem(record));
     }
     // We shouldn't block while adding this item, even though the queue is full.
     // Instead, it should simply be dropped.
-    sender.asyncPushItem(
-        new DocIdPusher.Record.Builder(new DocId("4")).build());
+    assertFalse(sender.asyncPushItem(
+        new DocIdPusher.Record.Builder(new DocId("4")).build()));
     Thread workerThread = new Thread(sender.worker());
     workerThread.start();
 

@@ -498,10 +498,9 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
- 
-/* 
+
   @Test
-  public void testNoContent() throws Exception {
+  public void testNoContentGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
           public void getDocContent(Request request, Response response)
@@ -511,7 +510,7 @@ public class DocumentHandlerTest {
         };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
+        .setAdaptor(adaptor)      
         .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
@@ -521,7 +520,166 @@ public class DocumentHandlerTest {
     assertEquals(Collections.singletonList("true"),
         ex.getResponseHeaders().get("X-Gsa-Skip-Updating-Content"));
   }
+
+  @Test
+  public void testNoContentNonGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.respondNoContent();
+          }
+        };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
+        .build();
+    handler.handle(ex);
+    assertEquals(304, ex.getResponseCode());
+  }
   
+  @Test
+  public void testCanRespondWithNoContentNonGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              throw new UnsupportedOperationException();
+            }
+          }
+        };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setSendDocControls(true)       
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(304, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              throw new UnsupportedOperationException();
+            }
+          }
+        };
+        String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+        DocumentHandler handler = createHandlerBuilder()
+            .setAdaptor(adaptor)      
+            .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+            .setSendDocControls(true)
+            .setGsaVersion("7.4.0-0")
+            .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(204, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentPre74GSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              response.setContentType("text/plain");
+              response.setLastModified(new Date(1 * 1000));
+              response.addMetadata("not", "important");
+              response.setAcl(Acl.EMPTY);
+              response.getOutputStream();              
+              response.getOutputStream().close();
+            }
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .setGsaVersion("7.0.0-0")
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentPre74NonGSARequest() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              response.respondNoContent();
+              return;
+            } else {
+              throw new UnsupportedOperationException();
+            }
+          }
+        };    
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)       
+        .setSendDocControls(true)
+        .setAuthzAuthority(adaptor)
+        .setGsaVersion("7.0.0-0")
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:01 GMT");
+    handler.handle(ex);
+    assertEquals(304, ex.getResponseCode());
+  }
+  
+  @Test
+  public void testCanRespondWithNoContentWithChangedContent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            if (request.canRespondWithNoContent(new Date(1 * 1000))) {
+              throw new UnsupportedOperationException();
+            } else {
+              response.setContentType("text/plain");
+              response.setLastModified(new Date(1 * 1000));
+              response.addMetadata("not", "important");
+              response.setAcl(Acl.EMPTY);
+              response.getOutputStream();              
+              response.getOutputStream().close();
+            }
+          }
+        };    
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setSendDocControls(true)
+        .setGsaVersion("7.0.0-0")
+        .build();
+    ex.getRequestHeaders().set("If-Modified-Since",
+        "Thu, 1 Jan 1970 00:00:00 GMT");
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+
   @Test
   public void testNoContentWithUpdatedMetadataAndAcls() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -575,7 +733,6 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
-*/
 
   @Test
   public void testOutputStreamThenNotModified() throws Exception {
@@ -591,8 +748,7 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
- 
-/* 
+
   @Test
   public void testOutputStreamThenNoContent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -613,7 +769,6 @@ public class DocumentHandlerTest {
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
   }
-*/
 
   @Test
   public void testOutputStreamTwice() throws Exception {
@@ -1358,12 +1513,13 @@ public class DocumentHandlerTest {
     };
     DocumentHandler.AsyncPusher pusher = new DocumentHandler.AsyncPusher() {
       @Override
-      public void asyncPushItem(DocIdSender.Item item) {
+      public boolean asyncPushItem(DocIdSender.Item item) {
         assertTrue(item instanceof DocIdPusher.Record);
         DocIdPusher.Record record = (DocIdPusher.Record) item;
         assertEquals(URI.create("http://example.com"), record.getResultLink());
         assertTrue(record.isToBeCrawledOnce());
         assertTrue(record.isToBeLocked());
+        return true;
       }
     };
     DocumentHandler handler = createHandlerBuilder()
@@ -1398,7 +1554,7 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
@@ -1407,6 +1563,7 @@ public class DocumentHandlerTest {
                 .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
                 .build(),
                 aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1422,12 +1579,13 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
             assertEquals("generated", aclItem.getDocIdFragment());
             assertEquals(providedAcl.get(), aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1445,12 +1603,13 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
             assertEquals("generated", aclItem.getDocIdFragment());
             assertEquals(providedAcl.get(), aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1468,12 +1627,13 @@ public class DocumentHandlerTest {
         .build());
     handler = builder.setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             assertTrue(item instanceof DocIdSender.AclItem);
             DocIdSender.AclItem aclItem = (DocIdSender.AclItem) item;
             assertEquals(defaultDocId, aclItem.getDocId());
             assertEquals("generated", aclItem.getDocIdFragment());
             assertEquals(providedAcl.get(), aclItem.getAcl());
+            return true;
           }
         })
         .build();
@@ -1507,8 +1667,9 @@ public class DocumentHandlerTest {
         .setAdaptor(adaptor)
         .setPusher(new DocumentHandler.AsyncPusher() {
           @Override
-          public void asyncPushItem(DocIdSender.Item item) {
+          public boolean asyncPushItem(DocIdSender.Item item) {
             fail("Should not have been called");
+            return false;
           }
         })
         .setFullAccessHosts(new String[] {remoteIp})
@@ -1548,8 +1709,9 @@ public class DocumentHandlerTest {
 
   private static class MockPusher implements DocumentHandler.AsyncPusher {
     @Override
-    public void asyncPushItem(DocIdSender.Item item) {
+    public boolean asyncPushItem(DocIdSender.Item item) {
       fail("Should not have been called");
+      return false;
     }
   }
 
