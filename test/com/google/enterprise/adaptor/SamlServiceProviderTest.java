@@ -390,7 +390,7 @@ public class SamlServiceProviderTest {
             +     "]"
             +   "},"
             +   "\"pviCredentials\": {"
-            +     "\"username\": \"CN=Polly Hedra\","
+            +     "\"username\": \"CN=Polly HedraNot\","
             +     "\"password\": \"p0ck3t\","
             +     "\"groups\": ["
             +     "]"
@@ -403,7 +403,7 @@ public class SamlServiceProviderTest {
             +   "},"
             +   "\"verifiedCredentials\": ["
             +     "{"
-            +       "\"username\": \"CN=Polly Hedra\","
+            +       "\"username\": \"CN=Polly HedraYes\","
             +       "\"password\": \"p0ck3t\","
             +       "\"groups\": ["
             +         "{"
@@ -441,7 +441,7 @@ public class SamlServiceProviderTest {
     assertEquals(303, exArtifact.getResponseCode());
     assertTrue(isAuthned(exArtifact));
     AuthnIdentity identity = serviceProvider.getUserIdentity(exArtifact);
-    assertEquals("CN=Polly Hedra", identity.getUser().getName());
+    assertEquals("CN=Polly HedraYes", identity.getUser().getName());
     // Make sure that the information from the extensions was parsed out and
     // made available for later use.
     Set<String> groups = new HashSet<String>();
@@ -755,6 +755,177 @@ public class SamlServiceProviderTest {
     serviceProvider.getAssertionConsumer().handle(ex);
     assertEquals(405, ex.getResponseCode());
     assertTrue(!isAuthned(ex));
+  }
+
+  @Test
+  public void testVerifiedUserOverridesSubject() throws Exception {
+    SamlHttpClient httpClient = new SamlHttpClient() {
+      @Override
+      protected void handleExchange(ClientExchange ex) {
+        String body = new String(ex.getRequestBody(), charset);
+        body = massageMessage(body);
+        assertEquals(GOLDEN_ARTIFACT_RESOLVE_REQUEST, body);
+
+        // Generate valid response.
+        String issuer = metadata.getPeerEntity().getEntityID();
+        String recipient = metadata.getLocalEntity()
+            .getSPSSODescriptor(SAMLConstants.SAML20P_NS)
+            .getAssertionConsumerServices().get(0).getLocation();
+        String audience = metadata.getLocalEntity().getEntityID();
+        String response
+            = "<SOAP-ENV:Envelope "
+            +   "xmlns:SOAP-ENV=\"http://schemas.xmlsoap.org/soap/envelope/\">"
+            +   "<SOAP-ENV:Body>"
+            +     "<samlp:ArtifactResponse "
+            +       "xmlns:samlp=\"urn:oasis:names:tc:SAML:2.0:protocol\" "
+            +       "xmlns=\"urn:oasis:names:tc:SAML:2.0:assertion\" "
+            +       "ID=\"someid1\" Version=\"2.0\" "
+            +       "InResponseTo=\"" + samlClient.getRequestId() + "\" "
+            +       "IssueInstant=\"2010-01-01T01:01:01Z\">"
+            +       "<Issuer>" + issuer + "</Issuer>"
+            +       "<samlp:Status>"
+            +         "<samlp:StatusCode "
+            +           "Value=\"urn:oasis:names:tc:SAML:2.0:status:Success\"/>"
+            +       "</samlp:Status>"
+            +       "<samlp:Response "
+            +         "ID=\"someid2\" "
+            +         "Version=\"2.0\" "
+            +         "IssueInstant=\"2010-01-01T01:01:01Z\">"
+            +         "<samlp:Status>"
+            +           "<samlp:StatusCode "
+            +             "Value=\"urn:oasis:names:tc:SAML:2.0:status:Success\"/>"
+            +         "</samlp:Status>"
+            +         "<Assertion "
+            +           "Version=\"2.0\" "
+            +           "ID=\"someid3\" "
+            +           "IssueInstant=\"2010-01-01T01:01:01Z\">"
+            +           "<Issuer>" + issuer + "</Issuer>"
+            +           "<Subject>"
+            +             "<NameID>CN=Polly Hedra</NameID>"
+            +             "<SubjectConfirmation "
+            +               "Method=\"urn:oasis:names:tc:SAML:2.0:cm:bearer\">"
+            +               "<SubjectConfirmationData "
+            +                 "InResponseTo=\"" + samlClient.getRequestId() + "\" "
+            +                 "Recipient=\"" + recipient + "\" "
+            +                 "NotOnOrAfter=\"2030-01-01T01:01:01Z\"/>"
+            +             "</SubjectConfirmation>"
+            +           "</Subject>"
+            +           "<Conditions "
+            +             "NotBefore=\"2010-01-01T01:01:01Z\">"
+            +             "<AudienceRestriction>"
+            +               "<Audience>" + audience + "</Audience>"
+            +             "</AudienceRestriction>"
+            +           "</Conditions>"
+            +           "<AuthnStatement "
+            +             "AuthnInstant=\"2010-01-01T01:01:01Z\">"
+            +             "<AuthnContext>"
+            +               "<AuthnContextClassRef>"
+            +                 "urn:oasis:names:tc:SAML:2.0:ac:classes:InternetProtocolPassword"
+            +               "</AuthnContextClassRef>"
+            +             "</AuthnContext>"
+            +           "</AuthnStatement>"
+            +           "<AttributeStatement>"
+            +             "<Attribute Name=\"SecurityManagerState\">"
+            +               "<AttributeValue>"
+            + "{"
+            +   "\"version\": 1,"
+            +   "\"timeStamp\": 1330042321589,"
+            +   "\"sessionState\": {"
+            +     "\"instructions\": ["
+            +       "{"
+            +         "\"operation\": \"ADD_CREDENTIAL\","
+            +         "\"authority\": "
+            + "\"http://google.com/enterprise/gsa/security-manager/Default\","
+            +         "\"operand\": {"
+            +           "\"name\": \"CN=Polly Hedra\","
+            +           "\"typeName\": \"AuthnPrincipal\""
+            +         "}"
+            +       "},"
+            +       "{"
+            +         "\"operation\": \"ADD_CREDENTIAL\","
+            +         "\"authority\": "
+            + "\"http://google.com/enterprise/gsa/security-manager/Default\","
+            +         "\"operand\": {"
+            +           "\"password\": \"p0ck3t\","
+            +           "\"typeName\": \"CredPassword\""
+            +         "}"
+            +       "},"
+            +       "{"
+            +         "\"operation\": \"ADD_VERIFICATION\","
+            +         "\"authority\": "
+            + "\"http://google.com/enterprise/gsa/security-manager/adaptor\","
+            +         "\"operand\": {"
+            +           "\"status\": \"VERIFIED\","
+            +           "\"expirationTime\": 1330043521581,"
+            +           "\"credentials\": ["
+            +             "{"
+            +               "\"name\": \"CN=Polly Hedra\","
+            +               "\"typeName\": \"AuthnPrincipal\""
+            +             "},"
+            +             "{"
+            +               "\"password\": \"p0ck3t\","
+            +               "\"typeName\": \"CredPassword\""
+            +             "}"
+            +           "]"
+            +         "}"
+            +       "}"
+            +     "]"
+            +   "},"
+            +   "\"pviCredentials\": {"
+            +     "\"username\": \"CN=Polly Hedra\","
+            +     "\"password\": \"p0ck3t\","
+            +     "\"groups\": ["
+            +     "]"
+            +   "},"
+            +   "\"basicCredentials\": {"
+            +     "\"username\": \"not-used\","
+            +     "\"domain\": \"also-not-used\","
+            +     "\"password\": \"p0ck3t\","
+            +     "\"groups\": ["
+            +     "]"
+            +   "},"
+            +   "\"verifiedCredentials\": ["
+            +     "{"
+            +       "\"username\": \"whale\","
+            +       "\"domain\": \"ahab.net\","
+            +       "\"password\": \"p0ck3t\","
+            +       "\"groups\": ["
+            +         "{"
+            +           "\"name\": \"group1\","
+            +           "\"namespace\": \"Default\","
+            +           "\"domain\": \"test.com\""
+            +         "},"
+            +         "{"
+            +           "\"name\": \"pollysGroup\","
+            +           "\"namespace\": \"Default\","
+            +           "\"domain\": \"test.com\""
+            +         "}"
+            +       "]"
+            +     "}"
+            +   "],"
+            +   "\"cookies\": []"
+            + "}"
+            +               "</AttributeValue>"
+            +             "</Attribute>"
+            +           "</AttributeStatement>"
+            +         "</Assertion>"
+            +       "</samlp:Response>"
+            +     "</samlp:ArtifactResponse>"
+            +   "</SOAP-ENV:Body>"
+            + "</SOAP-ENV:Envelope>";
+        ex.setStatusCode(200);
+        ex.setResponseStream(response.getBytes(charset));
+      }
+    };
+    SamlClient samlClient = createSamlClient(httpClient);
+    httpClient.setSamlClient(samlClient);
+    issueRequest(exArtifact, initialEx, samlClient);
+
+    serviceProvider.getAssertionConsumer().handle(exArtifact);
+    assertEquals(303, exArtifact.getResponseCode());
+    assertTrue(isAuthned(exArtifact));
+    AuthnIdentity identity = serviceProvider.getUserIdentity(exArtifact);
+    assertEquals("whale@ahab.net", identity.getUser().getName());
   }
 
   private SamlClient createSamlClient(HttpClientInterface httpClient) {

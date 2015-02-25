@@ -249,8 +249,10 @@ class SamlServiceProvider {
         return false;
       }
       String subjectName = parser.getSubject();
-      Set<String> groups = null;
+      String username = null;
+      String domain = null;
       String password = null;
+      Set<String> groups = null;
 
       ExportedState state = parser.getExportedState();
       if (state != null) {
@@ -260,17 +262,33 @@ class SamlServiceProvider {
           if (state.getAllVerifiedCredentials().size() > 1) {
             log.info("More than one verified credential. Using the first one.");
           }
-          groups = state.getAllVerifiedCredentials().get(0).getGroupsNames();
-          password = state.getAllVerifiedCredentials().get(0).getPassword();
+          ExportedState.Credentials credentials
+              = state.getAllVerifiedCredentials().get(0);
+          username = credentials.getUsername();
+          domain = credentials.getDomain();
+          // TODO: augment exported state with namespace and get here
+          // TODO: pass domain format to getGroupNames
+          groups = credentials.getGroupsNames();
+          password = credentials.getPassword();
         }
       }
       DateTime expirationDateTime = parser.getExpirationTime();
       long expirationTime = (expirationDateTime == null)
           ? Long.MAX_VALUE : expirationDateTime.getMillis();
-      log.log(Level.INFO, "SAML subject {0}, groups={1}, verified until {2}",
-          new Object[] {subjectName, groups, new Date(expirationTime)});
+      log.log(Level.INFO, "SAML subject {0}, username={1}, domain={2}, "
+          + "groups={3}, verified until {4}", new Object[] {subjectName,
+          username, domain, groups, new Date(expirationTime)});
+      String bestUsername;
+      if (username != null && domain != null) {
+        // TODO: read domain format from adaptor-config.properties
+        bestUsername = username + "@" + domain;
+      } else if (username != null) {
+        bestUsername = username;
+      } else {
+        bestUsername = subjectName;
+      }
       AuthnIdentity identity = new AuthnIdentityImpl
-          .Builder(new UserPrincipal(subjectName))
+          .Builder(new UserPrincipal(bestUsername))
           .setGroups(GroupPrincipal.makeSet(groups))
           .setPassword(password).build();
       authnState.authenticated(identity, expirationTime);
