@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.enterprise.adaptor.secmgr.authncontroller.ExportedState;
 import com.google.enterprise.adaptor.secmgr.http.HttpClientInterface;
+import com.google.enterprise.adaptor.secmgr.identity.Group;
 import com.google.enterprise.adaptor.secmgr.modules.SamlClient;
 import com.google.enterprise.adaptor.secmgr.servlets.ResponseParser;
 import com.sun.net.httpserver.HttpExchange;
@@ -33,6 +34,7 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.security.KeyPair;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -271,8 +273,7 @@ class SamlServiceProvider {
           username = credentials.getUsername();
           domain = credentials.getDomain();
           // TODO: augment exported state with namespace and get here
-          // TODO: pass domain format to getGroupNames
-          groups = credentials.getGroupsNames();
+          groups = getGroupsNames(credentials);
           password = credentials.getPassword();
         }
       }
@@ -283,12 +284,12 @@ class SamlServiceProvider {
           + "groups={3}, verified until {4}", new Object[] {subjectName,
           username, domain, groups, new Date(expirationTime)});
       String bestUsername;
-      if (username != null && domain != null) {
-        bestUsername = domainFormat.format(username, domain);
-      } else if (username != null) {
+      if (username == null) {
+        bestUsername = subjectName;
+      } else if (domain == null || "".equals(domain.trim())) {
         bestUsername = username;
       } else {
-        bestUsername = subjectName;
+        bestUsername = domainFormat.format(username, domain);
       }
       AuthnIdentity identity = new AuthnIdentityImpl
           .Builder(new UserPrincipal(bestUsername))
@@ -297,6 +298,18 @@ class SamlServiceProvider {
       authnState.authenticated(identity, expirationTime);
       return true;
     }
+  }
+
+  private Set<String> getGroupsNames(ExportedState.Credentials creds) {
+    Set<String> groupsNames = new HashSet<String>();
+    for (Group g : creds.getGroups()) {
+      if (null == g.getDomain() || "".equals(g.getDomain().trim())) {
+        groupsNames.add(g.getName());
+      } else {
+        groupsNames.add(domainFormat.format(g.getName(), g.getDomain()));
+      }
+    }
+    return groupsNames;
   }
 
   /**

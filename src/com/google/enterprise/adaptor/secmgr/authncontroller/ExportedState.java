@@ -140,23 +140,6 @@ public final class ExportedState {
       return groups;
     }
 
-    /**
-     * Gets this instance's groups names as an immutable set.
-     */
-    @Nonnull
-    public ImmutableSet<String> getGroupsNames() {
-      Set<String> groupNames = new HashSet<String>();
-      for (Group g : groups) {
-        if (null == g.getDomain() || "".equals(g.getDomain())) {
-          groupNames.add(g.getName());
-        } else {
-          // TODO: change to domain + "\\" + name
-          groupNames.add(g.getName() + "@" + g.getDomain());
-        }
-      }
-      return ImmutableSet.copyOf(groupNames);
-    }
-
     @Override
     public boolean equals(Object object) {
       if (object == this) { return true; }
