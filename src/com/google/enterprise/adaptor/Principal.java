@@ -133,6 +133,27 @@ public abstract class Principal implements Comparable<Principal> {
      */
     NETBIOS_FORWARDSLASH,
     ;
+    
+    String format(String plainName, String domain) {
+      String name;
+      switch (this) {
+        case NONE:
+          name = plainName;
+          break;
+        case DNS:
+          name = plainName + "@" + domain;
+          break;
+        case NETBIOS:
+          name = domain + "\\" + plainName;
+          break;
+        case NETBIOS_FORWARDSLASH:
+          name = domain + "/" + plainName;
+          break;
+        default:
+          throw new AssertionError();
+      }
+      return name;
+    }
   }
 
   /**
@@ -216,23 +237,7 @@ public abstract class Principal implements Comparable<Principal> {
     }
 
     public Principal toPrincipal() {
-      String name;
-      switch (determineEffectiveFormat()) {
-        case NONE:
-          name = plainName;
-          break;
-        case DNS:
-          name = plainName + "@" + domain;
-          break;
-        case NETBIOS:
-          name = domain + "\\" + plainName;
-          break;
-        case NETBIOS_FORWARDSLASH:
-          name = domain + "/" + plainName;
-          break;
-        default:
-          throw new AssertionError();
-      }
+      String name = determineEffectiveFormat().format(plainName, domain);
       if (isGroup) {
         return new GroupPrincipal(name, namespace);
       } else {

@@ -1728,7 +1728,8 @@ public class DocumentHandlerTest {
           new SamlMetadata("localhost", 80,
             "thegsa", "http://google.com/enterprise/gsa/security-manager",
             "http://google.com/enterprise/gsa/adaptor"),
-          null);
+          /* KeyPair = */ null,
+          Principal.DomainFormat.DNS);
     }
 
     @Override

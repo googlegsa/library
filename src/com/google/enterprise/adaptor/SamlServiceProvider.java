@@ -66,6 +66,7 @@ class SamlServiceProvider {
   private final HttpClientInterface httpClient;
   private final AssertionConsumerHandler assertionConsumer
       = new AssertionConsumerHandler();
+  private final Principal.DomainFormat domainFormat;
 
   /**
    * @param sessionManager manager for storing session state, like authn
@@ -75,14 +76,16 @@ class SamlServiceProvider {
    *   messages
    */
   public SamlServiceProvider(SessionManager<HttpExchange> sessionManager,
-      SamlMetadata metadata, KeyPair key) {
-    this(sessionManager, metadata, key, new HttpClientAdapter());
+      SamlMetadata metadata, KeyPair key, Principal.DomainFormat dmfmt) {
+    this(sessionManager, metadata, key, new HttpClientAdapter(), dmfmt);
   }
 
   @VisibleForTesting
   SamlServiceProvider(SessionManager<HttpExchange> sessionManager,
-      SamlMetadata metadata, KeyPair key, HttpClientInterface httpClient) {
-    if (metadata == null || sessionManager == null || httpClient == null) {
+      SamlMetadata metadata, KeyPair key, HttpClientInterface httpClient
+      , Principal.DomainFormat dmfmt) {
+    if (metadata == null || sessionManager == null || httpClient == null
+        || dmfmt == null) {
       throw new NullPointerException();
     }
     this.sessionManager = sessionManager;
@@ -91,6 +94,7 @@ class SamlServiceProvider {
         : SecurityHelper.getSimpleCredential(key.getPublic(),
             key.getPrivate());
     this.httpClient = httpClient;
+    this.domainFormat = dmfmt;
   }
 
   /**
@@ -280,8 +284,7 @@ class SamlServiceProvider {
           username, domain, groups, new Date(expirationTime)});
       String bestUsername;
       if (username != null && domain != null) {
-        // TODO: read domain format from adaptor-config.properties
-        bestUsername = username + "@" + domain;
+        bestUsername = domainFormat.format(username, domain);
       } else if (username != null) {
         bestUsername = username;
       } else {

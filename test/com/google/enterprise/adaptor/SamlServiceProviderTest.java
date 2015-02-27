@@ -65,7 +65,8 @@ public class SamlServiceProviderTest {
       "http://google.com/enterprise/gsa/adaptor");
   private HttpClientAdapter httpClient = new HttpClientAdapter();
   private SamlServiceProvider serviceProvider = new SamlServiceProvider(
-      sessionManager, metadata, null, httpClient);
+      sessionManager, metadata, /* KeyPair = */ null, httpClient,
+      Principal.DomainFormat.DNS);
   private MockHttpExchange ex = new MockHttpExchange("GET", "/",
       new MockHttpContext("/"));
   private MockHttpExchange exArtifact
