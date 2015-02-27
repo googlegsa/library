@@ -791,6 +791,16 @@ public class Config {
   }
 
   private void validate(Properties config) {
+    String explicitGsaVersion = config.getProperty("gsa.version");
+    if (!"GENERATE".equals(explicitGsaVersion)) {
+      log.config("explicit gsa.version=" + explicitGsaVersion);
+      try {
+        new GsaVersion(explicitGsaVersion);
+      } catch (IllegalArgumentException e) {
+        throw new InvalidConfigurationException(e.getMessage());
+      }
+    }
+
     Set<String> unset = new HashSet<String>();
     for (String key : noDefaultConfig) {
       if (config.getProperty(key) == null) {

@@ -40,7 +40,8 @@ final class GsaVersion {
     ver = version;
     Matcher m = VERSION_FORMAT.matcher(ver);
     if (!m.matches()) {
-      throw new IllegalArgumentException("not to format: " + ver);
+      throw new IllegalArgumentException(
+          "GSA version is incorrectly formated : " + ver);
     }
     parts[0] = Integer.parseInt(m.group(1));
     parts[1] = Integer.parseInt(m.group(2));
