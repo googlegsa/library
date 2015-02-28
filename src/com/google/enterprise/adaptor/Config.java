@@ -71,6 +71,15 @@ import java.util.logging.Logger;
  * <tr><td> </td><td>adaptor.pushDocIdsOnStartup </td><td> whether to invoke
  *     {@link Adaptor#getDocIds Adaptor.getDocIds} on process start
  *     (in addition to adaptor.fullListingSchedule).   Defaults to true
+ * <tr><td> </td><td>adaptor.domainFormat </td><td> whether ACL names
+ *     are DNS (name@domain.com), NETBIOS (domain\name),
+ *     or NETBIOS_FORWARDSLASH (domain/name), or NONE (name).
+ *     This format is used when adaptor needs to combine name with
+ *     domain to create AuthnIdentity instances. The adaptor needs
+ *     to create AuthnIdentity instances in two circumstances: (1)
+ *     when it is using the GSA as an Idp and is parsing GSA authn
+ *     SAML messages, and (2) when it is receiving and parsing GSA
+ *     authorization requests. Defaults to DNS
  * <tr><td> </td><td>docId.isUrl </td><td> say your adaptor's document ids
  *     are already URLs and avoid them being inserted into adaptor
        generated URLs.   Defaults to false
@@ -267,6 +276,7 @@ public class Config {
     //addKey("feed.noFollowBitEnabled", "false");
     addKey("feed.maxUrls", "5000");
     addKey("adaptor.pushDocIdsOnStartup", "true");
+    addKey("adaptor.domainFormat", "DNS");
     // 3:00 AM every day.
     addKey("adaptor.fullListingSchedule", "0 3 * * *");
     // 15 minutes.
@@ -538,6 +548,16 @@ public class Config {
    */
   boolean markAllDocsAsPublic() {
     return Boolean.parseBoolean(getValue("adaptor.markAllDocsAsPublic"));
+  }
+
+  /**
+   * Format for usernames and domains inside of either GSA IdP authn messages
+   * or GSA authorization requests.
+   */
+  Principal.DomainFormat getDomainFormat() {
+    String dmfmtstr = getValue("adaptor.domainFormat");
+    Principal.DomainFormat dmfmt = Principal.DomainFormat.valueOf(dmfmtstr);
+    return dmfmt;
   }
 
   /**

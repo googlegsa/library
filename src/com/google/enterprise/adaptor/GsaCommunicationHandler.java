@@ -267,7 +267,7 @@ public final class GsaCommunicationHandler {
       } else {
         log.config("Adaptor-based authentication not supported");
       }
-      Principal.DomainFormat dmfmt = Principal.DomainFormat.DNS;
+      Principal.DomainFormat dmfmt = config.getDomainFormat();
       samlServiceProvider
           = new SamlServiceProvider(sessionManager, metadata, keyPair, dmfmt);
       addFilters(scope.createContext("/samlassertionconsumer",
