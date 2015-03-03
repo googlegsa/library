@@ -49,7 +49,7 @@ public class SamlBatchAuthzHandlerTest {
       "localhost", "http://google.com/enterprise/gsa/security-manager",
       "http://google.com/enterprise/gsa/adaptor");
   private SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-      adaptor, new MockDocIdCodec(), samlMetadata);
+      adaptor, new MockDocIdCodec(), samlMetadata, Principal.DomainFormat.DNS);
   private MockHttpExchange ex = new MockHttpExchange("POST", "/",
       new MockHttpContext(handler, "/"));
   private Charset charset = Charset.forName("UTF-8");
@@ -98,7 +98,8 @@ public class SamlBatchAuthzHandlerTest {
   @Test
   public void testDenyAuthz() throws Exception {
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        new PrivateMockAdaptor(), new MockDocIdCodec(), samlMetadata);
+        new PrivateMockAdaptor(), new MockDocIdCodec(), samlMetadata,
+        Principal.DomainFormat.DNS);
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
@@ -128,7 +129,8 @@ public class SamlBatchAuthzHandlerTest {
             .build();
     SamlBatchAuthzHandler handler =
         new SamlBatchAuthzHandler(new AuthzByPasswordMockAdaptor(
-            usernamePasswordMap), new MockDocIdCodec(), samlMetadata);
+            usernamePasswordMap), new MockDocIdCodec(), samlMetadata,
+            Principal.DomainFormat.DNS);
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
 
@@ -206,7 +208,65 @@ public class SamlBatchAuthzHandlerTest {
     
     SamlBatchAuthzHandler handler =
         new SamlBatchAuthzHandler(new AuthzByAclMockAdaptor(aclMap),
-            new MockDocIdCodec(), samlMetadata);
+            new MockDocIdCodec(), samlMetadata, Principal.DomainFormat.DNS);
+    MockHttpExchange ex = new MockHttpExchange("POST", "/",
+        new MockHttpContext(handler, "/"));
+
+    String extensionStr = ""
+        + "<saml2p:Extensions xmlns:goog=\"http://www.google.com/\" "
+        +   "xmlns:saml2p=\"urn:oasis:names:tc:SAML:2.0:protocol\">"
+        +   "<goog:SecmgrCredential "
+        +     "domain=\"test\" "
+        +     "name=\"joe\" "
+        +     "namespace=\"Default\" "
+        +     "password=\"p@ssw0rd\" "
+        +     "xmlns:goog=\"http://www.google.com/\">"
+        +       "<goog:Group "
+        +         "domain=\"test\" "
+        +         "name=\"group1\" "
+        +         "namespace=\"Default\" "
+        +         "xmlns:goog=\"http://www.google.com/\"/>"
+        +   "</goog:SecmgrCredential>"
+        + "</saml2p:Extensions>";
+    
+    String request
+        = SOAP_HEADER
+        + generateAuthzDecisionQuery("http://localhost/doc/1234",
+                                     "aoeuaoeu", "joe", extensionStr)
+        + generateAuthzDecisionQuery("http://localhost/doc/1235",
+                                     "aoeuaoeu2", "joe", null)
+        + SOAP_FOOTER;
+    String goldenResponse
+        = SOAP_HEADER
+        + generateGoldenResponse("http://localhost/doc/1234",
+                                 "aoeuaoeu", "joe", "Permit")
+        + generateGoldenResponse("http://localhost/doc/1235",
+                                 "aoeuaoeu2", "joe", "Deny")
+        + SOAP_FOOTER;
+    ex.setRequestBody(stringToStream(request));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    String response = new String(ex.getResponseBytes(), charset);
+    response = massageResponse(response);
+    assertEquals(goldenResponse, response);
+  }
+  
+  @Test
+  public void testAuthzByAclNetbiosFormat() throws Exception {
+    Map<String, Acl> aclMap = new TreeMap<String, Acl>();
+    Acl.Builder builder1 = new Acl.Builder()
+        .setPermitGroups(Arrays.asList(new GroupPrincipal("test\\group1")))
+        .setDenyGroups(Arrays.asList(new GroupPrincipal("test\\group2")));
+    aclMap.put("doc/1234", builder1.build());
+    Acl.Builder builder2 = new Acl.Builder()
+        .setPermitGroups(Arrays.asList(new GroupPrincipal("test\\group2")))
+        .setDenyGroups(Arrays.asList(new GroupPrincipal("test\\group1")));
+    aclMap.put("doc/1235", builder2.build());
+    
+    SamlBatchAuthzHandler handler =
+        new SamlBatchAuthzHandler(new AuthzByAclMockAdaptor(aclMap),
+            new MockDocIdCodec(), samlMetadata,
+            Principal.DomainFormat.NETBIOS);
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
 
@@ -259,7 +319,8 @@ public class SamlBatchAuthzHandlerTest {
       }
     };
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        adaptor, new MockDocIdCodec(), samlMetadata);
+        adaptor, new MockDocIdCodec(), samlMetadata,
+        Principal.DomainFormat.DNS);
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
@@ -292,7 +353,8 @@ public class SamlBatchAuthzHandlerTest {
       }
     };
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        adaptor, new MockDocIdCodec(), samlMetadata);
+        adaptor, new MockDocIdCodec(), samlMetadata,
+        Principal.DomainFormat.DNS);
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request
@@ -323,7 +385,8 @@ public class SamlBatchAuthzHandlerTest {
       }
     };
     SamlBatchAuthzHandler handler = new SamlBatchAuthzHandler(
-        adaptor, new MockDocIdCodec(), samlMetadata);
+        adaptor, new MockDocIdCodec(), samlMetadata,
+        Principal.DomainFormat.DNS);
     MockHttpExchange ex = new MockHttpExchange("POST", "/",
         new MockHttpContext(handler, "/"));
     String request

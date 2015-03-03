@@ -275,7 +275,7 @@ public final class GsaCommunicationHandler {
       if (adaptorContext.authzAuthority != null) {
         log.config("Adaptor-based authorization supported");
         addFilters(scope.createContext("/saml-authz", new SamlBatchAuthzHandler(
-            adaptorContext.authzAuthority, docIdCodec, metadata)));
+            adaptorContext.authzAuthority, docIdCodec, metadata, dmfmt)));
       } else {
         log.config("Adaptor-based authorization not supported");
       }

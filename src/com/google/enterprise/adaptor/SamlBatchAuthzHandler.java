@@ -64,12 +64,15 @@ class SamlBatchAuthzHandler implements HttpHandler {
   private final AuthzAuthority authzAuthority;
   private final SamlMetadata metadata;
   private DocIdDecoder docIdDecoder;
+  private final Principal.DomainFormat domainFormat;
 
   public SamlBatchAuthzHandler(AuthzAuthority authzAuthority,
-      DocIdDecoder docIdDecoder, SamlMetadata samlMetadata) {
+      DocIdDecoder docIdDecoder, SamlMetadata samlMetadata,
+      Principal.DomainFormat dmfmt) {
     this.authzAuthority = authzAuthority;
     this.docIdDecoder = docIdDecoder;
     this.metadata = samlMetadata;
+    this.domainFormat = dmfmt;
   }
 
   @Override
@@ -244,7 +247,7 @@ class SamlBatchAuthzHandler implements HttpHandler {
     return result;
   }
   
-  private static AuthnIdentity extractCredInfo(AuthzDecisionQuery query) {
+  private AuthnIdentity extractCredInfo(AuthzDecisionQuery query) {
     AuthnIdentity identity = null;
     Extensions extensions = query.getExtensions();
     if (extensions != null) {
@@ -256,15 +259,13 @@ class SamlBatchAuthzHandler implements HttpHandler {
           String domain = cred.getDomain();
           String userIdentity = name;
           if (domain != null && !"".equals(domain.trim())) {
-            // TODO: change to use domain + "\\" + name
-            userIdentity = name + "@" + domain;
+            userIdentity = domainFormat.format(name, domain);
           }
           Set<GroupPrincipal> groups = new TreeSet<GroupPrincipal>();
           for (Group g : cred.getGroups()) {
             String groupIdentity = g.getName();
             if (g.getDomain() != null && !"".equals(g.getDomain().trim())) {
-              // TODO: change to use domain + "\\" + name
-              groupIdentity = g.getName() + "@" + g.getDomain();
+              groupIdentity = domainFormat.format(g.getName(), g.getDomain());
             }
             groups.add(new GroupPrincipal(groupIdentity, g.getNamespace()));
           }
