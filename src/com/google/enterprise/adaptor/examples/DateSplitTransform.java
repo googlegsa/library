@@ -1,6 +1,5 @@
 package com.google.enterprise.adaptor.examples;
 
-import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.DocumentTransform;
 import com.google.enterprise.adaptor.Metadata;
 
@@ -33,6 +32,10 @@ public class DateSplitTransform implements DocumentTransform {
   private static final String META_DATEFORMAT = "dateFormat";
   private String dateField;
   private String dateFormat = "yyyy-MM-dd";
+  
+  private static boolean isNullOrEmptyString(String str) {
+    return null == str || "".equals(str.trim());
+  }
 
   private DateSplitTransform(String fieldname, String format) {
     if (null == fieldname) {
@@ -72,7 +75,7 @@ public class DateSplitTransform implements DocumentTransform {
     // If there are multiple values and the first one is invalid, the
     // additional values will not get processed
     String dateValue = metadata.getOneValue(dateField);
-    if (Strings.isNullOrEmpty(dateValue)) {
+    if (isNullOrEmptyString(dateValue)) {
       log.log(Level.FINE, "no metadata {0}. Skipping", dateField);
     } else {
       try {
