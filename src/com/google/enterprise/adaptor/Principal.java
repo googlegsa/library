@@ -25,16 +25,15 @@ public abstract class Principal implements Comparable<Principal> {
   private final String name;
   private final String namespace;
 
+  /** The name is trimmed because GSA trims principal names.
+   *  An empty name results in IllegalArgumentException.  */
   Principal(String n, String ns) {
     if (null == n || null == ns) {
       throw new NullPointerException();
     }
+    n = n.trim();
     if (n.isEmpty()) {
       throw new IllegalArgumentException("name cannot be empty");
-    }
-    if (!n.trim().equals(n)) {
-      throw new IllegalArgumentException("name \"" + n
-          + "\" should not start or end with space");
     }
     name = n;
     namespace = ns;

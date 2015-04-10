@@ -108,46 +108,22 @@ public class PrincipalTest {
 
   @Test
   public void testLeadingSpaceOfUser() {
-    thrown.expect(IllegalArgumentException.class);
-    new UserPrincipal(" yowser");
+    assertEquals("yowser", new UserPrincipal("\n yowser").getName());
   }
 
   @Test
   public void testLeadingSpaceOfGroup() {
-    thrown.expect(IllegalArgumentException.class);
-    new GroupPrincipal(" gooop");
+    assertEquals("gooop", new GroupPrincipal("\n gooop").getName());
   }
 
   @Test
   public void testTrailingSpaceOfUser() {
-    thrown.expect(IllegalArgumentException.class);
-    new UserPrincipal("yowser ");
+    assertEquals("yowser", new UserPrincipal("yowser \t").getName());
   }
 
   @Test
   public void testTrailingSpaceOfGroup() {
-    thrown.expect(IllegalArgumentException.class);
-    new GroupPrincipal("gooop ");
-  }
-
-  @Test
-  public void testLeadingSpaceOfUserNameExceptionContainsName() {
-    try {
-      new UserPrincipal(" yowser");
-      fail("Expected IllegalArgumentException not thrown.");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.toString().contains("\" yowser\""));
-    }
-  }
-
-  @Test
-  public void testTrailingSpaceOfGroupNameExceptionContainsName() {
-    try {
-      new GroupPrincipal("gooop ");
-      fail("Expected IllegalArgumentException not thrown.");
-    } catch (IllegalArgumentException e) {
-      assertTrue(e.toString().contains("\"gooop \""));
-    }
+    assertEquals("gooop", new GroupPrincipal("gooop \t").getName());
   }
 
   @Test

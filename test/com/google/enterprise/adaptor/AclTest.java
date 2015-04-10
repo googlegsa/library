@@ -243,15 +243,15 @@ public class AclTest {
   @Test
   public void testWhitespaceSurroundingUserBefore() {
     Acl.Builder builder = new Acl.Builder();
-    thrown.expect(IllegalArgumentException.class);
-    builder.setDenyUsers(U(" test"));
+    Acl a = builder.setDenyUsers(U(" test")).build();
+    assertEquals(U("test"), a.getDenyUsers());
   }
 
   @Test
   public void testWhitespaceSurroundingUserAfter() {
     Acl.Builder builder = new Acl.Builder();
-    thrown.expect(IllegalArgumentException.class);
-    builder.setDenyUsers(U("test\t"));
+    Acl a = builder.setDenyUsers(U("test\t")).build();
+    assertEquals(U("test"), a.getDenyUsers());
   }
 
   @Test
