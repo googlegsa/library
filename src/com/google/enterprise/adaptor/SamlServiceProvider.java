@@ -275,11 +275,13 @@ class SamlServiceProvider {
           username = credentials.getUsername();
           domain = credentials.getDomain();
           String ns = credentials.getNamespace();
-          if (ns != null && !"".equals(ns.trim())) {
-            log.fine("namespace from exported state: " + ns);
-            namespace = ns;
-          } else if ("".equals(ns.trim())) {
-            log.fine("use default namespace because empty");
+          if (ns != null) {
+            if ("".equals(ns.trim())) {
+              log.fine("using Default namespace; exported state has empty one");
+            } else {
+              log.fine("namespace from exported state: " + ns);
+              namespace = ns;
+            }
           }
           groups = getGroupsNames(credentials);
           password = credentials.getPassword();
