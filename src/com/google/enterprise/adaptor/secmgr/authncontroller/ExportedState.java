@@ -26,9 +26,6 @@ import com.google.enterprise.adaptor.secmgr.json.TypeProxy;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import javax.annotation.CheckReturnValue;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -58,18 +55,20 @@ public final class ExportedState {
   @ParametersAreNonnullByDefault
   public static final class Credentials {
     @Nonnull public static final Credentials EMPTY
-        = new Credentials(null, null, null, ImmutableSet.<Group>of());
+        = new Credentials(null, null, null, null, ImmutableSet.<Group>of());
 
     @Nullable private final String username;
     @Nullable private final String domain;
     @Nullable private final String password;
+    @Nullable private final String namespace;
     @Nonnull private final ImmutableSet<Group> groups;
 
     private Credentials(@Nullable String username, @Nullable String domain,
-        @Nullable String password, ImmutableSet<Group> groups) {
+        @Nullable String password, @Nullable String namespace, ImmutableSet<Group> groups) {
       this.username = username;
       this.domain = domain;
       this.password = password;
+      this.namespace = namespace;
       this.groups = groups;
     }
 
@@ -79,14 +78,15 @@ public final class ExportedState {
      * @param username The username credential or {@code null}.
      * @param domain The domain credential or {@code null}.
      * @param password The password credential or {@code null}.
+     * @param namespace The namespace credential or {@code null}.
      * @param groups The group credentials.
      * @return An immutable structure of the given credentials.
      */
     @CheckReturnValue
     @Nonnull
     public static Credentials make(@Nullable String username, @Nullable String domain,
-        @Nullable String password, Iterable<Group> groups) {
-      return new Credentials(username, domain, password, ImmutableSet.copyOf(groups));
+        @Nullable String password, @Nullable String namespace, Iterable<Group> groups) {
+      return new Credentials(username, domain, password, namespace, ImmutableSet.copyOf(groups));
     }
 
     /**
@@ -95,13 +95,14 @@ public final class ExportedState {
      * @param username The username credential or {@code null}.
      * @param domain The domain credential or {@code null}.
      * @param password The password credential or {@code null}.
+     * @param namespace The namespace credential or {@code null}.
      * @return An immutable structure of the given credentials.
      */
     @CheckReturnValue
     @Nonnull
     public static Credentials make(@Nullable String username, @Nullable String domain,
-        @Nullable String password) {
-      return make(username, domain, password, ImmutableSet.<Group>of());
+        @Nullable String password, @Nullable String namespace) {
+      return make(username, domain, password, namespace, ImmutableSet.<Group>of());
     }
 
     /**
@@ -120,6 +121,14 @@ public final class ExportedState {
     @Nullable
     public String getDomain() {
       return domain;
+    }
+
+    /**
+     * Gets this instance's namespace.
+     */
+    @Nullable
+    public String getNamespace() {
+      return namespace;
     }
 
     /**
@@ -147,13 +156,15 @@ public final class ExportedState {
       Credentials other = (Credentials) object;
       return Objects.equal(getUsername(), other.getUsername())
           && Objects.equal(getDomain(), other.getDomain())
+          && Objects.equal(getNamespace(), other.getNamespace())
           && Objects.equal(getPassword(), other.getPassword())
           && Objects.equal(getGroups(), other.getGroups());
     }
 
     @Override
     public int hashCode() {
-      return Objects.hashCode(getUsername(), getDomain(), getPassword(), getGroups());
+      return Objects.hashCode(getUsername(), getDomain(), getNamespace(),
+          getPassword(), getGroups());
     }
 
     @Override
@@ -165,6 +176,7 @@ public final class ExportedState {
       String username;
       String domain;
       String password;
+      String name_space;
       ImmutableSet<Group> groups;
 
       @SuppressWarnings("unused")
@@ -175,13 +187,14 @@ public final class ExportedState {
       LocalProxy(Credentials credentials) {
         username = credentials.getUsername();
         domain = credentials.getDomain();
+        name_space = credentials.getNamespace();
         password = credentials.getPassword();
         groups = credentials.getGroups();
       }
 
       @Override
       public Credentials build() {
-        return Credentials.make(username, domain, password, groups);
+        return Credentials.make(username, domain, password, name_space, groups);
       }
     }
   }

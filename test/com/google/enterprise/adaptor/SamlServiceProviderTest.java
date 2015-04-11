@@ -406,15 +406,16 @@ public class SamlServiceProviderTest {
             +     "{"
             +       "\"username\": \"CN=Polly HedraYes\","
             +       "\"password\": \"p0ck3t\","
+            +       "\"name_space\": \"testCG1\","
             +       "\"groups\": ["
             +         "{"
             +           "\"name\": \"group1\","
-            +           "\"namespace\": \"Default\","
+            +           "\"namespace\": \"testCG1\","
             +           "\"domain\": \"test.com\""
             +         "},"
             +         "{"
             +           "\"name\": \"pollysGroup\","
-            +           "\"namespace\": \"Default\","
+            +           "\"namespace\": \"testCG1\","
             +           "\"domain\": \"test.com\""
             +         "}"
             +       "]"
@@ -443,12 +444,14 @@ public class SamlServiceProviderTest {
     assertTrue(isAuthned(exArtifact));
     AuthnIdentity identity = serviceProvider.getUserIdentity(exArtifact);
     assertEquals("CN=Polly HedraYes", identity.getUser().getName());
+    assertEquals("testCG1", identity.getUser().getNamespace());
     // Make sure that the information from the extensions was parsed out and
     // made available for later use.
     Set<String> groups = new HashSet<String>();
     groups.add("group1@test.com");
     groups.add("pollysGroup@test.com");
-    assertEquals(GroupPrincipal.makeSet(groups), identity.getGroups());
+    assertEquals(GroupPrincipal.makeSet(groups, "testCG1"),
+        identity.getGroups());
     assertEquals("p0ck3t", identity.getPassword());
   }
 

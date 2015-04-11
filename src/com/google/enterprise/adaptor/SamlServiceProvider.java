@@ -257,6 +257,8 @@ class SamlServiceProvider {
       String subjectName = parser.getSubject();
       String username = null;
       String domain = null;
+      // assume user and his/her groups are in one namespace
+      String namespace = Principal.DEFAULT_NAMESPACE;
       String password = null;
       Set<String> groups = null;
 
@@ -272,7 +274,13 @@ class SamlServiceProvider {
               = state.getAllVerifiedCredentials().get(0);
           username = credentials.getUsername();
           domain = credentials.getDomain();
-          // TODO: augment exported state with namespace and get here
+          String ns = credentials.getNamespace();
+          if (ns != null && !"".equals(ns.trim())) {
+            log.fine("namespace from exported state: " + ns);
+            namespace = ns;
+          } else if ("".equals(ns.trim())) {
+            log.fine("use default namespace because empty");
+          }
           groups = getGroupsNames(credentials);
           password = credentials.getPassword();
         }
@@ -281,8 +289,9 @@ class SamlServiceProvider {
       long expirationTime = (expirationDateTime == null)
           ? Long.MAX_VALUE : expirationDateTime.getMillis();
       log.log(Level.INFO, "SAML subject {0}, username={1}, domain={2}, "
-          + "groups={3}, verified until {4}", new Object[] {subjectName,
-          username, domain, groups, new Date(expirationTime)});
+          + "groups={3}, namespace={4}, verified until {5}", new Object[] {
+          subjectName, username, domain, groups, namespace,
+          new Date(expirationTime)});
       String bestUsername;
       if (username == null) {
         bestUsername = subjectName;
@@ -292,8 +301,8 @@ class SamlServiceProvider {
         bestUsername = domainFormat.format(username, domain);
       }
       AuthnIdentity identity = new AuthnIdentityImpl
-          .Builder(new UserPrincipal(bestUsername))
-          .setGroups(GroupPrincipal.makeSet(groups))
+          .Builder(new UserPrincipal(bestUsername, namespace))
+          .setGroups(GroupPrincipal.makeSet(groups, namespace))
           .setPassword(password).build();
       authnState.authenticated(identity, expirationTime);
       return true;

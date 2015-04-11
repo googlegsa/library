@@ -205,6 +205,10 @@ public class SamlBatchAuthzHandlerTest {
         .setPermitGroups(Arrays.asList(new GroupPrincipal("group2@test")))
         .setDenyGroups(Arrays.asList(new GroupPrincipal("group1@test")));
     aclMap.put("doc/1235", builder2.build());
+    // permit group1@test if in namespace CG1
+    Acl.Builder builder3 = new Acl.Builder().setPermitGroups(
+        Arrays.asList(new GroupPrincipal("group1@test", "CG1")));
+    aclMap.put("doc/1236", builder3.build());
     
     SamlBatchAuthzHandler handler =
         new SamlBatchAuthzHandler(new AuthzByAclMockAdaptor(aclMap),
@@ -235,12 +239,16 @@ public class SamlBatchAuthzHandlerTest {
                                      "aoeuaoeu", "joe", extensionStr)
         + generateAuthzDecisionQuery("http://localhost/doc/1235",
                                      "aoeuaoeu2", "joe", null)
+        + generateAuthzDecisionQuery("http://localhost/doc/1236",
+                                     "aoeuaoeu2", "joe", null)
         + SOAP_FOOTER;
     String goldenResponse
         = SOAP_HEADER
         + generateGoldenResponse("http://localhost/doc/1234",
                                  "aoeuaoeu", "joe", "Permit")
         + generateGoldenResponse("http://localhost/doc/1235",
+                                 "aoeuaoeu2", "joe", "Deny")
+        + generateGoldenResponse("http://localhost/doc/1236",
                                  "aoeuaoeu2", "joe", "Deny")
         + SOAP_FOOTER;
     ex.setRequestBody(stringToStream(request));
