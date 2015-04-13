@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.security.KeyPair;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Set;
@@ -257,10 +258,9 @@ class SamlServiceProvider {
       String subjectName = parser.getSubject();
       String username = null;
       String domain = null;
-      // assume user and his/her groups are in one namespace
-      String namespace = Principal.DEFAULT_NAMESPACE;
+      String userNamespace = Principal.DEFAULT_NAMESPACE;
       String password = null;
-      Set<String> groups = null;
+      Set<GroupPrincipal> groups = null;
 
       ExportedState state = parser.getExportedState();
       if (state != null) {
@@ -274,16 +274,13 @@ class SamlServiceProvider {
               = state.getAllVerifiedCredentials().get(0);
           username = credentials.getUsername();
           domain = credentials.getDomain();
-          String ns = credentials.getNamespace();
-          if (ns != null) {
-            if ("".equals(ns.trim())) {
-              log.fine("using Default namespace; exported state has empty one");
-            } else {
-              log.fine("namespace from exported state: " + ns);
-              namespace = ns;
-            }
+          userNamespace = credentials.getNamespace();
+          if (userNamespace == null || "".equals(userNamespace.trim())) {
+            log.log(Level.FINE, "Using default namespace; export state has {0}",
+                new Object[] { userNamespace });
+            userNamespace = Principal.DEFAULT_NAMESPACE;
           }
-          groups = getGroupsNames(credentials);
+          groups = getGroups(credentials);
           password = credentials.getPassword();
         }
       }
@@ -291,8 +288,8 @@ class SamlServiceProvider {
       long expirationTime = (expirationDateTime == null)
           ? Long.MAX_VALUE : expirationDateTime.getMillis();
       log.log(Level.INFO, "SAML subject {0}, username={1}, domain={2}, "
-          + "groups={3}, namespace={4}, verified until {5}", new Object[] {
-          subjectName, username, domain, groups, namespace,
+          + "namespace={3}, groups={4}, verified until {5}", new Object[] {
+          subjectName, username, domain, userNamespace, groups, 
           new Date(expirationTime)});
       String bestUsername;
       if (username == null) {
@@ -303,24 +300,32 @@ class SamlServiceProvider {
         bestUsername = domainFormat.format(username, domain);
       }
       AuthnIdentity identity = new AuthnIdentityImpl
-          .Builder(new UserPrincipal(bestUsername, namespace))
-          .setGroups(GroupPrincipal.makeSet(groups, namespace))
+          .Builder(new UserPrincipal(bestUsername, userNamespace))
+          .setGroups(groups)
           .setPassword(password).build();
       authnState.authenticated(identity, expirationTime);
       return true;
     }
   }
 
-  private Set<String> getGroupsNames(ExportedState.Credentials creds) {
-    Set<String> groupsNames = new HashSet<String>();
+  private Set<GroupPrincipal> getGroups(ExportedState.Credentials creds) {
+    Set<GroupPrincipal> groups = new HashSet<GroupPrincipal>();
     for (Group g : creds.getGroups()) {
+      String name;
       if (null == g.getDomain() || "".equals(g.getDomain().trim())) {
-        groupsNames.add(g.getName());
+        name = g.getName();
       } else {
-        groupsNames.add(domainFormat.format(g.getName(), g.getDomain()));
+        name = domainFormat.format(g.getName(), g.getDomain());
       }
+      String namespace = g.getNamespace();
+      if (namespace == null || "".equals(namespace.trim())) {
+       log.log(Level.FINE, "Using default namespace; export state has {0}",
+           new Object[] { namespace });
+        namespace = Principal.DEFAULT_NAMESPACE;
+      }
+      groups.add(new GroupPrincipal(name, namespace));
     }
-    return groupsNames;
+    return Collections.unmodifiableSet(groups);
   }
 
   /**
