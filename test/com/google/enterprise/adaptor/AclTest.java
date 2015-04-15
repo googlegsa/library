@@ -588,6 +588,30 @@ public class AclTest {
         .build();
   }
 
+  private Acl buildAcl(Acl.InheritanceType type,
+      AuthzStatus decision, String user, String parent) {
+    String permittedUsers = "";
+    String deniedUsers = "";
+
+    switch (decision) {
+      case PERMIT:
+        permittedUsers = user;
+        break;
+      case DENY:
+        deniedUsers = user;
+        break;
+      default:
+        if (AuthzStatus.INDETERMINATE != decision) {
+          throw new AssertionError("unexpected AuthzStatus: " + decision);
+        }
+    }
+    if (null == parent || "".equals(parent.trim())) {
+      return buildAcl(permittedUsers, "", deniedUsers, "", type);
+    } else {
+      return buildAcl(permittedUsers, "", deniedUsers, "", type, parent);
+    }
+  }
+
   private AuthzStatus callIsAuthorized(AuthnIdentity identity, DocId id,
       Acl.BatchRetriever retriever) throws IOException {
     return Acl.isAuthorizedBatch(identity, Arrays.asList(id), retriever)
@@ -1138,5 +1162,4622 @@ public class AclTest {
     protected AuthzStatus computeDecision() {
       return status;
     }
+  }
+
+  @Test
+  public void aclChainTest1() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest2() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest3() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest4() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest5() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest6() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest7() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest8() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest9() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest10() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest11() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest12() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest13() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest14() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest15() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest16() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest17() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest18() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest19() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest20() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest21() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest22() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest23() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest24() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest25() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest26() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest27() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest28() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest29() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest30() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest31() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest32() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest33() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest34() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest35() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest36() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest37() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest38() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest39() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest40() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest41() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest42() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest43() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest44() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest45() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest46() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest47() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest48() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest49() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest50() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest51() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest52() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest53() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest54() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest55() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest56() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest57() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest58() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest59() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest60() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest61() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest62() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest63() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest64() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest65() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest66() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest67() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest68() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest69() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest70() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest71() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest72() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest73() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest74() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest75() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest76() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest77() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest78() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest79() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest80() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest81() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest82() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest83() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest84() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest85() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest86() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest87() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest88() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest89() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest90() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest91() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest92() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest93() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest94() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest95() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest96() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest97() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest98() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest99() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest100() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest101() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest102() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest103() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest104() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest105() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest106() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest107() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest108() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest109() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest110() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest111() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest112() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest113() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest114() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest115() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest116() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest117() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest118() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest119() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest120() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest121() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest122() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest123() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest124() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest125() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest126() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest127() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest128() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest129() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest130() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest131() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest132() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest133() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest134() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest135() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest136() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest137() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest138() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest139() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest140() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest141() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest142() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest143() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest144() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest145() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest146() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest147() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest148() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest149() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest150() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest151() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest152() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest153() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest154() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest155() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest156() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest157() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest158() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest159() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest160() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest161() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest162() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest163() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest164() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest165() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest166() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest167() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest168() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest169() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest170() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest171() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest172() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest173() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest174() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest175() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest176() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest177() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest178() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest179() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest180() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest181() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.PERMIT, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest182() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest183() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest184() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest185() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest186() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest187() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest188() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest189() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest190() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest191() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest192() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest193() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest194() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest195() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest196() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest197() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest198() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest199() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest200() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest201() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest202() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest203() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest204() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest205() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest206() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest207() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest208() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest209() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest210() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest211() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest212() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest213() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest214() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest215() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest216() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest217() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest218() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest219() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest220() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest221() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest222() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest223() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest224() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest225() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.CHILD_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest226() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest227() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest228() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest229() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest230() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest231() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest232() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest233() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest234() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.PARENT_OVERRIDES,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest235() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest236() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest237() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.PERMIT,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest238() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest239() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest240() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.DENY,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest241() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.PERMIT,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest242() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.DENY,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
+  }
+
+  @Test
+  public void aclChainTest243() throws IOException {
+    String user = "admin";
+    Acl file = buildAcl(
+        Acl.InheritanceType.LEAF_NODE,
+        AuthzStatus.INDETERMINATE,
+        user, "subsite");
+    Acl subsite = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, "website");
+    Acl website = buildAcl(
+        Acl.InheritanceType.AND_BOTH_PERMIT,
+        AuthzStatus.INDETERMINATE,
+        user, null);
+    assertEquals(AuthzStatus.DENY, Acl.isAuthorized(createIdentity(user),
+        Arrays.asList(website, subsite, file)));
   }
 }
