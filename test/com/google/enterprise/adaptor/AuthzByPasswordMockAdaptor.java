@@ -18,7 +18,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 /**
  * Mock of {@link Adaptor} that does authz by checking whether the subject has
@@ -29,6 +28,10 @@ class AuthzByPasswordMockAdaptor extends MockAdaptor {
 
   public AuthzByPasswordMockAdaptor(Map<String, String> usernamePasswordMap) {
     this.usernamePasswordMap = usernamePasswordMap;
+  }
+
+  private static boolean oequals(Object a, Object b) {
+    return (a == b) || (a != null && a.equals(b));
   }
 
   @Override
@@ -42,8 +45,7 @@ class AuthzByPasswordMockAdaptor extends MockAdaptor {
 
     boolean authenticated = false;
     if (usernamePasswordMap.containsKey(fullUsername)) {
-      authenticated =
-          Objects.equals(password, usernamePasswordMap.get(fullUsername));
+      authenticated = oequals(password, usernamePasswordMap.get(fullUsername));
     }
 
     AuthzStatus decision =

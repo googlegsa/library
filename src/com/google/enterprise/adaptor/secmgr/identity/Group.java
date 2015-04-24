@@ -17,7 +17,7 @@ package com.google.enterprise.adaptor.secmgr.identity;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 
-import java.util.Objects;
+import java.util.Arrays;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -64,7 +64,11 @@ public class Group {
 
   @Override
   public int hashCode() {
-    return Objects.hash(namespace, name, domain);
+    return Arrays.hashCode(new Object[] { namespace, name, domain });
+  }
+
+  private static boolean oequals(Object a, Object b) {
+    return (a == b) || (a != null && a.equals(b));
   }
 
   @Override
@@ -72,9 +76,9 @@ public class Group {
     if (object == this) { return true; }
     if (!(object instanceof Group)) { return false; }
     Group group = (Group) object;
-    return Objects.equals(name, group.getName())
-        && Objects.equals(namespace, group.getNamespace())
-        && Objects.equals(domain, group.getDomain());
+    return oequals(name, group.getName())
+        && oequals(namespace, group.getNamespace())
+        && oequals(domain, group.getDomain());
   }
 
   @Override

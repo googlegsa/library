@@ -849,8 +849,8 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
 
     @Override
     public int compare(SharePointUrl url1, SharePointUrl url2) {
-      return Integer.compare(url1.aclInheritanceChildCount,
-          url2.aclInheritanceChildCount);
+      return Integer.valueOf(url1.aclInheritanceChildCount)
+          .compareTo(Integer.valueOf(url2.aclInheritanceChildCount));
     }
   }
 
