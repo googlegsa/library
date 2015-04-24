@@ -183,8 +183,8 @@ public final class Application {
         break;
       } catch (InterruptedException ex) {
         throw ex;
-      } catch (StartupException ex) {        
-        throw new RuntimeException("Failed to initialize adaptor", ex);
+      } catch (StartupException ex) {
+        throw ex;
       } catch (Exception ex) {
         log.log(Level.WARNING, "Failed to initialize adaptor", ex);
         if (shutdownSemaphore.tryAcquire(sleepDurationMillis,
@@ -492,8 +492,8 @@ public final class Application {
       processSystemProperties(extras);
       extras.close();
     } catch (IOException e) {
-      log.log(Level.CONFIG, "could not read system properties file {0}",
-          extraProps.getAbsolutePath());
+      log.log(Level.WARNING, "could not read system properties file "
+          + extraProps.getAbsolutePath(), e);
     }
   }
 
@@ -518,8 +518,8 @@ public final class Application {
       try {
         config.load(configFile);
       } catch (IOException ex) {
-        System.err.println("Exception when reading " + configFile);
-        ex.printStackTrace(System.err);
+        log.log(Level.WARNING, "could not read configuration properties file "
+            + configFile, ex);
       }
     }
   }
@@ -536,19 +536,24 @@ public final class Application {
     logProductVersion(Application.class);
     log.info(new Dashboard.JavaVersionStatusSource().retrieveStatus()
         .getMessage(Locale.ENGLISH));
-    Application app = daemonMain(adaptor, args);
 
     // Setup providing content.
     try {
+      Application app = daemonMain(adaptor, args);
       app.start();
       log.info("doc content serving started");
+      return app;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
-      throw new RuntimeException("could not start serving", e);
+      log.log(Level.INFO, "Application startup interrupted.", e);
+      throw new StartupException("Application startup interrupted.");
     } catch (IOException e) {
-      throw new RuntimeException("could not start serving", e);
+      log.log(Level.SEVERE, "Failed to start application.", e);
+      throw new StartupException("Failed to start application.");
+    } catch (RuntimeException e) {
+      log.log(Level.SEVERE, "Failed to start application.", e);
+      throw new StartupException("Failed to start application.");
     }
-    return app;
   }
 
   /**

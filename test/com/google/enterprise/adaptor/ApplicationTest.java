@@ -291,13 +291,13 @@ public class ApplicationTest {
     long startTime = System.nanoTime();
     try {
       app.start();
-      fail("Expected a RuntimeException, but got none.");
-    } catch (RuntimeException expected) {
-      assertEquals(startupException, expected.getCause());
+      fail("Expected a StartupException, but got none.");
+    } catch (StartupException expected) {
+      assertEquals(expected, startupException);
       long duration = System.nanoTime() - startTime;
       final long nanosInAMilli = 1000 * 1000;
       if (duration > 1000 * nanosInAMilli) {
-        fail("RuntimeException took a long time: " + duration);
+        fail("StartupException took a long time: " + duration);
       }
     }
   }
