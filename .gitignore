@@ -1,6 +1,7 @@
 # Normal private files
 build/
 dist/
+build.properties
 adaptor-config.properties
 cacerts.jks
 keys.jks

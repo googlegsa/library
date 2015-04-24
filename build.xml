@@ -1,6 +1,12 @@
 <project name="plexi" default="build" basedir=".">
   <description>GSA Adaptor library</description>
   <tstamp/>
+  
+  <!-- Load build environment specific properties. -->
+  <property file="build.properties"/>
+  <property name="compile.java.version" value="1.6"/>
+  <property name="compile.java.bootclasspath" value="${build.bootclasspath}"/>
+
   <property name="src.dir" location="src"/>
   <property name="test.dir" location="test"/>
   <property name="test.class" value="*Test"/>
@@ -125,9 +131,11 @@
 
     <!-- Compile adaptorlib. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
+      includeantruntime="false" encoding="utf-8"
+      target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
       <compilerarg value="-Xlint:deprecation"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
       <exclude name="${adaptor.pkg.dir}/experimental/**"/>
@@ -136,8 +144,10 @@
 
     <!-- Compile examples. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
+           includeantruntime="false" encoding="utf-8"
+           target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="examples.build.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
@@ -145,16 +155,20 @@
     <mkdir dir="${build-test.dir}"/>
     <!-- Compile JUnit helper -->
     <javac srcdir="${lib.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="true" encoding="utf-8" target="1.6" source="1.6">
+           includeantruntime="true" encoding="utf-8"
+           target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath location="${junit.jar}"/>
       <include name="JUnitLogFixFormatter.java"/>
     </javac>
 
     <!-- Compile tests, excluding example and experimental tests. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
+           includeantruntime="false" encoding="utf-8"
+           target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
@@ -164,8 +178,10 @@
 
     <!-- Compile tests for examples. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
+           includeantruntime="false" encoding="utf-8"
+           target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="examples.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>
@@ -174,8 +190,11 @@
 
     <!-- Compile experimental code. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
+           includeantruntime="false" encoding="utf-8"
+           target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg value="-Xlint:deprecation"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
       <include name="${adaptor.pkg.dir}/experimental/**"/>
@@ -183,8 +202,10 @@
 
     <!-- Compile tests for experimental. -->
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
-      includeantruntime="false" encoding="utf-8" target="1.6" source="1.6">
+           includeantruntime="false" encoding="utf-8"
+           target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
+      <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${junit.jar}"/>

@@ -24,6 +24,7 @@ import org.apache.commons.fileupload.FileItemStream;
 import org.apache.commons.fileupload.FileUpload;
 import org.apache.commons.fileupload.FileUploadException;
 import org.apache.commons.fileupload.RequestContext;
+import org.apache.commons.fileupload.UploadContext;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -218,7 +219,7 @@ public class Sim implements Runnable {
       inStream = new GZIPInputStream(inStream);
     }
     String lens = ex.getRequestHeaders().getFirst("Content-Length");
-    int len = (null != lens) ? Integer.parseInt(lens) : 0;
+    long len = (null != lens) ? Long.parseLong(lens) : 0;
     String ct = ex.getRequestHeaders().getFirst("Content-Type");
     try {
       String xml = extractFeedFromMultipartPost(inStream, len, ct);
@@ -253,7 +254,7 @@ public class Sim implements Runnable {
   }
 
   static String extractFeedFromMultipartPost(
-      InputStream in, int len, String contentType) throws NoXmlFound {
+      InputStream in, long len, String contentType) throws NoXmlFound {
     HttpExchangeUploadInfo uploadInfo
         = new HttpExchangeUploadInfo(in, len, contentType);
     try {
@@ -323,11 +324,11 @@ public class Sim implements Runnable {
   }
 
   /** Intermediary from an HttpExchange to FileUpload input. */
-  private static class HttpExchangeUploadInfo implements RequestContext {
+  private static class HttpExchangeUploadInfo implements UploadContext {
     InputStream inStream;
-    int length;
+    long length;
     String contentType;
-    HttpExchangeUploadInfo(InputStream is, int len, String ct) {
+    HttpExchangeUploadInfo(InputStream is, long len, String ct) {
       this.inStream = is;
       this.length = len;
       this.contentType = ct;
@@ -342,7 +343,12 @@ public class Sim implements Runnable {
       return contentType;
     } 
 
+    @Deprecated
     public int getContentLength() {
+      return (int) length;
+    }
+
+    public long contentLength() {
       return length;
     }
 
