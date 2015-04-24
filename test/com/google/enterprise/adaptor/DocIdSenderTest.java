@@ -310,6 +310,99 @@ public class DocIdSenderTest {
   }
 
   @Test
+  public void testPushGroupsReplaceAllGroupsBeforeVersion74() throws Exception {
+    // Order of iteration matters
+    Map<GroupPrincipal, Collection<Principal>> groups
+        = new TreeMap<GroupPrincipal, Collection<Principal>>();
+    groups.put(new GroupPrincipal("g1"),
+        Arrays.asList(new UserPrincipal("u1"), new GroupPrincipal("g2")));
+    groups.put(new GroupPrincipal("g2"),
+        Arrays.asList(new UserPrincipal("u2"), new GroupPrincipal("g3")));
+    groups.put(new GroupPrincipal("g3"),
+        Arrays.asList(new UserPrincipal("u3"), new GroupPrincipal("g4")));
+    groups = Collections.unmodifiableMap(groups);
+
+    // I'm sorry.
+    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> goldenGroups
+        = new ArrayList<List<Map.Entry<GroupPrincipal,
+          Collection<Principal>>>>();
+    {
+      List<Map.Entry<GroupPrincipal, Collection<Principal>>> tmp
+          = new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>();
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g1"), groups.get(new GroupPrincipal("g1"))));
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g2"), groups.get(new GroupPrincipal("g2"))));
+      goldenGroups.add(Collections.unmodifiableList(tmp));
+      goldenGroups.add(Collections.
+          <Map.Entry<GroupPrincipal, Collection<Principal>>>singletonList(
+          new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+            new GroupPrincipal("g3"), groups.get(new GroupPrincipal("g3")))));
+      goldenGroups = Collections.unmodifiableList(goldenGroups);
+    }
+
+    config.setValue("feed.maxUrls", "2");
+    assertNull(docIdSender.pushGroupDefinitions(groups, false, null, false));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(goldenGroups, fileMaker.groupses);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1",
+    }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1",
+    }), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsReplaceAllGroupsAtVersion740() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+    // Order of iteration matters
+    Map<GroupPrincipal, Collection<Principal>> groups
+        = new TreeMap<GroupPrincipal, Collection<Principal>>();
+    groups.put(new GroupPrincipal("g1"),
+        Arrays.asList(new UserPrincipal("u1"), new GroupPrincipal("g2")));
+    groups.put(new GroupPrincipal("g2"),
+        Arrays.asList(new UserPrincipal("u2"), new GroupPrincipal("g3")));
+    groups.put(new GroupPrincipal("g3"),
+        Arrays.asList(new UserPrincipal("u3"), new GroupPrincipal("g4")));
+    groups = Collections.unmodifiableMap(groups);
+
+    // I'm sorry.
+    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> goldenGroups
+        = new ArrayList<List<Map.Entry<GroupPrincipal,
+          Collection<Principal>>>>();
+    {
+      List<Map.Entry<GroupPrincipal, Collection<Principal>>> tmp
+          = new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>();
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g1"), groups.get(new GroupPrincipal("g1"))));
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g2"), groups.get(new GroupPrincipal("g2"))));
+      tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+          new GroupPrincipal("g3"), groups.get(new GroupPrincipal("g3"))));
+      goldenGroups.add(Collections.unmodifiableList(tmp));
+      goldenGroups = Collections.unmodifiableList(goldenGroups);
+    }
+
+    config.setValue("feed.maxUrls", "2"); // but this will be ignored
+    assertNull(docIdSender.pushGroupDefinitions(groups, false, null, false));
+
+    assertEquals(1, fileMaker.i); // non-incremental --> just one "batch"
+    assertEquals(goldenGroups, fileMaker.groupses);
+    assertEquals(Arrays.asList(new String[] {
+      "0",
+    }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {
+      "0",
+    }), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
   public void testNamedResources() throws Exception {
     config.setValue("feed.name", "testing");
     assertNull(docIdSender.pushNamedResources(
@@ -434,7 +527,7 @@ public class DocIdSenderTest {
 
     @Override
     public void sendGroups(String groupsource, String xmlString,
-        boolean useCompression) throws IOException {
+        boolean useCompression, boolean incremental) throws IOException {
       groupsources.add(groupsource);
       xmlStrings.add(xmlString);
     }

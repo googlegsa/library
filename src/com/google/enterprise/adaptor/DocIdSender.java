@@ -205,14 +205,29 @@ class DocIdSender extends AbstractDocIdPusher
 
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, ExceptionHandler handler) 
+      boolean caseSensitive, ExceptionHandler handler)
+      throws InterruptedException {
+    return pushGroupDefinitions(defs, caseSensitive, handler, true);
+  }
+
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, boolean incremental)
+      throws InterruptedException {
+    return pushGroupDefinitions(defs, caseSensitive, null, incremental);
+  }
+
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, ExceptionHandler handler, boolean incremental)
       throws InterruptedException {
     if (config.markAllDocsAsPublic()) {
       log.finest("Ignoring attempt to send groups to the GSA because "
                  + "markAllDocsAsPublic is true.");
       return null;
     }
-    return pushGroupDefinitionsInternal(defs, caseSensitive, handler);
+    return pushGroupDefinitionsInternal(defs, caseSensitive, handler,
+        incremental);
   }
 
   /*
@@ -254,7 +269,7 @@ class DocIdSender extends AbstractDocIdPusher
   private <T extends Collection<Principal>> GroupPrincipal
       pushGroupDefinitionsInternal(
       Map<GroupPrincipal, T> defs,
-      boolean caseSensitive, ExceptionHandler handler)
+      boolean caseSensitive, ExceptionHandler handler, boolean incremental)
       throws InterruptedException {
     if (defs.isEmpty()) {
       return null;
@@ -265,11 +280,26 @@ class DocIdSender extends AbstractDocIdPusher
           "GSA ver {0} doesn't accept group definitions", gsaVerString);
       return defs.entrySet().iterator().next().getKey();
     }
+    if (!incremental && !new GsaVersion(gsaVerString).isAtLeast("7.4.0-0")) {
+      log.log(Level.WARNING,
+          "GSA ver {0} doesn't support per-source replacement of all groups",
+          gsaVerString);
+      incremental = true;
+    }
     if (null == handler) {
       handler = defaultErrorHandler;
     }
     boolean firstBatch = true;
-    final int max = config.getFeedMaxUrls();
+    // if we are not doing an incremental groups push (that is, we are replacing
+    // all groups from the given data source), we must do it in a single "batch"
+    // because if done in batches and a later batch fails, we would end up with
+    // an incomplete set of groups (which could end up giving a user access to
+    // search results that they are not supposed to have access to).
+    if (!incremental) {
+      log.log(Level.INFO, "About to replace all groups from this data source "
+          + "with {0} groups.", defs.size());
+    }
+    final int max = incremental ? config.getFeedMaxUrls() : defs.size();
     Iterator<Map.Entry<GroupPrincipal, T>> defsIterator
         = defs.entrySet().iterator();
     List<Map.Entry<GroupPrincipal, T>> batch
@@ -285,7 +315,8 @@ class DocIdSender extends AbstractDocIdPusher
       log.log(Level.INFO, "Pushing batch of {0} groups", batch.size());
       GroupPrincipal failedId;
       try {
-        failedId = pushSizedBatchOfGroups(batch, caseSensitive, handler);
+        failedId = pushSizedBatchOfGroups(batch, caseSensitive, handler,
+            incremental);
       } catch (InterruptedException ex) {
         if (firstBatch) {
           throw ex;
@@ -312,7 +343,7 @@ class DocIdSender extends AbstractDocIdPusher
   private <T extends Collection<Principal>> GroupPrincipal
       pushSizedBatchOfGroups(
       List<Map.Entry<GroupPrincipal, T>> defs,
-      boolean caseSensitive, ExceptionHandler handler)
+      boolean caseSensitive, ExceptionHandler handler, boolean incremental)
       throws InterruptedException {
     String feedSourceName = config.getFeedName();
     String groupsDefXml
@@ -324,7 +355,7 @@ class DocIdSender extends AbstractDocIdPusher
       try {
         log.info("sending groups to GSA host name: " + config.getGsaHostname());
         fileSender.sendGroups(feedSourceName,
-            groupsDefXml, config.isServerToUseCompression());
+            groupsDefXml, config.isServerToUseCompression(), incremental);
         keepGoing = false;  // Sent.
         success = true;
       } catch (IOException ex) {

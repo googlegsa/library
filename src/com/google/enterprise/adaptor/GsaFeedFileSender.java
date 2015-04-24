@@ -105,9 +105,11 @@ class GsaFeedFileSender {
   }
 
   private byte[] buildGroupsXmlMessage(String groupsource,
-      String xmlDocument) {
+      String xmlDocument, boolean incremental) {
     StringBuilder sb = new StringBuilder();
     buildPostParameter(sb, "groupsource", "text/plain", groupsource);
+    buildPostParameter(sb, "feedtype", "text/plain",
+        (incremental ? "incremental" : "full"));
     buildPostParameter(sb, "data", "text/xml", xmlDocument);
     sb.append("--").append(BOUNDARY).append("--").append(CRLF);
     return toEncodedBytes("" + sb);
@@ -213,12 +215,12 @@ class GsaFeedFileSender {
    * Groupsource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
    */
   void sendGroups(String groupsource, String xmlString,
-      boolean useCompression) throws IOException {
+      boolean useCompression, boolean incremental) throws IOException {
     if (!GROUPSOURCE_FORMAT.matcher(groupsource).matches()) {
       throw new IllegalArgumentException("Group source is invalid: "
           + groupsource);
     }
-    byte msg[] = buildGroupsXmlMessage(groupsource, xmlString);
+    byte msg[] = buildGroupsXmlMessage(groupsource, xmlString, incremental);
     // GSA only allows request content up to 1 MB to be compressed
     if (msg.length >= 1 * 1024 * 1024) {
       useCompression = false;

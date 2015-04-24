@@ -62,7 +62,25 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException {
-    groups.putAll(defs); 
+    groups.putAll(defs);
+    return null;
+  }
+
+  @Override
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, boolean incremental)
+      throws InterruptedException {
+    groups.putAll(defs);
+    return null;
+  }
+
+  @Override
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, ExceptionHandler handler, boolean incremental)
+      throws InterruptedException {
+    groups.putAll(defs);
     return null;
   }
 }
