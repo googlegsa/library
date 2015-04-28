@@ -38,6 +38,13 @@ public class ConfigTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
+  private static class ModifiedConfig extends Config {
+    @Override
+    protected Reader createReader(File file) throws IOException {
+      return ((MockFile) file).createReader();
+    }
+  }
+
   private MockFile configFile = new MockFile("non-existent-file");
   private Config config = new ModifiedConfig();
 
@@ -154,7 +161,7 @@ public class ConfigTest {
   }
 
   // TODO(ejona): Enable test once config allows gsa.hostname changes.
-  /* **DISABLED** @Test*/
+  // **DISABLED** @Test
   public void testConfigModifiedInvalid() throws Exception {
     configFile.setFileContents("gsa.hostname=notreal\n");
     config.load(configFile);
@@ -222,10 +229,167 @@ public class ConfigTest {
     config.getTransformPipelineSpec();
   }
 
-  private static class ModifiedConfig extends Config {
-    @Override
-    protected Reader createReader(File file) throws IOException {
-      return ((MockFile) file).createReader();
-    }
+  @Test
+  public void testSimplestPropertiesParse() throws Exception {
+    configFile.setFileContents(" \t gsa.hostname \t = feedhost bob\n");
+    config.load(configFile);
+    assertEquals("feedhost bob", config.getValue("gsa.hostname"));
+  }
+
+  @Test
+  public void testPropertiesParseEquals() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "Truth = Beauty");
+    config.load(configFile);
+    assertEquals("Beauty", config.getValue("Truth"));
+  }
+
+  @Test
+  public void testPropertiesParseColon() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "Truth:Beauty");
+    config.load(configFile);
+    assertEquals("Beauty", config.getValue("Truth"));
+  }
+
+  @Test
+  public void testPropertiesParseSpace() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + " \\ \\ Tru   th\\ \\  :  Beauty");
+    config.load(configFile);
+    assertEquals("th   :  Beauty", config.getValue("  Tru"));
+  }
+
+  @Test
+  public void testPropertiesParseColon2() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + " Truth                    :Beauty");
+    config.load(configFile);
+    assertEquals("Beauty", config.getValue("Truth"));
+  }
+
+  @Test
+  public void testPropertiesParseMultiline() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "fruits                           apple, banana, pear, \\\n"
+        + "                          cantaloupe, watermelon, \\\n"
+        + "                          kiwi, mango\n\n");
+    config.load(configFile);
+    String golden = "apple, banana, pear, cantaloupe, watermelon, kiwi, mango";
+    assertEquals(golden, config.getValue("fruits"));
+  }
+
+  @Test
+  public void testPropertiesParseUtfValue() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "howyou = \\u2202i am happy\\u2202. how are you?\\u2202\\u2202\n");
+    config.load(configFile);
+    assertEquals("\u2202i am happy\u2202. how are you?\u2202\u2202",
+        config.getValue("howyou"));
+  }
+
+  @Test
+  public void testPropertiesParseUtfKey() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "how\\u2202you= i am happy. how are you?\n");
+    config.load(configFile);
+    assertEquals("i am happy. how are you?", config.getValue("how\u2202you"));
+ }
+
+  @Test
+  public void testPropertiesParseTrailingWhitespace() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + " Truth                    :Beauty  ");
+    config.load(configFile);
+    assertEquals("Beauty", config.getValue("Truth"));
+  }
+
+  @Test
+  public void testPropertiesParseTrailingEscapedWhitespace() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + " Truth                    :Beauty \\  ");
+    config.load(configFile);
+    assertEquals("Beauty  ", config.getValue("Truth"));
+  }
+
+  @Test
+  public void testPropertiesParseValueEscapedWhitespace() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + " Truth                    :  \\ Beauty \\   ");
+    config.load(configFile);
+    assertEquals(" Beauty  ", config.getValue("Truth"));
+  }
+
+  @Test
+  public void testPropertiesParseKeyEscapedWhitespace() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + " \\ \\ Tru\\ \\ th\\ \\                   :  Beauty");
+    config.load(configFile);
+    assertEquals("Beauty", config.getValue("  Tru  th  "));
+  }
+
+  @Test
+  public void testPropertiesParseEscapeASlash() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "slash=\\\\ ");
+    config.load(configFile);
+    assertEquals("\\", config.getValue("slash"));
+  }
+
+  @Test
+  public void testPropertiesParseEscapeASlash2() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "slash=\\\\\\ ");
+    config.load(configFile);
+    assertEquals("\\ ", config.getValue("slash"));
+  }
+
+  @Test
+  public void testPropertiesParseEscapeASlash3() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "slash=\\\\\\\\ ");
+    config.load(configFile);
+    assertEquals("\\\\", config.getValue("slash"));
+  }
+
+  @Test
+  public void testPropertiesParseEscapeASlash4() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "slash=\\\t \\ \\\t");
+    config.load(configFile);
+    assertEquals("\t  \t", config.getValue("slash"));
+  }
+
+  @Test
+  public void testPropertiesParseEscapeASlash5() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "slash=  \\\t\\\f");
+    config.load(configFile);
+    assertEquals("\t\f", config.getValue("slash"));
+  }
+
+  @Test
+  public void testPropertiesParseEscapeASlash6() throws Exception {
+    configFile.setFileContents(
+        " gsa.hostname=not_used\n"
+        + "slash=  \\\\\\\t\\\\\\\f");
+    config.load(configFile);
+    assertEquals("\\\t\\\f", config.getValue("slash"));
   }
 }

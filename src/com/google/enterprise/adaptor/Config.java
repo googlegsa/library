@@ -15,11 +15,13 @@
 package com.google.enterprise.adaptor;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.io.StringReader;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -719,6 +721,7 @@ public class Config {
     this.configFile = configFile;
     configFileLastModified = configFile.lastModified();
     Reader reader = createReader(configFile);
+    reader = rtrim(reader);
     try {
       load(reader);
     } finally {
@@ -762,8 +765,51 @@ public class Config {
   }
 
   Reader createReader(File configFile) throws IOException {
-    return new InputStreamReader(new BufferedInputStream(
-        new FileInputStream(configFile)), Charset.forName("UTF-8"));
+    return new InputStreamReader(
+        new BufferedInputStream(new FileInputStream(configFile)),
+        Charset.forName("UTF-8"));
+  }
+
+  // take un-escaped trailing whitespace off lines
+  private Reader rtrim(Reader wrapped) throws IOException {
+    BufferedReader buffed = new BufferedReader(wrapped);
+    StringBuilder content = new StringBuilder();
+    String line;
+    while ((line = buffed.readLine()) != null) {
+      content.append(rtrim(line));
+      content.append('\n');
+    }
+    return new StringReader(content.toString());
+  }
+
+  // take un-escaped trailing whitespace off value
+  private static String rtrim(String value) {
+    int numCharsToTakeOff = 0;
+    int end = value.length() - 1;
+    while (end >= 0) {
+      char cur = value.charAt(end);
+      if (cur != ' ' && cur != '\t' && cur != '\f') {
+        break; // cur is not whitespace; is significant; so keep it
+      }
+      // cur is white space; is it escaped?
+      int numConsecutiveSlashes = 0; // escaped means preceded by slash
+      int slashIndex = end - 1;
+      while (slashIndex >= 0 && '\\' == value.charAt(slashIndex)) {
+        numConsecutiveSlashes++;
+        slashIndex--;
+      }
+      boolean isEscaped = (numConsecutiveSlashes % 2) == 1;
+      if (isEscaped) {
+        break; // white space is escaped; so signifcant; so keep it
+      }
+      // cur is an un-escaped white space; delete it
+      numCharsToTakeOff++;
+      end--;
+    }
+    if (0 != numCharsToTakeOff) {
+      value = value.substring(0, value.length() - numCharsToTakeOff);
+    }
+    return value;
   }
 
   /**
