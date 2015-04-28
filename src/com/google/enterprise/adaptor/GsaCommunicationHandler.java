@@ -227,12 +227,11 @@ public final class GsaCommunicationHandler {
     // dashboardServer and contextPrefix.
     dashboardScope = new HttpServerScope(dashboardServer, contextPrefix);
 
-    GsaVersion gsaVer = new GsaVersion(config.getGsaVersion());
     // We are about to start the Adaptor, so anything available through
     // AdaptorContext or other means must be initialized at this point. Any
     // reference to 'adaptor' before this point must be done very carefully to
     // ensure it doesn't call the adaptor until after Adaptor.init() completes.
-    return adaptorContext = new AdaptorContextImpl(gsaVer);
+    return adaptorContext = new AdaptorContextImpl();
   }
 
   /**
@@ -860,11 +859,6 @@ public final class GsaCommunicationHandler {
     private PollingIncrementalLister pollingIncrementalLister;
     private AuthnAuthority authnAuthority;
     private AuthzAuthority authzAuthority;
-    private final GsaVersion gsaVer;
-
-    AdaptorContextImpl(GsaVersion ver) {
-      gsaVer = ver;
-    }
 
     private synchronized void freeze() {
       mutable = false;
@@ -987,11 +981,6 @@ public final class GsaCommunicationHandler {
         throw new IllegalStateException("After init()");
       }
       this.authzAuthority = authzAuthority;
-    }
-
-    @Override
-    public boolean gsaSupportsFullGroupPush() {
-      return gsaVer.isAtLeast("7.4.0-0");
     }
   }
 }

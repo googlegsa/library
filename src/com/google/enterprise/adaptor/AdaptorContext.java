@@ -127,13 +127,4 @@ public interface AdaptorContext {
    * for the GSA. Registration may not occur after {@link Adaptor#init}.
    */
   public void setAuthzAuthority(AuthzAuthority authzAuthority);
-
-  /**
-   * Find out if GSA we are talking to supports the "full" type
-   * of group definition feed.  The "full" type of group definition
-   * push replaces all group definitions from a particular source (e.g.
-   * an adaptor instance). When GSA does not support "full" type
-   * it still supports "incremental" type.
-   */
-  public boolean gsaSupportsFullGroupPush();
 }

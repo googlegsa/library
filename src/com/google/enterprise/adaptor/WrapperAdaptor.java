@@ -431,7 +431,7 @@ abstract class WrapperAdaptor implements Adaptor {
         ExceptionHandler handler) throws InterruptedException {
       return pusher.pushNamedResources(resources, handler);
     }
-    
+
     @Override
     public GroupPrincipal pushGroupDefinitions(
         Map<GroupPrincipal, ? extends Collection<Principal>> defs,
@@ -539,11 +539,6 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public void setAuthzAuthority(AuthzAuthority authzAuthority) {
       context.setAuthzAuthority(authzAuthority);
-    }
-
-    @Override
-    public boolean gsaSupportsFullGroupPush() {
-      return context.gsaSupportsFullGroupPush();
     }
   }
 }
