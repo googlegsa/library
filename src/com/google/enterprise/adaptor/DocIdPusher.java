@@ -131,12 +131,10 @@ public interface DocIdPusher {
       throws InterruptedException;
 
   /**
-   * Blocking call to (incrementally) push group definitions to GSA ends in
-   * success or when default error handler gives up.  Can take significant time
-   * if errors arise.  To push-and-replace all groups (per data source), call
-   * a version of this method that accepts the <code>incremental</code>
-   * parameter, and set that parameter to <code>false</code>.
-   *
+   * Blocking call to push group definitions to GSA ends in success or
+   * when default error handler gives up.  Can take significant time
+   * if errors arise.
+   * 
    * <p>A group definition consists of a group being defined
    * and members, which is a list of users and groups.
    *
@@ -151,12 +149,10 @@ public interface DocIdPusher {
       boolean caseSensitive) throws InterruptedException;
 
   /**
-   * Blocking call to (incrementally) push group definitions to GSA ends in
-   * success or when default error handler gives up.  Can take significant time
-   * if errors arise.  To push-and-replace all groups (per data source), call
-   * a version of this method that accepts the <code>incremental</code>
-   * parameter, and set that parameter to <code>false</code>.
-   *
+   * Blocking call to push group definitions to GSA ends in success or
+   * when provided error handler gives up.  Can take significant time
+   * if errors arise.
+   * 
    * <p>A group definition consists of a group being defined
    * and members, which is a list of users and groups.
    *
@@ -171,70 +167,6 @@ public interface DocIdPusher {
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, ExceptionHandler handler)
-      throws InterruptedException;
-
-  /**
-   * Blocking call to push group definitions to GSA ends in success or
-   * when default error handler gives up.  Can take significant time
-   * if errors arise.
-   *
-   * <p>A group definition consists of a group being defined
-   * and members, which is a list of users and groups.
-   *
-   * <p>If you plan on using the return code, then the provided map should have
-   * a predictable iteration order, like {@link java.util.TreeMap}.
-   *
-   * <p>Calling this method via this method signature uses the default error
-   * handler.
-   *
-   * @param incremental - when <code>true</code>, push groups to the GSA,
-   * replacing any existing group in <code>defs</code>, but
-   * leaving untouched any group not in <code>defs</code>.  When
-   * <code>false</code>, push groups (in a single batch) replacing all other
-   * groups from this data source with the specified groups.  It is possible
-   * for this one batch to consume a lot of memory if a lot of group members
-   * are being updated at once.
-   * <p> if <code>incremental</code> is specified as <code>false</code>, but
-   * the GSA version is below 7.4.0, a warning is logged, and
-   * <code>incremental</code> is set to <code>true</code>.
-   *
-   * @return {@code null} on success, otherwise the first GroupPrincipal to fail
-   * @throws InterruptedException if interrupted and no definitions were sent
-   */
-  public GroupPrincipal pushGroupDefinitions(
-      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, boolean incremental) throws InterruptedException;
-
-  /**
-   * Blocking call to push group definitions to GSA ends in success or
-   * when provided error handler gives up.  Can take significant time
-   * if errors arise.
-   *
-   * <p>A group definition consists of a group being defined
-   * and members, which is a list of users and groups.
-   *
-   * <p>If you plan on using the return code, then the provided map should have
-   * a predictable iteration order, like {@link java.util.TreeMap}.
-   *
-   * <p>If handler is {@code null}, then a default error handler is used.
-   *
-   * @param incremental - when <code>true</code>, push groups to the GSA,
-   * replacing any existing group in <code>defs</code>, but
-   * leaving untouched any group not in <code>defs</code>.  When
-   * <code>false</code>, push groups (in a single batch) replacing all other
-   * groups from this data source with the specified groups.  It is possible
-   * for this one batch to consume a lot of memory if a lot of group members
-   * are being updated at once.
-   * <p> if <code>incremental</code> is specified as <code>false</code>, but
-   * the GSA version is below 7.4.0, a warning is logged, and
-   * <code>incremental</code> is set to <code>true</code>.
-   *
-   * @return {@code null} on success, otherwise the first GroupPrincipal to fail
-   * @throws InterruptedException if interrupted and no definitions were sent
-   */
-  public GroupPrincipal pushGroupDefinitions(
-      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, ExceptionHandler handler, boolean incremental)
       throws InterruptedException;
 
   /**

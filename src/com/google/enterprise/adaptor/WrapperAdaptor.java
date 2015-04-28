@@ -431,30 +431,13 @@ abstract class WrapperAdaptor implements Adaptor {
         ExceptionHandler handler) throws InterruptedException {
       return pusher.pushNamedResources(resources, handler);
     }
-
+    
     @Override
     public GroupPrincipal pushGroupDefinitions(
         Map<GroupPrincipal, ? extends Collection<Principal>> defs,
         boolean caseSensitive, ExceptionHandler exceptionHandler)
         throws InterruptedException {
       return pusher.pushGroupDefinitions(defs, caseSensitive, exceptionHandler);
-    }
-
-    @Override
-    public GroupPrincipal pushGroupDefinitions(
-        Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-        boolean caseSensitive, boolean incremental)
-        throws InterruptedException {
-      return pusher.pushGroupDefinitions(defs, caseSensitive, incremental);
-    }
-
-    @Override
-    public GroupPrincipal pushGroupDefinitions(
-        Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-        boolean caseSensitive, ExceptionHandler exceptionHandler,
-        boolean incremental) throws InterruptedException {
-      return pusher.pushGroupDefinitions(defs, caseSensitive, exceptionHandler,
-          incremental);
     }
   }
 
