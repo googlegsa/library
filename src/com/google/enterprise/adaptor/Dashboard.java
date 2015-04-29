@@ -28,7 +28,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.TreeMap;
-import java.util.concurrent.TimeUnit;
 import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
@@ -274,9 +273,9 @@ class Dashboard {
 
     Status retrieveStatus(String version, boolean isWindows) {
       final String allowedDelimiters = "[\\._\\-]"; // dot, _, or hyphen OK
-      final String UnixMinimumJVM = "1.6.0_27";
-      final String WindowsMinimumJVM = "1.7.0_6";
-      final String minVersion = isWindows ? WindowsMinimumJVM : UnixMinimumJVM;
+      final String unixMinimumJVM = "1.6.0_27";
+      final String windowsMinimumJVM = "1.7.0_6";
+      final String minVersion = isWindows ? windowsMinimumJVM : unixMinimumJVM;
 
       Scanner versionScanner = new Scanner(version);
       Scanner minScanner = new Scanner(minVersion);

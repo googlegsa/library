@@ -30,7 +30,6 @@ import com.google.enterprise.adaptor.UserPrincipal;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -165,10 +164,10 @@ public class AdaptorWithRespondNoContentTemplate extends AbstractAdaptor
     }
 
     static class RepositoryDocument {
-      final private String id;     
-      final private Map<String, String> metadata;      
-      final private List<String> permitUsers;
-      final private List<String> permitGroups;
+      private final String id;     
+      private final Map<String, String> metadata;      
+      private final List<String> permitUsers;
+      private final List<String> permitGroups;
       private Date lastModified;
       private int version;     
 

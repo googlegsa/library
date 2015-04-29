@@ -54,8 +54,6 @@ public class InvalidConfigurationException extends StartupException {
    * Constructs a InvalidConfigurationException with specified cause, copying
    * its message if cause is non-{@code null}.
    *
-   * @param message the message. Can be retrieved by the {@link #getMessage()}
-   *        method.
    * @param cause failure cause
    */
   public InvalidConfigurationException(Throwable cause) {

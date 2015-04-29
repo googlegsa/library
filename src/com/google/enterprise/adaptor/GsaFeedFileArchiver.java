@@ -17,8 +17,8 @@ package com.google.enterprise.adaptor;
 import com.google.common.base.Strings;
 import com.google.common.io.Files;
 
-import java.io.IOException;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.logging.Level;
 import java.util.logging.Logger;

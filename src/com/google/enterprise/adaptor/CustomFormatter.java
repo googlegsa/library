@@ -28,7 +28,7 @@ import java.util.logging.LogRecord;
  * use in console output and is able to produce color output on Unix terminals.
  */
 public class CustomFormatter extends Formatter {
-  private static final String newline = System.getProperty("line.separator");
+  private static final String NEWLINE = System.getProperty("line.separator");
   private Date date = new Date();
   // The format for a color is '\x1b[30;40m' where 30 and 40 are the foreground
   // and background colors, respectively. The ';' isn't required. If you don't
@@ -89,7 +89,7 @@ public class CustomFormatter extends Formatter {
           record.getLevel().getLocalizedName(), formatMessage(record),
           highlightColor, threadColor
         }, buffer, null);
-    buffer.append(newline);
+    buffer.append(NEWLINE);
     if (record.getThrown() != null) {
       record.getThrown().printStackTrace(writer);
     }

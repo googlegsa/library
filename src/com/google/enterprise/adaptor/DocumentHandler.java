@@ -518,7 +518,8 @@ class DocumentHandler implements HttpHandler {
       Date lastModifiedAdjusted 
           = new Date(1000 * (lastModified.getTime() / 1000));
       log.log(Level.FINEST, "Last modified date time value {0} adjusted to {1}",
-          new Object[] {lastModified.getTime(),lastModifiedAdjusted.getTime()});
+          new Object[] {
+              lastModified.getTime(), lastModifiedAdjusted.getTime()});
       return date.before(lastModifiedAdjusted);
     }
 

@@ -16,29 +16,21 @@ package com.google.enterprise.adaptor.examples;
 
 import com.google.enterprise.adaptor.AbstractAdaptor;
 import com.google.enterprise.adaptor.Acl;
-import com.google.enterprise.adaptor.AdaptorContext;
-import com.google.enterprise.adaptor.AuthnIdentity;
-import com.google.enterprise.adaptor.AuthzAuthority;
-import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.URI;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.Logger;
 
+/** Example with depth three ACL chain. */
 public class AdaptorWithTwoParentOverrides extends AbstractAdaptor {
   private static final Logger log
       = Logger.getLogger(AdaptorWithTwoParentOverrides.class.getName());

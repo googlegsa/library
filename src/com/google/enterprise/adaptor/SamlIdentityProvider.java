@@ -18,7 +18,6 @@ import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAsserti
 import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAttribute;
 import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAttributeStatement;
 import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAttributeValue;
-
 import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAudienceRestriction;
 import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeAuthnStatement;
 import static com.google.enterprise.adaptor.secmgr.saml.OpenSamlUtil.makeConditions;
@@ -68,8 +67,8 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.security.KeyPair;
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
