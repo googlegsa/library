@@ -874,7 +874,8 @@ public class Config {
       }
     }
     if (unset.size() != 0) {
-      throw new InvalidConfigurationException("Missing configuration values: " + unset);
+      throw new InvalidConfigurationException(
+          "Missing configuration values: " + unset);
     }
   }
 
