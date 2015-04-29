@@ -625,16 +625,20 @@ public final class GsaCommunicationHandler {
       scheduleExecutor.shutdownNow();
       scheduleExecutor = null;
 
-      backgroundExecutor.shutdownNow();
-      backgroundExecutor = null;
+      if (backgroundExecutor != null) {
+        backgroundExecutor.shutdownNow();
+        backgroundExecutor = null;
+      }
 
       scheduler = null;
       sendDocIdsFuture = null;
 
       docIdIncrementalPusher = null;
 
-      dashboard.stop();
-      dashboard = null;
+      if (dashboard != null) {
+        dashboard.stop();
+        dashboard = null;
+      }
 
       // Clear references set by Adaptor via AdaptorContext.
       docIdFullPusher = null;
