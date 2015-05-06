@@ -44,8 +44,8 @@ import java.util.logging.Logger;
  * Configuration values for this program, like the GSA's hostname. Also several
  * knobs, or controls, for changing the behavior of the program.
  * <p>All available configuration:<br>
- * <style type="text/css"> td { padding-right:2em; } </style>
  * <table>
+ * <caption> All available configuration </caption>
  * <tr><td align=center><b>required?</b></td>
  *     <td><b>name</b></td><td><b>meaning</b></td>
  * <tr><td> </td><td>gsa.acceptsDocControlsHeader </td><td>use 

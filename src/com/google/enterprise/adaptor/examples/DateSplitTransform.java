@@ -53,8 +53,8 @@ public class DateSplitTransform implements DocumentTransform {
   }
 
   /**
-   * Called as <code>transform.pipeline.<stepX>.factoryMethod for this
-   * transformation pipline as specified in adaptor-config.properties.
+   * Called as <code>transform.pipeline.&lt;stepX&gt;.factoryMethod</code>
+   * for this transformation pipline as specified in adaptor-config.properties.
    * <p>
    * This method simply returns a new object with
    * the additional metadata as specified as values for step1.taste

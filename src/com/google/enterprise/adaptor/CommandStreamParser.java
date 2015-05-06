@@ -68,7 +68,7 @@ import java.util.regex.Pattern;
  * modified UTF-8 is supported, newlines or null characters in document IDs, metadata, and the like
  * can be encoded in their 2-byte form which which will not be confused with the delimiter. A
  * delimiter can be made up of more than one character so it is possible to have a delimiter that is
- * <CR><LF> or a highly unique string (such as a GUID) that has an exceptionally low probability of
+ * &lt;CR&gt;&lt;LF&gt; or a highly unique string (such as a GUID) that has an exceptionally low probability of
  * occurring in the data.<p>
  *
  * The following characters may not be used in the delimiter:<p> 'A'-'Z', 'a'-'z' and '0'-'9' the
@@ -81,7 +81,7 @@ import java.util.regex.Pattern;
  * ID ("id=" or "id-list"). Command that don't specify a document ID are associated with the most
  * recent previously specified document ID.<p>
  *
- * <h1>Common Commands:</h1>
+ * <h3>Common Commands:</h3>
  *
  * "id=" -- specifies a document id<p>
  *
@@ -93,7 +93,7 @@ import java.util.regex.Pattern;
  * character includes additional information that will be logged with the error.
  *
  *
- * <h1>Lister Commands:</h1>
+ * <h3>Lister Commands:</h3>
  *
  * "result-link=" -- specifies an alternative link to be displayed in the search results.
  * This must be a properly formed URL. A "result link" is sometimes referred to as a "display URL".
@@ -120,7 +120,7 @@ import java.util.regex.Pattern;
  *
  * "delete" -- this document should be deleted from the GSA index.<p>
  *
- * <h1>Retriever Commands:</h1>
+ * <h3>Retriever Commands:</h3>
  *
  * "up-to-date" -- specifies that the document is up-to-date with respect to its last crawled
  * time.<p>
@@ -205,7 +205,7 @@ import java.util.regex.Pattern;
  * "acl-case-insensitive=" -- the principals of this document are case
  * insensitive. <p>
  *
- * <h1>Authorizer Commands:</h1>
+ * <h3>Authorizer Commands:</h3>
  *
  * "authz-status=" -- specifies whether a document is visible to a
  *     specified user. The argument must be PERMIT, DENY or INDETERMINATE<p>

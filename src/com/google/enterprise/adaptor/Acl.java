@@ -45,8 +45,6 @@ import java.util.logging.Logger;
 public class Acl {
   /**
    * Empty convenience instance with all defaults used.
-   *
-   * @see Builder#Acl.Builder()
    */
   public static final Acl EMPTY = new Acl.Builder().build();
   /**

@@ -288,7 +288,7 @@ public class PrebuiltTransforms {
    *key1=favorite
    *key5=least favorite
    *pattern=(Java|C|Perl)
-   *replacement=$1 (but it should be x86 assembler)</code</pre>
+   *replacement=$1 (but it should be x86 assembler)</code></pre>
    */
   public static DocumentTransform replaceMetadata(Map<String, String> config) {
     boolean overwrite = true;
