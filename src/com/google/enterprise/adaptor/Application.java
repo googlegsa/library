@@ -382,7 +382,7 @@ public final class Application {
       server.bind(new InetSocketAddress(config.getServerPort()), 0);
     } catch (BindException ex) {
       log.log(Level.WARNING,
-          "Server port {0} is in use.", config.getServerPort());
+          "Server port {0,number,#} is in use.", config.getServerPort());
       throw ex;
     }
     log.info("GSA host name: " + config.getGsaHostname());
@@ -415,7 +415,7 @@ public final class Application {
       server.bind(new InetSocketAddress(config.getServerDashboardPort()), 0);
     } catch (BindException ex) {
       log.log(Level.WARNING,
-          "Server dashboard port {0} is in use.", 
+          "Server dashboard port {0,number,#} is in use.", 
           config.getServerDashboardPort());
       throw ex;
     }
