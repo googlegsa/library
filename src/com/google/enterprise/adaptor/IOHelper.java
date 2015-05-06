@@ -33,6 +33,9 @@ public class IOHelper {
 
   /**
    * Copy contents of {@code in} to {@code out}.
+   * @param in is source of bytes
+   * @param out is destination for bytes
+   * @throws IOException if reading or writing fails
    */
   public static void copyStream(InputStream in, OutputStream out)
       throws IOException {
@@ -46,25 +49,36 @@ public class IOHelper {
 
   /**
    * Read the contents of {@code is} into a byte array.
+   * @param instream to be read
+   * @return byte[] entire instream bytes
+   * @throws IOException when reading fails
    */
-  public static byte[] readInputStreamToByteArray(InputStream is)
+  public static byte[] readInputStreamToByteArray(InputStream instream)
       throws IOException {
     ByteArrayOutputStream os = new ByteArrayOutputStream();
-    copyStream(is, os);
+    copyStream(instream, os);
     return os.toByteArray();
   }
 
   /**
-   * Form a string from the contents of {@code is} with charset {@code charset}.
+   * Form a string from the contents of {@code instream} with charset
+   * {@code charset}.
+   * @param instream to be read
+   * @param charset is encoding of input stream's bytes
+   * @return String entire instream contents
+   * @throws IOException when reading fails
    */
-  public static String readInputStreamToString(InputStream is,
+  public static String readInputStreamToString(InputStream instream,
       Charset charset) throws IOException {
-    return new String(readInputStreamToByteArray(is), charset);
+    return new String(readInputStreamToByteArray(instream), charset);
   }
 
   /**
    * Write contents of {@code in} to a temporary file. Caller is responsible for
    * deleting the temporary file after use.
+   * @param in written into file
+   * @return File handle for written file
+   * @throws IOException when writing file fails
    */
   public static File writeToTempFile(InputStream in) throws IOException {
     File tmpFile = File.createTempFile("adaptorlib", ".tmp");
@@ -85,6 +99,10 @@ public class IOHelper {
   /**
    * Write contents of {@code string} to a temporary file, encoded using {@code
    * charset}. Caller is responsible for deleting the temporary file after use.
+   * @param string written into file
+   * @param charset is encoding of written file
+   * @return File handle for written file
+   * @throws IOException when writing file fails
    */
   public static File writeToTempFile(String string, Charset charset)
       throws IOException {

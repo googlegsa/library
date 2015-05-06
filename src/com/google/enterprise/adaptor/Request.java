@@ -30,6 +30,9 @@ public interface Request {
    * <p>If {@code false}, the client does not need to be re-sent the data, since
    * what they have cached is the most recent version. In this case, you should
    * then call {@link Response#respondNotModified}.
+   *
+   * @param lastModified is actual time document was last modified
+   * @return whether updated content should be sent 
    */
   public boolean hasChangedSinceLastAccess(Date lastModified);
   /**
@@ -41,6 +44,9 @@ public interface Request {
    * <p>If {@code true}, the client does not need to be re-sent the file content
    * , since what they have cached is the most recent version. In this case, 
    * you should then call {@link Response#respondNoContent}.
+   *
+   * @param lastModified is actual time document was last modified
+   * @return whether sending headers (metadata, ACLs, etc) is enough
    */
   public boolean canRespondWithNoContent(Date lastModified);
   /**
@@ -62,6 +68,8 @@ public interface Request {
    * client-provided and must not be trusted</b>. If the document does not
    * exist, then {@link Adaptor#getDocContent} must call {@link
    * Response#respondNotFound}.
+   *
+   * @return id being requested
    */
   public DocId getDocId();
 }

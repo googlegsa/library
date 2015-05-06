@@ -43,6 +43,8 @@ public interface Response {
    * <p>If called, this must be the last call to this interface. Once you call
    * this method, for the rest of the processing, exceptions may no longer be
    * communicated to clients cleanly.
+   *
+   * @throws IOException if communicating with client fails
    */
   public void respondNotModified() throws IOException;
 
@@ -54,6 +56,8 @@ public interface Response {
    * <p>If called, this must be the last call to this interface. Once you call
    * this method, for the rest of the processing, exceptions may no longer be
    * communicated to the clients cleanly.
+   *
+   * @throws IOException if communicating with client fails
    */
   public void respondNotFound() throws IOException;
   
@@ -66,6 +70,8 @@ public interface Response {
    * <p>If called, this must be the last call to this interface. Once you call
    * this method, for the rest of the processing, exceptions may no longer be
    * communicated to the clients cleanly.
+   *
+   * @throws IOException if communicating with client fails
    */
    public void respondNoContent() throws IOException;
 
@@ -77,16 +83,21 @@ public interface Response {
    * convenience, you may call this method multiple times). Once you call this
    * method, for the rest of the processing, exceptions may no longer be
    * communicated to clients cleanly.
+   *
+   * @return OutputStream for client to write content onto
+   * @throws IOException if connection's stream cannot be provided
    */
   public OutputStream getOutputStream() throws IOException;
 
   /**
    * Describe the content type of the document.
+   * @param contentType to set in response headers
    */
   public void setContentType(String contentType);
 
   /**
    * Provide the last modification time of the document.
+   * @param lastModified to send in response headers
    */
   public void setLastModified(Date lastModified);
 
@@ -106,12 +117,15 @@ public interface Response {
    * Provide the document's ACLs for early-binding security on the GSA. By
    * default, the document's ACL will be {@code null}, which means the document
    * is public if the document isn't marked as secure via {@link #setSecure}.
+   * @param acl access controls for document being sent
    */
   public void setAcl(Acl acl);
 
   /**
    * Provide alternative ACLs for this document, uniquely identified by
    * response document's {@code DocId} and {@code fragment}.
+   * @param fragment disambiguating name when document has multiple ACLs
+   * @param acl access controls for document being sent
    */
   public void putNamedResource(String fragment, Acl acl);
 
@@ -123,6 +137,7 @@ public interface Response {
    * be correctly configured to issue a SAML request to the Adaptor.
    * Setting ACLs to non-null will override setSecure and send secure indicator
    * to GSA.
+   * @param secure controls whether access is controlled or public
    */
   public void setSecure(boolean secure);
 
