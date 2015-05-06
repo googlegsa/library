@@ -24,6 +24,7 @@ public interface AsyncDocIdPusher {
    * enqueued and sent in the next batch to the GSA. If the queue is full,
    * then the item will be dropped and a warning will be logged.
    *
+   * @param docId that is to be crawled
    * @return {@code true} if the DocId was accepted, {@code false} otherwise
    */
   public boolean pushDocId(DocId docId);
@@ -33,6 +34,7 @@ public interface AsyncDocIdPusher {
    * is enqueued and sent in the next batch to the GSA. If the queue is full,
    * then the item will be dropped and a warning will be logged.
    *
+   * @param record that is to be crawled
    * @return {@code true} if the Record was accepted, {@code false} otherwise
    */
   public boolean  pushRecord(DocIdPusher.Record record);
@@ -46,6 +48,8 @@ public interface AsyncDocIdPusher {
    * that only exist for ACL inheritance. These {@code DocId} will never be
    * visible to the user and have no meaning outside of ACL processing.
    *
+   * @param docId name or label of the access control list
+   * @param acl is the access control list mapped onto by docId
    * @return {@code true} if the NamedResource was accepted, {@code false}
    *   otherwise
    */

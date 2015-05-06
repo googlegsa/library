@@ -33,6 +33,7 @@ public interface DocIdPusher {
    * <p>Equivalent to {@code pushDocIds(docIds, null)} and {@link
    * #pushRecords(Iterable)} with default values for each {@code Record}.
    *
+   * @param docIds are document ids to be pushed
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no DocIds were sent
    * @see #pushDocIds(Iterable, ExceptionHandler)
@@ -51,6 +52,8 @@ public interface DocIdPusher {
    * <p>Equivalent to {@link #pushRecords(Iterable, ExceptionHandler)}
    * with default values for each {@code Record}.
    *
+   * @param docIds are document ids to be pushed
+   * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no DocIds were sent
    */
@@ -65,6 +68,7 @@ public interface DocIdPusher {
    *
    * <p>Equivalent to {@code pushRecords(records, null)}.
    *
+   * @param records are document ids to be pushed
    * @return {@code null} on success, otherwise the first Record to fail
    * @throws InterruptedException if interrupted and no Records were sent
    * @see #pushRecords(Iterable, ExceptionHandler)
@@ -80,6 +84,8 @@ public interface DocIdPusher {
    *
    * <p>If handler is {@code null}, then a default error handler is used.
    *
+   * @param records are document ids to be pushed
+   * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first Record to fail
    * @throws InterruptedException if interrupted and no Records were sent
    */
@@ -101,6 +107,7 @@ public interface DocIdPusher {
    *
    * <p>Equivalent to {@code pushNamedResources(resources, null)}.
    *
+   * @param resources are labeled access control lists
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no resources were sent
    * @see #pushNamedResources(Map, ExceptionHandler)
@@ -123,6 +130,8 @@ public interface DocIdPusher {
    *
    * <p>If handler is {@code null}, then a default error handler is used.
    *
+   * @param resources are labeled access control lists
+   * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first DocId to fail
    * @throws InterruptedException if interrupted and no resources were sent
    */
@@ -141,6 +150,8 @@ public interface DocIdPusher {
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
    *
+   * @param defs map of group definitions
+   * @param caseSensitive when comparing Principals
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
    */
@@ -161,6 +172,9 @@ public interface DocIdPusher {
    *
    * <p>If handler is {@code null}, then a default error handler is used.
    *
+   * @param defs map of group definitions
+   * @param caseSensitive when comparing Principals
+   * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
    */
@@ -203,6 +217,7 @@ public interface DocIdPusher {
 
     /**
      * Whether the GSA is being informed the document has been deleted.
+     * @return boolean indicating document should be deleted from index
      */
     public boolean isToBeDeleted() {
       return delete;
@@ -213,6 +228,7 @@ public interface DocIdPusher {
      * the GSA's version is older and that the GSA should recrawl soon (instead
      * of natually discovering the modification). If {@code null}, then natural
      * crawling is the primary method of detecting modifications.
+     * @return Date document was last modified
      */
     public Date getLastModified() {
       return lastModified;
@@ -221,6 +237,7 @@ public interface DocIdPusher {
     /**
      * The URI that should be displayed to the user in search results. If {@code
      * null}, then the crawl URI representing the {@code DocId} is used.
+     * @return URI link used in search results
      */
     public URI getResultLink() {
       return link;
@@ -229,6 +246,7 @@ public interface DocIdPusher {
     /**
      * Informs the GSA that the document has been modified, and the GSA should
      * give high priority to recrawling the document.
+     * @return boolean indicating file get crawl priority
      */
     public boolean isToBeCrawledImmediately() {
       return crawlImmediately;
@@ -238,6 +256,7 @@ public interface DocIdPusher {
      * Informs the GSA that it should only crawl the document once. This
      * disables automatic detection of modifications by the GSA for this
      * document.
+     * @return boolean indicating file has should be crawled at most once
      */
     public boolean isToBeCrawledOnce() {
       return crawlOnce;
@@ -247,6 +266,8 @@ public interface DocIdPusher {
      * Locks the document into the GSA's index. This informs the GSA that it
      * should choose to evict other documents from its index when the document
      * license limit is reached.
+     * 
+     * @return boolean indicating file has priority to stay in index
      */
     public boolean isToBeLocked() {
       return lock;
@@ -336,6 +357,7 @@ public interface DocIdPusher {
        * Create mutable builder initialized to values provided by {@code
        * startPoint}. This is useful for making changes to an existing {@code
        * Record}.
+       * @param startPoint initial model for Builder to use
        */
       public Builder(Record startPoint) {
         this.docid = startPoint.id;
@@ -367,6 +389,7 @@ public interface DocIdPusher {
        * When {@code false}, the GSA is being informed the document exists. The
        * default is {@code false}.
        *
+       * @param b indicates whether GSA should delete doc from index
        * @return the same instance of the builder, for chaining calls
        */
       public Builder setDeleteFromIndex(boolean b) {
@@ -381,6 +404,7 @@ public interface DocIdPusher {
        * its natural crawling of content to discover changes. The default is
        * {@code null}.
        *
+       * @param lastModified date and time this document last changed
        * @return the same instance of the builder, for chaining calls
        */
       public Builder setLastModified(Date lastModified) {
@@ -393,6 +417,7 @@ public interface DocIdPusher {
        * null}, then the crawl URI representing the {@code DocId} is used. The
        * default is {@code null}.
        *
+       * @param link to provide to user to click on
        * @return the same instance of the builder, for chaining calls
        */
       public Builder setResultLink(URI link) {
@@ -405,6 +430,7 @@ public interface DocIdPusher {
        * should give high priority to recrawling the document. The default is
        * {@code false}.
        *
+       * @param crawlImmediately whether file is to be given crawl priority
        * @return the same instance of the builder, for chaining calls
        */
       public Builder setCrawlImmediately(boolean crawlImmediately) {
@@ -416,6 +442,7 @@ public interface DocIdPusher {
        * Instruct the GSA to not recrawl the document after the initial
        * retrieval. The default is {@code false}.
        *
+       * @param crawlOnce whether file is to be crawled at most once
        * @return the same instance of the builder, for chaining calls
        */
       public Builder setCrawlOnce(boolean crawlOnce) {
@@ -428,6 +455,7 @@ public interface DocIdPusher {
        * other documents to be evicted from the index when the document license
        * limit is reached. The default is {@code false}.
        *
+       * @param lock whether file is to be locked on GSA
        * @return the same instance of the builder, for chaining calls
        */
       public Builder setLock(boolean lock) {
@@ -435,7 +463,10 @@ public interface DocIdPusher {
         return this;
       }
 
-      /** Creates single instance of Record.  Does not reset builder. */
+      /**
+       * Creates single instance of Record.  Does not reset builder.
+       * @return instance as specified by ctor and set methods
+       */
       public Record build() {
         return new Record(docid, delete, lastModified,
             link, crawlImmediately, crawlOnce, lock);
