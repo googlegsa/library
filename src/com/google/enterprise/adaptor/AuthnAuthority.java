@@ -45,6 +45,7 @@ public interface AuthnAuthority {
    * @param ex exchange whose request body has been processed, but whose
    *     response body and headers have not been sent
    * @param callback object to receive and respond with authentication results
+   * @throws IOException on failure
    */
   public void authenticateUser(HttpExchange ex, Callback callback)
       throws IOException;
@@ -70,6 +71,7 @@ public interface AuthnAuthority {
      * @param ex exchange whose request body has been processed, but whose
      *     response body and headers have not been sent
      * @param identity authenticated user identity information, or {@code null}
+     * @throws IOException on failure
      */
     public void userAuthenticated(HttpExchange ex, AuthnIdentity identity)
         throws IOException;

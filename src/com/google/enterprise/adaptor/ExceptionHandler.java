@@ -23,7 +23,10 @@ public interface ExceptionHandler {
    * exception is provided as well as the number of times the call has been
    * attempted. It is fine to call {@code Thread.sleep()} before returning.
    *
+   * @param ex is describing a problem
+   * @param ntries is number of consecutive failure for same operation
    * @return {@code true} for immediate retry, {@code false} to abort
+   * @throws InterruptedException if backoff throws it
    */
   public boolean handleException(Exception ex, int ntries)
       throws InterruptedException;

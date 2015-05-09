@@ -35,7 +35,7 @@ public enum AuthzStatus {
     this.description = description;
   }
 
-  /** Get a short description of the status. */
+  /** @return String description of decision */
   public String getDescription() {
     return description;
   }

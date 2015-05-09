@@ -627,9 +627,11 @@ public class Config {
    *  "port": "159",
    *  "name": "raindowDash",
    *}]</code></pre>
+   *
+   * @param key whoese value specifies other keys
+   * @return List of maps that are each these sub-configurations
    */
-  public synchronized List<Map<String, String>>
-      getListOfConfigs(String key) {
+  public synchronized List<Map<String, String>> getListOfConfigs(String key) {
     String configValue = getValue(key).trim();
     if ("".equals(configValue)) {
       return Collections.emptyList();
@@ -709,6 +711,8 @@ public class Config {
 
   /**
    * Load user-provided configuration file.
+   * @param configFile to be loaded
+   * @throws IOException if fails reading config
    */
   public synchronized void load(String configFile) throws IOException {
     load(new File(configFile));
@@ -716,6 +720,8 @@ public class Config {
 
   /**
    * Load user-provided configuration file.
+   * @param configFile to be loaded
+   * @throws IOException if fails reading config
    */
   public synchronized void load(File configFile) throws IOException {
     this.configFile = configFile;
@@ -813,7 +819,8 @@ public class Config {
   }
 
   /**
-   * @return {@code true} if configuration file was modified.
+   * @return {@code true} if configuration file was modified
+   * @throws IOException if fails reading config
    */
   public boolean ensureLatestConfigLoaded() throws IOException {
     synchronized (this) {
@@ -883,6 +890,7 @@ public class Config {
    * Get a configuration value exactly as provided in configuration. Generally,
    * {@link #getValue} should be used instead of this method.
    *
+   * @param key to lookup
    * @return raw non-{@code null} value of {@code key}
    * @throws IllegalStateException if {@code key} has no value
    */
@@ -902,6 +910,7 @@ public class Config {
    * in configuration. This method should be preferred over {@link
    * #getRawValue}.
    *
+   * @param key to lookup
    * @return non-{@code null} value of {@code key}
    * @throws IllegalStateException if {@code key} has no value
    */
@@ -924,6 +933,8 @@ public class Config {
   /**
    * Gets all configuration values that begin with {@code prefix}, returning
    * them as a map with the keys having {@code prefix} removed.
+   * @param prefix that is to begin each key
+   * @return map of all endings of prefix split into key value pairs
    */
   public synchronized Map<String, String> getValuesWithPrefix(String prefix) {
     Map<String, String> values = new HashMap<String, String>();
@@ -939,6 +950,8 @@ public class Config {
   /**
    * Add configuration key. If {@code defaultValue} is {@code null}, then no
    * default value is used and the user must provide one.
+   * @param key key
+   * @param defaultValue value
    */
   public synchronized void addKey(String key, String defaultValue) {
     if (defaultConfig.containsKey(key) || noDefaultConfig.contains(key)) {
@@ -961,6 +974,8 @@ public class Config {
    * Change the default value of a preexisting configuration key. If {@code
    * defaultValue} is {@code null}, then no default is used and the user must
    * provide one.
+   * @param key key
+   * @param defaultValue value
    */
   public synchronized void overrideKey(String key, String defaultValue) {
     if (!defaultConfig.containsKey(key) && !noDefaultConfig.contains(key)) {

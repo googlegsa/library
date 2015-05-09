@@ -41,14 +41,21 @@ public class Metadata implements Iterable<Entry<String, String>> {
   public Metadata() {
   }
 
-  /** Duplicate. */
+  /**
+   * Duplicate. 
+   * @param m all key value pairs that this instance should represent 
+   */
   public Metadata(Iterable<Entry<String, String>> m) {
     for (Entry<String, String> e : m) {
       add(e.getKey(), e.getValue());
     }    
   }
 
-  /** Make v be only value associated with key. */
+  /**
+   * Make value be only value associated with key.
+   * @param k key 
+   * @param v value
+   */
   public void set(String k, String v) {
     if (null == k) {
       throw new NullPointerException();
@@ -72,7 +79,11 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   }
 
-  /** Make copy of v be the values associated with key. */
+  /** 
+   * Make copy of v be the values associated with key. 
+   * @param k key
+   * @param v set of values of which none are null
+   */
   public void set(String k, Set<String> v) {
     if (null == k) {
       throw new NullPointerException();
@@ -89,7 +100,11 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   }
 
-  /** Increases values mapped to k with v. */
+  /**
+   * Increases values mapped to k with v. 
+   * @param k key
+   * @param v value that is also to be mapped from k
+   */
   public void add(String k, String v) {
     if (null == k) {
       throw new NullPointerException();
@@ -105,7 +120,10 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   }
 
-  /** Replaces entries inside of this metadata with provided ones. */
+  /**
+   * Replaces entries inside of this metadata with provided ones. 
+   * @param it all key value pairs that this instance should represent 
+   */
   public void set(Iterable<Entry<String, String>> it) {
     mappings.clear();
     for (Entry<String, String> e : it) {
@@ -113,7 +131,11 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }    
   }
 
-  /** Gives unmodifiable reference to inserted values for key, empty if none. */
+  /**
+   * Gives unmodifiable reference to inserted values for key, empty if none. 
+   * @param key to be looked up
+   * @return all values under provided key
+   */
   public Set<String> getAllValues(String key) {
     Set<String> found = mappings.get(key);
     if (null == found) {
@@ -122,7 +144,11 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return Collections.unmodifiableSet(found);
   }
 
-  /** One of the inserted values, or null if none. */
+  /** 
+   * One of the inserted values, or null if none. 
+   * @param key to be looked up
+   * @return String one of the values under provided key
+   */
   public String getOneValue(String key) {
     Set<String> found = mappings.get(key);
     String first = null;
@@ -135,7 +161,10 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return first;
   }
 
-  /** Get modifiable set of all keys with at least one value. */
+  /**
+   * Get modifiable set of all keys with at least one value. 
+   * @return all keys in this instance
+   */
   public Set<String> getKeys() {
     return mappings.keySet();
   }
@@ -209,7 +238,9 @@ public class Metadata implements Iterable<Entry<String, String>> {
     return mappings.hashCode();
   }
 
-  /** True with 0 entries. */
+  /**
+   * @return boolean {@code true} when instance has 0 entries
+   */
   public boolean isEmpty() {
     return mappings.isEmpty();
   }
@@ -257,7 +288,10 @@ public class Metadata implements Iterable<Entry<String, String>> {
     }
   };
 
-  /** Get a reference to an unmodifiable view of this object. */
+  /**
+   * Get a reference to an unmodifiable view of this object. 
+   * @return Metadata copy that cannot be changed
+   */
   public Metadata unmodifiableView() {
     Metadata unmodifiable = new ReadableMetadata();
     // Extra precaution against mappings use, but not against moding

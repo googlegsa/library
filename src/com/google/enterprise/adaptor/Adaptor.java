@@ -45,6 +45,10 @@ public interface Adaptor {
    * <p>If you experience a fatal error, feel free to throw an {@link
    * IOException} or {@link RuntimeException}. In the case of an error, the GSA
    * will determine if and when to retry.
+   * @param request info about document being sought
+   * @param response place to put document data
+   * @throws IOException if getting data fails
+   * @throws InterruptedException if an IO operation throws it
    */
   public void getDocContent(Request request, Response response)
       throws IOException, InterruptedException;
@@ -67,6 +71,9 @@ public interface Adaptor {
    * IOException} or {@link RuntimeException}. In the case of an error, the
    * {@link ExceptionHandler} in use in {@link AdaptorContext} will
    * determine if and when to retry.
+   * @param pusher used to send doc ids to GSA
+   * @throws IOException if getting data fails
+   * @throws InterruptedException if an IO operations throws it
    */
   public void getDocIds(DocIdPusher pusher) throws IOException,
       InterruptedException;
@@ -77,6 +84,7 @@ public interface Adaptor {
    * called. The user's configuration will override any values set in this way.
    * This method is called by {@link AbstractAdaptor#main} before {@link #init}
    * is called.
+   * @param config to modify with additional keys
    */
   public void initConfig(Config config);
 
@@ -94,6 +102,8 @@ public interface Adaptor {
    *
    * <p>If you experience a fatal error during initialization, feel free to
    * throw an {@link Exception} to cancel the startup process.
+   * @param context for instance includes completed config
+   * @throws Exception if things are not going well
    */
   public void init(AdaptorContext context) throws Exception;
 

@@ -44,6 +44,7 @@ public class DocId implements Comparable<DocId> {
 
   /**
    * Returns the string identifier provided to the constructor.
+   * @return String id
    */
   public String getUniqueId() {
     return uniqId;

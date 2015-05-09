@@ -26,22 +26,26 @@ public interface AdaptorContext {
   /**
    * Configuration instance for the adaptor and all things within the adaptor
    * library.
+   * @return Config of an instance
    */
   public Config getConfig();
 
   /**
    * Callback object for pushing {@code DocId}s to the GSA at any time.
+   * @return DocIdPusher sends doc ids to GSA
    */
   public DocIdPusher getDocIdPusher();
 
   /**
    * Callback object for asynchronously pushing {@code DocId}s to the GSA
    * at any time.
+   * @return AsyncDocIdPusher sends doc ids to GSA
    */
   public AsyncDocIdPusher getAsyncDocIdPusher();
 
   /**
    * A way to construct URIs from DocIds.
+   * @return DocIdEncoder makes URLs to this adaptor per doc id
    */
   public DocIdEncoder getDocIdEncoder();
 
@@ -49,27 +53,32 @@ public interface AdaptorContext {
    * Add a status source to the dashboard. The source will automatically be
    * removed just before {@link Adaptor#destroy}. Source registration should
    * occur during {@link Adaptor#init}.
+   * @param source gives data to dashboard
    */
   public void addStatusSource(StatusSource source);
 
   /**
    * Override the default {@link ExceptionHandler} for full push.
+   * @param handler for dealing with errors sending doc ids to GSA
    */
   public void setGetDocIdsFullErrorHandler(ExceptionHandler handler);
 
   /**
    * Retrieve the current {@link ExceptionHandler} for full push.
+   * @return ExceptionHandler deals with errors sending doc ids to GSA
    */
   public ExceptionHandler getGetDocIdsFullErrorHandler();
 
   /**
    * Override the default {@link ExceptionHandler} for incremental push.
+   * @param handler for dealing with errors sending doc ids to GSA
    */
   public void setGetDocIdsIncrementalErrorHandler(
       ExceptionHandler handler);
 
   /**
    * Retrieve the current {@link ExceptionHandler} for incremental push.
+   * @return ExceptionHandler deals with errors sending doc ids to GSA
    */
   public ExceptionHandler getGetDocIdsIncrementalErrorHandler();
 
@@ -78,6 +87,7 @@ public interface AdaptorContext {
    * values, the user should have previously encoded them using the Dashboard.
    * However, a user is still allowed to choose to keep sensitive values in
    * plain text.
+   * @return SensistiveValueDecoder to decode config values
    */
   public SensitiveValueDecoder getSensitiveValueDecoder();
 
@@ -94,6 +104,9 @@ public interface AdaptorContext {
    * addition, the handler and context may be modified before being returned;
    * this is primarily to allow adding commonly-needed filters for error
    * handling and logging, but also available for implementation-specific needs.
+   * @param path on the server
+   * @param handler of requests for path
+   * @return HttpContext for path utility methods
    */
   public HttpContext createHttpContext(String path, HttpHandler handler);
 
@@ -113,18 +126,21 @@ public interface AdaptorContext {
   /**
    * Register a polling incremental lister, so that it can be called when
    * appropriate. Registration may not occur after {@link Adaptor#init}.
+   * @param lister provides updated ids
    */
   public void setPollingIncrementalLister(PollingIncrementalLister lister);
 
   /**
    * Register an authentication provider, so it can authenticate users for the
    * GSA. Registration may not occur after {@link Adaptor#init}.
+   * @param authnAuthority identifies users
    */
   public void setAuthnAuthority(AuthnAuthority authnAuthority);
 
   /**
    * Register an authorization provider, so it can check authorization of users
    * for the GSA. Registration may not occur after {@link Adaptor#init}.
+   * @param authzAuthority makes access decisions
    */
   public void setAuthzAuthority(AuthzAuthority authzAuthority);
 }

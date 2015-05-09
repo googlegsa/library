@@ -25,6 +25,7 @@ public interface StatusSource {
    * order of ten milliseconds. That necessitates that most implementations
    * perform their status checks outside of this method. This method should
    * never return {@code null}.
+   * @return Status current Status
    */
   public Status retrieveStatus();
 
@@ -33,6 +34,7 @@ public interface StatusSource {
    * never return {@code null}.
    *
    * @param locale non-{@code null} locale for localization.
+   * @return String name of this source
    */
   public String getName(Locale locale);
 }

@@ -32,6 +32,7 @@ public class ExceptionHandlers {
    * The default exception handler. Currently it is equivalent to {@code
    * exponentialBackoffHandler(12, 5, TimeUnit.SECONDS)}, but it is free to
    * change in the future.
+   * @return ExceptionHandler that comes with library
    */
   public static ExceptionHandler defaultHandler() {
     return defaultHandler;
@@ -39,6 +40,10 @@ public class ExceptionHandlers {
 
   /**
    * Create a handler that uses exponential backoff to sleep before retrying.
+   * @param maximumTries how many times to try before permanent failure
+   * @param initialSleepDuration is countdown on first failure
+   * @param initialSleepUnit are the units of countdown
+   * @return ExceptionHandler specified by parameters
    */
   public static ExceptionHandler exponentialBackoffHandler(int maximumTries,
       long initialSleepDuration, TimeUnit initialSleepUnit) {
@@ -51,6 +56,7 @@ public class ExceptionHandlers {
 
   /**
    * Create a handler that always returns {@code false}, causing no retries.
+   * @return ExceptionHandler that does not retry
    */
   public static ExceptionHandler noRetryHandler() {
     return noRetryHandler;

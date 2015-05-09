@@ -23,7 +23,8 @@ import java.net.URI;
  */
 public interface DocIdEncoder {
   /**
-   * Encode the provided DocId into a URI.
+   * @param docId to be encoded
+   * @return URI encoding of provided DocId 
    */
   public URI encodeDocId(DocId docId);
 }

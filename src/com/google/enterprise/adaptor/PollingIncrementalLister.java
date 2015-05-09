@@ -55,6 +55,8 @@ public interface PollingIncrementalLister {
    * the amount of latency before the GSA notices the modification.
    *
    * @param pusher convenience reference to pusher
+   * @throws IOException on failure getting doc ids
+   * @throws InterruptedException may percolate from IO calls
    */
   public void getModifiedDocIds(DocIdPusher pusher) throws IOException,
       InterruptedException;

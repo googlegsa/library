@@ -56,6 +56,9 @@ public abstract class AbstractAdaptor implements Adaptor {
    * <p>This method starts the HTTP server for serving doc contents, schedules
    * sending {@code DocId}s on a schedule, and optionally sends {@code DocId}s
    * on startup.
+   * @param adaptor to be initialized
+   * @param args command line params passed to config
+   * @return the application instance in use
    */
   public static Application main(Adaptor adaptor, String[] args) {
     return Application.main(adaptor, args);

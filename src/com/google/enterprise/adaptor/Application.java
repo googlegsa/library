@@ -91,6 +91,8 @@ public final class Application {
    * tasks. Non-daemon threads are created, so call {@link #stop} for graceful
    * manual shutdown. A shutdown hook is automatically installed that calls
    * {@code stop()}.
+   * @throws IOException if failed to start
+   * @throws InterruptedException if interrupted
    */
   public synchronized void start() throws IOException, InterruptedException {
     synchronized (this) {
@@ -206,6 +208,8 @@ public final class Application {
   /**
    * Stop processing incoming requests and background tasks, allowing graceful
    * shutdown.
+   * @param time max count given for stop to complete
+   * @param unit of measure for the countdown
    */
   public void stop(long time, TimeUnit unit) {
     daemonStop(time, unit);
@@ -434,12 +438,12 @@ public final class Application {
     return server;
   }
 
-  /** Returns the {@link GsaCommunicationHandler} used by this instance. */
+  /** @return the {@link GsaCommunicationHandler} used by this instance. */
   public GsaCommunicationHandler getGsaCommunicationHandler() {
     return gsa;
   }
 
-  /** Returns the {@link Config} used by this instance. */
+  /** @return the {@link Config} used by this instance */
   public Config getConfig() {
     return config;
   }
@@ -529,6 +533,8 @@ public final class Application {
    * method primarily parses arguments and creates an application instance
    * before calling it's {@link #start}.
    *
+   * @param adaptor to be initialized
+   * @param args command line params passed to config
    * @return the application instance in use
    */
   public static Application main(Adaptor adaptor, String[] args) {

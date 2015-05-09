@@ -20,16 +20,22 @@ package com.google.enterprise.adaptor;
 public interface Session {
   /**
    * Set attribute value, replacing existing value if it already exists.
+   * @param key key
+   * @param value value
    */
   public void setAttribute(String key, Object value);
 
   /**
    * Get attribute value.
+   * @param key key
+   * @return Object value
    */
   public Object getAttribute(String key);
 
   /**
    * Remove attribute value.
+   * @param key key
+   * @return Object value
    */
   public Object removeAttribute(String key);
 }

@@ -27,6 +27,8 @@ public interface DocumentTransform {
   /**
    * Any changes to {@code metadata} and {@code params} will be
    * passed on to subsequent transforms. This method must be thread-safe.
+   * @param metadata of document
+   * @param params are extra contextual information
    */
   public void transform(Metadata metadata, Map<String, String> params);
 }

@@ -21,7 +21,8 @@ package com.google.enterprise.adaptor;
 public interface SensitiveValueDecoder {
   /**
    * Decode an encoded sensitive string into its original string.
-   *
+   * @param nonReadable is input needing decoding
+   * @return String in readable form
    * @throws IllegalArgumentException if {@code nonReadable} is unable to be
    *     decoded
    */

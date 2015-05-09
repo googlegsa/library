@@ -57,6 +57,7 @@ public interface AuthzAuthority {
    * @param ids Collection of {@code DocId}s that need to be checked
    * @return an {@code AuthzStatus} for each {@code DocId} provided in {@code
    *         ids}
+   * @throws IOException on failure
    */
   public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity userIdentity,
       Collection<DocId> ids) throws IOException;
