@@ -408,7 +408,7 @@
     <java classpath="${build-src.dir}" fork="true" classname="${adaptor.class}">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${src.dir}/logging.properties"/>
+        value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
       <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
       <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
@@ -424,7 +424,7 @@
       classname="${adaptor.pkg.name}.examples.GroupDefinitionsWriter">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${src.dir}/logging.properties"/>
+        value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
       <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
       <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
@@ -441,7 +441,7 @@
       classname="${adaptor.pkg.name}.examples.GroupDefinitionsFromCsv">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${src.dir}/logging.properties"/>
+        value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
       <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
       <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
@@ -458,7 +458,7 @@
       classname="${adaptor.pkg.name}.examples.GroupDefinitionsScaleTester">
       <classpath refid="adaptorlib.run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${src.dir}/logging.properties"/>
+        value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
       <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
       <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
@@ -475,7 +475,7 @@
       <classpath refid="adaptorlib.run.classpath"/>
       <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
       <sysproperty key="java.util.logging.config.file"
-        value="${src.dir}/logging.properties"/>
+        value="logging.properties"/>
     </java>
   </target>
 
