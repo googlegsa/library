@@ -84,7 +84,6 @@ public class Metadata implements Iterable<Entry<String, String>> {
     if (v.isEmpty()) {
       mappings.remove(k);
     } else {
-      v = new TreeSet<String>(v);
       mappings.put(k, v);
     }
   }
