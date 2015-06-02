@@ -37,6 +37,7 @@ class LoggingFilter extends Filter {
 
   @Override
   public void doFilter(HttpExchange ex, Filter.Chain chain) throws IOException {
+    long startMillis = System.currentTimeMillis();
     try {
       log.fine("beginning");
       logRequest(ex);
@@ -51,6 +52,7 @@ class LoggingFilter extends Filter {
       throw e;
     } finally {
       logResponse(ex);
+      logDurationInMillis(ex, startMillis);
       log.fine("ending");
     }
   }
@@ -69,6 +71,13 @@ class LoggingFilter extends Filter {
               new Object[] {ex.getRequestURI(), ex.getRequestMethod(),
                             getLoggableHeaders(ex.getResponseHeaders())});
     }
+  }
+  
+  private static void logDurationInMillis(HttpExchange ex, long startMillis) {
+    log.log(Level.FINE,
+        "Responded to {0} request for {1}. Duration: {2,number,#} ms",
+        new Object[] {ex.getRequestMethod(), ex.getRequestURI(),
+        System.currentTimeMillis() - startMillis});
   }
 
   @VisibleForTesting
