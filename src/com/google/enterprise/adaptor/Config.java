@@ -169,7 +169,7 @@ import java.util.logging.Logger;
  *     enabled then this is the password that the requester must provide.
  *     Defaults to empty string "".
  * <tr><td> </td><td>server.useCompression </td><td> compress retrieval
- *     responses. Defaults to true
+ *     responses. Defaults to false
  * <tr><td> </td><td>transform.acl.X </td><td> where X is an integer, match
  *     and modify principals as described. Defaults no modifications
  * <tr><td> </td><td>transform.pipeline </td><td> sequence of
@@ -241,7 +241,7 @@ public class Config {
     // A queue that takes one second to drain, assuming 16 threads and 100 ms
     // for each request.
     addKey("server.queueCapacity", "160");
-    addKey("server.useCompression", "true");
+    addKey("server.useCompression", "false");
     addKey("server.asyncDocIdSenderQueueSize", "GENERATE",
         new ValueComputer() {
           public String compute(String rawValue) {
