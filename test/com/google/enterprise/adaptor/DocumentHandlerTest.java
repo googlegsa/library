@@ -507,7 +507,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.respondNotModified();
+            response.respondNotModified();            
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -541,7 +541,7 @@ public class DocumentHandlerTest {
         };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
+        .setAdaptor(adaptor)      
         .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
@@ -570,7 +570,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
-
+  
   @Test
   public void testCanRespondWithNoContentNonGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -588,14 +588,14 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
         .setAuthzAuthority(adaptor)
-        .setSendDocControls(true)
+        .setSendDocControls(true)       
         .build();
     ex.getRequestHeaders().set("If-Modified-Since",
         "Thu, 1 Jan 1970 00:00:01 GMT");
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
-
+  
   @Test
   public void testCanRespondWithNoContentGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -612,7 +612,7 @@ public class DocumentHandlerTest {
         };
         String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
         DocumentHandler handler = createHandlerBuilder()
-            .setAdaptor(adaptor)
+            .setAdaptor(adaptor)      
             .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
             .setSendDocControls(true)
             .setGsaVersion("7.4.0-0")
@@ -622,7 +622,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(204, ex.getResponseCode());
   }
-
+  
   @Test
   public void testCanRespondWithNoContentPre74GSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -637,7 +637,7 @@ public class DocumentHandlerTest {
               response.setLastModified(new Date(1 * 1000));
               response.addMetadata("not", "important");
               response.setAcl(Acl.EMPTY);
-              response.getOutputStream();
+              response.getOutputStream();              
               response.getOutputStream().close();
             }
           }
@@ -654,7 +654,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
   }
-
+  
   @Test
   public void testCanRespondWithNoContentPre74NonGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -668,9 +668,9 @@ public class DocumentHandlerTest {
               throw new UnsupportedOperationException();
             }
           }
-        };
+        };    
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
+        .setAdaptor(adaptor)       
         .setSendDocControls(true)
         .setAuthzAuthority(adaptor)
         .setGsaVersion("7.0.0-0")
@@ -680,7 +680,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
-
+  
   @Test
   public void testCanRespondWithNoContentWithChangedContent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -694,11 +694,11 @@ public class DocumentHandlerTest {
               response.setLastModified(new Date(1 * 1000));
               response.addMetadata("not", "important");
               response.setAcl(Acl.EMPTY);
-              response.getOutputStream();
+              response.getOutputStream();              
               response.getOutputStream().close();
             }
           }
-        };
+        };    
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
         .setAuthzAuthority(adaptor)
