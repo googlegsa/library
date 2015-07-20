@@ -1000,8 +1000,34 @@ class DocumentHandler implements HttpHandler {
       Map<String, String> params = new HashMap<String, String>();
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
+      if (null != lastModified) {
+        params.put("Last-Modified", "" + lastModified.getTime());
+      }
+      if (null != displayUrl) {
+        params.put("Display-Url", "" + displayUrl);
+      }
+      params.put("Crawl-Once", "" + crawlOnce);
+      params.put("Lock", "" + lock);
       transform.transform(metadata, params);
       contentType = params.get("Content-Type");
+      try {
+        final long lm = Long.parseLong(params.get("Last-Modified"));
+        if (null != params.get("Last-Modified") && lastModified.getTime() != lm) {
+          lastModified = new Date(lm);
+        }
+      } catch (NumberFormatException e) {
+        log.finer("Cannot change back the last-modified date");
+      }
+      try {
+        final String du = params.get("Display-Url");
+        if (null != du) {
+          displayUrl = new URI(du);
+        }
+      } catch (URISyntaxException e) {
+        log.finer("Cannot create display-url");
+      }
+      crawlOnce = Boolean.parseBoolean(params.get("Crawl-Once"));
+      lock = Boolean.parseBoolean(params.get("Lock"));
     }
 
     private class CloseNotifyOutputStream extends FastFilterOutputStream {
