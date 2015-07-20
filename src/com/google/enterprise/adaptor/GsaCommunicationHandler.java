@@ -298,8 +298,9 @@ public final class GsaCommunicationHandler {
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
         samlServiceProvider, createTransformPipeline(), aclTransform,
+        createContentTransformerPipeline(),
         config.isServerToUseCompression(), watchdog,
-        asyncDocIdSender, 
+        asyncDocIdSender,
         config.doesGsaAcceptDocControlsHeader(),
         config.markAllDocsAsPublic(),
         config.getAdaptorDocHeaderTimeoutMillis(),
@@ -316,7 +317,7 @@ public final class GsaCommunicationHandler {
       final String requiredPasswd = config.getHttpBasicPassword();
 
       log.info("guarding doc content handler with http basic");
-      
+
       docContext.setAuthenticator(new BasicAuthenticator(config.getFeedName()) {
           @Override
           public boolean checkCredentials(String user, String passwd) {
@@ -362,7 +363,7 @@ public final class GsaCommunicationHandler {
         secureValueCodec, adaptor, adaptorContext.statusSources, shutdownHook);
     dashboard.start(dashboardScope);
   }
-   
+
   void tryToPutVersionIntoConfig() throws IOException {
     try {
       if ("GENERATE".equals(config.getGsaVersion())) {  // is not set
@@ -385,6 +386,15 @@ public final class GsaCommunicationHandler {
 
   private TransformPipeline createTransformPipeline() {
     return createTransformPipeline(config.getTransformPipelineSpec());
+  }
+
+  private DocumentContentTransformerPipeline createContentTransformerPipeline() {
+    final List<Map<String, String>> configuration = config.getContentTransformerPipelineSpec();
+    DocumentContentTransformerPipeline pipeline = new DocumentContentTransformerPipeline();
+    for (final Map<String, String> conf : configuration) {
+      pipeline.addContentTransformer(conf);
+    }
+    return pipeline;
   }
 
   @VisibleForTesting

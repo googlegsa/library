@@ -28,7 +28,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.google.common.base.Charsets;
+
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
@@ -402,6 +405,34 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testContentTransformer() throws Exception {
+    DocumentContentTransformerPipeline pipeline = new DocumentContentTransformerPipeline();
+    pipeline.addContentTransformer(new HashMap<String, String>() {
+      {
+        put("class", SampleDocumentContentTransformer.class.getName());
+      }
+    });
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(final Request request, final Response response)
+          throws IOException, InterruptedException {
+        response.setContentType("image/jpeg");
+        OutputStream os = response.getOutputStream();
+        os.write("some cool stuff".getBytes(Charsets.UTF_8));
+        os.close();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[]{remoteIp})
+        .setContentTransformerPipeline(pipeline)
+        .build();
+    handler.handle(ex);
+    assertEquals("some changed stuff", new String(ex.getResponseBytes()));
+  }
+
+  @Test
   public void testNullAuthzResponse() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -476,7 +507,7 @@ public class DocumentHandlerTest {
           @Override
           public void getDocContent(Request request, Response response)
               throws IOException {
-            response.respondNotModified();            
+            response.respondNotModified();
           }
         };
     DocumentHandler handler = createDefaultHandlerForAdaptor(adaptor);
@@ -510,7 +541,7 @@ public class DocumentHandlerTest {
         };
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)      
+        .setAdaptor(adaptor)
         .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
@@ -539,7 +570,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
-  
+
   @Test
   public void testCanRespondWithNoContentNonGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -557,14 +588,14 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
         .setAuthzAuthority(adaptor)
-        .setSendDocControls(true)       
+        .setSendDocControls(true)
         .build();
     ex.getRequestHeaders().set("If-Modified-Since",
         "Thu, 1 Jan 1970 00:00:01 GMT");
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
-  
+
   @Test
   public void testCanRespondWithNoContentGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -581,7 +612,7 @@ public class DocumentHandlerTest {
         };
         String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
         DocumentHandler handler = createHandlerBuilder()
-            .setAdaptor(adaptor)      
+            .setAdaptor(adaptor)
             .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
             .setSendDocControls(true)
             .setGsaVersion("7.4.0-0")
@@ -591,7 +622,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(204, ex.getResponseCode());
   }
-  
+
   @Test
   public void testCanRespondWithNoContentPre74GSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -606,7 +637,7 @@ public class DocumentHandlerTest {
               response.setLastModified(new Date(1 * 1000));
               response.addMetadata("not", "important");
               response.setAcl(Acl.EMPTY);
-              response.getOutputStream();              
+              response.getOutputStream();
               response.getOutputStream().close();
             }
           }
@@ -623,7 +654,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
   }
-  
+
   @Test
   public void testCanRespondWithNoContentPre74NonGSARequest() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -637,9 +668,9 @@ public class DocumentHandlerTest {
               throw new UnsupportedOperationException();
             }
           }
-        };    
+        };
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)       
+        .setAdaptor(adaptor)
         .setSendDocControls(true)
         .setAuthzAuthority(adaptor)
         .setGsaVersion("7.0.0-0")
@@ -649,7 +680,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(304, ex.getResponseCode());
   }
-  
+
   @Test
   public void testCanRespondWithNoContentWithChangedContent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
@@ -663,11 +694,11 @@ public class DocumentHandlerTest {
               response.setLastModified(new Date(1 * 1000));
               response.addMetadata("not", "important");
               response.setAcl(Acl.EMPTY);
-              response.getOutputStream();              
+              response.getOutputStream();
               response.getOutputStream().close();
             }
           }
-        };    
+        };
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
         .setAuthzAuthority(adaptor)
@@ -1693,6 +1724,23 @@ public class DocumentHandlerTest {
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
   }
 
+  private static class SampleDocumentContentTransformer extends DocumentContentTransformer {
+
+    public SampleDocumentContentTransformer(Map<String, String> config, OutputStream originalStream,
+                                            String contentType, Metadata metadata) {
+      super(config, originalStream, contentType, metadata);
+    }
+
+    @Override
+    public void write(final byte[] b) throws IOException {
+      if (contentType().equals("image/jpeg")) {
+        originalStream().write("some changed stuff".getBytes(Charsets.UTF_8));
+      } else {
+        super.write(b);
+      }
+    }
+  }
+
   private static class UserPrivateMockAdaptor extends MockAdaptor {
       @Override
       public Map<DocId, AuthzStatus> isUserAuthorized(AuthnIdentity identity,
@@ -1762,6 +1810,7 @@ public class DocumentHandlerTest {
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private TransformPipeline transform;
+    private DocumentContentTransformerPipeline contentTransformerPipeline;
     private AclTransform aclTransform
         = new AclTransform(Arrays.<AclTransform.Rule>asList());
     private int transformMaxBytes;
@@ -1824,6 +1873,12 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setContentTransformerPipeline(
+        DocumentContentTransformerPipeline contentTransformerPipeline) {
+      this.contentTransformerPipeline = contentTransformerPipeline;
+      return this;
+    }
+
     public DocumentHandlerBuilder setAclTransform(AclTransform aclTransform) {
       this.aclTransform = aclTransform;
       return this;
@@ -1880,7 +1935,7 @@ public class DocumentHandlerTest {
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
-          transform, aclTransform, useCompression, watchdog, pusher,
+          transform, aclTransform, contentTransformerPipeline, useCompression, watchdog, pusher,
           sendDocControls, markDocsPublic, headerTimeoutMillis,
           contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata, gsaVersion);
     }
