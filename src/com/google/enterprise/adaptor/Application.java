@@ -152,6 +152,7 @@ public final class Application {
     boolean success = false;
     try {
       realDaemonStart();
+      log.info("doc content serving started");
       success = true;
     } finally {
       log.finest("daemonStart is leaving with success=" + success);
@@ -235,7 +236,7 @@ public final class Application {
     try {
       synchronized (this) {
         if (primaryServer == null) {
-          throw new IllegalStateException("Already stopped");
+          return;  // Already stopped.
         }
         config.removeConfigModificationListener(configModListener);
         gsa.stop(time, unit);
@@ -538,16 +539,10 @@ public final class Application {
    * @return the application instance in use
    */
   public static Application main(Adaptor adaptor, String[] args) {
-    logProductVersion(adaptor.getClass());
-    logProductVersion(Application.class);
-    log.info(new Dashboard.JavaVersionStatusSource().retrieveStatus()
-        .getMessage(Locale.ENGLISH));
-
     // Setup providing content.
     try {
       Application app = daemonMain(adaptor, args);
       app.start();
-      log.info("doc content serving started");
       return app;
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
@@ -567,6 +562,11 @@ public final class Application {
    * the application.
    */
   static Application daemonMain(Adaptor adaptor, String[] args) {
+    logProductVersion(adaptor.getClass());
+    logProductVersion(Application.class);
+    log.info(new Dashboard.JavaVersionStatusSource().retrieveStatus()
+        .getMessage(Locale.ENGLISH));
+
     Config config = new Config();
     adaptor.initConfig(config);
     autoConfig(config, args, new File(DEFAULT_CONFIG_FILE));

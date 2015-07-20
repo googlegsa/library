@@ -27,7 +27,7 @@ class MockAdaptor extends AbstractAdaptor implements AuthzAuthority {
   public byte[] documentBytes = new byte[] {1, 2, 3};
 
   @Override
-  public void init(AdaptorContext context) {
+  public void init(AdaptorContext context) throws Exception {
     context.setAuthzAuthority(this);
   }
 

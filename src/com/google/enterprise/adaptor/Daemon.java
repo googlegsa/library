@@ -21,6 +21,9 @@ import org.apache.commons.daemon.DaemonController;
 
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Allows running an adaptor as a daemon when used in conjunction with procrun
@@ -49,8 +52,12 @@ import java.util.concurrent.TimeUnit;
 
  */
 public class Daemon implements org.apache.commons.daemon.Daemon {
+  private static final Logger log
+      = Logger.getLogger(Daemon.class.getName());
+
   /** Windows-specific instance for keeping track of running Daemon. */
-  private static Daemon windowsDaemon;
+  private static final AtomicReference<Daemon> windowsDaemon
+      = new AtomicReference<Daemon>();
 
   private Application app;
   private DaemonContext context;
@@ -76,11 +83,14 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
 
   @Override
   public synchronized void destroy() {
-    if (app != null) {
-      app.daemonDestroy(5, TimeUnit.SECONDS);
+    try {
+      if (app != null) {
+        app.daemonDestroy(5, TimeUnit.SECONDS);
+      }
+    } finally {
+      context = null;
+      app = null;
     }
-    context = null;
-    app = null;
   }
 
   @Override
@@ -106,7 +116,7 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
           // We must be shutting down.
           Thread.currentThread().interrupt();
         } catch (Exception ex) {
-          savedContext.getController().fail(ex);
+          savedContext.getController().fail("Failed to start service.", ex);
         }
       }
     });
@@ -116,22 +126,39 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
 
   @Override
   public synchronized void stop() throws Exception {
-    app.daemonStop(5, TimeUnit.SECONDS);
+    if (app != null) {
+      app.daemonStop(5, TimeUnit.SECONDS);
+    }
   }
 
-  public static synchronized void serviceStart(String[] args) throws Exception {
-    if (windowsDaemon != null) {
+  public static void serviceStart(String[] args) throws Exception {
+    Daemon daemon = new Daemon();
+    if (!windowsDaemon.compareAndSet(null, daemon)) {
       throw new IllegalStateException("Service already running");
     }
-    windowsDaemon = new Daemon();
-    windowsDaemon.init(new WindowsDaemonContext(args));
-    windowsDaemon.start();
+    WindowsDaemonController daemonController = new WindowsDaemonController();
+    try {
+      daemon.init(new WindowsDaemonContext(args, daemonController));
+      daemon.start();
+    } catch (Exception e) {
+      daemonController.fail("Failed to start service.", e);
+    }
   }
 
-  public static synchronized void serviceStop(String[] args) throws Exception {
-    windowsDaemon.stop();
-    windowsDaemon.destroy();
-    windowsDaemon = null;
+  public static void serviceStop(String[] args) throws Exception {
+    Daemon daemon = windowsDaemon.getAndSet(null);
+    if (daemon != null) {
+      try {
+        daemon.stop();
+      } finally {
+        daemon.destroy();
+      }
+    }
+  }
+
+  @VisibleForTesting
+  static Daemon getServiceDaemon() {
+    return windowsDaemon.get();
   }
 
   @VisibleForTesting
@@ -139,11 +166,46 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
     return app;
   }
 
+  private static class WindowsDaemonController implements DaemonController {
+    @Override
+    public void fail(String message, Exception exception) {
+      log.log(Level.SEVERE, message, exception);
+      shutdown();
+    }
+      
+    @Override
+    public void shutdown() {
+      try {
+        Daemon.serviceStop(new String[0]);
+      } catch (Exception e) {
+        log.log(Level.SEVERE, "Shutdown failed", e);
+      }
+    }
+
+    @Override public void fail() {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public void fail(Exception exception) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public void fail(String message) {
+      throw new UnsupportedOperationException();
+    }
+
+    @Override public void reload() {
+      throw new UnsupportedOperationException();
+    }
+  }
+
   private static class WindowsDaemonContext implements DaemonContext {
     private final String[] args;
+    private final DaemonController controller;
 
-    public WindowsDaemonContext(String[] args) {
+    public WindowsDaemonContext(String[] args, DaemonController controller) {
       this.args = Arrays.copyOf(args, args.length);
+      this.controller = controller;
     }
 
     /**
@@ -158,7 +220,7 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
 
     @Override
     public DaemonController getController() {
-      throw new UnsupportedOperationException();
+      return controller;
     }
   }
 }
