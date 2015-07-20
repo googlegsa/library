@@ -86,17 +86,17 @@ public class DocumentContentTransformer extends OutputStream {
 
   @Override
   public void write(int b) throws IOException {
-    originalStream().write(b);
+    originalStream.write(b);
   }
 
   @Override
   public void write(byte[] b) throws IOException {
-    originalStream().write(b);
+    originalStream.write(b);
   }
 
   @Override
   public void write(byte[] b, int off, int len) throws IOException {
-    originalStream().write(b, off, len);
+    originalStream.write(b, off, len);
   }
 
   @Override
