@@ -34,6 +34,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -406,12 +407,16 @@ public class DocumentHandlerTest {
 
   @Test
   public void testContentTransformer() throws Exception {
-    DocumentContentTransformerPipeline pipeline = new DocumentContentTransformerPipeline();
-    pipeline.addContentTransformer(new HashMap<String, String>() {
-      {
-        put("class", SampleDocumentContentTransformer.class.getName());
-      }
-    });
+    DocumentContentTransformerPipeline pipeline = new DocumentContentTransformerPipeline(
+        new ArrayList<Map<String, String>>() {
+          {
+            add(new HashMap<String, String>() {
+              {
+                put("class", SampleDocumentContentTransformer.class.getName());
+              }
+            });
+          }
+        });
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(final Request request, final Response response)
@@ -1724,17 +1729,19 @@ public class DocumentHandlerTest {
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
   }
 
-  private static class SampleDocumentContentTransformer extends DocumentContentTransformer {
+  private static class SampleDocumentContentTransformer
+      extends DocumentContentTransformer {
 
-    public SampleDocumentContentTransformer(Map<String, String> config, OutputStream originalStream,
-                                            String contentType, Metadata metadata) {
+    public SampleDocumentContentTransformer(
+        Map<String, String> config, OutputStream originalStream,
+        String contentType, Metadata metadata) {
       super(config, originalStream, contentType, metadata);
     }
 
     @Override
     public void write(final byte[] b) throws IOException {
-      if (contentType().equals("image/jpeg")) {
-        originalStream().write("some changed stuff".getBytes(Charsets.UTF_8));
+      if (contentType.equals("image/jpeg")) {
+        super.write("some changed stuff".getBytes(Charsets.UTF_8));
       } else {
         super.write(b);
       }

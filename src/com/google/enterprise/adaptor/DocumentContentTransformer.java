@@ -2,6 +2,7 @@ package com.google.enterprise.adaptor;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.Collections;
 import java.util.Map;
 
 /**
@@ -11,77 +12,23 @@ import java.util.Map;
  */
 public class DocumentContentTransformer extends OutputStream {
 
-  /**
-   * Configuration.
-   */
-  private final Map<String, String> config;
-
-  /**
-   * Original content stream.
-   */
+  protected final Map<String, String> config;
+  protected final Metadata metadata;
+  protected final String contentType;
   private OutputStream originalStream;
 
-  /**
-   * Content type.
-   */
-  private String contentType;
-
-  /**
-   * Metadata.
-   */
-  private final Metadata metadata;
-
-  /**
-   * Constructor.
-   *
-   * @param config         {@link #config}
-   * @param originalStream {@link #originalStream}
-   * @param contentType    {@link #contentType}
-   * @param metadata       {@link #metadata}
-   */
   public DocumentContentTransformer(final Map<String, String> config,
                                     final OutputStream originalStream, final String contentType,
                                     final Metadata metadata) {
-    this.config = config;
+    // config and metadata cannot be null
+    // contentType possibly be null, but it is allowed
+    if (null == originalStream) {
+      throw new NullPointerException();
+    }
+    this.config = Collections.unmodifiableMap(config);
     this.originalStream = originalStream;
     this.contentType = contentType;
     this.metadata = metadata;
-  }
-
-  /**
-   * Getter for {@link #config}.
-   *
-   * @return {@link #config}
-   */
-  public final Map<String,String> config() {
-    return config;
-  }
-
-  /**
-   * Getter for {@link #originalStream}.
-   *
-   * @return {@link #originalStream}
-   */
-  public final OutputStream originalStream() {
-    return originalStream;
-  }
-
-  /**
-   * Getter for {@link #contentType}.
-   *
-   * @return {@link #contentType}
-   */
-  public final String contentType() {
-    return contentType;
-  }
-
-  /**
-   * Getter for {@link #metadata}.
-   *
-   * @return {@link #metadata}
-   */
-  public final Metadata metadata() {
-      return metadata;
   }
 
   @Override

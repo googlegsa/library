@@ -389,12 +389,7 @@ public final class GsaCommunicationHandler {
   }
 
   private DocumentContentTransformerPipeline createContentTransformerPipeline() {
-    final List<Map<String, String>> configuration = config.getContentTransformerPipelineSpec();
-    DocumentContentTransformerPipeline pipeline = new DocumentContentTransformerPipeline();
-    for (final Map<String, String> conf : configuration) {
-      pipeline.addContentTransformer(conf);
-    }
-    return pipeline;
+    return new DocumentContentTransformerPipeline(config.getContentTransformerPipelineSpec());
   }
 
   @VisibleForTesting

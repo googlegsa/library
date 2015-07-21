@@ -18,31 +18,13 @@ import java.util.logging.Logger;
  */
 public class DocumentContentTransformerPipeline {
 
-  /**
-   * Logger.
-   */
   private static final Logger LOG =
       Logger.getLogger(DocumentContentTransformerPipeline.class.getName());
 
-  /**
-   * Content transformer classes.
-   */
   private List<Map<String, String>> contentTransformers;
 
-  /**
-   * Constructor.
-   */
-  public DocumentContentTransformerPipeline() {
-    contentTransformers = Lists.newLinkedList();
-  }
-
-  /**
-   * Add a content transformer.
-   *
-   * @param contentTransformer content transformer configuration
-   */
-  public final void addContentTransformer(final Map<String, String> contentTransformer) {
-    contentTransformers.add(0, contentTransformer);
+  public DocumentContentTransformerPipeline(final List<Map<String, String>> contentTransformers) {
+    this.contentTransformers = contentTransformers;
   }
 
   /**
