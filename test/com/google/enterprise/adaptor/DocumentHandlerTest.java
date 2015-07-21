@@ -28,9 +28,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -38,7 +42,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,6 +56,18 @@ import javax.security.auth.x500.X500Principal;
  * Tests for {@link DocumentHandler}.
  */
 public class DocumentHandlerTest {
+  /** RFC 822 date format, as updated by RFC 1123. */
+  private static final ThreadLocal<DateFormat> dateFormatRfc1123
+      = new ThreadLocal<DateFormat>() {
+    @Override
+    protected DateFormat initialValue() {
+      DateFormat df = new SimpleDateFormat(
+          "EEE, dd MMM yyyy HH:mm:ss zzz", Locale.ENGLISH);
+      df.setTimeZone(TimeZone.getTimeZone("GMT"));
+      return df;
+    }
+  };
+
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
@@ -732,6 +750,72 @@ public class DocumentHandlerTest {
         .build();
     thrown.expect(RuntimeException.class);
     handler.handle(ex);
+  }
+
+  @Test
+  public void testMetadataTransformWithLastModified() throws Exception {
+    final Date oDate = new Date(0);
+    final Date nDate = new Date();
+    MockAdaptor adaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setLastModified(oDate);
+        response.respondNoContent();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
+        .setTransform(new TransformPipeline(Lists.newArrayList(new DocumentTransform() {
+          @Override
+          public void transform(Metadata metadata, Map<String, String> params) {
+            assertEquals(oDate.getTime(), Long.parseLong(params.get("Last-Modified-Millis-UTC")));
+            params.put("Last-Modified-Millis-UTC", "" + nDate.getTime());
+          }
+        }), Lists.newArrayList("sample-transformer")))
+        .build();
+    handler.handle(ex);
+    assertEquals(dateFormatRfc1123.get().format(nDate),
+        ex.getResponseHeaders().getFirst("Last-modified"));
+  }
+
+  @Test
+  public void testMetadataTransformWithDisplayURL() throws Exception {
+    final String oDu = "http://google.com/display-url";
+    MockAdaptor adaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        try {
+          response.setDisplayUrl(new URI(oDu));
+        } catch (URISyntaxException e) {
+          fail(e.getMessage());
+        }
+        response.getOutputStream().write("wohoo".getBytes(Charsets.UTF_8));
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setSendDocControls(true)
+        .setGsaVersion("7.4.0-0")
+        .setTransform(new TransformPipeline(Lists.newArrayList(new DocumentTransform() {
+          @Override
+          public void transform(Metadata metadata, Map<String, String> params) {
+            final String du = params.get("Display-URL");
+            assertEquals(oDu, du);
+            params.put("Display-URL", "https://google.com/display-url");
+          }
+        }), Lists.newArrayList("sample-transformer")))
+        .build();
+    handler.handle(ex);
+    assertEquals("display_url=https%3A%2F%2Fgoogle.com%2Fdisplay-url",
+        ex.getResponseHeaders().get("X-gsa-doc-controls").get(1));
   }
 
   @Test

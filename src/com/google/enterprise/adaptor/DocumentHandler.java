@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import static java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -1001,30 +1002,36 @@ class DocumentHandler implements HttpHandler {
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
       if (null != lastModified) {
-        params.put("Last-Modified", "" + lastModified.getTime());
+        params.put("Last-Modified-Millis-UTC", "" + lastModified.getTime());
       }
+      String origDisplayUrl = null;
       if (null != displayUrl) {
-        params.put("Display-Url", "" + displayUrl);
+        origDisplayUrl = "" + displayUrl;
       }
+      params.put("Display-URL", origDisplayUrl);
       params.put("Crawl-Once", "" + crawlOnce);
       params.put("Lock", "" + lock);
       transform.transform(metadata, params);
       contentType = params.get("Content-Type");
       try {
-        final long lm = Long.parseLong(params.get("Last-Modified"));
-        if (null != params.get("Last-Modified") && lastModified.getTime() != lm) {
-          lastModified = new Date(lm);
+        final String lmMillisUTC = params.get("Last-Modified-Millis-UTC");
+        if (!Strings.isNullOrEmpty(lmMillisUTC)) {
+          final long lm = Long.parseLong(lmMillisUTC);
+          if (lastModified.getTime() != lm) {
+            lastModified = new Date(lm);
+          }
         }
       } catch (NumberFormatException e) {
-        log.finer("Cannot change back the last-modified date");
+        log.log(Level.FINER,
+            "Failed changing last-modified date {0}", params.get("Last-Modified-Millis-UTC"));
       }
       try {
-        final String du = params.get("Display-Url");
-        if (null != du) {
+        final String du = params.get("Display-URL");
+        if (!Strings.isNullOrEmpty(du)) {
           displayUrl = new URI(du);
         }
       } catch (URISyntaxException e) {
-        log.finer("Cannot create display-url");
+        log.log(Level.FINER, "Failed changing display URL {0}", params.get("Display-URL"));
       }
       crawlOnce = Boolean.parseBoolean(params.get("Crawl-Once"));
       lock = Boolean.parseBoolean(params.get("Lock"));
