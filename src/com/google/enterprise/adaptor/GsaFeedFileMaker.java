@@ -24,7 +24,9 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -69,6 +71,7 @@ class GsaFeedFileMaker {
   private final boolean crawlImmediatelyOverrideValue;
   private final boolean crawlOnceIsOverriden;
   private final boolean crawlOnceOverrideValue;
+  private final List<String> commentsForFeed;
 
   public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform) {
     this(encoder, aclTransform, false, false);
@@ -78,7 +81,8 @@ class GsaFeedFileMaker {
       boolean separateClosingRecordTagWorkaround,
       boolean useAuthMethodWorkaround) {
     this(encoder, aclTransform, separateClosingRecordTagWorkaround,
-        useAuthMethodWorkaround, false, false, false, false);
+        useAuthMethodWorkaround, false, false, false, false,
+        Collections.<String>emptyList());
   }
 
   public GsaFeedFileMaker(DocIdEncoder encoder, AclTransform aclTransform,
@@ -87,7 +91,8 @@ class GsaFeedFileMaker {
       boolean overrideCrawlImmediately,
       boolean crawlImmediately,
       boolean overrideCrawlOnce,
-      boolean crawlOnce) {
+      boolean crawlOnce,
+      List<String> commentsToIncludeInFeedFile) {
     this.idEncoder = encoder;
     this.aclTransform = aclTransform;
     this.separateClosingRecordTagWorkaround
@@ -97,14 +102,24 @@ class GsaFeedFileMaker {
     this.crawlImmediatelyOverrideValue = crawlImmediately;
     this.crawlOnceIsOverriden = overrideCrawlOnce;
     this.crawlOnceOverrideValue = crawlOnce;
+    if (commentsToIncludeInFeedFile.isEmpty()) {
+      // Including one comment to avoid self-closing XML.
+      this.commentsForFeed = Collections.singletonList(
+          "GSA EasyConnector");
+    } else {
+      this.commentsForFeed = Collections.unmodifiableList(
+          new ArrayList<String>(commentsToIncludeInFeedFile));
+    }
   }
 
   /** Adds header to document's root.
       @param srcName Used as datasource name. */
   private void constructMetadataAndUrlFeedFileHead(Document doc,
       Element root, String srcName) {
-    Comment comment = doc.createComment("GSA EasyConnector");
-    root.appendChild(comment);
+    for (String commentString : commentsForFeed) {
+      Comment comment = doc.createComment(commentString);
+      root.appendChild(comment);
+    }
     Element header = doc.createElement("header");
     root.appendChild(header);
     Element datasource = doc.createElement("datasource");
@@ -358,8 +373,10 @@ class GsaFeedFileMaker {
       boolean caseSensitiveMembers) {
     Element root = doc.createElement("xmlgroups");
     doc.appendChild(root);
-    Comment comment = doc.createComment("GSA EasyConnector");
-    root.appendChild(comment);
+    for (String commentString : commentsForFeed) {
+      Comment comment = doc.createComment(commentString);
+      root.appendChild(comment);
+    }
     constructGroupDefinitionsFileBody(doc, root, items, caseSensitiveMembers);
   }
 

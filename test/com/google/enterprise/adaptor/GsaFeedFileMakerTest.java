@@ -23,6 +23,7 @@ import org.junit.rules.ExpectedException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -497,7 +498,8 @@ public class GsaFeedFileMakerTest {
         /*override crawl-immediately?*/ true,
         /*crawl-immediately value*/ false,
         /*override crawl-once?*/ false,
-        /*crawl-once value*/ false);
+        /*crawl-once value*/ false,
+        Collections.<String>emptyList());
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -582,7 +584,8 @@ public class GsaFeedFileMakerTest {
         /*override crawl-immediately?*/ false,
         /*crawl-immediately value*/ false,
         /*override crawl-once?*/ true,
-        /*crawl-once value*/ false);
+        /*crawl-once value*/ false,
+        Collections.<String>emptyList());
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
@@ -655,6 +658,46 @@ public class GsaFeedFileMakerTest {
     ids.add(new DocIdPusher.Record.Builder(new DocId("deleted"))
         .setDeleteFromIndex(true).build());
 
+    String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
+    xml = xml.replaceAll("\r\n", "\n");
+    assertEquals(golden, xml);
+  }
+
+  @Test
+  public void testCustomComments() {
+    List<String> customComments = new ArrayList<String>() {{
+      add("We must prepare for tomorrow night.");
+      add("Why? What are we going to do tomorrow night?");
+      add("The same thing we do every night, Pinky "
+          + " - try to take over the world!");
+      add("They're Pinky, They're Pinky and the Brain Brain Brain Brain!");
+    }};
+    GsaFeedFileMaker lclMeker = new GsaFeedFileMaker(encoder, aclTransform,
+        false, false,
+        /*override crawl-immediately?*/ false,
+        /*crawl-immediately value*/ false,
+        /*override crawl-once?*/ true,
+        /*crawl-once value*/ false,
+        customComments
+        );
+    String golden =
+        "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
+        + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
+        + "<gsafeed>\n"
+        + "<!--We must prepare for tomorrow night.-->\n" 
+        + "<!--Why? What are we going to do tomorrow night?-->\n"
+        + "<!--The same thing we do every night, Pinky "
+            + " - try to take over the world!-->\n"
+        + "<!--They're Pinky, They're Pinky and the Brain Brain Brain Brain!-->"
+        + "\n"
+        + "<header>\n"
+        + "<datasource>t3sT</datasource>\n"
+        + "<feedtype>metadata-and-url</feedtype>\n"
+        + "</header>\n"
+        + "<group/>\n"
+        + "</gsafeed>\n";
+
+    ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);

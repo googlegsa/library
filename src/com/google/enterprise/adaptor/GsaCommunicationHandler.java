@@ -51,6 +51,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
@@ -208,13 +209,15 @@ public final class GsaCommunicationHandler {
         config.getGsaHostname(), config.isServerSecure(), // use secure bool?
         config.getGsaCharacterEncoding());
     aclTransform = createAclTransform();
+    List<String> comments = formUsefulFeedFileComments(adaptor);
     GsaFeedFileMaker fileMaker = new GsaFeedFileMaker(docIdCodec, aclTransform,
         config.isGsa614FeedWorkaroundEnabled(),
         config.isGsa70AuthMethodWorkaroundEnabled(),
         config.isCrawlImmediatelyBitEnabled().isOverriden,
         config.isCrawlImmediatelyBitEnabled().value,
         config.isFeedNoRecrawlBitEnabled().isOverriden,
-        config.isFeedNoRecrawlBitEnabled().value);
+        config.isFeedNoRecrawlBitEnabled().value,
+        comments);
     GsaFeedFileArchiver fileArchiver =
         new GsaFeedFileArchiver(config.getFeedArchiveDirectory());
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
@@ -483,6 +486,16 @@ public final class GsaCommunicationHandler {
       rules.add(new AclTransform.Rule(search, replace));
     }
     return new AclTransform(rules);
+  }
+
+  /* Some lines to include in feed files for identitication of origin. */
+  private List<String> formUsefulFeedFileComments(Adaptor adaptor) {
+    List<String> com = new ArrayList<String>(3);
+    com.add(Application.productVersion(adaptor.getClass()));
+    com.add(Application.productVersion(Application.class));
+    com.add(new Dashboard.JavaVersionStatusSource().retrieveStatus()
+        .getMessage(Locale.ENGLISH));
+    return com;
   }
 
   private static AclTransform.MatchData parseAclTransformMatchData(String s) {

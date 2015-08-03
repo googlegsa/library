@@ -562,8 +562,8 @@ public final class Application {
    * the application.
    */
   static Application daemonMain(Adaptor adaptor, String[] args) {
-    logProductVersion(adaptor.getClass());
-    logProductVersion(Application.class);
+    log.info(productVersion(adaptor.getClass()));
+    log.info(productVersion(Application.class));
     log.info(new Dashboard.JavaVersionStatusSource().retrieveStatus()
         .getMessage(Locale.ENGLISH));
 
@@ -573,7 +573,7 @@ public final class Application {
     return new Application(adaptor, config);
   }
 
-  private static void logProductVersion(Class <?> clazz) {
+  static String productVersion(Class <?> clazz) {
     String title = null;
     String version = null;
     String vendor = null;
@@ -590,7 +590,7 @@ public final class Application {
     if (vendor != null) {
       builder.append(",  ").append(vendor);
     }
-    log.info(builder.toString());
+    return builder.toString();
   }
 
   private class ShutdownHook implements Runnable {
