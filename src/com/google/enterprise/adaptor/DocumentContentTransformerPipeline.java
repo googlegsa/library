@@ -47,8 +47,9 @@ public class DocumentContentTransformerPipeline {
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
         LOG.log(Level.SEVERE,
-            "Document Content Transformer class is missing");
-        continue;
+            "Document Content Transformer class is missing {0}", className);
+        throw new RuntimeException(
+            "Document Content Transformer class is missing " + className);
       }
       try {
         //noinspection unchecked
