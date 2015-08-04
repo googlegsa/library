@@ -1,7 +1,6 @@
 package com.google.enterprise.adaptor;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
 
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
@@ -46,7 +45,7 @@ public class DocumentContentTransformerPipeline {
     for (final Map<String, String> tConfig : contentTransformers) {
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
-        LOG.log(Level.WARNING,
+        LOG.log(Level.SEVERE,
             "Document Content Transformer class is missing");
         continue;
       }
@@ -67,6 +66,8 @@ public class DocumentContentTransformerPipeline {
                   contentType, metadata);
         }
       } catch (Exception e) {
+        LOG.log(Level.SEVERE,
+            "Cannot use document content transformer of type {0}", className);
         throw new RuntimeException(
             "Cannot use document content transformer of type " + className);
       }
