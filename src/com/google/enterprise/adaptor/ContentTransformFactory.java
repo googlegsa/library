@@ -42,7 +42,8 @@ public class ContentTransformFactory {
       return original;
     }
     DocumentContentTransformer contentTransformer = null;
-    for (final Map<String, String> tConfig : contentTransformers) {
+    for (int i = contentTransformers.size(); i >= 0; i--) {
+      final Map<String, String> tConfig = contentTransformers.get(i);
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
         LOG.log(Level.SEVERE,
