@@ -3,6 +3,7 @@ package com.google.enterprise.adaptor;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -34,7 +35,7 @@ public class DocumentContentTransformer extends OutputStream {
     if (null == originalStream) {
       throw new NullPointerException();
     }
-    this.config = Collections.unmodifiableMap(config);
+    this.config = Collections.unmodifiableMap(new HashMap<String, String>(config));
     this.originalStream = originalStream;
     this.contentType = contentType;
     this.metadata = metadata;
