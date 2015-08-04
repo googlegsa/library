@@ -1004,11 +1004,11 @@ class DocumentHandler implements HttpHandler {
       if (null != lastModified) {
         params.put("Last-Modified-Millis-UTC", "" + lastModified.getTime());
       }
-      String origDisplayUrl = null;
+      String origDisplayUrlStr = null;
       if (null != displayUrl) {
-        origDisplayUrl = "" + displayUrl;
+        origDisplayUrlStr = "" + displayUrl;
+        params.put("Display-URL", origDisplayUrlStr);
       }
-      params.put("Display-URL", origDisplayUrl);
       params.put("Crawl-Once", "" + crawlOnce);
       params.put("Lock", "" + lock);
       transform.transform(metadata, params);
@@ -1027,7 +1027,7 @@ class DocumentHandler implements HttpHandler {
       }
       try {
         final String du = params.get("Display-URL");
-        if (!Strings.isNullOrEmpty(du)) {
+        if (!Strings.isNullOrEmpty(du) && !du.equals(origDisplayUrlStr)) {
           displayUrl = new URI(du);
         }
       } catch (URISyntaxException e) {
