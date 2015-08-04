@@ -407,7 +407,7 @@ public class DocumentHandlerTest {
 
   @Test
   public void testContentTransformer() throws Exception {
-    DocumentContentTransformerPipeline pipeline = new DocumentContentTransformerPipeline(
+    ContentTransformFactory contentTransformFactory = new ContentTransformFactory(
         new ArrayList<Map<String, String>>() {
           {
             add(new HashMap<String, String>() {
@@ -431,7 +431,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[]{remoteIp})
-        .setContentTransformerPipeline(pipeline)
+        .setContentTransformerPipeline(contentTransformFactory)
         .build();
     handler.handle(ex);
     assertEquals("some changed stuff", new String(ex.getResponseBytes()));
@@ -1817,7 +1817,7 @@ public class DocumentHandlerTest {
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private TransformPipeline transform;
-    private DocumentContentTransformerPipeline contentTransformerPipeline;
+    private ContentTransformFactory contentTransformerPipeline;
     private AclTransform aclTransform
         = new AclTransform(Arrays.<AclTransform.Rule>asList());
     private int transformMaxBytes;
@@ -1881,7 +1881,7 @@ public class DocumentHandlerTest {
     }
 
     public DocumentHandlerBuilder setContentTransformerPipeline(
-        DocumentContentTransformerPipeline contentTransformerPipeline) {
+        ContentTransformFactory contentTransformerPipeline) {
       this.contentTransformerPipeline = contentTransformerPipeline;
       return this;
     }

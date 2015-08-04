@@ -77,7 +77,7 @@ class DocumentHandler implements HttpHandler {
   private final SamlServiceProvider samlServiceProvider;
   private final TransformPipeline transform;
   private final AclTransform aclTransform;
-  private final DocumentContentTransformerPipeline contentTransformerPipeline;
+  private final ContentTransformFactory contentTransformFactory;
   private final boolean useCompression;
   private final boolean sendDocControls;
   private final boolean markDocsPublic;
@@ -97,7 +97,7 @@ class DocumentHandler implements HttpHandler {
                          String gsaHostname, String[] fullAccessHosts,
                          SamlServiceProvider samlServiceProvider,
                          TransformPipeline transform, AclTransform aclTransform,
-                         DocumentContentTransformerPipeline contentTransformerPipeline,
+                         ContentTransformFactory contentTransformFactory,
                          boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,
                          boolean sendDocControls, boolean markDocsPublic,
@@ -118,7 +118,7 @@ class DocumentHandler implements HttpHandler {
     this.samlServiceProvider = samlServiceProvider;
     this.transform = transform;
     this.aclTransform = aclTransform;
-    this.contentTransformerPipeline = contentTransformerPipeline;
+    this.contentTransformFactory = contentTransformFactory;
     this.useCompression = useCompression;
     this.watchdog = watchdog;
     this.pusher = pusher;
@@ -690,8 +690,8 @@ class DocumentHandler implements HttpHandler {
             ex.getResponseBody()));
         os = countingOs;
       }
-      if (null != contentTransformerPipeline) {
-        return contentTransformerPipeline.createPipeline(os, contentType, metadata);
+      if (null != contentTransformFactory) {
+        return contentTransformFactory.createPipeline(os, contentType, metadata);
       }
       return os;
     }

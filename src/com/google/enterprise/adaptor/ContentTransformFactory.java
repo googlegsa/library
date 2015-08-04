@@ -10,19 +10,19 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * The document content transformer pipeline holds all document content transformers
+ * The content transform factory holds all document content transformers
  * and puts them in series connection.
  *
  * @author Dominik Weidenfeld (dominik.weidenfeld@twt.de)
  */
-public class DocumentContentTransformerPipeline {
+public class ContentTransformFactory {
 
   private static final Logger LOG =
-      Logger.getLogger(DocumentContentTransformerPipeline.class.getName());
+      Logger.getLogger(ContentTransformFactory.class.getName());
 
   private List<Map<String, String>> contentTransformers;
 
-  public DocumentContentTransformerPipeline(
+  public ContentTransformFactory(
       final List<Map<String, String>> contentTransformers) {
     this.contentTransformers = contentTransformers;
   }
