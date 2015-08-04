@@ -22,7 +22,7 @@ public class DocumentContentTransformer extends OutputStream {
    * Constructs a document content transformer.
    *
    * @param config         the configuration for this instance
-   *                       (could possibly be null or empty)
+   *                       (never null, but maybe empty)
    * @param originalStream the original content stream
    * @param contentType    the content type of the stream
    *                       (could possibly be null or empty)
