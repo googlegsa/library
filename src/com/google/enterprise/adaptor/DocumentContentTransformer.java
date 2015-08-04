@@ -17,11 +17,20 @@ public class DocumentContentTransformer extends OutputStream {
   protected final String contentType;
   private OutputStream originalStream;
 
+  /**
+   * Constructs a document content transformer.
+   *
+   * @param config         the configuration for this instance
+   *                       (could possibly be null or empty)
+   * @param originalStream the original content stream
+   * @param contentType    the content type of the stream
+   *                       (could possibly be null or empty)
+   * @param metadata       the metadata already collected for this document
+   *                       (never null, but maybe empty)
+   */
   public DocumentContentTransformer(final Map<String, String> config,
                                     final OutputStream originalStream, final String contentType,
                                     final Metadata metadata) {
-    // config and metadata cannot be null
-    // contentType possibly be null, but it is allowed
     if (null == originalStream) {
       throw new NullPointerException();
     }
