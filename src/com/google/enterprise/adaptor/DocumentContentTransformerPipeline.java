@@ -23,7 +23,8 @@ public class DocumentContentTransformerPipeline {
 
   private List<Map<String, String>> contentTransformers;
 
-  public DocumentContentTransformerPipeline(final List<Map<String, String>> contentTransformers) {
+  public DocumentContentTransformerPipeline(
+      final List<Map<String, String>> contentTransformers) {
     this.contentTransformers = contentTransformers;
   }
 
@@ -45,7 +46,8 @@ public class DocumentContentTransformerPipeline {
     for (final Map<String, String> tConfig : contentTransformers) {
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
-        LOG.log(Level.WARNING, "Document Content Transformer class is missing");
+        LOG.log(Level.WARNING,
+            "Document Content Transformer class is missing");
         continue;
       }
       try {
@@ -53,16 +55,20 @@ public class DocumentContentTransformerPipeline {
         final Class<DocumentContentTransformer> clazz =
             (Class<DocumentContentTransformer>) Class.forName(className);
         final Constructor<DocumentContentTransformer> constructor =
-            clazz.getConstructor(Map.class, OutputStream.class, String.class, Metadata.class);
+            clazz.getConstructor(Map.class,
+                OutputStream.class, String.class, Metadata.class);
         if (null == contentTransformer) {
           contentTransformer =
-              constructor.newInstance(tConfig, original, contentType, metadata);
+              constructor.newInstance(tConfig, original, contentType,
+                  metadata);
         } else {
           contentTransformer =
-              constructor.newInstance(tConfig, contentTransformer, contentType, metadata);
+              constructor.newInstance(tConfig, contentTransformer,
+                  contentType, metadata);
         }
       } catch (Exception e) {
-        LOG.log(Level.WARNING, "Cannot use document content transformer of type {0}", className);
+        throw new RuntimeException(
+            "Cannot use document content transformer of type " + className);
       }
     }
     return contentTransformer;
