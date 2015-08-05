@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import static java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -1000,8 +1001,42 @@ class DocumentHandler implements HttpHandler {
       Map<String, String> params = new HashMap<String, String>();
       params.put("DocId", docId.getUniqueId());
       params.put("Content-Type", contentType);
+      if (null != lastModified) {
+        params.put("Last-Modified-Millis-UTC", "" + lastModified.getTime());
+      }
+      String origDisplayUrlStr = null;
+      if (null != displayUrl) {
+        origDisplayUrlStr = "" + displayUrl;
+        params.put("Display-URL", origDisplayUrlStr);
+      }
+      params.put("Crawl-Once", "" + crawlOnce);
+      params.put("Lock", "" + lock);
       transform.transform(metadata, params);
       contentType = params.get("Content-Type");
+      try {
+        final String lmMillisUTC = params.get("Last-Modified-Millis-UTC");
+        if (!Strings.isNullOrEmpty(lmMillisUTC)) {
+          final long lm = Long.parseLong(lmMillisUTC);
+          if (lastModified.getTime() != lm) {
+            lastModified = new Date(lm);
+          }
+        }
+      } catch (NumberFormatException e) {
+        log.log(Level.WARNING,
+            "Failed changing last-modified date {0}",
+            params.get("Last-Modified-Millis-UTC"));
+      }
+      try {
+        final String du = params.get("Display-URL");
+        if (!Strings.isNullOrEmpty(du) && !du.equals(origDisplayUrlStr)) {
+          displayUrl = new URI(du);
+        }
+      } catch (URISyntaxException e) {
+        log.log(Level.WARNING, "Failed changing display URL {0}",
+            params.get("Display-URL"));
+      }
+      crawlOnce = Boolean.parseBoolean(params.get("Crawl-Once"));
+      lock = Boolean.parseBoolean(params.get("Lock"));
     }
 
     private class CloseNotifyOutputStream extends FastFilterOutputStream {
