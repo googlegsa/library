@@ -7,11 +7,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * The document content transformer can modify the content of a document.
+ * The document content transform can modify the content of a document.
  *
  * @author Dominik Weidenfeld (dominik.weidenfeld@twt.de)
  */
-public class DocumentContentTransformer extends OutputStream {
+public class DocumentContentTransform extends OutputStream {
 
   protected final Map<String, String> config;
   protected final Metadata metadata;
@@ -29,9 +29,9 @@ public class DocumentContentTransformer extends OutputStream {
    * @param metadata       the metadata already collected for this document
    *                       (never null, but maybe empty)
    */
-  public DocumentContentTransformer(final Map<String, String> config,
-                                    final OutputStream originalStream, final String contentType,
-                                    final Metadata metadata) {
+  public DocumentContentTransform(final Map<String, String> config,
+                                  final OutputStream originalStream, final String contentType,
+                                  final Metadata metadata) {
     if (null == originalStream) {
       throw new NullPointerException();
     }

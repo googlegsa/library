@@ -41,7 +41,7 @@ public class ContentTransformFactory {
     if (contentTransformers.size() <= 0) {
       return original;
     }
-    DocumentContentTransformer contentTransformer = null;
+    DocumentContentTransform contentTransform = null;
     for (int i = contentTransformers.size(); i >= 0; i--) {
       final Map<String, String> tConfig = contentTransformers.get(i);
       final String className = tConfig.get("class");
@@ -53,25 +53,25 @@ public class ContentTransformFactory {
       }
       try {
         //noinspection unchecked
-        final Class<DocumentContentTransformer> clazz =
-            (Class<DocumentContentTransformer>) Class.forName(className);
-        final Constructor<DocumentContentTransformer> constructor =
+        final Class<DocumentContentTransform> clazz =
+            (Class<DocumentContentTransform>) Class.forName(className);
+        final Constructor<DocumentContentTransform> constructor =
             clazz.getConstructor(Map.class,
                 OutputStream.class, String.class, Metadata.class);
-        if (null == contentTransformer) {
-          contentTransformer =
+        if (null == contentTransform) {
+          contentTransform =
               constructor.newInstance(tConfig, original, contentType,
                   metadata);
         } else {
-          contentTransformer =
-              constructor.newInstance(tConfig, contentTransformer,
+          contentTransform =
+              constructor.newInstance(tConfig, contentTransform,
                   contentType, metadata);
         }
       } catch (Exception e) {
         throw new RuntimeException(
-            "Cannot use document content transformer of type " + className);
+            "Cannot use document content transform of type " + className);
       }
     }
-    return contentTransformer;
+    return contentTransform;
   }
 }

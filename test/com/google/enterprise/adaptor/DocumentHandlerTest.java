@@ -284,7 +284,7 @@ public class DocumentHandlerTest {
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(new byte[] {}, ex.getResponseBytes());
+    assertArrayEquals(new byte[]{}, ex.getResponseBytes());
   }
 
   @Test
@@ -412,7 +412,7 @@ public class DocumentHandlerTest {
           {
             add(new HashMap<String, String>() {
               {
-                put("class", SampleDocumentContentTransformer.class.getName());
+                put("class", SampleDocumentContentTransform.class.getName());
               }
             });
           }
@@ -547,7 +547,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)      
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
         .build();
@@ -618,7 +618,7 @@ public class DocumentHandlerTest {
         String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
         DocumentHandler handler = createHandlerBuilder()
             .setAdaptor(adaptor)      
-            .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+            .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
             .setSendDocControls(true)
             .setGsaVersion("7.4.0-0")
             .build();
@@ -650,7 +650,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.0.0-0")
         .build();
@@ -762,7 +762,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
         .build();
@@ -1729,10 +1729,10 @@ public class DocumentHandlerTest {
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
   }
 
-  private static class SampleDocumentContentTransformer
-      extends DocumentContentTransformer {
+  private static class SampleDocumentContentTransform
+      extends DocumentContentTransform {
 
-    public SampleDocumentContentTransformer(
+    public SampleDocumentContentTransform(
         Map<String, String> config, OutputStream originalStream,
         String contentType, Metadata metadata) {
       super(config, originalStream, contentType, metadata);
