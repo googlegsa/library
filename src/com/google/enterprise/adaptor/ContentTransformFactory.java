@@ -68,8 +68,6 @@ public class ContentTransformFactory {
                   contentType, metadata);
         }
       } catch (Exception e) {
-        LOG.log(Level.SEVERE,
-            "Cannot use document content transformer of type {0}", className);
         throw new RuntimeException(
             "Cannot use document content transformer of type " + className);
       }
