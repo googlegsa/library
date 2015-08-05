@@ -406,7 +406,7 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testContentTransformer() throws Exception {
+  public void testContentTransform() throws Exception {
     ContentTransformFactory contentTransformFactory =
         new ContentTransformFactory(
         new ArrayList<Map<String, String>>() {
@@ -432,7 +432,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[]{remoteIp})
-        .setContentTransformerPipeline(contentTransformFactory)
+        .setContentTransformPipeline(contentTransformFactory)
         .build();
     handler.handle(ex);
     assertEquals("some changed stuff", new String(ex.getResponseBytes()));
@@ -1818,7 +1818,7 @@ public class DocumentHandlerTest {
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private TransformPipeline transform;
-    private ContentTransformFactory contentTransformerPipeline;
+    private ContentTransformFactory contentTransformPipeline;
     private AclTransform aclTransform
         = new AclTransform(Arrays.<AclTransform.Rule>asList());
     private int transformMaxBytes;
@@ -1881,9 +1881,9 @@ public class DocumentHandlerTest {
       return this;
     }
 
-    public DocumentHandlerBuilder setContentTransformerPipeline(
-        ContentTransformFactory contentTransformerPipeline) {
-      this.contentTransformerPipeline = contentTransformerPipeline;
+    public DocumentHandlerBuilder setContentTransformPipeline(
+        ContentTransformFactory contentTransformPipeline) {
+      this.contentTransformPipeline = contentTransformPipeline;
       return this;
     }
 
@@ -1943,7 +1943,7 @@ public class DocumentHandlerTest {
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
-          transform, aclTransform, contentTransformerPipeline, useCompression, watchdog, pusher,
+          transform, aclTransform, contentTransformPipeline, useCompression, watchdog, pusher,
           sendDocControls, markDocsPublic, headerTimeoutMillis,
           contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata, gsaVersion);
     }
