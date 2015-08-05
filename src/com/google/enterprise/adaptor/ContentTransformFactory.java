@@ -46,8 +46,6 @@ public class ContentTransformFactory {
       final Map<String, String> tConfig = contentTransformers.get(i);
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
-        LOG.log(Level.SEVERE,
-            "Document Content Transformer class is missing {0}", className);
         throw new RuntimeException(
             "Document Content Transformer class is missing " + className);
       }
