@@ -770,10 +770,12 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
-        .setTransform(new TransformPipeline(Lists.newArrayList(new DocumentTransform() {
+        .setTransform(new TransformPipeline(
+            Lists.newArrayList(new DocumentTransform() {
           @Override
           public void transform(Metadata metadata, Map<String, String> params) {
-            assertEquals(oDate.getTime(), Long.parseLong(params.get("Last-Modified-Millis-UTC")));
+            assertEquals(oDate.getTime(),
+                Long.parseLong(params.get("Last-Modified-Millis-UTC")));
             params.put("Last-Modified-Millis-UTC", "" + nDate.getTime());
           }
         }), Lists.newArrayList("sample-transformer")))
@@ -804,7 +806,8 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[] {remoteIp})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
-        .setTransform(new TransformPipeline(Lists.newArrayList(new DocumentTransform() {
+        .setTransform(new TransformPipeline(
+            Lists.newArrayList(new DocumentTransform() {
           @Override
           public void transform(Metadata metadata, Map<String, String> params) {
             final String du = params.get("Display-URL");

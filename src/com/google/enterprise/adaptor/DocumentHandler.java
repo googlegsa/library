@@ -1022,8 +1022,9 @@ class DocumentHandler implements HttpHandler {
           }
         }
       } catch (NumberFormatException e) {
-        log.log(Level.FINER,
-            "Failed changing last-modified date {0}", params.get("Last-Modified-Millis-UTC"));
+        log.log(Level.WARNING,
+            "Failed changing last-modified date {0}",
+            params.get("Last-Modified-Millis-UTC"));
       }
       try {
         final String du = params.get("Display-URL");
@@ -1031,7 +1032,8 @@ class DocumentHandler implements HttpHandler {
           displayUrl = new URI(du);
         }
       } catch (URISyntaxException e) {
-        log.log(Level.FINER, "Failed changing display URL {0}", params.get("Display-URL"));
+        log.log(Level.WARNING, "Failed changing display URL {0}",
+            params.get("Display-URL"));
       }
       crawlOnce = Boolean.parseBoolean(params.get("Crawl-Once"));
       lock = Boolean.parseBoolean(params.get("Lock"));
