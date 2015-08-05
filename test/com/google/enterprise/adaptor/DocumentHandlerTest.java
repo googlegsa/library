@@ -372,7 +372,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("docid=test%20docId,testing%20key=TESTING%20VALUE",
-                 ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
   }
 
   @Test
@@ -402,7 +402,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("google%3Aaclusers=u2,google%3Aaclusers=u3",
-                 ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(1));
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(1));
   }
 
   @Test
@@ -435,6 +435,25 @@ public class DocumentHandlerTest {
         .build();
     handler.handle(ex);
     assertEquals("some changed stuff", new String(ex.getResponseBytes()));
+  }
+
+  private static class SampleDocumentContentTransform
+      extends DocumentContentTransform {
+
+    public SampleDocumentContentTransform(
+        Map<String, String> config, OutputStream originalStream,
+        String contentType, Metadata metadata) {
+      super(config, originalStream, contentType, metadata);
+    }
+
+    @Override
+    public void write(final byte[] b) throws IOException {
+      if (contentType.equals("image/jpeg")) {
+        super.write("some changed stuff".getBytes(Charsets.UTF_8));
+      } else {
+        super.write(b);
+      }
+    }
   }
 
   @Test
@@ -724,9 +743,9 @@ public class DocumentHandlerTest {
               throws IOException {
             response.addMetadata("DocTitle", "updated");
             response.setAcl(new Acl.Builder()
-                    .setInheritFrom(new DocId("parent"))
-                    .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
-                    .build());
+                .setInheritFrom(new DocId("parent"))
+                .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+                .build());
             response.respondNoContent();
           }
         };
@@ -1055,7 +1074,7 @@ public class DocumentHandlerTest {
     MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
         new MockHttpContext(handler, "/"));
     ex.getRequestHeaders().set("If-Modified-Since",
-                               "Thu, 1 Jan 1970 00:00:00 GMT");
+        "Thu, 1 Jan 1970 00:00:00 GMT");
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("text/plain",
@@ -1314,7 +1333,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1336,7 +1355,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1357,7 +1376,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp})
+        .setFullAccessHosts(new String[]{remoteIp})
         .setSendDocControls(true)
         .setScoringType("guess!")
         .build();
@@ -1380,7 +1399,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1402,7 +1421,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1424,7 +1443,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1448,7 +1467,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -1727,25 +1746,6 @@ public class DocumentHandlerTest {
         "AaZz09-_.~`=/?+';\\/\"!@#$%^&*()[]{}ë\u0001");
     assertEquals("AaZz09-_.~%60%3D%2F%3F%2B%27%3B%5C%2F%22%21%40%23%24%25%5E%26"
                  + "%2A%28%29%5B%5D%7B%7D%C3%AB%01", encoded);
-  }
-
-  private static class SampleDocumentContentTransform
-      extends DocumentContentTransform {
-
-    public SampleDocumentContentTransform(
-        Map<String, String> config, OutputStream originalStream,
-        String contentType, Metadata metadata) {
-      super(config, originalStream, contentType, metadata);
-    }
-
-    @Override
-    public void write(final byte[] b) throws IOException {
-      if (contentType.equals("image/jpeg")) {
-        super.write("some changed stuff".getBytes(Charsets.UTF_8));
-      } else {
-        super.write(b);
-      }
-    }
   }
 
   private static class UserPrivateMockAdaptor extends MockAdaptor {
