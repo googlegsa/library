@@ -372,7 +372,7 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("docid=test%20docId,testing%20key=TESTING%20VALUE",
-        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+                 ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
   }
 
   @Test
@@ -402,12 +402,13 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("google%3Aaclusers=u2,google%3Aaclusers=u3",
-        ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(1));
+                 ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(1));
   }
 
   @Test
   public void testContentTransformer() throws Exception {
-    ContentTransformFactory contentTransformFactory = new ContentTransformFactory(
+    ContentTransformFactory contentTransformFactory =
+        new ContentTransformFactory(
         new ArrayList<Map<String, String>>() {
           {
             add(new HashMap<String, String>() {
@@ -724,11 +725,11 @@ public class DocumentHandlerTest {
           }
         };    
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
-        .setAuthzAuthority(adaptor)
-        .setSendDocControls(true)
-        .setGsaVersion("7.0.0-0")
-        .build();
+            .setAdaptor(adaptor)
+            .setAuthzAuthority(adaptor)
+            .setSendDocControls(true)
+            .setGsaVersion("7.0.0-0")
+            .build();
     ex.getRequestHeaders().set("If-Modified-Since",
         "Thu, 1 Jan 1970 00:00:00 GMT");
     handler.handle(ex);
@@ -1074,7 +1075,7 @@ public class DocumentHandlerTest {
     MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
         new MockHttpContext(handler, "/"));
     ex.getRequestHeaders().set("If-Modified-Since",
-        "Thu, 1 Jan 1970 00:00:00 GMT");
+                               "Thu, 1 Jan 1970 00:00:00 GMT");
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("text/plain",
