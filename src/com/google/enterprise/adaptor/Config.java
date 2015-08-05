@@ -174,7 +174,7 @@ import java.util.logging.Logger;
  *     and modify principals as described. Defaults no modifications
  * <tr><td> </td><td>transform.pipeline </td><td> sequence of
  *     transformation steps.  Defaults to no-pipeline
- * <tr><td> </td><td>content.transformer.pipeline </td><td>
+ * <tr><td> </td><td>content.transform.pipeline </td><td>
  *     content transformer pipeline. Defaults to no-pipeline</td></tr>
  * <tr><td> </td><td>saml.idpExpirationMillis </td><td> Expiration time
  *     sent in SAML Authentication response. Defaults to 30,000 milliseconds.
@@ -288,7 +288,7 @@ public class Config {
     addKey("adaptor.docContentTimeoutSecs", "180");
     addKey("adaptor.docHeaderTimeoutSecs", "30");
     addKey("transform.pipeline", "");
-    addKey("content.transformer.pipeline", "");
+    addKey("content.transform.pipeline", "");
     addKey("journal.reducedMem", "true");
     addKey("gsa.acceptsDocControlsHeader", "GENERATE", new ValueComputer() {
           public String compute(String rawValue) {
