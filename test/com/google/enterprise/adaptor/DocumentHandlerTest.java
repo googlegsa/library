@@ -284,7 +284,7 @@ public class DocumentHandlerTest {
         new MockHttpContext(handler, "/"));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
-    assertArrayEquals(new byte[]{}, ex.getResponseBytes());
+    assertArrayEquals(new byte[] {}, ex.getResponseBytes());
   }
 
   @Test
@@ -566,7 +566,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)      
-        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
         .build();
@@ -637,7 +637,7 @@ public class DocumentHandlerTest {
         String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
         DocumentHandler handler = createHandlerBuilder()
             .setAdaptor(adaptor)      
-            .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+            .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
             .setSendDocControls(true)
             .setGsaVersion("7.4.0-0")
             .build();
@@ -669,7 +669,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.0.0-0")
         .build();
@@ -781,7 +781,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
         .build();
