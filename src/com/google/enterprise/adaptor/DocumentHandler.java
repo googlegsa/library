@@ -1103,66 +1103,6 @@ class DocumentHandler implements HttpHandler {
     }
   }
 
-  /**
-   * Stream that buffers all content up to a maximum size, at which point it
-   * stops buffering altogether.
-   */
-  private static class MaxBufferOutputStream extends FastFilterOutputStream {
-    private static final Logger log
-        = Logger.getLogger(MaxBufferOutputStream.class.getName());
-
-    private CountByteArrayOutputStream buffer
-        = new CountByteArrayOutputStream();
-    private final int maxBytes;
-
-    public MaxBufferOutputStream(OutputStream out, int maxBytes) {
-      super(out);
-      this.maxBytes = maxBytes;
-    }
-
-    @Override
-    public void close() throws IOException {
-      if (buffer == null) {
-        super.close();
-      }
-    }
-
-    @Override
-    public void flush() throws IOException {
-      if (buffer == null) {
-        super.flush();
-      }
-    }
-
-    /**
-     * Returns the buffered content, or {@code null} when too much content was
-     * written an the provided {@code OutputStream} was used.
-     */
-    public byte[] getBufferedContent() {
-      if (buffer == null) {
-        return null;
-      }
-      return buffer.toByteArray();
-    }
-
-    @Override
-    public void write(byte[] b, int off, int len) throws IOException {
-      if (buffer != null && buffer.getCount() + len > maxBytes) {
-        // Buffer begins overflowing. Flush buffer and stop using it.
-        log.fine("Buffer was exhausted. Stopping buffering.");
-        buffer.writeTo(out);
-        buffer = null;
-      }
-      if (buffer == null) {
-        // Buffer was exhausted. Write out directly.
-        super.write(b, off, len);
-        return;
-      }
-      // Write to buffer.
-      buffer.write(b, off, len);
-    }
-  }
-
   interface AsyncPusher {
     public boolean asyncPushItem(DocIdSender.Item item);
   }
