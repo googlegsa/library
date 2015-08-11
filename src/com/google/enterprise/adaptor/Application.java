@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.BindException;
+import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
@@ -322,6 +323,11 @@ public final class Application {
     try {
       conn = url.openConnection();
       conn.connect();
+    } catch (ConnectException ce) {
+      // We will get a Connection Refused exception if we try to shut down
+      // the HttpServer before it has completed its startup. This typically
+      // happens if the overall application startup fails for some reason.
+      return;
     } catch (IOException ex) {
       log.log(Level.WARNING, "Error performing shutdown GET", ex);
       return;
@@ -338,11 +344,13 @@ public final class Application {
         try {
           conn.getInputStream().close();
           log.finer("Closed shutdown GET");
+        } catch (ConnectException ce) {
+          // We will get a Connection Refused exception if we try to shut down
+          // the HttpServer before it has completed its startup. This typically
+          // happens if the overall application startup fails for some reason.
+          // Why does it happen here and not in connect?
         } catch (IOException ex) {
-          // TODO: Investigate "java.net.ConnectException: Connection refused".
-          // Happens when startup cannot proceed (eg bad gsa.version).
-          // Why does it happen? and why here and not in connect?
-          // log.log(Level.WARNING, "Error closing stream of shutdown GET", ex);
+          log.log(Level.WARNING, "Error closing stream of shutdown GET", ex);
         }
       }
     }).start();
