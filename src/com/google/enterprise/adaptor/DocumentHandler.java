@@ -576,12 +576,16 @@ class DocumentHandler implements HttpHandler {
     NOT_MODIFIED,
     /** No content to send, but we do need a different response code. */
     NOT_FOUND,
+    /** No content to send, but we do need a different response code. */
+    NOT_FOUND_BY_TRANSFORM_OVERRIDE,
     /** Must not respond with content, but otherwise act like normal. */
     HEAD,
     /** No need to buffer contents before sending. */
     SEND_BODY,
-    /** No file content to send but we can send updated metadata and acls */
+    /** No file content to send but we can send metadata and acls */
     NO_CONTENT,
+    /** No file content to send but we can send metadata and acls */
+    HEAD_BY_TRANSFORM_OVERRIDE,
   }
 
   /**
@@ -656,7 +660,17 @@ class DocumentHandler implements HttpHandler {
       }
 
       state = State.NO_CONTENT;
-      startSending(false);
+      if (transform != null) {
+        transform();
+      }
+      if (state == State.NO_CONTENT) {
+        startSending(false);
+      } else if (state == State.NOT_FOUND_BY_TRANSFORM_OVERRIDE) {
+        log.log(Level.INFO, "Hiding a no-content reply {0}",
+            docId.getUniqueId());
+      } else {
+        throw new IllegalStateException("unexpected state: " + state);
+      }
     }
 
     @Override
@@ -666,6 +680,7 @@ class DocumentHandler implements HttpHandler {
           // We will need to make an OutputStream.
           break;
         case HEAD:
+        case HEAD_BY_TRANSFORM_OVERRIDE:
         case SEND_BODY:
           // Already called before. Provide saved OutputStream.
           return os;
@@ -673,6 +688,12 @@ class DocumentHandler implements HttpHandler {
           throw new IllegalStateException("respondNotModified already called");
         case NOT_FOUND:
           throw new IllegalStateException("respondNotFound already called");
+        case NOT_FOUND_BY_TRANSFORM_OVERRIDE:
+          if (null == os) {
+            // NO_CONTENT was the overridden state
+            throw new IllegalStateException("respondNoContent already called");
+          }
+          return os;  // either HEAD or SEND_BODY was the overridden state
         case NO_CONTENT:
           throw new IllegalStateException("respondNoContent already called");
         default:
@@ -683,15 +704,40 @@ class DocumentHandler implements HttpHandler {
         // point. We don't delay sending the headers, however, because of the
         // watchdog.
         state = State.HEAD;
-        startSending(false);
-        os = new SinkOutputStream();
+        if (transform != null) {
+          transform();
+        }
+        if (state == State.HEAD) {
+          startSending(false);
+          os = new SinkOutputStream();
+        } else if (state == State.NOT_FOUND_BY_TRANSFORM_OVERRIDE) {
+          log.log(Level.INFO, "Excluding head of doc {0}", docId.getUniqueId());
+          os = new SinkOutputStream();
+        } else {
+          throw new IllegalStateException("unexpected state: " + state);
+        }
       } else {
         state = State.SEND_BODY;
-        startSending(true);
-        countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
-            ex.getResponseBody()));
-        os = countingOs;
+        if (transform != null) {
+          transform();
+        }
+        if (state == State.SEND_BODY) {
+          startSending(true);
+          countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
+              ex.getResponseBody()));
+          os = countingOs;
+        } else if (state == State.NOT_FOUND_BY_TRANSFORM_OVERRIDE) {
+          log.log(Level.INFO, "Hiding doc {0}", docId.getUniqueId());
+          os = new SinkOutputStream();
+        } else if (state == State.HEAD_BY_TRANSFORM_OVERRIDE) {
+          log.log(Level.INFO, "Excluding body of doc {0}", docId.getUniqueId());
+          startSending(false);
+          os = new SinkOutputStream();
+        } else {
+          throw new IllegalStateException("unexpected state: " + state);
+        }
       }
+      // TODO: fix automated merge done wrong
       if (null != contentTransformFactory) {
         // TODO: possibility for changing the content-type in transformer
         return contentTransformFactory
@@ -824,6 +870,7 @@ class DocumentHandler implements HttpHandler {
           break;
 
         case NOT_FOUND:
+        case NOT_FOUND_BY_TRANSFORM_OVERRIDE:
           HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
               Translation.HTTP_NOT_FOUND);
           break;
@@ -853,18 +900,16 @@ class DocumentHandler implements HttpHandler {
           break;
 
         case HEAD:
+        case HEAD_BY_TRANSFORM_OVERRIDE:
           break;
 
         default:
-          throw new IllegalStateException();
+          throw new IllegalStateException("unrecognized state: " + state);
       }
       ex.close();
     }
 
     private void startSending(boolean hasContent) throws IOException {
-      if (transform != null) {
-        transform();  
-      } 
       if (markDocsPublic) {
         acl = null;
         secure = false;
@@ -938,7 +983,8 @@ class DocumentHandler implements HttpHandler {
       watchdog.processingCompleted(workingThread);
       watchdog.processingStarting(workingThread, contentTimeoutMillis);
       int responseCode;
-      if (state == State.SEND_BODY || state == State.HEAD) {
+      if (state == State.SEND_BODY || state == State.HEAD ||
+          state == State.HEAD_BY_TRANSFORM_OVERRIDE) {
         responseCode = HttpURLConnection.HTTP_OK;
       } else if (state == State.NO_CONTENT) {
         // Respond with 304 instead of 204 when talking with non GSA requests 
@@ -1046,6 +1092,40 @@ class DocumentHandler implements HttpHandler {
       }
       crawlOnce = Boolean.parseBoolean(params.get("Crawl-Once"));
       lock = Boolean.parseBoolean(params.get("Lock"));
+      // TODO: make constants for this growing set of valid keys
+      considerNotSending(params.get("Transmission-Decision"), docId);
+    }
+
+    private void considerNotSending(String secondOpinion, DocId docId) {
+      if (null == secondOpinion || "as-is".equalsIgnoreCase(secondOpinion)) {
+        return;  // act normally; don't override any sending logic
+      } else if ("drop-all".equalsIgnoreCase(secondOpinion)) {
+        switch (state) {
+          case NO_CONTENT:
+          case HEAD:
+          case SEND_BODY:
+            state = State.NOT_FOUND_BY_TRANSFORM_OVERRIDE;
+            return;
+          default:
+            throw new IllegalStateException(
+                "unexpected state for transform: " + state);
+        }
+      } else if ("drop-content".equalsIgnoreCase(secondOpinion)) {
+        switch (state) {
+          case NO_CONTENT:
+          case HEAD:
+            // do nothing as the above states don't send content
+            return;
+          case SEND_BODY:
+            state = State.HEAD_BY_TRANSFORM_OVERRIDE;
+            return;
+          default:
+            throw new IllegalStateException(
+                "unexpected state for transform: " + state);
+        }
+      } else {
+        log.warning("Transmission-Decision not understood: " + secondOpinion);
+      }
     }
 
     private class CloseNotifyOutputStream extends FastFilterOutputStream {
@@ -1062,14 +1142,19 @@ class DocumentHandler implements HttpHandler {
   }
 
   /**
-   * OutputStream that forgets all input. It is equivalent to using /dev/null.
+   * OutputStream that forgets all input. Equivalent to using /dev/null.
    */
-  private static class SinkOutputStream extends OutputStream {
-    @Override
-    public void write(byte[] b, int off, int len) throws IOException {}
+  private static class SinkOutputStream extends FastFilterOutputStream {
+    SinkOutputStream() {
+      this(new java.io.ByteArrayOutputStream(/*bufsize=*/ 0));
+    }
+
+    SinkOutputStream(OutputStream out) {
+      super(out);
+    }
 
     @Override
-    public void write(int b) throws IOException {}
+    public void write(byte[] b, int off, int len) throws IOException {}
   }
 
   private static class CountingOutputStream extends FastFilterOutputStream {

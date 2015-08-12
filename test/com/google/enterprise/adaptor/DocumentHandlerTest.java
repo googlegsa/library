@@ -83,6 +83,8 @@ public class DocumentHandlerTest {
       = docIdCodec.encodeDocId(defaultDocId).getRawPath();
   private MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
       new MockHttpContext("/"));
+  private MockHttpExchange headEx = new MockHttpExchange("HEAD", defaultPath,
+      new MockHttpContext("/"));
 
   @Before
   public void setUp() {
@@ -398,6 +400,279 @@ public class DocumentHandlerTest {
     assertEquals(200, ex.getResponseCode());
     assertEquals("docid=test%20docId,testing%20key=TESTING%20VALUE",
                  ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
+
+  @Test
+  public void testDroppingDocForGetRequest() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "drop-all");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "testing value");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(404, ex.getResponseCode());
+    assertEquals(null,
+         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
+
+  @Test
+  public void testDroppingDocForHeadRequest() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "drop-all");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "testing value");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = headEx.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(headEx);
+    assertEquals(404, headEx.getResponseCode());
+    assertEquals(null,
+         headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
+
+  @Test
+  public void testDroppingContentForGetRequest() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "drop-content");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "TESTING VALUE");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    // content is dropped; we became like HEAD request
+    assertArrayEquals(new byte[0], ex.getResponseBytes());
+  }
+
+  @Test
+  public void testDroppingContentForHeadRequest() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "drop-content");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "TESTING VALUE");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = headEx.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(headEx);
+    // content is dropped for HEAD already; we retain HEAD response
+    assertEquals(200, headEx.getResponseCode());
+    assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
+        headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertArrayEquals(new byte[0], headEx.getResponseBytes());
+  }
+
+  @Test
+  public void testAsIsForGetRequest() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "as-is");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "TESTING VALUE");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    // content remained as-is
+    assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
+  }
+
+  @Test
+  public void testAsIsForHeadRequest() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "as-is");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "TESTING VALUE");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = headEx.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(headEx);
+    assertEquals(200, headEx.getResponseCode());
+    assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
+        headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    // content remained as-is
+    assertArrayEquals(new byte[0], headEx.getResponseBytes());
+  }
+
+  @Test
+  public void testDroppingDocAfterNoContent() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "drop-all");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "testing value");
+        response.respondNoContent();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(404, ex.getResponseCode());
+    assertEquals(null,
+         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
+
+  @Test
+  public void testDroppingContentAfterNoContent() throws Exception {
+    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
+    transforms.add(new DocumentTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "drop-content");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    TransformPipeline transform = new TransformPipeline(transforms,
+        Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata("test key", "TESTING VALUE");
+        response.respondNoContent();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(204, ex.getResponseCode());
+    assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertArrayEquals(new byte[0], ex.getResponseBytes());
   }
 
   @Test
