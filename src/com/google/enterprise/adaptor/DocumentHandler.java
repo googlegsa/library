@@ -1092,17 +1092,6 @@ class DocumentHandler implements HttpHandler {
     }
   }
 
-  /**
-   * {@link ByteArrayOutputStream} that allows inquiring the current number of
-   * bytes written.
-   */
-  private static class CountByteArrayOutputStream
-      extends ByteArrayOutputStream {
-    public int getCount() {
-      return count;
-    }
-  }
-
   interface AsyncPusher {
     public boolean asyncPushItem(DocIdSender.Item item);
   }
