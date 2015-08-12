@@ -404,15 +404,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testDroppingDocForGetRequest() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -438,15 +438,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testDroppingDocForHeadRequest() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -473,15 +473,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testDroppingContentForGetRequest() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "do-not-index-content");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -508,15 +508,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testDroppingContentForHeadRequest() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "do-not-index-content");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -543,15 +543,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testAsIsForGetRequest() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "as-is");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -578,15 +578,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testAsIsForHeadRequest() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "as-is");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -613,15 +613,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testDroppingDocAfterNoContent() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
@@ -648,15 +648,15 @@ public class DocumentHandlerTest {
 
   @Test
   public void testDroppingContentAfterNoContent() throws Exception {
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         params.put("Transmission-Decision", "do-not-index-content");
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
+    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
         Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
