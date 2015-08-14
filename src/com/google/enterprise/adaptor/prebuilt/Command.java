@@ -31,6 +31,9 @@ public class Command {
   /**
    * Same as {@code exec(command, null, new byte[0])}.
    *
+   * @param command command
+   * @throws IOException if creating process fails
+   * @throws InterruptedException if interrupted
    */
   public static Result exec(String[] command) throws IOException,
          InterruptedException {
@@ -41,6 +44,11 @@ public class Command {
    * Same as {@code exec(command, workingDir, new byte[0])}.
    *
    * @see #exec(String[], File, byte[])
+   *
+   * @param command command
+   * @param workingDir workingDir
+   * @throws IOException if creating process fails
+   * @throws InterruptedException if interrupted
    */
   public static Result exec(String[] command, File workingDir)
       throws IOException, InterruptedException {
@@ -51,6 +59,11 @@ public class Command {
    * Same as {@code exec(command, null, stdin)}.
    *
    * @see #exec(String[], File, byte[])
+   *
+   * @param command command
+   * @param stdin stdin
+   * @throws IOException if creating process fails
+   * @throws InterruptedException if interrupted
    */
   public static Result exec(String[] command, byte[] stdin) throws IOException,
          InterruptedException {
@@ -65,7 +78,11 @@ public class Command {
    * make sure that the process exited with a return code of zero, as other
    * return codes typically indicate an error.
    *
+   * @param command command
+   * @param workingDir workingDir
+   * @param stdin stdin
    * @throws IOException if creating process fails
+   * @throws InterruptedException if interrupted
    */
   public static Result exec(String[] command, File workingDir, byte[] stdin)
       throws IOException, InterruptedException {
@@ -94,6 +111,10 @@ public class Command {
     /**
      * Construct a result. In normal usage, this is unnecessary, but it can be
      * helpful in the tests of classes that use {@code Command}.
+     *
+     * @param returnCode returnCode
+     * @param stdout stdout
+     * @param stderr stderr
      */
     public Result(int returnCode, byte[] stdout, byte[] stderr) {
       if (stdout == null || stderr == null) {

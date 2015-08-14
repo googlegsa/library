@@ -147,7 +147,9 @@ public class FileSystemAdaptor extends AbstractAdaptor {
         && !exclude.matcher(file.getPath()).find();
   }
 
-  /** Call default main for adaptors. */
+  /** Call default main for adaptors. 
+   *  @param args argv
+   */
   public static void main(String[] args) {
     AbstractAdaptor.main(new FileSystemAdaptor(), args);
   }

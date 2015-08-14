@@ -60,6 +60,8 @@ public class DateSplitTransform implements MetadataTransform {
    * <p>
    * This method simply returns a new object with
    * the additional metadata as specified as values for step1.taste
+   *
+   * @param cfg configuration
    */
   public static DateSplitTransform load(Map<String, String> cfg) {
     return new DateSplitTransform(

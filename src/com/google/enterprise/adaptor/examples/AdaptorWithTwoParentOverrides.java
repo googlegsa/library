@@ -96,7 +96,9 @@ public class AdaptorWithTwoParentOverrides extends AbstractAdaptor {
         .build();
   }
 
-  /** Call default main for adaptors. */
+  /** Call default main for adaptors. 
+   *  @param args argv
+   */
   public static void main(String[] args) {
     AbstractAdaptor.main(new AdaptorWithTwoParentOverrides(), args);
   }

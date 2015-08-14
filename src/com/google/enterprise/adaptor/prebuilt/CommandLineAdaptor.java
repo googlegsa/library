@@ -304,7 +304,9 @@ public class CommandLineAdaptor extends AbstractAdaptor
     return Command.exec(commandLine, stdin);
   }
 
-  /** Call default main for adaptors. */
+  /** Call default main for adaptors. 
+   *  @param args argv
+   */
   public static void main(String[] args) {
     AbstractAdaptor.main(new CommandLineAdaptor(), args);
   }

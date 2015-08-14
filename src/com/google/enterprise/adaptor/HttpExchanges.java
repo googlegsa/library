@@ -121,6 +121,8 @@ public final class HttpExchanges {
   /**
    * Best-effort attempt to reform the identical URI the client used to
    * contact the server.
+   *
+   * @param ex exchange
    */
   public static URI getRequestUri(HttpExchange ex) {
     String host = ex.getRequestHeaders().getFirst("Host");
@@ -235,6 +237,10 @@ public final class HttpExchanges {
   /**
    * Redirect client to {@code location}. The client should retrieve the
    * referred location via GET, independent of the method of this request.
+   *
+   * @param ex exchange
+   * @param location location
+   * @throws IOException ioe
    */
   public static void sendRedirect(HttpExchange ex, URI location)
       throws IOException {
@@ -272,6 +278,9 @@ public final class HttpExchanges {
    * responseLength} of {@code 0} when calling {@link
    * HttpExchange#sendResponseHeaders}. The exception is when responding to a
    * HEAD request, in which {@code -1} is required.
+   *
+   * @param ex exchange
+   * @throws IOException ioe
    */
   public static void enableCompressionIfSupported(HttpExchange ex)
       throws IOException {
@@ -303,6 +312,8 @@ public final class HttpExchanges {
   /**
    * Retrieves and parses the If-Modified-Since from the request, returning null
    * if there was no such header or there was an error.
+   *
+   * @param ex exchange
    */
   public static Date getIfModifiedSince(HttpExchange ex) {
     String ifModifiedSince
@@ -330,6 +341,8 @@ public final class HttpExchanges {
    * <p>This implementation currently uses an imperfect heuristic, but should
    * work well in most cases. It checks to see if the Date header is present,
    * which is added during {@link HttpExchange#sendResponseHeaders}.
+   *
+   * @param ex exchange
    */
   public static boolean headersSent(HttpExchange ex) {
     return ex.getResponseHeaders().getFirst("Date") != null;

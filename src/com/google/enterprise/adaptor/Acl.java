@@ -214,6 +214,8 @@ public class Acl {
    * one of the user's groups is in denyGroups, that user will be denied. If a
    * user and his groups are unspecified in the ACL, then the response is
    * indeterminate.
+   *
+   * @param userIdentity userIdentity
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
     UserPrincipal userIdentifier = userIdentity.getUser();
@@ -558,6 +560,7 @@ public class Acl {
      * For more information about named resources, see {@link
      * DocIdPusher#pushNamedResources}.
      *
+     * @param ids ids
      * @throws IOException if there was an error contacting the data store
      */
     public Map<DocId, Acl> retrieveAcls(Set<DocId> ids)
@@ -586,6 +589,7 @@ public class Acl {
     /**
      * Create and initialize builder with ACL information provided in {@code
      * acl}.
+     * @param acl acl
      */
     public Builder(Acl acl) {
       permitGroups = sanitizeSet(acl.getPermitGroups());
@@ -623,6 +627,7 @@ public class Acl {
     /**
      * Replace existing permit groups.
      *
+     * @param permitGroups permitGroups
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
@@ -637,6 +642,7 @@ public class Acl {
     /**
      * Replace existing deny groups.
      *
+     * @param denyGroups denyGroups
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
@@ -651,6 +657,7 @@ public class Acl {
     /**
      * Replace existing permit users.
      *
+     * @param permitUsers permitUsers
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
@@ -665,6 +672,7 @@ public class Acl {
     /**
      * Replace existing deny users.
      *
+     * @param denyUsers denyUsers
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
@@ -679,6 +687,7 @@ public class Acl {
     /**
      * Replace existing permit users and groups.
      *
+     * @param permits permits
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
@@ -705,6 +714,7 @@ public class Acl {
     /**
      * Replace existing deny users and groups.
      *
+     * @param denies denies
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if the collection is {@code null} or
      *     contains {@code null}
@@ -733,6 +743,7 @@ public class Acl {
      * "parent's" ACLs. Note that the parent's {@code InheritanceType}
      * determines how to combine results with this ACL.
      *
+     * @param inheritFrom inheritFrom
      * @return the same instance of the builder, for chaining calls
      * @see #setInheritanceType
      */
@@ -755,6 +766,8 @@ public class Acl {
      * The fragment allows specifying which of the parent's ACLs
      * is to be inherited from.
      *
+     * @param inheritFrom inheritFrom
+     * @param fragment fragment
      * @return the same instance of the builder, for chaining calls
      * @see #setInheritanceType
      */
@@ -770,6 +783,7 @@ public class Acl {
      * applies to the interaction between this ACL and any <em>children</em> it
      * has.
      *
+     * @param inheritType inheritType
      * @return the same instance of the builder, for chaining calls
      * @throws NullPointerException if {@code inheritType} is {@code null}
      * @see #setInheritFrom

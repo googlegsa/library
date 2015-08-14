@@ -47,7 +47,9 @@ public class MetadataTransformExample implements MetadataTransform {
     }
   }
 
-  /** Makes transform from config with "src" and "dest" keys. */
+  /** Makes transform from config with "src" and "dest" keys. 
+   *  @param cfg configuration
+   */
   public static MetadataTransformExample create(Map<String, String> cfg) {
     return new MetadataTransformExample(cfg.get("src"), cfg.get("dest"));
   }

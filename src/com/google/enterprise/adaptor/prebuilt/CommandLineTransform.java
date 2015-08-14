@@ -55,6 +55,8 @@ public class CommandLineTransform implements MetadataTransform {
    * Accepts keys {@code "cmd"}, {@code "workingDirectory"}, and {@code "arg?"}.
    * The {@code "arg?"} configuration values should be numerically increasing
    * starting from one: {@code "arg1"}, {@code "arg2"}, {@code "arg3}, ...
+   *
+   * @param config configuration
    */
   public static CommandLineTransform create(Map<String, String> config) {
     CommandLineTransform transform = new CommandLineTransform();
@@ -207,6 +209,8 @@ public class CommandLineTransform implements MetadataTransform {
    * This controls whether the input parameters to the transform call are passed
    * along to the actual call to the command. This is useful in the case where a
    * binary might return erros when unexpected command line flags are passed in.
+   *
+   * @param commandAcceptsParameters param passing boolean
    */
   public void setCommandAcceptsParameters(boolean commandAcceptsParameters) {
     this.commandAcceptsParameters = commandAcceptsParameters;
@@ -223,6 +227,8 @@ public class CommandLineTransform implements MetadataTransform {
    *
    * Errors should be printed to stderr. If anything is printed to stderr, it
    * will cause a failure for this transform operation.
+   *
+   * @param transformCommand transform
    */
   public void setTransformCommand(List<String> transformCommand) {
     this.transformCommand = new ArrayList<String>(transformCommand);
@@ -235,6 +241,7 @@ public class CommandLineTransform implements MetadataTransform {
   /**
    * Sets the working directory. Must be valid.
    *
+   * @param dir directory
    * @throws IllegalArgumentException if {@code dir} is not a directory
    */
   public void setWorkingDirectory(File dir) {

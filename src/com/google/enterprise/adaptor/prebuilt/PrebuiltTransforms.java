@@ -60,6 +60,8 @@ public class PrebuiltTransforms {
    *3.to=color
    *5.from=author
    *5.to=contributors</code></pre>
+   *
+   * @param config transform configuration
    */
   public static MetadataTransform copyMetadata(
       Map<String, String> config) {
@@ -76,6 +78,8 @@ public class PrebuiltTransforms {
    * This method returns a transform that behaves identically to {@link
    * #copyMetadata}, except that the source keys are removed. If the source key
    * has no metadata values then the destination is left as-is.
+   *
+   * @param config transform configuration
    */
   public static MetadataTransform moveMetadata(
       Map<String, String> config) {
@@ -223,6 +227,8 @@ public class PrebuiltTransforms {
    * <p>Example configuration:
    * <pre><code>key2=sensitive
    *key4=unhelpful</code></pre>
+   *
+   * @param config transform configuration
    */
   public static MetadataTransform deleteMetadata(
       Map<String, String> config) {
@@ -292,6 +298,8 @@ public class PrebuiltTransforms {
    *key5=least favorite
    *pattern=(Java|C|Perl)
    *replacement=$1 (but it should be x86 assembler)</code></pre>
+   *
+   * @param config transform configuration
    */
   public static MetadataTransform replaceMetadata(
       Map<String, String> config) {

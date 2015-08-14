@@ -44,7 +44,7 @@ import java.util.regex.Pattern;
  * Character data technically supports a 'modified UTF-8'. The modified UTF-8 encoding allows
  * newlines and the null character to be encoded as 2-bytes instead of one. Instead of byte 0x00,
  * the null character \0 can be encoded as 0xC0 0x80. Instead of byte 0x0a, the line feed character
- * \n can be encoded as 0xC0 0x8a.<p>
+ * \n can be encoded as 0xC0 0x8a.<br>
  *
  * <h3>Header Format</h3>
  *
@@ -73,13 +73,13 @@ import java.util.regex.Pattern;
  *
  * The following characters may not be used in the delimiter:<p> 'A'-'Z', 'a'-'z' and '0'-'9' the
  * alphanumeric characters<br> ':'  colon<br> '/'  slash<br> '-'  hyphen<br> '_'  underscore<br> ' '
- * space<br> '=' equals<br> '+' plus<br> '[' left square bracket<br> ']' right square bracket<p>
+ * space<br> '=' equals<br> '+' plus<br> '[' left square bracket<br> ']' right square bracket<br>
  *
  * <h3>Body Format</h3> Elements in the file start with one of the following commands. Commands
  * where data precedes the next delimiter include an equal sign. Commands that are immediately
  * followed by a delimiter do not include an equal sign. The first command must specify a document
  * ID ("id=" or "id-list"). Command that don't specify a document ID are associated with the most
- * recent previously specified document ID.<p>
+ * recent previously specified document ID.<br>
  *
  * <h3>Common Commands:</h3>
  *
@@ -118,7 +118,7 @@ import java.util.regex.Pattern;
  * locked then locked document may be forced out when maximum capacity is
  * reached.<p>
  *
- * "delete" -- this document should be deleted from the GSA index.<p>
+ * "delete" -- this document should be deleted from the GSA index.<br>
  *
  * <h3>Retriever Commands:</h3>
  *
@@ -203,7 +203,7 @@ import java.util.regex.Pattern;
  * <p>
  *
  * "acl-case-insensitive=" -- the principals of this document are case
- * insensitive. <p>
+ * insensitive. <br>
  *
  * <h3>Authorizer Commands:</h3>
  *
@@ -223,7 +223,7 @@ import java.util.regex.Pattern;
  *
  * <h3>Examples</h3>
  *
- * Example 1:<p>
+ * Example 1:<br>
  *
  * <pre>
  * {@code
@@ -236,7 +236,7 @@ import java.util.regex.Pattern;
  * /home/repository/docs/file5
  * }</pre>
  *
- * Example 2:<p>
+ * Example 2:<br>
  *
  * <pre>
  * {@code
@@ -589,7 +589,11 @@ public class CommandStreamParser {
    * null}, then {@code pusher}'s default handler will be used. In case of failure sending in
    * {@code pusher}, the rest of the input stream may not be read.
    *
+   * @param pusher doc id pusher
+   * @param handler exception handler
    * @return {@code null} on success, otherwise the first Record to fail
+   * @throws IOException ioe
+   * @throws InterruptedException if interrupted
    */
   public DocIdPusher.Record readFromLister(DocIdPusher pusher, ExceptionHandler handler)
       throws IOException, InterruptedException {

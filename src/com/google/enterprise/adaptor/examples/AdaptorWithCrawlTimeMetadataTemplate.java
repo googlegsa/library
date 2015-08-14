@@ -101,7 +101,9 @@ public class AdaptorWithCrawlTimeMetadataTemplate extends AbstractAdaptor
     os.write(str.getBytes(encoding));
   }
 
-  /** Call default main for adaptors. */
+  /** Call default main for adaptors.
+   *  @param args argv
+   */
   public static void main(String[] args) {
     AbstractAdaptor.main(new AdaptorWithCrawlTimeMetadataTemplate(), args);
   }

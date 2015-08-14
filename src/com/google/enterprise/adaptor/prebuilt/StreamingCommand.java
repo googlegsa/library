@@ -40,6 +40,14 @@ public class StreamingCommand {
    * Same as {@code exec(command, null, stdin, stdout, stderr)}.
    *
    * @see #exec(String[], File, InputSource, OutputSink, OutputSink)
+   *
+   * @param command command
+   * @param stdin stdin
+   * @param stdout stdout
+   * @param stderr stderr
+   * @return Process return code
+   * @throws IOException if creating process fails
+   * @throws InterruptedException if interrupted
    */
   public static int exec(String[] command, InputSource stdin, OutputSink stdout,
       OutputSink stderr) throws IOException, InterruptedException {
@@ -53,8 +61,14 @@ public class StreamingCommand {
    * {@code stdin}, {@code stdout}, or {@code stderr} is {@code null}, then a
    * bare implemention will be used.
    *
+   * @param command command
+   * @param workingDir workingDir
+   * @param stdin stdin
+   * @param stdout stdout
+   * @param stderr stderr
    * @return Process return code
    * @throws IOException if creating process fails
+   * @throws InterruptedException if interrupted
    */
   public static int exec(String[] command, File workingDir, InputSource stdin,
       OutputSink stdout, OutputSink stderr)
@@ -103,6 +117,8 @@ public class StreamingCommand {
 
   /**
    * {@link InputStream} to {@link InputSource} adaptor.
+   *
+   * @param in input stream
    */
   public static InputSource streamInputSource(InputStream in) {
     return new StreamInputSource(in);
@@ -110,6 +126,8 @@ public class StreamingCommand {
 
   /**
    * {@link OutputStream} to {@link OutputSink} adaptor.
+   *
+   * @param out output stream
    */
   public static OutputSink streamOutputSink(OutputStream out) {
     return new StreamOutputSink(out);
@@ -129,6 +147,8 @@ public class StreamingCommand {
   public static interface InputSource {
     /**
      * Generate content and write it to {@code out}.
+     * @param out out
+     * @throws IOException ioe
      */
     public void source(OutputStream out) throws IOException;
   }
@@ -139,6 +159,8 @@ public class StreamingCommand {
   public static interface OutputSink {
     /**
      * Consume content from {@code in}.
+     * @param in in
+     * @throws IOException ioe
      */
     public void sink(InputStream in) throws IOException;
   }

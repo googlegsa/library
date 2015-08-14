@@ -140,6 +140,12 @@ public final class GsaCommunicationHandler {
   /**
    * Start services necessary for handling outgoing requests. {@code ""} is used
    * for {@code contextPrefix} if the passed value is {@code null}.
+   *
+   * @param server serves documents
+   * @param dashboardServer serves dashboard
+   * @param contextPrefix prefix 
+   * @throws IOException ioe
+   * @throws InterruptedException if interrupted
    */
   public synchronized AdaptorContext setup(HttpServer server,
       HttpServer dashboardServer, String contextPrefix) throws IOException,
@@ -241,6 +247,8 @@ public final class GsaCommunicationHandler {
   /**
    * Start servicing incoming requests. This makes use of the
    * previously-provided HttpServers and configuration.
+   *
+   * @param shutdownHook shutdonw hook
    */
   public synchronized void start(Runnable shutdownHook) {
     // Since the Adaptor has been started, we can now issue other calls to it.
@@ -634,6 +642,8 @@ public final class GsaCommunicationHandler {
    * for things to shutdown. After called, no requests will be sent to the
    * Adaptor.
    *
+   * @param time time
+   * @param unit units
    * @return {@code true} if shutdown cleanly, {@code false} if requests may
    *     still be processing
    */

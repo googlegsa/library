@@ -1116,7 +1116,9 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     }
   }
 
-  /** Call default main for adaptors. */
+  /** Call default main for adaptors. 
+   *  @param args argv
+   */
   public static void main(String[] args) {
     AbstractAdaptor.main(new SharePointStateFileAdaptor(), args);
   }
