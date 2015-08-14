@@ -121,6 +121,7 @@ public class Acl {
 
   /**
    * Returns immutable set of permitted groups.
+   * @return permitted groups
    */
   public Set<GroupPrincipal> getPermitGroups() {
     return permitGroups;
@@ -128,6 +129,7 @@ public class Acl {
 
   /**
    * Returns immutable set of denied groups.
+   * @return denied groups
    */
   public Set<GroupPrincipal> getDenyGroups() {
     return denyGroups;
@@ -135,6 +137,7 @@ public class Acl {
 
   /**
    * Returns immutable set of permitted users.
+   * @return permitted users
    */
   public Set<UserPrincipal> getPermitUsers() {
     return permitUsers;
@@ -142,6 +145,7 @@ public class Acl {
 
   /**
    * Returns immutable set of denied users.
+   * @return denied users
    */
   public Set<UserPrincipal> getDenyUsers() {
     return denyUsers;
@@ -149,6 +153,7 @@ public class Acl {
 
   /**
    * Returns immutable set of permitted users and groups.
+   * @return all permits
    */
   public Set<Principal> getPermits() {
     return Sets.union(permitUsers, permitGroups);
@@ -156,6 +161,7 @@ public class Acl {
 
   /**
    * Returns immutable set of denied users and groups;
+   * @return all denies
    */
   public Set<Principal> getDenies() {
     return Sets.union(denyUsers, denyGroups);
@@ -167,6 +173,7 @@ public class Acl {
    * determines how to combine results with this ACL.
    *
    * @see #getInheritanceType
+   * @return parent
    */
   public DocId getInheritFrom() {
     return inheritFrom;
@@ -177,6 +184,7 @@ public class Acl {
    * ACLs is to to be inhertied from.
    *
    * @see #getInheritanceType
+   * @return fragment or null
    */
   public String getInheritFromFragment() {
     return inheritFromFragment;
@@ -188,6 +196,7 @@ public class Acl {
    * between this ACL and any <em>children</em> it has.
    *
    * @see #getInheritFrom
+   * @return type
    */
   public InheritanceType getInheritanceType() {
     return inheritType;
@@ -195,6 +204,7 @@ public class Acl {
 
   /**
    * Says whether letter casing differentiates names during authorization.
+   * @return boolean property
    */
   public boolean isEverythingCaseSensitive() {
     return caseSensitive;
@@ -202,6 +212,7 @@ public class Acl {
 
   /**
    * Says whether letter casing doesn't matter during authorization.
+   * @return boolean property
    */
   public boolean isEverythingCaseInsensitive() {
     return !caseSensitive;
@@ -216,6 +227,7 @@ public class Acl {
    * indeterminate.
    *
    * @param userIdentity userIdentity
+   * @return decision
    */
   public AuthzStatus isAuthorizedLocal(AuthnIdentity userIdentity) {
     UserPrincipal userIdentifier = userIdentity.getUser();
@@ -293,6 +305,7 @@ public class Acl {
    *     the first has {@code getInheritFrom() == null}.
    * @see #isAuthorizedLocal
    * @see InheritanceType
+   * @return decision
    */
   public static AuthzStatus isAuthorized(AuthnIdentity userIdentity,
                                          List<Acl> aclChain) {
@@ -377,6 +390,7 @@ public class Acl {
    * @param ids collection of DocIds that need authz performed
    * @param retriever object to use to obtain an ACL for a given DocId
    * @throws IOException if the retriever throws an IOException
+   * @return decisions for ids
    */
   public static Map<DocId, AuthzStatus> isAuthorizedBatch(
       AuthnIdentity userIdentity, Collection<DocId> ids,
@@ -562,6 +576,7 @@ public class Acl {
      *
      * @param ids ids
      * @throws IOException if there was an error contacting the data store
+     * @return Acls for ids
      */
     public Map<DocId, Acl> retrieveAcls(Set<DocId> ids)
         throws IOException;
@@ -618,6 +633,7 @@ public class Acl {
 
     /**
      * Create immutable {@link Acl} instance of the current state.
+     * @return Acl
      */
     public Acl build() {
       return new Acl(permitGroups, denyGroups, permitUsers, denyUsers,

@@ -146,6 +146,7 @@ public final class GsaCommunicationHandler {
    * @param contextPrefix prefix 
    * @throws IOException ioe
    * @throws InterruptedException if interrupted
+   * @return context
    */
   public synchronized AdaptorContext setup(HttpServer server,
       HttpServer dashboardServer, String contextPrefix) throws IOException,
@@ -721,6 +722,7 @@ public final class GsaCommunicationHandler {
    * Ensure there is a push running right now. This schedules a new push if one
    * is not already running. Returns {@code true} if it starts a new push, and
    * {@code false} otherwise.
+   * @return true if scheduled and false if already running
    */
   public boolean checkAndScheduleImmediatePushOfDocIds() {
     if (docIdFullPusher.isRunning()) {
@@ -736,6 +738,7 @@ public final class GsaCommunicationHandler {
   /**
    * Perform an push of incremental changes. This works only for adaptors that
    * support incremental polling (implements {@link PollingIncrementalLister}.
+   * @return true if scheduled and false if already running
    */
   public synchronized boolean checkAndScheduleIncrementalPushOfDocIds() {
     if (docIdIncrementalPusher == null) {
@@ -781,7 +784,7 @@ public final class GsaCommunicationHandler {
     }
   }
 
-  /** The adaptor instance being used. */
+  /** @return the adaptor instance being used */
   public Adaptor getAdaptor() {
     return adaptor;
   }

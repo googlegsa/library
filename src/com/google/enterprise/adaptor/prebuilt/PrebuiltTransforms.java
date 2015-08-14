@@ -62,6 +62,7 @@ public class PrebuiltTransforms {
    *5.to=contributors</code></pre>
    *
    * @param config transform configuration
+   * @return transform
    */
   public static MetadataTransform copyMetadata(
       Map<String, String> config) {
@@ -80,6 +81,7 @@ public class PrebuiltTransforms {
    * has no metadata values then the destination is left as-is.
    *
    * @param config transform configuration
+   * @return transform
    */
   public static MetadataTransform moveMetadata(
       Map<String, String> config) {
@@ -229,6 +231,7 @@ public class PrebuiltTransforms {
    *key4=unhelpful</code></pre>
    *
    * @param config transform configuration
+   * @return transform
    */
   public static MetadataTransform deleteMetadata(
       Map<String, String> config) {
@@ -300,6 +303,7 @@ public class PrebuiltTransforms {
    *replacement=$1 (but it should be x86 assembler)</code></pre>
    *
    * @param config transform configuration
+   * @return transform
    */
   public static MetadataTransform replaceMetadata(
       Map<String, String> config) {

@@ -34,6 +34,7 @@ public class Command {
    * @param command command
    * @throws IOException if creating process fails
    * @throws InterruptedException if interrupted
+   * @return result
    */
   public static Result exec(String[] command) throws IOException,
          InterruptedException {
@@ -49,6 +50,7 @@ public class Command {
    * @param workingDir workingDir
    * @throws IOException if creating process fails
    * @throws InterruptedException if interrupted
+   * @return result
    */
   public static Result exec(String[] command, File workingDir)
       throws IOException, InterruptedException {
@@ -64,6 +66,7 @@ public class Command {
    * @param stdin stdin
    * @throws IOException if creating process fails
    * @throws InterruptedException if interrupted
+   * @return result
    */
   public static Result exec(String[] command, byte[] stdin) throws IOException,
          InterruptedException {
@@ -83,6 +86,7 @@ public class Command {
    * @param stdin stdin
    * @throws IOException if creating process fails
    * @throws InterruptedException if interrupted
+   * @return result
    */
   public static Result exec(String[] command, File workingDir, byte[] stdin)
       throws IOException, InterruptedException {
@@ -130,14 +134,14 @@ public class Command {
     }
 
     /**
-     * Returns internal byte array without copying.
+     * @return internal byte array without copying
      */
     public byte[] getStdout() {
       return stdout;
     }
 
     /**
-     * Returns internal byte array without copying.
+     * @return internal byte array without copying
      */
     public byte[] getStderr() {
       return stderr;

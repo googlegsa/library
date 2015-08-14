@@ -123,6 +123,7 @@ public final class HttpExchanges {
    * contact the server.
    *
    * @param ex exchange
+   * @return uri client used
    */
   public static URI getRequestUri(HttpExchange ex) {
     String host = ex.getRequestHeaders().getFirst("Host");
@@ -314,6 +315,7 @@ public final class HttpExchanges {
    * if there was no such header or there was an error.
    *
    * @param ex exchange
+   * @return null or value of last-modified HTTP header from request
    */
   public static Date getIfModifiedSince(HttpExchange ex) {
     String ifModifiedSince
@@ -343,6 +345,7 @@ public final class HttpExchanges {
    * which is added during {@link HttpExchange#sendResponseHeaders}.
    *
    * @param ex exchange
+   * @return whether already sent
    */
   public static boolean headersSent(HttpExchange ex) {
     return ex.getResponseHeaders().getFirst("Date") != null;

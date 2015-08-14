@@ -119,6 +119,7 @@ public class StreamingCommand {
    * {@link InputStream} to {@link InputSource} adaptor.
    *
    * @param in input stream
+   * @return input source
    */
   public static InputSource streamInputSource(InputStream in) {
     return new StreamInputSource(in);
@@ -128,6 +129,7 @@ public class StreamingCommand {
    * {@link OutputStream} to {@link OutputSink} adaptor.
    *
    * @param out output stream
+   * @return output sink
    */
   public static OutputSink streamOutputSink(OutputStream out) {
     return new StreamOutputSink(out);

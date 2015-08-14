@@ -57,6 +57,7 @@ public class CommandLineTransform implements MetadataTransform {
    * starting from one: {@code "arg1"}, {@code "arg2"}, {@code "arg3}, ...
    *
    * @param config configuration
+   * @return transform
    */
   public static CommandLineTransform create(Map<String, String> config) {
     CommandLineTransform transform = new CommandLineTransform();
