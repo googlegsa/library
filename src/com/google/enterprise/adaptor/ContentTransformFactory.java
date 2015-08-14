@@ -4,6 +4,8 @@ import com.google.common.base.Strings;
 
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -17,18 +19,37 @@ import java.util.logging.Logger;
  */
 public class ContentTransformFactory {
 
-  private static final Logger LOG =
-      Logger.getLogger(ContentTransformFactory.class.getName());
-
-  private List<Map<String, String>> contentTransformers;
+  private List<DocumentContentTransform> transforms;
 
   public ContentTransformFactory(
-      final List<Map<String, String>> contentTransformers) {
-    this.contentTransformers = contentTransformers;
+      final List<Map<String, String>> transforms) {
+    if (transforms.size() <= 0) {
+      return;
+    }
+    this.transforms = new LinkedList<DocumentContentTransform>();
+    for (int i = (transforms.size() - 1); i >= 0; i--) {
+      final Map<String, String> tConfig = transforms.get(i);
+      final String className = tConfig.get("class");
+      if (Strings.isNullOrEmpty(className)) {
+        throw new RuntimeException(
+            "Document Content Transform class is missing " + className);
+      }
+      try {
+        //noinspection unchecked
+        final Class<DocumentContentTransform> clazz =
+            (Class<DocumentContentTransform>) Class.forName(className);
+        final Constructor<DocumentContentTransform> constructor =
+            clazz.getConstructor(Map.class);
+        this.transforms.add(constructor.newInstance(tConfig));
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Cannot use document content transform of type " + className, e);
+      }
+    }
   }
 
   /**
-   * Creates a new transformer pipeline.
+   * Creates a new transform pipeline.
    *
    * @param original    original content stream
    * @param contentType content type
@@ -38,38 +59,20 @@ public class ContentTransformFactory {
   public final OutputStream createPipeline(final OutputStream original,
                                            final String contentType,
                                            final Metadata metadata) {
-    if (contentTransformers.size() <= 0) {
+    if (null == transforms || transforms.size() <= 0) {
       return original;
     }
-    DocumentContentTransform contentTransform = null;
-    for (int i = contentTransformers.size(); i >= 0; i--) {
-      final Map<String, String> tConfig = contentTransformers.get(i);
-      final String className = tConfig.get("class");
-      if (Strings.isNullOrEmpty(className)) {
-        throw new RuntimeException(
-            "Document Content Transformer class is missing " + className);
+    DocumentContentTransform last = null;
+    for (final DocumentContentTransform transform : transforms) {
+      if (null == last) {
+        transform.setOriginalStream(original);
+      } else {
+        transform.setOriginalStream(last);
       }
-      try {
-        //noinspection unchecked
-        final Class<DocumentContentTransform> clazz =
-            (Class<DocumentContentTransform>) Class.forName(className);
-        final Constructor<DocumentContentTransform> constructor =
-            clazz.getConstructor(Map.class,
-                OutputStream.class, String.class, Metadata.class);
-        if (null == contentTransform) {
-          contentTransform =
-              constructor.newInstance(tConfig, original, contentType,
-                  metadata);
-        } else {
-          contentTransform =
-              constructor.newInstance(tConfig, contentTransform,
-                  contentType, metadata);
-        }
-      } catch (Exception e) {
-        throw new RuntimeException(
-            "Cannot use document content transform of type " + className);
-      }
+      transform.setContentType(contentType);
+      transform.setMetadata(metadata);
+      last = transform;
     }
-    return contentTransform;
+    return last;
   }
 }

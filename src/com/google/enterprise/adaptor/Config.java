@@ -175,7 +175,7 @@ import java.util.logging.Logger;
  * <tr><td> </td><td>transform.pipeline </td><td> sequence of
  *     transformation steps.  Defaults to no-pipeline
  * <tr><td> </td><td>content.transform.pipeline </td><td>
- *     content transformer pipeline. Defaults to no-pipeline</td></tr>
+ *     content transform pipeline. Defaults to no-pipeline</td></tr>
  * <tr><td> </td><td>saml.idpExpirationMillis </td><td> Expiration time
  *     sent in SAML Authentication response. Defaults to 30,000 milliseconds.
  * </table>
@@ -600,7 +600,7 @@ public class Config {
    * Returns a map configuration the content transformer.
    */
   List<Map<String, String>> getContentTransformFactorySpec() {
-    return getListOfConfigs("content.transformer.pipeline");
+    return getListOfConfigs("content.transform.pipeline");
   }
 
   /**

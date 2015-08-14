@@ -14,8 +14,8 @@ import java.util.Map;
 public class DocumentContentTransform extends OutputStream {
 
   protected final Map<String, String> config;
-  protected final Metadata metadata;
-  protected final String contentType;
+  protected Metadata metadata;
+  protected String contentType;
   private OutputStream originalStream;
 
   /**
@@ -23,22 +23,25 @@ public class DocumentContentTransform extends OutputStream {
    *
    * @param config         the configuration for this instance
    *                       (never null, but maybe empty)
-   * @param originalStream the original content stream
-   * @param contentType    the content type of the stream
-   *                       (could possibly be null or empty)
-   * @param metadata       the metadata already collected for this document
-   *                       (never null, but maybe empty)
    */
-  public DocumentContentTransform(final Map<String, String> config,
-                                  final OutputStream originalStream, final String contentType,
-                                  final Metadata metadata) {
+  public DocumentContentTransform(final Map<String, String> config) {
+    this.config = Collections.unmodifiableMap(
+        new HashMap<String, String>(config));
+  }
+
+  public final void setMetadata(final Metadata metadata) {
+    this.metadata = metadata;
+  }
+
+  public final void setContentType(final String contentType) {
+    this.contentType = contentType;
+  }
+
+  public final void setOriginalStream(final OutputStream originalStream) {
     if (null == originalStream) {
       throw new NullPointerException();
     }
-    this.config = Collections.unmodifiableMap(new HashMap<String, String>(config));
     this.originalStream = originalStream;
-    this.contentType = contentType;
-    this.metadata = metadata;
   }
 
   @Override
