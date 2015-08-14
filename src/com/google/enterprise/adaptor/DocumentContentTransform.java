@@ -3,8 +3,8 @@ package com.google.enterprise.adaptor;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * The document content transform can modify the content of a document.
@@ -21,12 +21,11 @@ public class DocumentContentTransform extends OutputStream {
   /**
    * Constructs a document content transformer.
    *
-   * @param config         the configuration for this instance
-   *                       (never null, but maybe empty)
+   * @param config the configuration for this instance
    */
   public DocumentContentTransform(final Map<String, String> config) {
     this.config = Collections.unmodifiableMap(
-        new HashMap<String, String>(config));
+        new TreeMap<String, String>(config));
   }
 
   public final void setMetadata(final Metadata metadata) {
@@ -67,5 +66,14 @@ public class DocumentContentTransform extends OutputStream {
   @Override
   public void close() throws IOException {
     originalStream.close();
+  }
+
+  @Override
+  public final String toString() {
+    return "DocumentContentTransform{" +
+        "config=" + config +
+        ", metadata=" + metadata +
+        ", contentType='" + contentType + '\'' +
+        '}';
   }
 }
