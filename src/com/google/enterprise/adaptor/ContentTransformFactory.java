@@ -42,7 +42,7 @@ public class ContentTransformFactory {
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
         throw new InvalidConfigurationException(
-            "Document Content Transform class is missing " + className);
+            "Document Content Transform class is missing: " + className);
       }
       try {
         //noinspection unchecked
@@ -53,7 +53,7 @@ public class ContentTransformFactory {
         this.transforms.put(constructor, tConfig);
       } catch (Exception e) {
         throw new RuntimeException(
-            "Cannot get document content transform of type " + className, e);
+            "Cannot get document content transform of type: " + className, e);
       }
     }
   }
@@ -88,7 +88,7 @@ public class ContentTransformFactory {
         last = transform;
       } catch (Exception e) {
         throw new RuntimeException(
-            "Cannot instantiate document content transform "
+            "Cannot instantiate document content transform: "
                 + t.getKey().getName(), e);
       }
     }
