@@ -19,7 +19,7 @@ public class DocumentContentTransform extends OutputStream {
   private OutputStream originalStream;
 
   /**
-   * Constructs a document content transformer.
+   * Constructs a document content transform.
    *
    * @param config the configuration for this instance
    */

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * The content transform factory holds all document content transformers
+ * The content transform factory holds all document content transforms
  * and puts them in series connection.
  *
  * @author Dominik Weidenfeld (dominik.weidenfeld@twt.de)

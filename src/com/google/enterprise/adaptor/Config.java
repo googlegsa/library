@@ -597,7 +597,7 @@ public class Config {
   }
 
   /**
-   * Returns a map configuration the content transformer.
+   * Returns a map configuration the content transform pipeline.
    */
   List<Map<String, String>> getContentTransformFactorySpec() {
     return getListOfConfigs("content.transform.pipeline");
