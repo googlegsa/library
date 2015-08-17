@@ -691,7 +691,9 @@ class DocumentHandler implements HttpHandler {
         os = countingOs;
       }
       if (null != contentTransformFactory) {
-        return contentTransformFactory.createPipeline(os, contentType, metadata);
+        // TODO: possibility for changing the content-type in transformer
+        return contentTransformFactory
+            .createPipeline(os, contentType, metadata);
       }
       return os;
     }
