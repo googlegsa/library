@@ -19,6 +19,17 @@ public class ContentTransformFactory {
   private Map<Constructor<DocumentContentTransform>, Map<String, String>>
       transforms;
 
+  /**
+   * Constructs a new ContentTransformFactory. Also checks the basic
+   * configuration values for the {@link DocumentContentTransform}
+   * instantiation.
+   *
+   * @param transforms Configuration for each {@link DocumentContentTransform}
+   * @throws InvalidConfigurationException If the class for a {@link
+   *                                       DocumentContentTransform} is missing
+   * @throws RuntimeException              If the class does not match all
+   *                                       criteria
+   */
   public ContentTransformFactory(
       final List<Map<String, String>> transforms) {
     if (transforms.size() <= 0) {
@@ -30,7 +41,7 @@ public class ContentTransformFactory {
       final Map<String, String> tConfig = transforms.get(i);
       final String className = tConfig.get("class");
       if (Strings.isNullOrEmpty(className)) {
-        throw new RuntimeException(
+        throw new InvalidConfigurationException(
             "Document Content Transform class is missing " + className);
       }
       try {
