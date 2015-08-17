@@ -4,12 +4,9 @@ import com.google.common.base.Strings;
 
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
-import java.util.LinkedList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * The content transform factory holds all document content transformers
@@ -19,14 +16,16 @@ import java.util.logging.Logger;
  */
 public class ContentTransformFactory {
 
-  private List<DocumentContentTransform> transforms;
+  private Map<Constructor<DocumentContentTransform>, Map<String, String>>
+      transforms;
 
   public ContentTransformFactory(
       final List<Map<String, String>> transforms) {
     if (transforms.size() <= 0) {
       return;
     }
-    this.transforms = new LinkedList<DocumentContentTransform>();
+    this.transforms = new LinkedHashMap<Constructor<DocumentContentTransform>,
+        Map<String, String>>();
     for (int i = (transforms.size() - 1); i >= 0; i--) {
       final Map<String, String> tConfig = transforms.get(i);
       final String className = tConfig.get("class");
@@ -40,10 +39,10 @@ public class ContentTransformFactory {
             (Class<DocumentContentTransform>) Class.forName(className);
         final Constructor<DocumentContentTransform> constructor =
             clazz.getConstructor(Map.class);
-        this.transforms.add(constructor.newInstance(tConfig));
+        this.transforms.put(constructor, tConfig);
       } catch (Exception e) {
         throw new RuntimeException(
-            "Cannot use document content transform of type " + className, e);
+            "Cannot get document content transform of type " + className, e);
       }
     }
   }
@@ -63,15 +62,24 @@ public class ContentTransformFactory {
       return original;
     }
     DocumentContentTransform last = null;
-    for (final DocumentContentTransform transform : transforms) {
-      if (null == last) {
-        transform.setOriginalStream(original);
-      } else {
-        transform.setOriginalStream(last);
+    for (Map.Entry<Constructor<DocumentContentTransform>, Map<String, String>>
+        t : transforms.entrySet()) {
+      try {
+        final DocumentContentTransform transform =
+            t.getKey().newInstance(t.getValue());
+        if (null == last) {
+          transform.setOriginalStream(original);
+        } else {
+          transform.setOriginalStream(last);
+        }
+        transform.setContentType(contentType);
+        transform.setMetadata(metadata);
+        last = transform;
+      } catch (Exception e) {
+        throw new RuntimeException(
+            "Cannot instantiate document content transform "
+                + t.getKey().getName(), e);
       }
-      transform.setContentType(contentType);
-      transform.setMetadata(metadata);
-      last = transform;
     }
     return last;
   }
