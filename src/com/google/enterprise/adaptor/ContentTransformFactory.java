@@ -15,7 +15,7 @@ import java.util.TreeMap;
  *
  * @author Dominik Weidenfeld (dominik.weidenfeld@twt.de)
  */
-public class ContentTransformFactory {
+class ContentTransformFactory {
 
   private Map<Constructor<DocumentContentTransform>, Map<String, String>>
       transforms;
