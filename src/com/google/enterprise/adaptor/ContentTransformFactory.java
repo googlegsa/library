@@ -46,7 +46,7 @@ public class ContentTransformFactory {
             "Document Content Transform class is missing: " + className);
       }
       try {
-        //noinspection unchecked
+        @SuppressWarnings("unchecked")
         final Class<DocumentContentTransform> clazz =
             (Class<DocumentContentTransform>) Class.forName(className);
         final Constructor<DocumentContentTransform> constructor =
