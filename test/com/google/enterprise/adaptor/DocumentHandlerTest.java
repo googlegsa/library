@@ -30,11 +30,14 @@ import org.junit.rules.ExpectedException;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -420,6 +423,59 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testContentTransform() throws Exception {
+    ContentTransformFactory contentTransformFactory =
+        new ContentTransformFactory(
+        new ArrayList<Map<String, String>>() {
+          {
+            add(new HashMap<String, String>() {
+              {
+                put("class", SampleDocumentContentTransform.class.getName());
+              }
+            });
+          }
+        });
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(final Request request, final Response response)
+          throws IOException, InterruptedException {
+        response.setContentType("image/jpeg");
+        OutputStream os = response.getOutputStream();
+        os.write("some cool stuff".getBytes(Charsets.UTF_8));
+        os.close();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[]{remoteIp})
+        .setContentTransformPipeline(contentTransformFactory)
+        .build();
+    handler.handle(ex);
+    assertEquals("some changed stuff", new String(ex.getResponseBytes()));
+  }
+
+  private static class SampleDocumentContentTransform
+      extends DocumentContentTransform {
+
+    public SampleDocumentContentTransform(Map<String, String> config,
+                                          Metadata metadata,
+                                          String contentType,
+                                          OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+    }
+
+    @Override
+    public void write(final byte[] b) throws IOException {
+      if (contentType.equals("image/jpeg")) {
+        super.write("some changed stuff".getBytes(Charsets.UTF_8));
+      } else {
+        super.write(b);
+      }
+    }
+  }
+
+  @Test
   public void testNullAuthzResponse() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -687,11 +743,11 @@ public class DocumentHandlerTest {
           }
         };    
     DocumentHandler handler = createHandlerBuilder()
-        .setAdaptor(adaptor)
-        .setAuthzAuthority(adaptor)
-        .setSendDocControls(true)
-        .setGsaVersion("7.0.0-0")
-        .build();
+            .setAdaptor(adaptor)
+            .setAuthzAuthority(adaptor)
+            .setSendDocControls(true)
+            .setGsaVersion("7.0.0-0")
+            .build();
     ex.getRequestHeaders().set("If-Modified-Since",
         "Thu, 1 Jan 1970 00:00:00 GMT");
     handler.handle(ex);
@@ -706,9 +762,9 @@ public class DocumentHandlerTest {
               throws IOException {
             response.addMetadata("DocTitle", "updated");
             response.setAcl(new Acl.Builder()
-                    .setInheritFrom(new DocId("parent"))
-                    .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
-                    .build());
+                .setInheritFrom(new DocId("parent"))
+                .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES)
+                .build());
             response.respondNoContent();
           }
         };
@@ -1365,7 +1421,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1387,7 +1443,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1408,7 +1464,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp})
+        .setFullAccessHosts(new String[]{remoteIp})
         .setSendDocControls(true)
         .setScoringType("guess!")
         .build();
@@ -1431,7 +1487,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1453,7 +1509,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1475,7 +1531,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .build();
     handler.handle(ex);
@@ -1499,7 +1555,7 @@ public class DocumentHandlerTest {
     String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(adaptor)
-        .setFullAccessHosts(new String[] {remoteIp, "someUnknownHost!@#$"})
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .build();
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
@@ -1849,6 +1905,7 @@ public class DocumentHandlerTest {
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private TransformPipeline transform;
+    private ContentTransformFactory contentTransformPipeline;
     private AclTransform aclTransform
         = new AclTransform(Arrays.<AclTransform.Rule>asList());
     private int transformMaxBytes;
@@ -1911,6 +1968,12 @@ public class DocumentHandlerTest {
       return this;
     }
 
+    public DocumentHandlerBuilder setContentTransformPipeline(
+        ContentTransformFactory contentTransformPipeline) {
+      this.contentTransformPipeline = contentTransformPipeline;
+      return this;
+    }
+
     public DocumentHandlerBuilder setAclTransform(AclTransform aclTransform) {
       this.aclTransform = aclTransform;
       return this;
@@ -1967,7 +2030,7 @@ public class DocumentHandlerTest {
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
-          transform, aclTransform, useCompression, watchdog, pusher,
+          transform, aclTransform, contentTransformPipeline, useCompression, watchdog, pusher,
           sendDocControls, markDocsPublic, headerTimeoutMillis,
           contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata, gsaVersion);
     }

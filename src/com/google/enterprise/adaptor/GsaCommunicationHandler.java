@@ -301,6 +301,7 @@ public final class GsaCommunicationHandler {
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
         samlServiceProvider, createTransformPipeline(), aclTransform,
+        createContentTransformFactory(),
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
         config.doesGsaAcceptDocControlsHeader(),
@@ -388,6 +389,10 @@ public final class GsaCommunicationHandler {
 
   private TransformPipeline createTransformPipeline() {
     return createTransformPipeline(config.getTransformPipelineSpec());
+  }
+
+  private ContentTransformFactory createContentTransformFactory() {
+    return new ContentTransformFactory(config.getContentTransformFactorySpec());
   }
 
   @VisibleForTesting
