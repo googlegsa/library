@@ -68,8 +68,8 @@ import java.util.regex.Pattern;
  * modified UTF-8 is supported, newlines or null characters in document IDs, metadata, and the like
  * can be encoded in their 2-byte form which which will not be confused with the delimiter. A
  * delimiter can be made up of more than one character so it is possible to have a delimiter that is
- * &lt;CR&gt;&lt;LF&gt; or a highly unique string (such as a GUID) that has an exceptionally low probability of
- * occurring in the data.<p>
+ * &lt;CR&gt;&lt;LF&gt; or a highly unique string (such as a GUID) that has an exceptionally low
+ * probability of occurring in the data.<p>
  *
  * The following characters may not be used in the delimiter:<p> 'A'-'Z', 'a'-'z' and '0'-'9' the
  * alphanumeric characters<br> ':'  colon<br> '/'  slash<br> '-'  hyphen<br> '_'  underscore<br> ' '

@@ -86,7 +86,7 @@ public class SimTest {
 
   @Test
   public void testPercentDecoderSingle() {
-    assertEquals("" + ((char)(10)), Sim.percentDecode("%0A"));
+    assertEquals("" + ((char) (10)), Sim.percentDecode("%0A"));
   }
 
   @Test

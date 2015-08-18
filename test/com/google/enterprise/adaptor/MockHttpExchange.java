@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import com.sun.net.httpserver.Filter;
 import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;

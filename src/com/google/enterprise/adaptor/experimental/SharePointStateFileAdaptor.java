@@ -166,7 +166,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         String webStateUrl = webState.getAttributes().getNamedItem("ID")
             .getNodeValue().toLowerCase();
         if (webStateUrl.endsWith("/")) {
-          webStateUrl = webStateUrl.substring(0, webStateUrl.length() -1);
+          webStateUrl = webStateUrl.substring(0, webStateUrl.length() - 1);
         }
         if (webStateUrl.contains("/_layouts/")) {
           webStateUrl
@@ -235,7 +235,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     // Break inheritance and assign super groups to ACLs.
     List<SharePointUrl> objectsWithUniquePermissions
         = new ArrayList<SharePointUrl>();
-    for(String root : rootCollection) {
+    for (String root : rootCollection) {
       calculateChildCountRecursively(root, 0);
       breakInheritanceForNodeRecursively(root, new Random(),
           breakInheritanceThreshold, "", objectsWithUniquePermissions);
@@ -265,7 +265,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         groupsIterator = aclCountPerGroup.keySet().iterator();
       }
       u.superGroup = groupsIterator.next();
-      aclCountPerGroup.put(u.superGroup, aclCountPerGroup.get(u.superGroup)+ 1 
+      aclCountPerGroup.put(u.superGroup, aclCountPerGroup.get(u.superGroup) + 1 
           + u.aclInheritanceChildCount);
     }
     int total = 0;
@@ -289,7 +289,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     }
     Iterator<List<String>> groupsCombinationIterator 
         = groupCombinations.iterator();
-    for(int i = 1; i <= searchUserCount; i++) {
+    for (int i = 1; i <= searchUserCount; i++) {
       if (!groupsCombinationIterator.hasNext()) {
         groupsCombinationIterator = groupCombinations.iterator();
       }
@@ -375,7 +375,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       for (String groupName : groupDefinations.keySet()) {
         GroupPrincipal group = new GroupPrincipal(groupName);
         Collection<Principal> members = new ArrayList<Principal>();
-        for(String user : groupDefinations.get(groupName)) {
+        for (String user : groupDefinations.get(groupName)) {
           members.add(new UserPrincipal(user));
         }
         memberships.put(group, members);
@@ -450,7 +450,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     writer.addText(String.format("# Docs inheriting ACL from current node %d",
         currentItem.aclInheritanceChildCount));
     List<Acl> aclChain = getAclChainForDocId(request.getDocId().getUniqueId());
-    for(Acl acl : aclChain) {
+    for (Acl acl : aclChain) {
       writer.addText(acl.toString());
     }
     if (parentChildMapping.containsKey(url)) {
@@ -569,7 +569,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
         new OutputStreamWriter(response.getOutputStream()),
         context.getDocIdEncoder(), Locale.ENGLISH);
     writer.start(request.getDocId(), "Root", "");
-    for(String sc : rootCollection) {
+    for (String sc : rootCollection) {
       writer.addLink(new DocId(sc), sc);
     }
     writer.finish();
@@ -609,7 +609,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
     int i = 0;
     Random rand = new Random();
     while (i < count) {
-      if(dummy.add(String.format("%s%d", prefix, rand.nextInt(1000)))) {
+      if (dummy.add(String.format("%s%d", prefix, rand.nextInt(1000)))) {
         i++;
       }      
     }
@@ -654,7 +654,7 @@ public class SharePointStateFileAdaptor extends AbstractAdaptor {
       }
       output.append(String.format(
           "For Root %s Avg #sites %d Max #sites %d Min #sites %d\n",
-          root, sum /(siteCollections.size()), max, min));
+          root, sum / (siteCollections.size()), max, min));
 
       SharePointUrl rootUrl = urlToTypeMapping.get(root);
       output.append(String.format("Root %s has %d child items\n",

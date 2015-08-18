@@ -67,10 +67,10 @@ public class DocumentContentTransform extends OutputStream {
 
   @Override
   public final String toString() {
-    return "DocumentContentTransform{" +
-        "config=" + config +
-        ", metadata=" + metadata +
-        ", contentType='" + contentType + '\'' +
-        '}';
+    return "DocumentContentTransform{"
+        + "config=" + config
+        + ", metadata=" + metadata
+        + ", contentType='" + contentType + '\''
+        + '}';
   }
 }

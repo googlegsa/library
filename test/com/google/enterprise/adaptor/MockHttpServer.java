@@ -130,8 +130,8 @@ public class MockHttpServer extends HttpServer {
     HttpContext best = null;
     int bestLength = -1;
     for (HttpContext context : contexts) {
-      if (path.startsWith(context.getPath()) &&
-          context.getPath().length() > bestLength) {
+      if (path.startsWith(context.getPath())
+          && context.getPath().length() > bestLength) {
         best = context;
         bestLength = context.getPath().length();
       }

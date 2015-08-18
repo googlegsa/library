@@ -21,15 +21,15 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.Lists;
+
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
-import com.google.common.base.Charsets;
-import com.google.common.collect.Lists;
 
 import java.io.IOException;
 import java.io.OutputStream;

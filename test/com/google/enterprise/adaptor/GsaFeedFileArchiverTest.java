@@ -14,11 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
-import com.google.common.io.Files;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+
+import com.google.common.io.Files;
 
 import org.junit.Before;
 import org.junit.Rule;

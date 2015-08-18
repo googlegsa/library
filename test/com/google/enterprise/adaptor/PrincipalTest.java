@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 import com.google.enterprise.adaptor.Principal.DomainFormat;
 import com.google.enterprise.adaptor.Principal.ParsedPrincipal;
