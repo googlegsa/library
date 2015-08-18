@@ -14,32 +14,29 @@ import java.util.TreeMap;
 public class DocumentContentTransform extends OutputStream {
 
   protected final Map<String, String> config;
-  protected Metadata metadata;
-  protected String contentType;
-  private OutputStream originalStream;
+  protected final Metadata metadata;
+  protected final String contentType;
+  private final OutputStream originalStream;
 
   /**
    * Constructs a document content transform.
    *
-   * @param config the configuration for this instance
+   * @param config         the configuration for this instance
+   * @param metadata       the unchangeable metadata
+   * @param contentType    the unchangeable content-type
+   * @param originalStream the original stream to put the final content in
    */
-  public DocumentContentTransform(final Map<String, String> config) {
+  public DocumentContentTransform(final Map<String, String> config,
+                                  final Metadata metadata,
+                                  final String contentType,
+                                  final OutputStream originalStream) {
+    if (null == originalStream) {
+      throw new NullPointerException("the original stream must not be null");
+    }
     this.config = Collections.unmodifiableMap(
         new TreeMap<String, String>(config));
-  }
-
-  public final void setMetadata(final Metadata metadata) {
     this.metadata = metadata;
-  }
-
-  public final void setContentType(final String contentType) {
     this.contentType = contentType;
-  }
-
-  public final void setOriginalStream(final OutputStream originalStream) {
-    if (null == originalStream) {
-      throw new NullPointerException();
-    }
     this.originalStream = originalStream;
   }
 

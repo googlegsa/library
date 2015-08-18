@@ -50,7 +50,8 @@ public class ContentTransformFactory {
         final Class<DocumentContentTransform> clazz =
             (Class<DocumentContentTransform>) Class.forName(className);
         final Constructor<DocumentContentTransform> constructor =
-            clazz.getConstructor(Map.class);
+            clazz.getConstructor(Map.class, Metadata.class,
+                String.class, OutputStream.class);
         this.transforms.put(constructor, new TreeMap<String, String>(config));
       } catch (Exception e) {
         throw new InvalidConfigurationException(
@@ -77,16 +78,13 @@ public class ContentTransformFactory {
     for (Map.Entry<Constructor<DocumentContentTransform>, Map<String, String>>
         t : transforms.entrySet()) {
       try {
-        final DocumentContentTransform transform =
-            t.getKey().newInstance(t.getValue());
         if (null == last) {
-          transform.setOriginalStream(original);
+          last = t.getKey()
+              .newInstance(t.getValue(), metadata, contentType, original);
         } else {
-          transform.setOriginalStream(last);
+          last = t.getKey()
+              .newInstance(t.getValue(), metadata, contentType, last);
         }
-        transform.setContentType(contentType);
-        transform.setMetadata(metadata);
-        last = transform;
       } catch (Exception e) {
         throw new RuntimeException(
             "Cannot instantiate document content transform: "

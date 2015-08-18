@@ -441,8 +441,11 @@ public class DocumentHandlerTest {
   private static class SampleDocumentContentTransform
       extends DocumentContentTransform {
 
-    public SampleDocumentContentTransform(Map<String, String> config) {
-      super(config);
+    public SampleDocumentContentTransform(Map<String, String> config,
+                                          Metadata metadata,
+                                          String contentType,
+                                          OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
     }
 
     @Override
