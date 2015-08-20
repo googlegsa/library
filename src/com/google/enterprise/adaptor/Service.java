@@ -204,9 +204,11 @@ public final class Service {
             }
           } catch (IOException ex) {
             // TODO(ejona): add more info as to which one failed.
-            log.log(Level.WARNING, "IOException in subprocess", ex);
+            log.log(Level.WARNING, "IOException in child process", ex);
           } catch (InterruptedException ex) {
-            log.log(Level.WARNING, "Forced shutdown of child", ex);
+            log.log(Level.WARNING, "Forced shutdown of child process", ex);
+          } catch (Throwable t) {
+            log.log(Level.SEVERE, "Failed execution of child process", t);
           }
         }
       });

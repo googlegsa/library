@@ -96,10 +96,10 @@ class CronScheduler {
         if (pattern.matches(now, timeZone)) {
           delegate.run();
         }
-      } catch (Exception ex) {
+      } catch (Throwable t) {
         // We need to prevent any exceptions from being thrown, because that
         // would cause this task not to be run again.
-        log.log(Level.WARNING, "Exception during cron task", ex);
+        log.log(Level.WARNING, "Failure during cron task", t);
       }
     }
 

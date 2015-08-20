@@ -818,6 +818,8 @@ public final class GsaCommunicationHandler {
         docIdSender.pushFullDocIdsFromAdaptor(handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
+      } catch (Throwable t) {
+        log.log(Level.WARNING, "Failure during full polling", t);
       }
     }
   }
@@ -842,8 +844,8 @@ public final class GsaCommunicationHandler {
             incrementalLister, handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
-      } catch (Exception ex) {
-        log.log(Level.WARNING, "Exception during incremental polling", ex);
+      } catch (Throwable t) {
+        log.log(Level.WARNING, "Failure during incremental polling", t);
       }
     }
   }
@@ -874,9 +876,13 @@ public final class GsaCommunicationHandler {
 
     @Override
     public void run() {
-      // Wrap with waiter.runnable() every time instead of in constructor to aid
-      // auditing the code for "ShutdownWaiter correctness."
-      backgroundExecutor.execute(waiter.runnable(delegate));
+      try {
+        // Wrap with waiter.runnable() every time instead of in constructor to
+        // aid auditing the code for "ShutdownWaiter correctness."
+        backgroundExecutor.execute(waiter.runnable(delegate));
+      } catch (Throwable t) {
+        log.log(Level.WARNING, "Failed to start background runnable", t);
+      }
     }
   }
 

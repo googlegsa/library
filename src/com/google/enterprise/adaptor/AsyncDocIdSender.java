@@ -125,6 +125,9 @@ class AsyncDocIdSender implements AsyncDocIdPusher,
           log.log(Level.FINE, "AsyncDocIdSender worker shutdown", ex);
           Thread.currentThread().interrupt();
         }
+      } catch (Throwable t) {
+        log.log(Level.SEVERE, "Unexpected termination of asynchronous pusher "
+            + "worker thread.", t);
       }
     }
   }
