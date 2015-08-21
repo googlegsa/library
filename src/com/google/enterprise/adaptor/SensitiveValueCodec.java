@@ -256,7 +256,8 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * <p>This class allows adaptor administrators to get encoded sensitive value
    * from command line.
    * 
-   * Example command line to run:
+   * Example command line to run (you will be prompted to enter the sensitive
+   * value):
    * <pre>
    * java \
    * -Djavax.net.ssl.keyStore=keys.jks \
@@ -268,11 +269,27 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * -Dserver.keyAlias=adaptor \
    * -Dserver.secure=true
    * </pre>
+   *
+   * Example command line to run (passing the sensitive value on the command
+   * line):
+   * <pre>
+   * java \
+   * -Djavax.net.ssl.keyStore=keys.jks \
+   * -Djavax.net.ssl.keyStoreType=jks \
+   * -Djavax.net.ssl.keyStorePassword=changeit \
+   * -classpath 'adaptor-20130612-withlib.jar' \
+   * com.google.enterprise.adaptor.SensitiveValueCodec \
+   * -DsecurityLevel=ENCRYPTED \
+   * -Dserver.keyAlias=adaptor \
+   * -Dserver.secure=true
+   * 'sensitive value'
+   * </pre>
    */
   public static void main(String[] args) throws IOException {
     Config config = new Config();
     config.addKey("securityLevel", SecurityLevel.PLAIN_TEXT.toString());
     config.setValue("gsa.hostname", "not-used");
+    config.setValue("server.hostname", "not-used");
     Application.autoConfig(config, args, null);
     
     SecurityLevel securityLevel =
@@ -298,15 +315,30 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
       }
     }
     SensitiveValueCodec codec = new SensitiveValueCodec(keyPair);
-    
-    Console console = System.console();
-    if (console == null) {
-      log.warning("Couldn't get Console instance");
-      return;
+    String firstNonDefineParameter = getFirstNonDefineParameter(args);
+    if (firstNonDefineParameter == null) {
+      Console console = System.console();
+      if (console == null) {
+        log.warning("Couldn't get Console instance");
+        return;
+      }
+      char passwordArray[] = console.readPassword("Sensitive Value: ");
+      String password = new String(passwordArray);
+      String encodedValue = codec.encodeValue(password, securityLevel);
+      System.out.printf("Encoded value is: %s%n", encodedValue);
+    } else {
+      String encodedValue = codec.encodeValue(firstNonDefineParameter,
+              securityLevel);
+      System.out.println(encodedValue);
     }
-    char passwordArray[] = console.readPassword("Sensitive Value: ");
-    String password = new String(passwordArray);
-    String encodedValue = codec.encodeValue(password, securityLevel);
-    console.printf("Encoded value is: %s%n", encodedValue);
+  }
+
+  private static String getFirstNonDefineParameter(String[] args) {
+    for (String arg : args) {
+      if (!arg.startsWith("-D")) {
+        return arg;
+      }
+    }
+    return null;
   }
 }
