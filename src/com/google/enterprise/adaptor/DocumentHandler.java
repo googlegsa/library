@@ -1097,6 +1097,11 @@ class DocumentHandler implements HttpHandler {
     }
 
     private void considerNotSending(String secondOpinion, DocId docId) {
+      if (!requestIsFromFullyTrustedClient(ex)) {
+        // Only consider not sending doc to GSA to avoid indexing.
+        // User gets content.
+        return;
+      }
       if (null == secondOpinion || "as-is".equalsIgnoreCase(secondOpinion)) {
         return;  // act normally; don't override any sending logic
       } else if ("drop-all".equalsIgnoreCase(secondOpinion)) {
