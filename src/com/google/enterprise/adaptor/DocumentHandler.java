@@ -25,7 +25,6 @@ import com.sun.net.httpserver.HttpsExchange;
 
 import org.json.simple.JSONObject;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.HttpURLConnection;
@@ -57,6 +56,7 @@ import javax.security.auth.x500.X500Principal;
 class DocumentHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(DocumentHandler.class.getName());
+  private static final Charset ENCODING = Charset.forName("UTF-8");
 
   private final DocIdDecoder docIdDecoder;
   private final DocIdEncoder docIdEncoder;
@@ -475,9 +475,8 @@ class DocumentHandler implements HttpHandler {
    * are percent encoded.
    */
   static String percentEncode(String value) {
-    final Charset encoding = Charset.forName("UTF-8");
     StringBuilder sb = new StringBuilder();
-    byte[] bytes = value.getBytes(encoding);
+    byte[] bytes = value.getBytes(ENCODING);
     for (byte b : bytes) {
       if ((b >= 'a' && b <= 'z')
           || (b >= 'A' && b <= 'Z')
@@ -564,28 +563,37 @@ class DocumentHandler implements HttpHandler {
 
   /**
    * The state of the response. The state begins in SETUP mode, after which it
-   * should transition to another state and become fixed at that state.
+   * should transition to another state. There is a complication where
+   * transform() can change the state further, for example from SEND_BODY
+   * to SEND_BODY_TRANSFORMED_TO_HEAD which makes a regular GET drop content.
    */
   private enum State {
-    /**
-     * The class has not been informed how to respond, so we can still make
-     * changes to what will be provided in headers.
-     */
+    /** The class has not been informed how to respond, so we can still make
+        changes to what will be provided in headers.  */
     SETUP,
-    /** No content to send, but we do need a different response code. */
+    /** No document content to send; response code 304. */
     NOT_MODIFIED,
-    /** No content to send, but we do need a different response code. */
+    /** No document content to send; response code 404 with canned message. */
     NOT_FOUND,
-    /** No content to send, but we do need a different response code. */
-    NOT_FOUND_BY_TRANSFORM_OVERRIDE,
-    /** Must not respond with content, but otherwise act like normal. */
+    /** Must not respond with content; do send headers. 
+        Note: short-circuits closing connection and so does not propagate
+        errors that may happen related to document contents. */
     HEAD,
-    /** No need to buffer contents before sending. */
+    /** 404 response code; do NOT send headers.
+        Note: short-circuits closing connection and so does not propagate
+        errors that may happen related to document contents. */
+    HEAD_TRANSFORMED_TO_NOT_FOUND,
+    /** Stream document bytes as adaptor gives them. */
     SEND_BODY,
-    /** No file content to send but we can send metadata and acls */
+    /** 404 response code with same timeouts and error handling as SEND_BODY. */
+    SEND_BODY_TRANSFORMED_TO_NOT_FOUND,
+    /** 200 response code; do send headers; drop document body; use same 
+        timeouts and error handling as SEND_BODY. */
+    SEND_BODY_TRANSFORMED_TO_HEAD,
+    /** No file content to send but we send metadata and ACLs. */
     NO_CONTENT,
-    /** No file content to send but we can send metadata and acls */
-    HEAD_BY_TRANSFORM_OVERRIDE,
+    /** 404 response code; no metadata; no ACLs. */
+    NO_CONTENT_TRANSFORMED_TO_NOT_FOUND,
   }
 
   /**
@@ -665,8 +673,8 @@ class DocumentHandler implements HttpHandler {
       }
       if (state == State.NO_CONTENT) {
         startSending(false);
-      } else if (state == State.NOT_FOUND_BY_TRANSFORM_OVERRIDE) {
-        log.log(Level.INFO, "Hiding a no-content reply {0}",
+      } else if (state == State.NO_CONTENT_TRANSFORMED_TO_NOT_FOUND) {
+        log.log(Level.INFO, "changed NO_CONTENT to NOT_FOUND {0}",
             docId.getUniqueId());
       } else {
         throw new IllegalStateException("unexpected state: " + state);
@@ -680,21 +688,18 @@ class DocumentHandler implements HttpHandler {
           // We will need to make an OutputStream.
           break;
         case HEAD:
-        case HEAD_BY_TRANSFORM_OVERRIDE:
+        case HEAD_TRANSFORMED_TO_NOT_FOUND:
         case SEND_BODY:
+        case SEND_BODY_TRANSFORMED_TO_NOT_FOUND:
+        case SEND_BODY_TRANSFORMED_TO_HEAD:
           // Already called before. Provide saved OutputStream.
           return os;
         case NOT_MODIFIED:
           throw new IllegalStateException("respondNotModified already called");
         case NOT_FOUND:
           throw new IllegalStateException("respondNotFound already called");
-        case NOT_FOUND_BY_TRANSFORM_OVERRIDE:
-          if (null == os) {
-            // NO_CONTENT was the overridden state
-            throw new IllegalStateException("respondNoContent already called");
-          }
-          return os;  // either HEAD or SEND_BODY was the overridden state
         case NO_CONTENT:
+        case NO_CONTENT_TRANSFORMED_TO_NOT_FOUND:
           throw new IllegalStateException("respondNoContent already called");
         default:
           throw new IllegalStateException("Already responded");
@@ -710,9 +715,16 @@ class DocumentHandler implements HttpHandler {
         if (state == State.HEAD) {
           startSending(false);
           os = new SinkOutputStream();
-        } else if (state == State.NOT_FOUND_BY_TRANSFORM_OVERRIDE) {
-          log.log(Level.INFO, "Excluding head of doc {0}", docId.getUniqueId());
+        } else if (state == State.HEAD_TRANSFORMED_TO_NOT_FOUND) {
+          log.log(Level.INFO, "changed HEAD to NOT_FOUND {0}",
+              docId.getUniqueId());
+          // Follow the precedent of HEAD doing a short-circuit out
+          // and potentially not reporting some later adaptor errors.
           os = new SinkOutputStream();
+          // Do not wait until call to complete() in order to short-circuit.
+          // The following line is a 404 without body (because for HEAD).
+          HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
+              Translation.HTTP_NOT_FOUND);
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
@@ -726,13 +738,19 @@ class DocumentHandler implements HttpHandler {
           countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
               ex.getResponseBody()));
           os = countingOs;
-        } else if (state == State.NOT_FOUND_BY_TRANSFORM_OVERRIDE) {
-          log.log(Level.INFO, "Hiding doc {0}", docId.getUniqueId());
-          os = new SinkOutputStream();
-        } else if (state == State.HEAD_BY_TRANSFORM_OVERRIDE) {
-          log.log(Level.INFO, "Excluding body of doc {0}", docId.getUniqueId());
-          startSending(false);
-          os = new SinkOutputStream();
+        } else if (state == State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND) {
+          log.log(Level.INFO, "changed SEND_BODY to NOT_FOUND {0}",
+              docId.getUniqueId());
+          countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
+              startSendingNotFound()));
+          os = countingOs;
+        } else if (state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
+          log.log(Level.INFO, "changed SEND_BODY to HEAD {0}",
+              docId.getUniqueId());
+          startSending(true);  // Lie about content. Will be 0bytes chunked.
+          countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
+              new SinkOutputStream(ex.getResponseBody())));
+          os = countingOs;
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
@@ -869,8 +887,14 @@ class DocumentHandler implements HttpHandler {
               ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
           break;
 
+        case NO_CONTENT_TRANSFORMED_TO_NOT_FOUND:
+          // Normal NO_CONTENT does not stream document contents. NOT_FOUND does
+          // return a page in response (with "not found" message) but it also 
+          // does not stream repository's document contents. That  means that 
+          // neither case has any reason to report streaming errors. Therefore
+          // we can treat NO_CONTENT that became NOT_FOUND as we treat an
+          // adaptor proscribed NOT_FOUND.
         case NOT_FOUND:
-        case NOT_FOUND_BY_TRANSFORM_OVERRIDE:
           HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
               Translation.HTTP_NOT_FOUND);
           break;
@@ -878,6 +902,14 @@ class DocumentHandler implements HttpHandler {
         case NO_CONTENT:
           break;
 
+        case SEND_BODY_TRANSFORMED_TO_NOT_FOUND:
+        case SEND_BODY_TRANSFORMED_TO_HEAD:
+          // Treat adaptor code as if it was in normal SEND_BODY even when
+          // transform overrides the sending logic.  If there are errors
+          // during adaptor's processing of doc we will send those errors
+          // to GSA as if transform did not override. If everything from
+          // adaptor logic succeeds we do drop the content and potentially
+          // headers and close the chunked-content HTTP response here.
         case SEND_BODY:
           if (!responseBodyClosed) {
             // The Adaptor didn't close the stream, so close it for them, making
@@ -899,8 +931,9 @@ class DocumentHandler implements HttpHandler {
           // has been called.
           break;
 
+        case HEAD_TRANSFORMED_TO_NOT_FOUND:
+          // Follow precedent of HEAD which already short-circuted completion.
         case HEAD:
-        case HEAD_BY_TRANSFORM_OVERRIDE:
           break;
 
         default:
@@ -983,8 +1016,8 @@ class DocumentHandler implements HttpHandler {
       watchdog.processingCompleted(workingThread);
       watchdog.processingStarting(workingThread, contentTimeoutMillis);
       int responseCode;
-      if (state == State.SEND_BODY || state == State.HEAD ||
-          state == State.HEAD_BY_TRANSFORM_OVERRIDE) {
+      if (state == State.SEND_BODY || state == State.HEAD
+          || state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
         responseCode = HttpURLConnection.HTTP_OK;
       } else if (state == State.NO_CONTENT) {
         // Respond with 304 instead of 204 when talking with non GSA requests 
@@ -1002,6 +1035,22 @@ class DocumentHandler implements HttpHandler {
         pusher.asyncPushItem(new DocIdSender.AclItem(docId,
             fragment.getKey(), fragment.getValue()));
       }
+    }
+
+    private OutputStream startSendingNotFound() throws IOException {
+      // There are separate timeouts for sending headers and sending content.
+      // Here we stop the headers timer and start the content timer.     
+      watchdog.processingCompleted(workingThread);
+      watchdog.processingStarting(workingThread, contentTimeoutMillis);
+      int rc = HttpURLConnection.HTTP_NOT_FOUND;
+      HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ true);
+      OutputStream responseBody = ex.getResponseBody();
+      log.finest("before writing chunked not-found response");
+      responseBody.write(
+          Translation.HTTP_NOT_FOUND.toString().getBytes(ENCODING));
+      log.finest("after writing chunked not-found response");
+      OutputStream os = new SinkOutputStream(responseBody);
+      return os;
     }
 
     private Acl checkAndWorkaroundGsa70Acl(Acl acl) {
@@ -1104,25 +1153,29 @@ class DocumentHandler implements HttpHandler {
       }
       if (null == secondOpinion || "as-is".equalsIgnoreCase(secondOpinion)) {
         return;  // act normally; don't override any sending logic
-      } else if ("drop-all".equalsIgnoreCase(secondOpinion)) {
+      } else if ("do-not-index".equalsIgnoreCase(secondOpinion)) {
         switch (state) {
           case NO_CONTENT:
+            state = State.NO_CONTENT_TRANSFORMED_TO_NOT_FOUND;
+            return;
           case HEAD:
+            state = State.HEAD_TRANSFORMED_TO_NOT_FOUND;
+            return;
           case SEND_BODY:
-            state = State.NOT_FOUND_BY_TRANSFORM_OVERRIDE;
+            state = State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND;
             return;
           default:
             throw new IllegalStateException(
                 "unexpected state for transform: " + state);
         }
-      } else if ("drop-content".equalsIgnoreCase(secondOpinion)) {
+      } else if ("do-not-index-content".equalsIgnoreCase(secondOpinion)) {
         switch (state) {
           case NO_CONTENT:
           case HEAD:
             // do nothing as the above states don't send content
             return;
           case SEND_BODY:
-            state = State.HEAD_BY_TRANSFORM_OVERRIDE;
+            state = State.SEND_BODY_TRANSFORMED_TO_HEAD;
             return;
           default:
             throw new IllegalStateException(

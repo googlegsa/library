@@ -408,7 +408,7 @@ public class DocumentHandlerTest {
     transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Transmission-Decision", "drop-all");
+        params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
     });
@@ -433,6 +433,7 @@ public class DocumentHandlerTest {
     assertEquals(404, ex.getResponseCode());
     assertEquals(null,
          ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertArrayEquals("Error 404: Not Found".getBytes(), ex.getResponseBytes());
   }
 
   @Test
@@ -441,7 +442,7 @@ public class DocumentHandlerTest {
     transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Transmission-Decision", "drop-all");
+        params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
     });
@@ -466,6 +467,8 @@ public class DocumentHandlerTest {
     assertEquals(404, headEx.getResponseCode());
     assertEquals(null,
          headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    // 404 response to HEAD request does not have content (it is HEAD)
+    assertArrayEquals("".getBytes(), headEx.getResponseBytes());
   }
 
   @Test
@@ -474,7 +477,7 @@ public class DocumentHandlerTest {
     transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Transmission-Decision", "drop-content");
+        params.put("Transmission-Decision", "do-not-index-content");
         metadata.set("docid", params.get("DocId"));
       }
     });
@@ -509,7 +512,7 @@ public class DocumentHandlerTest {
     transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Transmission-Decision", "drop-content");
+        params.put("Transmission-Decision", "do-not-index-content");
         metadata.set("docid", params.get("DocId"));
       }
     });
@@ -614,7 +617,7 @@ public class DocumentHandlerTest {
     transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Transmission-Decision", "drop-all");
+        params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
     });
@@ -639,6 +642,8 @@ public class DocumentHandlerTest {
     assertEquals(404, ex.getResponseCode());
     assertEquals(null,
          ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    // The 204 that would not have content becomes a 404 with content
+    assertArrayEquals("Error 404: Not Found".getBytes(), ex.getResponseBytes());
   }
 
   @Test
@@ -647,7 +652,7 @@ public class DocumentHandlerTest {
     transforms.add(new DocumentTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Transmission-Decision", "drop-content");
+        params.put("Transmission-Decision", "do-not-index-content");
         metadata.set("docid", params.get("DocId"));
       }
     });
