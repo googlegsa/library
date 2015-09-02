@@ -16,7 +16,7 @@ package com.google.enterprise.adaptor.examples;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import org.junit.Rule;
@@ -52,7 +52,7 @@ public class MetadataTransformExampleTest {
     metadata.add("colour", "keylime");
     metadata.add("color", "oxblood");
     metadata.add("colour", "orange");
-    DocumentTransform transform 
+    MetadataTransform transform 
         = MetadataTransformExample.create(makeConfig("colour", "color"));
     transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
@@ -72,7 +72,7 @@ public class MetadataTransformExampleTest {
     metadata.add("color", "keylime");
     metadata.add("color", "oxblood");
     metadata.add("color", "orange");
-    DocumentTransform transform 
+    MetadataTransform transform 
         = MetadataTransformExample.create(makeConfig("color", "color"));
     transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);

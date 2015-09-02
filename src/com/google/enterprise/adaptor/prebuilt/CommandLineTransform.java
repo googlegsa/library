@@ -16,7 +16,7 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static java.util.AbstractMap.SimpleEntry;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Metadata;
 
@@ -39,7 +39,7 @@ import java.util.logging.Logger;
  * A conduit that allows a simple way to create a document transform based on
  * a command line program.
  */
-public class CommandLineTransform implements DocumentTransform {
+public class CommandLineTransform implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(CommandLineTransform.class.getName());
   private static final int STDERR_BUFFER_SIZE = 51200; // 50 kB

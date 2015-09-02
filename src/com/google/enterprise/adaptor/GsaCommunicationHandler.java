@@ -300,8 +300,8 @@ public final class GsaCommunicationHandler {
         docIdCodec, docIdCodec, journal, adaptor, adaptorContext.authzAuthority,
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
-        samlServiceProvider, createTransformPipeline(), aclTransform,
-        createContentTransformFactory(),
+        samlServiceProvider, createMetadataTransformPipeline(),
+        aclTransform, createContentTransformFactory(),
         config.isServerToUseCompression(), watchdog,
         asyncDocIdSender, 
         config.doesGsaAcceptDocControlsHeader(),
@@ -387,22 +387,25 @@ public final class GsaCommunicationHandler {
     }
   }
 
-  private TransformPipeline createTransformPipeline() {
-    return createTransformPipeline(config.getTransformPipelineSpec());
+  private MetadataTransformPipeline createMetadataTransformPipeline() {
+    return createMetadataTransformPipeline(
+        config.getMetadataTransformPipelineSpec());
   }
 
   private ContentTransformFactory createContentTransformFactory() {
     return new ContentTransformFactory(config.getContentTransformFactorySpec());
   }
 
+  @SuppressWarnings("deprecation")
   @VisibleForTesting
-  static TransformPipeline createTransformPipeline(
+  static MetadataTransformPipeline createMetadataTransformPipeline(
       List<Map<String, String>> pipelineConfig) {
-    List<DocumentTransform> elements = new LinkedList<DocumentTransform>();
+    List<MetadataTransform> elements
+        = new LinkedList<MetadataTransform>();
     List<String> names = new LinkedList<String>();
     for (Map<String, String> element : pipelineConfig) {
       final String name = element.get("name");
-      final String confPrefix = "transform.pipeline." + name + ".";
+      final String confPrefix = "metadata.transform.pipeline." + name + ".";
       String factoryMethodName = element.get("factoryMethod");
       if (factoryMethodName == null) {
         throw new RuntimeException(
@@ -439,16 +442,25 @@ public final class GsaCommunicationHandler {
         throw new RuntimeException("Failure while running factory method "
             + factoryMethodName, ex);
       }
-      if (!(o instanceof DocumentTransform)) {
+      MetadataTransform transform;
+      if (o instanceof MetadataTransform) {
+        transform = (MetadataTransform) o;
+      } else if (o instanceof DocumentTransform) { // historical type name
+        log.log(Level.INFO, "Wrapping {0} in MetadataTransform",
+            o.getClass().toString());
+        transform
+            = new MetadataTransform.HistoricalWrapper((DocumentTransform) o);
+      } else {
         throw new ClassCastException(o.getClass().getName()
-            + " is not an instance of DocumentTransform");
+            + " is not an instance of MetadataTransform");
       }
-      DocumentTransform transform = (DocumentTransform) o;
       elements.add(transform);
       names.add(name);
     }
     // If we created an empty pipeline, then we don't need the pipeline at all.
-    return elements.size() > 0 ? new TransformPipeline(elements, names) : null;
+    return elements.size() > 0 
+        ? new MetadataTransformPipeline(elements, names)
+        : null;
   }
 
   private AclTransform createAclTransform() {

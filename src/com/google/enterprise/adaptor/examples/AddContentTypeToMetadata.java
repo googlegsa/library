@@ -14,14 +14,14 @@
 
 package com.google.enterprise.adaptor.examples;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /** Example transform adding type metadata based on extension. */
-public class AddContentTypeToMetadata implements DocumentTransform {
+public class AddContentTypeToMetadata implements MetadataTransform {
   private final String metaKey;
   private final Map<String, String> typeMap = new HashMap<String, String>() {{
     put("application/vnd.openxmlformats-officedocument.wordprocessingml"

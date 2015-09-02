@@ -17,18 +17,11 @@ package com.google.enterprise.adaptor;
 import java.util.Map;
 
 /**
- * Represents an individual transform in the transform pipeline.
- *
- * <p>Implementations should also typically have a static factory method with a
- * single {@code Map<String, String>} argument for creating instances based on
- * configuration.
+ * Backward-compatibility name for MetadataTransform.
  */
+@Deprecated
 public interface DocumentTransform {
-  /**
-   * Any changes to {@code metadata} and {@code params} will be
-   * passed on to subsequent transforms. This method must be thread-safe.
-   * @param metadata of document
-   * @param params are extra contextual information
-   */
+
+  @Deprecated
   public void transform(Metadata metadata, Map<String, String> params);
 }

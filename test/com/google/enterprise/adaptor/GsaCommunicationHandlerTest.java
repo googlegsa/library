@@ -182,7 +182,7 @@ public class GsaCommunicationHandlerTest {
   }
 
   @Test
-  public void testCreateTransformPipeline() {
+  public void testCreateMetadataTransformPipeline() {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -190,22 +190,22 @@ public class GsaCommunicationHandlerTest {
       map.put("factoryMethod", getClass().getName() + ".factoryMethod");
       config.add(map);
     }
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
-    assertEquals(1, pipeline.getDocumentTransforms().size());
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
+    assertEquals(1, pipeline.getMetadataTransforms().size());
     assertEquals(IdentityTransform.class, 
-        pipeline.getDocumentTransforms().get(0).getClass());
+        pipeline.getMetadataTransforms().get(0).getClass());
     assertEquals("testing", pipeline.getNames().get(0));
   }
 
   @Test
-  public void testCreateTransformPipelineEmpty() {
-    assertNull(GsaCommunicationHandler.createTransformPipeline(
+  public void testCreateMetadataTransformPipelineEmpty() {
+    assertNull(GsaCommunicationHandler.createMetadataTransformPipeline(
         Collections.<Map<String, String>>emptyList()));
   }
 
   @Test
-  public void testCreateTransformPipelineNoClassSpecified() {
+  public void testCreateMetadataTransformPipelineNoClassSpecified() {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -213,12 +213,12 @@ public class GsaCommunicationHandlerTest {
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
   }
 
   @Test
-  public void testCreateTransformPipelineMissingClass() {
+  public void testCreateMetadataTransformPipelineMissingClass() {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -227,12 +227,13 @@ public class GsaCommunicationHandlerTest {
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
   }
 
   @Test
-  public void testCreateTransformPipelineNoGoodConstructor() throws Exception {
+  public void testCreateMetadataTransformPipelineNoGoodConstructor()
+        throws Exception {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -241,12 +242,13 @@ public class GsaCommunicationHandlerTest {
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
   }
 
   @Test
-  public void testCreateTransformPipelineConstructorFails() throws Exception {
+  public void testCreateMetadataTransformPipelineConstructorFails()
+        throws Exception {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -256,12 +258,12 @@ public class GsaCommunicationHandlerTest {
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
   }
 
   @Test
-  public void testCreateTransformPipelineWrongType() throws Exception {
+  public void testCreateMetadataTransformPipelineWrongType() throws Exception {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -271,12 +273,12 @@ public class GsaCommunicationHandlerTest {
       config.add(map);
     }
     thrown.expect(ClassCastException.class);
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
   }
 
   @Test
-  public void testCreateTransformPipelineNoMethod() throws Exception {
+  public void testCreateMetadataTransformPipelineNoMethod() throws Exception {
     List<Map<String, String>> config = new ArrayList<Map<String, String>>();
     {
       Map<String, String> map = new HashMap<String, String>();
@@ -285,8 +287,8 @@ public class GsaCommunicationHandlerTest {
       config.add(map);
     }
     thrown.expect(RuntimeException.class);
-    TransformPipeline pipeline
-        = GsaCommunicationHandler.createTransformPipeline(config);
+    MetadataTransformPipeline pipeline
+        = GsaCommunicationHandler.createMetadataTransformPipeline(config);
   }
 
   @Test
@@ -375,7 +377,7 @@ public class GsaCommunicationHandlerTest {
     }
   }
 
-  static class IdentityTransform implements DocumentTransform {
+  static class IdentityTransform implements MetadataTransform {
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
     }

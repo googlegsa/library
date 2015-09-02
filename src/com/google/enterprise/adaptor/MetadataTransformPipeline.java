@@ -27,18 +27,23 @@ import java.util.Map;
  *
  * <p>This class is thread-safe.
  */
-class TransformPipeline {
-  private final List<DocumentTransform> transformList;
+class MetadataTransformPipeline {
+  private final List<MetadataTransform> transformList;
   private final List<String> names;
 
-  public TransformPipeline(List<? extends DocumentTransform> transforms, List<String> names) {
+  public MetadataTransformPipeline(
+      List<? extends MetadataTransform> transforms,
+      List<String> names) {
     if (transforms.size() != names.size()) {
-      throw new IllegalArgumentException("Transforms and names must be the same size");
+      throw new IllegalArgumentException(
+          "Transforms and names must be the same size");
     }
-    this.transformList = Collections.unmodifiableList(new ArrayList<DocumentTransform>(transforms));
+    this.transformList = Collections.unmodifiableList(
+        new ArrayList<MetadataTransform>(transforms));
     this.names = Collections.unmodifiableList(new ArrayList<String>(names));
-    // Check for null after copying the lists because List.contains(null) is permitted to throw NPE
-    // whereas ArrayList is documented not to throw NPE.
+    // Check for null after copying the lists because List.contains(null)
+    // is permitted to throw NPE whereas ArrayList is documented not to 
+    // throw NPE.
     if (transformList.contains(null)) {
       throw new NullPointerException("Transforms must not contain null values");
     }
@@ -60,7 +65,7 @@ class TransformPipeline {
         new HashMap<String, String>(params), String.class, String.class);
 
     for (int i = 0; i < transformList.size(); i++) {
-      DocumentTransform transform = transformList.get(i);
+      MetadataTransform transform = transformList.get(i);
       try {
         transform.transform(metadataInTransit, paramsInTransit);
       } catch (RuntimeException e) {
@@ -77,7 +82,7 @@ class TransformPipeline {
   /**
    * Retrieve transforms in the order they are processed in the pipeline.
    */
-  public List<DocumentTransform> getDocumentTransforms() {
+  public List<MetadataTransform> getMetadataTransforms() {
     return transformList;
   }
 

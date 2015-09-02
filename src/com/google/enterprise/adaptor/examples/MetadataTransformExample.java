@@ -14,7 +14,7 @@
 
 package com.google.enterprise.adaptor.examples;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import java.util.Collections;
@@ -30,7 +30,7 @@ import java.util.logging.Logger;
  * For example the values under key "creator" could be moved to 
  * be under the key "author".
  */
-public class MetadataTransformExample implements DocumentTransform {
+public class MetadataTransformExample implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(MetadataTransformExample.class.getName());
   private final String src;

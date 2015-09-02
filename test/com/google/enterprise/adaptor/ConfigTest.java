@@ -203,30 +203,31 @@ public class ConfigTest {
       golden.add(map);
     }
     configFile.setFileContents(
-        "transform.pipeline = trans1,  trans2  ,trans3\n"
-        + "transform.pipeline.trans1.key1=value1\n"
-        + "transform.pipeline.trans2.key2=value2\n"
-        + "transform.pipeline.trans2.key3=value3\n"
+        "metadata.transform.pipeline = trans1,  trans2  ,trans3\n"
+        + "metadata.transform.pipeline.trans1.key1=value1\n"
+        + "metadata.transform.pipeline.trans2.key2=value2\n"
+        + "metadata.transform.pipeline.trans2.key3=value3\n"
     );
     config.setValue("gsa.hostname", "notreal");
     config.load(configFile);
-    assertEquals(golden, config.getTransformPipelineSpec());
+    assertEquals(golden, config.getMetadataTransformPipelineSpec());
   }
 
   @Test
   public void testGetTransformPipelineSpecEmpty() throws Exception {
-    configFile.setFileContents("transform.pipeline=\n");
+    configFile.setFileContents("metadata.transform.pipeline=\n");
     config.load(configFile);
-    assertEquals(Collections.emptyList(), config.getTransformPipelineSpec());
+    assertEquals(Collections.emptyList(),
+        config.getMetadataTransformPipelineSpec());
   }
 
   @Test
   public void testGetTransformPipelineSpecInValid() throws Exception {
-    configFile.setFileContents("transform.pipeline=name1, ,name3\n");
+    configFile.setFileContents("metadata.transform.pipeline=name1, ,name3\n");
     config.setValue("gsa.hostname", "notreal");
     config.load(configFile);
     thrown.expect(RuntimeException.class);
-    config.getTransformPipelineSpec();
+    config.getMetadataTransformPipelineSpec();
   }
 
   @Test

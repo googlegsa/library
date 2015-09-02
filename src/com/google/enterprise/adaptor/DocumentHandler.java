@@ -76,7 +76,7 @@ class DocumentHandler implements HttpHandler {
   private final Set<InetAddress> fullAccessAddresses
       = new HashSet<InetAddress>();
   private final SamlServiceProvider samlServiceProvider;
-  private final TransformPipeline transform;
+  private final MetadataTransformPipeline transform;
   private final AclTransform aclTransform;
   private final ContentTransformFactory contentTransformFactory;
   private final boolean useCompression;
@@ -97,7 +97,8 @@ class DocumentHandler implements HttpHandler {
                          AuthzAuthority authzAuthority,
                          String gsaHostname, String[] fullAccessHosts,
                          SamlServiceProvider samlServiceProvider,
-                         TransformPipeline transform, AclTransform aclTransform,
+                         MetadataTransformPipeline transform,
+                         AclTransform aclTransform,
                          ContentTransformFactory contentTransformFactory,
                          boolean useCompression,
                          Watchdog watchdog, AsyncPusher pusher,

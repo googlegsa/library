@@ -361,16 +361,17 @@ public class DocumentHandlerTest {
   @Test
   public void testTransform() throws Exception {
     final String key = "testing key";
-    List<DocumentTransform> transforms = new LinkedList<DocumentTransform>();
-    transforms.add(new DocumentTransform() {
+    List<MetadataTransform> transforms
+        = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
         metadata.set(key, metadata.getOneValue(key).toUpperCase());
         metadata.set("docid", params.get("DocId"));
       }
     });
-    TransformPipeline transform = new TransformPipeline(transforms,
-        Arrays.asList("t1"));
+    MetadataTransformPipeline transform
+        = new MetadataTransformPipeline(transforms, Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
@@ -456,7 +457,7 @@ public class DocumentHandlerTest {
   }
 
   private static class SampleDocumentContentTransform
-      extends DocumentContentTransform {
+      extends ContentTransform {
 
     public SampleDocumentContentTransform(Map<String, String> config,
                                           Metadata metadata,
@@ -826,8 +827,8 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
-        .setTransform(new TransformPipeline(
-            Lists.newArrayList(new DocumentTransform() {
+        .setTransform(new MetadataTransformPipeline(
+            Lists.newArrayList(new MetadataTransform() {
           @Override
           public void transform(Metadata metadata, Map<String, String> params) {
             assertEquals(oDate.getTime(),
@@ -862,8 +863,8 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[] {remoteIp})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
-        .setTransform(new TransformPipeline(
-            Lists.newArrayList(new DocumentTransform() {
+        .setTransform(new MetadataTransformPipeline(
+            Lists.newArrayList(new MetadataTransform() {
           @Override
           public void transform(Metadata metadata, Map<String, String> params) {
             final String du = params.get("Display-URL");
@@ -1904,7 +1905,7 @@ public class DocumentHandlerTest {
     private String gsaHostname;
     private String[] fullAccessHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
-    private TransformPipeline transform;
+    private MetadataTransformPipeline transform;
     private ContentTransformFactory contentTransformPipeline;
     private AclTransform aclTransform
         = new AclTransform(Arrays.<AclTransform.Rule>asList());
@@ -1963,7 +1964,8 @@ public class DocumentHandlerTest {
       return this;
     }
 
-    public DocumentHandlerBuilder setTransform(TransformPipeline transform) {
+    public DocumentHandlerBuilder setTransform(
+        MetadataTransformPipeline transform) {
       this.transform = transform;
       return this;
     }
@@ -2030,9 +2032,10 @@ public class DocumentHandlerTest {
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
           authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
-          transform, aclTransform, contentTransformPipeline, useCompression, watchdog, pusher,
-          sendDocControls, markDocsPublic, headerTimeoutMillis,
-          contentTimeoutMillis, scoring, alwaysGiveAclsAndMetadata, gsaVersion);
+          transform, aclTransform, contentTransformPipeline, useCompression,
+          watchdog, pusher, sendDocControls, markDocsPublic,
+          headerTimeoutMillis, contentTimeoutMillis, scoring,
+          alwaysGiveAclsAndMetadata, gsaVersion);
     }
   }
 }

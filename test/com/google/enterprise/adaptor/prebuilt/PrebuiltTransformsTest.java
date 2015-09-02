@@ -16,7 +16,7 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import org.junit.Rule;
@@ -49,7 +49,8 @@ public class PrebuiltTransformsTest {
     config.put("6.to", "colour");
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.copyMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.copyMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -77,7 +78,8 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.copyMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.copyMetadata(config);
     assertEquals("CopyTransform(copies=[],overwrite=false,move=false)",
         transform.toString());
   }
@@ -96,7 +98,8 @@ public class PrebuiltTransformsTest {
     config.put("4.to", "favorite");
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.moveMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -119,7 +122,8 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.moveMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.moveMetadata(config);
     assertEquals("CopyTransform(copies=[],overwrite=false,move=true)",
         transform.toString());
   }
@@ -132,7 +136,8 @@ public class PrebuiltTransformsTest {
     config.put("keyy", "contributors");
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.deleteMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.deleteMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -156,7 +161,8 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.deleteMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.deleteMetadata(config);
     assertEquals("DeleteTransform(keys=[])", transform.toString());
   }
 
@@ -170,7 +176,8 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "$0$0");
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -201,7 +208,8 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "$0");
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -230,7 +238,8 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "replace$0");
     config = Collections.unmodifiableMap(config);
 
-    DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
     assertEquals("ReplaceTransform(keys=[],toMatch=\\Qtofind\\E,"
         + "replacement=replace\\$0,overwrite=true)", transform.toString());
   }
@@ -242,7 +251,8 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
   }
 
   @Test
@@ -254,7 +264,8 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
+    MetadataTransform transform 
+        = PrebuiltTransforms.replaceMetadata(config);
   }
 
   @Test
@@ -264,7 +275,8 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    DocumentTransform transform = PrebuiltTransforms.replaceMetadata(config);
+    MetadataTransform transform  
+        = PrebuiltTransforms.replaceMetadata(config);
   }
 
   @Test
@@ -273,7 +285,8 @@ public class PrebuiltTransformsTest {
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
-    DocumentTransform transform = PrebuiltTransforms.moveMetadata(config);
+    MetadataTransform transform 
+         = PrebuiltTransforms.moveMetadata(config);
     final Metadata metadataGolden;
     {
       Metadata golden = new Metadata();
@@ -292,7 +305,8 @@ public class PrebuiltTransformsTest {
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
-    DocumentTransform transform = PrebuiltTransforms.copyMetadata(config);
+    MetadataTransform transform 
+        = PrebuiltTransforms.copyMetadata(config);
     final Metadata metadataGolden;
     {
       Metadata golden = new Metadata();

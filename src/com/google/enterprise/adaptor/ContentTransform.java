@@ -11,7 +11,7 @@ import java.util.TreeMap;
  *
  * @author Dominik Weidenfeld (dominik.weidenfeld@twt.de)
  */
-public class DocumentContentTransform extends OutputStream {
+public class ContentTransform extends OutputStream {
 
   protected final Map<String, String> config;
   protected final Metadata metadata;
@@ -26,7 +26,7 @@ public class DocumentContentTransform extends OutputStream {
    * @param contentType    the unchangeable content-type
    * @param originalStream the original stream to put the final content in
    */
-  public DocumentContentTransform(final Map<String, String> config,
+  public ContentTransform(final Map<String, String> config,
                                   final Metadata metadata,
                                   final String contentType,
                                   final OutputStream originalStream) {
@@ -67,10 +67,10 @@ public class DocumentContentTransform extends OutputStream {
 
   @Override
   public final String toString() {
-    return "DocumentContentTransform{"
+    return "ContentTransform("
         + "config=" + config
         + ", metadata=" + metadata
         + ", contentType='" + contentType + '\''
-        + '}';
+        + ')';
   }
 }

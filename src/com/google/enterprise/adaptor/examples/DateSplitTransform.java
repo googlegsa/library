@@ -1,6 +1,6 @@
 package com.google.enterprise.adaptor.examples;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import java.text.ParseException;
@@ -20,13 +20,13 @@ import java.util.logging.Logger;
  * http://docs.oracle.com/javase/6/docs/api/java/text/SimpleDateFormat.html
  *
  * Properties would look something like this:
- * transform.pipeline=step1
- * transform.pipeline.step1.dateField=Creation Time
- * transform.pipeline.step1.dateFormat=yyyy-MM-dd
- * transform.pipeline.step1.factoryMethod=com.google.enterprise.adaptor.examples.DateSplitTransform.load
+ * metadata.transform.pipeline=step1
+ * metadata.transform.pipeline.step1.dateField=Creation Time
+ * metadata.transform.pipeline.step1.dateFormat=yyyy-MM-dd
+ * metadata.transform.pipeline.step1.factoryMethod=com.google.enterprise.adaptor.examples.DateSplitTransform.load
  */
 
-public class DateSplitTransform implements DocumentTransform {
+public class DateSplitTransform implements MetadataTransform {
   private static final Logger log = Logger.getAnonymousLogger();
   private static final String META_DATEFIELD = "dateField";
   private static final String META_DATEFORMAT = "dateFormat";
@@ -53,7 +53,9 @@ public class DateSplitTransform implements DocumentTransform {
   }
 
   /**
-   * Called as <code>transform.pipeline.&lt;stepX&gt;.factoryMethod</code> for
+   * Called as 
+   * <code>metadata.transform.pipeline.&lt;stepX&gt;.factoryMethod</code>
+   * for
    * this transformation pipeline as specified in adaptor-config.properties.
    * <p>
    * This method simply returns a new object with

@@ -14,7 +14,7 @@ package com.google.enterprise.adaptor.examples.helloworldconnector;
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import java.util.Arrays;
@@ -34,14 +34,14 @@ import java.util.logging.Logger;
  * be added.
  * <p>
  * <code>
- * transform.pipeline=step1<br>
- * transform.pipeline.step1.taste=Mango,peach<br>
- * transform.pipeline.step1.factoryMethod=com.google.enterprise.adaptor.examples.HelloWorldConnector.MetadataAddition.load<br>
+ * metadata.transform.pipeline=step1<br>
+ * metadata.transform.pipeline.step1.taste=Mango,peach<br>
+ * metadata.transform.pipeline.step1.factoryMethod=com.google.enterprise.adaptor.examples.HelloWorldConnector.MetadataAddition.load<br>
  * </code>
  * <p>
  */
 
-public class MetadataAddition implements DocumentTransform {
+public class MetadataAddition implements MetadataTransform {
   private static final Logger log = Logger.getLogger(MetadataAddition.class
       .getName());
   private static final String META_TASTE = "taste";

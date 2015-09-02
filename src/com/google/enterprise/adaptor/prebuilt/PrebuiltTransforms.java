@@ -14,7 +14,7 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.DocumentTransform;
+import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
 
 import java.util.ArrayList;
@@ -61,7 +61,8 @@ public class PrebuiltTransforms {
    *5.from=author
    *5.to=contributors</code></pre>
    */
-  public static DocumentTransform copyMetadata(Map<String, String> config) {
+  public static MetadataTransform copyMetadata(
+      Map<String, String> config) {
     boolean overwrite = Boolean.parseBoolean(config.get("overwrite"));
     List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
@@ -76,7 +77,8 @@ public class PrebuiltTransforms {
    * #copyMetadata}, except that the source keys are removed. If the source key
    * has no metadata values then the destination is left as-is.
    */
-  public static DocumentTransform moveMetadata(Map<String, String> config) {
+  public static MetadataTransform moveMetadata(
+      Map<String, String> config) {
     boolean overwrite = Boolean.parseBoolean(config.get("overwrite"));
     List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
@@ -150,7 +152,7 @@ public class PrebuiltTransforms {
     return numberedConfigs;
   }
 
-  private static class CopyTransform implements DocumentTransform {
+  private static class CopyTransform implements MetadataTransform {
     private final List<KeyPairing> copies;
     private final boolean overwrite;
     private final boolean move;
@@ -222,7 +224,8 @@ public class PrebuiltTransforms {
    * <pre><code>key2=sensitive
    *key4=unhelpful</code></pre>
    */
-  public static DocumentTransform deleteMetadata(Map<String, String> config) {
+  public static MetadataTransform deleteMetadata(
+      Map<String, String> config) {
     Set<String> keys = new HashSet<String>(parseList(config, "key"));
     if (keys.isEmpty()) {
       log.warning("No entries listed to delete");
@@ -248,7 +251,7 @@ public class PrebuiltTransforms {
     return keys;
   }
 
-  private static class DeleteTransform implements DocumentTransform {
+  private static class DeleteTransform implements MetadataTransform {
     private final List<String> keys;
 
     public DeleteTransform(Collection<String> keys) {
@@ -290,7 +293,8 @@ public class PrebuiltTransforms {
    *pattern=(Java|C|Perl)
    *replacement=$1 (but it should be x86 assembler)</code></pre>
    */
-  public static DocumentTransform replaceMetadata(Map<String, String> config) {
+  public static MetadataTransform replaceMetadata(
+      Map<String, String> config) {
     boolean overwrite = true;
     String overwriteString = config.get("overwrite");
     if (overwriteString != null) {
@@ -326,7 +330,7 @@ public class PrebuiltTransforms {
     return new ReplaceTransform(keys, toMatch, replacementPattern, overwrite);
   }
 
-  private static class ReplaceTransform implements DocumentTransform {
+  private static class ReplaceTransform implements MetadataTransform {
     private final List<String> keys;
     private final Pattern toMatch;
     private final String replacement;

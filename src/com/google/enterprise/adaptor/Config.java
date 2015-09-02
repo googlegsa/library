@@ -172,8 +172,8 @@ import java.util.logging.Logger;
  *     responses. Defaults to false
  * <tr><td> </td><td>transform.acl.X </td><td> where X is an integer, match
  *     and modify principals as described. Defaults no modifications
- * <tr><td> </td><td>transform.pipeline </td><td> sequence of
- *     transformation steps.  Defaults to no-pipeline
+ * <tr><td> </td><td>metadata.transform.pipeline </td><td> sequence of
+ *     metadata transformation steps.  Defaults to no-pipeline
  * <tr><td> </td><td>content.transform.pipeline </td><td>
  *     content transform pipeline. Defaults to no-pipeline</td></tr>
  * <tr><td> </td><td>saml.idpExpirationMillis </td><td> Expiration time
@@ -287,7 +287,7 @@ public class Config {
     addKey("adaptor.incrementalPollPeriodSecs", "900");
     addKey("adaptor.docContentTimeoutSecs", "180");
     addKey("adaptor.docHeaderTimeoutSecs", "30");
-    addKey("transform.pipeline", "");
+    addKey("metadata.transform.pipeline", "");
     addKey("content.transform.pipeline", "");
     addKey("journal.reducedMem", "true");
     addKey("gsa.acceptsDocControlsHeader", "GENERATE", new ValueComputer() {
@@ -592,8 +592,15 @@ public class Config {
    * configuration entry is added in each map based on the name provided by the
    * user.
    */
-  List<Map<String, String>> getTransformPipelineSpec() {
-    return getListOfConfigs("transform.pipeline");
+  List<Map<String, String>> getMetadataTransformPipelineSpec() {
+    String key = "metadata.transform.pipeline";
+    if ("".equals(getValue(key))) {
+      key = "transform.pipeline"; // deprecated key for metadata transform
+      if (null == config.getProperty(key)) {
+        return Collections.emptyList();
+      }
+    }
+    return getListOfConfigs(key);
   }
 
   /**

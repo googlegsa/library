@@ -17,17 +17,17 @@ import java.util.TreeMap;
  */
 class ContentTransformFactory {
 
-  private Map<Constructor<DocumentContentTransform>, Map<String, String>>
+  private Map<Constructor<ContentTransform>, Map<String, String>>
       transforms;
 
   /**
    * Constructs a new ContentTransformFactory. Also checks the basic
-   * configuration values for the {@link DocumentContentTransform}
+   * configuration values for the {@link ContentTransform}
    * instantiation.
    *
-   * @param configs Configuration for each {@link DocumentContentTransform}
+   * @param configs Configuration for each {@link ContentTransform}
    * @throws InvalidConfigurationException If the class for a {@link
-   *                                       DocumentContentTransform} is missing
+   *                                       ContentTransform} is missing
    * @throws RuntimeException              If the class does not match all
    *                                       criteria
    */
@@ -36,7 +36,7 @@ class ContentTransformFactory {
     if (configs.size() <= 0) {
       return;
     }
-    this.transforms = new LinkedHashMap<Constructor<DocumentContentTransform>,
+    this.transforms = new LinkedHashMap<Constructor<ContentTransform>,
         Map<String, String>>();
     for (int i = (configs.size() - 1); i >= 0; i--) {
       final Map<String, String> config = configs.get(i);
@@ -47,9 +47,9 @@ class ContentTransformFactory {
       }
       try {
         @SuppressWarnings("unchecked")
-        final Class<DocumentContentTransform> clazz =
-            (Class<DocumentContentTransform>) Class.forName(className);
-        final Constructor<DocumentContentTransform> constructor =
+        final Class<ContentTransform> clazz =
+            (Class<ContentTransform>) Class.forName(className);
+        final Constructor<ContentTransform> constructor =
             clazz.getConstructor(Map.class, Metadata.class,
                 String.class, OutputStream.class);
         this.transforms.put(constructor, new TreeMap<String, String>(config));
@@ -61,7 +61,7 @@ class ContentTransformFactory {
   }
 
   /**
-   * Creates a new transform pipeline.
+   * Creates a new content transform pipeline.
    *
    * @param original    original content stream
    * @param contentType content type
@@ -74,8 +74,8 @@ class ContentTransformFactory {
     if (null == transforms || transforms.size() <= 0) {
       return original;
     }
-    DocumentContentTransform last = null;
-    for (Map.Entry<Constructor<DocumentContentTransform>, Map<String, String>>
+    ContentTransform last = null;
+    for (Map.Entry<Constructor<ContentTransform>, Map<String, String>>
         t : transforms.entrySet()) {
       try {
         if (null == last) {
