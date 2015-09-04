@@ -741,16 +741,27 @@ class DocumentHandler implements HttpHandler {
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND) {
           log.log(Level.INFO, "changed SEND_BODY to NOT_FOUND {0}",
               docId.getUniqueId());
+          // Not using startSending. Instead we stop header timer, start
+          // content timer, send not-found page, and setup a sink for 
+          // bytes provided by adaptor instance itself.
+          watchdog.processingCompleted(workingThread);
+          watchdog.processingStarting(workingThread, contentTimeoutMillis);
+          int rc = HttpURLConnection.HTTP_NOT_FOUND;
+          HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ true);
           countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
-              startSendingNotFound()));
-          os = countingOs;
+              ex.getResponseBody()));
+          log.finest("before writing chunked not-found response");
+          countingOs.write(
+              Translation.HTTP_NOT_FOUND.toString().getBytes(ENCODING));
+          log.finest("after writing chunked not-found response");
+          os = new SinkOutputStream(countingOs);
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
           log.log(Level.INFO, "changed SEND_BODY to HEAD {0}",
               docId.getUniqueId());
           startSending(true);  // Lie about content. Will be 0bytes chunked.
           countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
-              new SinkOutputStream(ex.getResponseBody())));
-          os = countingOs;
+              ex.getResponseBody()));
+          os = new SinkOutputStream(countingOs);
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
@@ -1037,22 +1048,6 @@ class DocumentHandler implements HttpHandler {
       }
     }
 
-    private OutputStream startSendingNotFound() throws IOException {
-      // There are separate timeouts for sending headers and sending content.
-      // Here we stop the headers timer and start the content timer.     
-      watchdog.processingCompleted(workingThread);
-      watchdog.processingStarting(workingThread, contentTimeoutMillis);
-      int rc = HttpURLConnection.HTTP_NOT_FOUND;
-      HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ true);
-      OutputStream responseBody = ex.getResponseBody();
-      log.finest("before writing chunked not-found response");
-      responseBody.write(
-          Translation.HTTP_NOT_FOUND.toString().getBytes(ENCODING));
-      log.finest("after writing chunked not-found response");
-      OutputStream os = new SinkOutputStream(responseBody);
-      return os;
-    }
-
     private Acl checkAndWorkaroundGsa70Acl(Acl acl) {
       if (acl == null) {
         return acl;
@@ -1213,6 +1208,16 @@ class DocumentHandler implements HttpHandler {
 
     @Override
     public void write(byte[] b, int off, int len) throws IOException {}
+
+    @Override
+    public void flush() throws IOException {
+      out.flush();
+    }
+
+    @Override
+    public void close() throws IOException {
+      out.close();
+    }
   }
 
   private static class CountingOutputStream extends FastFilterOutputStream {
