@@ -27,6 +27,7 @@ import com.google.common.collect.Lists;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -82,6 +83,12 @@ public class DocumentHandlerTest {
       = docIdCodec.encodeDocId(defaultDocId).getRawPath();
   private MockHttpExchange ex = new MockHttpExchange("GET", defaultPath,
       new MockHttpContext("/"));
+
+  @Before
+  public void setUp() {
+    Locale locale = new Locale("en", "EN");
+    Locale.setDefault(locale);
+  }
 
   @Test
   public void testSuccessBuilder() {
