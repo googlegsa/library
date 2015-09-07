@@ -14,8 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
+import java.io.BufferedReader;
 import java.io.Console;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -315,8 +317,14 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
       }
     }
     SensitiveValueCodec codec = new SensitiveValueCodec(keyPair);
-    String firstNonDefineParameter = getFirstNonDefineParameter(args);
-    if (firstNonDefineParameter == null) {
+    boolean quietParameterPresent = isParameterPresent(args, "--quiet");
+    if (quietParameterPresent) {
+      BufferedReader reader = new BufferedReader(new InputStreamReader(
+              System.in));
+      String encodedValue = codec.encodeValue(reader.readLine(),
+              securityLevel);
+      System.out.println(encodedValue);
+    } else {
       Console console = System.console();
       if (console == null) {
         log.warning("Couldn't get Console instance");
@@ -326,19 +334,16 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
       String password = new String(passwordArray);
       String encodedValue = codec.encodeValue(password, securityLevel);
       System.out.printf("Encoded value is: %s%n", encodedValue);
-    } else {
-      String encodedValue = codec.encodeValue(firstNonDefineParameter,
-              securityLevel);
-      System.out.println(encodedValue);
     }
   }
 
-  private static String getFirstNonDefineParameter(String[] args) {
+  private static boolean isParameterPresent(String[] args,
+                                            String parameterName) {
     for (String arg : args) {
-      if (!arg.startsWith("-D")) {
-        return arg;
+      if (arg.equals(parameterName)) {
+        return true;
       }
     }
-    return null;
+    return false;
   }
 }
