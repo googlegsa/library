@@ -272,20 +272,13 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * -Dserver.secure=true
    * </pre>
    *
-   * Example command line to run (passing the sensitive value on the command
-   * line):
-   * <pre>
-   * java \
-   * -Djavax.net.ssl.keyStore=keys.jks \
-   * -Djavax.net.ssl.keyStoreType=jks \
-   * -Djavax.net.ssl.keyStorePassword=changeit \
-   * -classpath 'adaptor-20130612-withlib.jar' \
-   * com.google.enterprise.adaptor.SensitiveValueCodec \
-   * -DsecurityLevel=ENCRYPTED \
-   * -Dserver.keyAlias=adaptor \
-   * -Dserver.secure=true
-   * 'sensitive value'
-   * </pre>
+   * You can add a stdin parameter ("--stdin") causing the sensitive value to
+   * be read from standard input instead (this can also be a pipe). With this
+   * parameter the program also only outputs the encoded sensitive value
+   * without any additional text.
+   * Note: Be careful when using this parameter as the sensitive value might
+   * end up in the command line history. On some shells this can be prevented
+   * by adding a space at the beginning of the command.
    */
   public static void main(String[] args) throws IOException {
     Config config = new Config();
@@ -317,12 +310,12 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
       }
     }
     SensitiveValueCodec codec = new SensitiveValueCodec(keyPair);
-    boolean quietParameterPresent = isParameterPresent(args, "--quiet");
-    if (quietParameterPresent) {
+    boolean stdinParameterPresent = isParameterPresent(args, "--stdin");
+    if (stdinParameterPresent) {
       BufferedReader reader = new BufferedReader(new InputStreamReader(
-              System.in));
+          System.in));
       String encodedValue = codec.encodeValue(reader.readLine(),
-              securityLevel);
+          securityLevel);
       System.out.println(encodedValue);
     } else {
       Console console = System.console();
