@@ -272,7 +272,7 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * -Dserver.secure=true
    * </pre>
    *
-   * You can add a stdin parameter ("--stdin") causing the sensitive value to
+   * You can add a quiet parameter ("--quiet") causing the sensitive value to
    * be read from standard input instead (this can also be a pipe). With this
    * parameter the program also only outputs the encoded sensitive value
    * without any additional text.
@@ -310,8 +310,8 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
       }
     }
     SensitiveValueCodec codec = new SensitiveValueCodec(keyPair);
-    boolean stdinParameterPresent = isParameterPresent(args, "--stdin");
-    if (stdinParameterPresent) {
+    boolean quietParameterPresent = isParameterPresent(args, "--quiet");
+    if (quietParameterPresent) {
       BufferedReader reader = new BufferedReader(new InputStreamReader(
           System.in));
       String encodedValue = codec.encodeValue(reader.readLine(),
