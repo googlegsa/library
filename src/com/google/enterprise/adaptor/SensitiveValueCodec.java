@@ -14,8 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
+import java.io.BufferedReader;
 import java.io.Console;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.security.InvalidKeyException;
 import java.security.Key;
@@ -256,7 +258,8 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * <p>This class allows adaptor administrators to get encoded sensitive value
    * from command line.
    * 
-   * Example command line to run:
+   * Example command line to run (you will be prompted to enter the sensitive
+   * value):
    * <pre>
    * java \
    * -Djavax.net.ssl.keyStore=keys.jks \
@@ -268,11 +271,20 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
    * -Dserver.keyAlias=adaptor \
    * -Dserver.secure=true
    * </pre>
+   *
+   * You can add a quiet parameter ("--quiet") causing the sensitive value to
+   * be read from standard input instead (this can also be a pipe). With this
+   * parameter the program also only outputs the encoded sensitive value
+   * without any additional text.
+   * Note: Be careful when using this parameter as the sensitive value might
+   * end up in the command line history. On some shells this can be prevented
+   * by adding a space at the beginning of the command.
    */
   public static void main(String[] args) throws IOException {
     Config config = new Config();
     config.addKey("securityLevel", SecurityLevel.PLAIN_TEXT.toString());
     config.setValue("gsa.hostname", "not-used");
+    config.setValue("server.hostname", "not-used");
     Application.autoConfig(config, args, null);
     
     SecurityLevel securityLevel =
@@ -298,15 +310,33 @@ class SensitiveValueCodec implements SensitiveValueDecoder {
       }
     }
     SensitiveValueCodec codec = new SensitiveValueCodec(keyPair);
-    
-    Console console = System.console();
-    if (console == null) {
-      log.warning("Couldn't get Console instance");
-      return;
+    boolean quietParameterPresent = isParameterPresent(args, "--quiet");
+    if (quietParameterPresent) {
+      BufferedReader reader = new BufferedReader(new InputStreamReader(
+          System.in));
+      String encodedValue = codec.encodeValue(reader.readLine(),
+          securityLevel);
+      System.out.println(encodedValue);
+    } else {
+      Console console = System.console();
+      if (console == null) {
+        log.warning("Couldn't get Console instance");
+        return;
+      }
+      char passwordArray[] = console.readPassword("Sensitive Value: ");
+      String password = new String(passwordArray);
+      String encodedValue = codec.encodeValue(password, securityLevel);
+      System.out.printf("Encoded value is: %s%n", encodedValue);
     }
-    char passwordArray[] = console.readPassword("Sensitive Value: ");
-    String password = new String(passwordArray);
-    String encodedValue = codec.encodeValue(password, securityLevel);
-    console.printf("Encoded value is: %s%n", encodedValue);
+  }
+
+  private static boolean isParameterPresent(String[] args,
+                                            String parameterName) {
+    for (String arg : args) {
+      if (arg.equals(parameterName)) {
+        return true;
+      }
+    }
+    return false;
   }
 }
