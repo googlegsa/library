@@ -211,7 +211,6 @@ public class FilterMimetypes implements MetadataTransform {
       add("text/tab-separated-values");
       add("text/xhtml");
       add("text/xml");
-      add("text/x-asm");
       add("text/*");
       add("application/plain");
       add("application/rdf+xml");
@@ -243,9 +242,6 @@ public class FilterMimetypes implements MetadataTransform {
       add("application/x-excel");
       add("application/x-msexcel");
       add("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      add("application/vnd.ms-excel.macroEnabled.*");
-      add("application/vnd.ms-excel.sheet.macroEnabled.*");
-      add("application/vnd.ms-excel.sheet.*");
       add("application/vnd.ms-excel.*");
       add("application/vnd.ms-htmlhelp");
       add("application/vnd.ms-outlook");
@@ -271,14 +267,9 @@ public class FilterMimetypes implements MetadataTransform {
       add("application/mswrite");
       add("application/x-mswrite");
       add("application/vnd.ms-xpsdocument");
-      add("application/vnd.oasis.opendocument.presentation");
-      add("application/vnd.oasis.opendocument.presentation-template");
-      add("application/vnd.oasis.opendocument.spreadsheet");
-      add("application/vnd.oasis.opendocument.spreadsheet-template");
-      add("application/vnd.oasis.opendocument.text");
-      add("application/vnd.oasis.opendocument.text-master");
-      add("application/vnd.oasis.opendocument.text-template");
-      add("application/vnd.oasis.opendocument.text-web");
+      add("application/vnd.oasis.opendocument.presentation*");
+      add("application/vnd.oasis.opendocument.spreadsheet*");
+      add("application/vnd.oasis.opendocument.text*");
       add("application/vnd.quark.quarkxpress");
       add("application/vnd.scibus");
       add("application/vnd.wordperfect");
