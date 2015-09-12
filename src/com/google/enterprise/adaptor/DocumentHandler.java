@@ -738,6 +738,10 @@ class DocumentHandler implements HttpHandler {
           countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
               ex.getResponseBody()));
           os = countingOs;
+          if (null != contentTransformFactory) {
+            return contentTransformFactory
+                .createPipeline(os, contentType, metadata);
+          }
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND) {
           log.log(Level.INFO, "changed SEND_BODY to NOT_FOUND {0}",
               docId.getUniqueId());
@@ -765,12 +769,6 @@ class DocumentHandler implements HttpHandler {
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
-      }
-      // TODO: fix automated merge done wrong
-      if (null != contentTransformFactory) {
-        // TODO: possibility for changing the content-type in transformer
-        return contentTransformFactory
-            .createPipeline(os, contentType, metadata);
       }
       return os;
     }
