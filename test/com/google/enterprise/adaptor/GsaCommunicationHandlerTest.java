@@ -19,6 +19,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -112,6 +113,7 @@ public class GsaCommunicationHandlerTest {
 
   @Test
   public void testPollingIncrementalAdaptor() throws Exception {
+    config.setValue("adaptor.pushDocIdsOnStartup", "false");
     gsa = new GsaCommunicationHandler(new NullAdaptor(), config);
     AdaptorContext context = gsa.setup(mockServer, mockServer, null);
     final ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<Object>(1);
@@ -123,6 +125,70 @@ public class GsaCommunicationHandlerTest {
     });
     gsa.start(null);
     assertNotNull(queue.poll(1, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void testPollingIncrementalAdaptorFeedDisabled() throws Exception {
+    config.setValue("adaptor.disableFullAndIncrementalListing", "true");
+    config.setValue("adaptor.pushDocIdsOnStartup", "false");
+    config.setValue("adaptor.incrementalPollPeriodSecs", "1");
+    gsa = new GsaCommunicationHandler(new NullAdaptor(), config);
+    AdaptorContext context = gsa.setup(mockServer, mockServer, null);
+    context.setPollingIncrementalLister(new PollingIncrementalLister() {
+      @Override
+      public void getModifiedDocIds(DocIdPusher pusher) {
+        fail("getModifedDocIds called with listing disabled");
+      }
+    });
+    gsa.start(null);
+    Thread.sleep(2000);
+  }
+
+  @Test
+  public void testFullPushOnStartup() throws Exception {
+    config.setValue("adaptor.pushDocIdsOnStartup", "true");
+    final ArrayBlockingQueue<Object> queue = new ArrayBlockingQueue<Object>(1);
+    Adaptor adaptor = new NullAdaptor() {
+      @Override
+      public void getDocIds(DocIdPusher pusher) {
+        queue.offer(new Object());
+      }
+    };
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    AdaptorContext context = gsa.setup(mockServer, mockServer, null);
+    gsa.start(null);
+    assertNotNull(queue.poll(1, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void testNoFullPushOnStartup() throws Exception {
+    config.setValue("adaptor.pushDocIdsOnStartup", "false");
+    Adaptor adaptor = new NullAdaptor() {
+      @Override
+      public void getDocIds(DocIdPusher pusher) {
+        fail("getDocIds called with pushDocIdsOnStartup false");
+      }
+    };
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    AdaptorContext context = gsa.setup(mockServer, mockServer, null);
+    gsa.start(null);
+    Thread.sleep(1000);
+  }
+
+  @Test
+  public void testFullPushWithFeedDisabled() throws Exception {
+    config.setValue("adaptor.disableFullAndIncrementalListing", "true");
+    config.setValue("adaptor.pushDocIdsOnStartup", "true");
+    Adaptor adaptor = new NullAdaptor() {
+      @Override
+      public void getDocIds(DocIdPusher pusher) {
+        fail("getDocIds called with listing disabled");
+      }
+    };
+    gsa = new GsaCommunicationHandler(adaptor, config);
+    AdaptorContext context = gsa.setup(mockServer, mockServer, null);
+    gsa.start(null);
+    Thread.sleep(1000);
   }
 
   @Test

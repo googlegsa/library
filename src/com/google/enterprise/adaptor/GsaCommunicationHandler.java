@@ -329,7 +329,7 @@ public final class GsaCommunicationHandler {
       final String requiredPasswd = config.getHttpBasicPassword();
 
       log.info("guarding doc content handler with http basic");
-      
+
       docContext.setAuthenticator(new BasicAuthenticator(config.getFeedName()) {
           @Override
           public boolean checkCredentials(String user, String passwd) {
@@ -347,35 +347,40 @@ public final class GsaCommunicationHandler {
     // have been started yet.
 
     scheduler = new CronScheduler(scheduleExecutor);
-    docIdFullPusher = new OneAtATimeRunnable(
-       new PushRunnable(adaptorContext.fullExceptionHandler),
-       new AlreadyRunningRunnable());
-    sendDocIdsFuture = scheduler.schedule(
-        config.getAdaptorFullListingSchedule(),
-        waiter.runnable(new BackgroundRunnable(docIdFullPusher)));
-    if (config.isAdaptorPushDocIdsOnStartup()) {
-      log.info("Pushing once at program start");
-      checkAndScheduleImmediatePushOfDocIds();
-    }
-
-    if (adaptorContext.pollingIncrementalLister != null) {
-      docIdIncrementalPusher = new OneAtATimeRunnable(
-          new IncrementalPushRunnable(adaptorContext.pollingIncrementalLister,
-            adaptorContext.incrExceptionHandler),
+    if (config.disableFullAndIncrementalListing()) {
+      log.info("Disabling calls to getDocIds and getModifiedDocIds");
+    } else {
+      docIdFullPusher = new OneAtATimeRunnable(
+          new PushRunnable(adaptorContext.fullExceptionHandler),
           new AlreadyRunningRunnable());
+      sendDocIdsFuture = scheduler.schedule(
+          config.getAdaptorFullListingSchedule(),
+          waiter.runnable(new BackgroundRunnable(docIdFullPusher)));
+      if (config.isAdaptorPushDocIdsOnStartup()) {
+        log.info("Pushing once at program start");
+        checkAndScheduleImmediatePushOfDocIds();
+      }
 
-      scheduleExecutor.scheduleAtFixedRate(
-          waiter.runnable(new BackgroundRunnable(docIdIncrementalPusher)),
-          0,
-          config.getAdaptorIncrementalPollPeriodMillis(),
-          TimeUnit.MILLISECONDS);
+      if (adaptorContext.pollingIncrementalLister != null) {
+        docIdIncrementalPusher = new OneAtATimeRunnable(
+            new IncrementalPushRunnable(adaptorContext.pollingIncrementalLister,
+              adaptorContext.incrExceptionHandler),
+            new AlreadyRunningRunnable());
+
+        scheduleExecutor.scheduleAtFixedRate(
+            waiter.runnable(new BackgroundRunnable(docIdIncrementalPusher)),
+            (config.isAdaptorPushDocIdsOnStartup())
+                ? config.getAdaptorIncrementalPollPeriodMillis() : 0,
+            config.getAdaptorIncrementalPollPeriodMillis(),
+            TimeUnit.MILLISECONDS);
+      }
     }
 
     dashboard = new Dashboard(config, this, journal, sessionManager,
         secureValueCodec, adaptor, adaptorContext.statusSources, shutdownHook);
     dashboard.start(dashboardScope);
   }
-   
+
   void tryToPutVersionIntoConfig() throws IOException {
     try {
       if ("GENERATE".equals(config.getGsaVersion())) {  // is not set
@@ -725,6 +730,11 @@ public final class GsaCommunicationHandler {
    * @return true if scheduled and false if already running
    */
   public boolean checkAndScheduleImmediatePushOfDocIds() {
+    if (docIdFullPusher == null) {
+      throw new IllegalStateException(
+          "This adaptor does not support full push");
+    }
+
     if (docIdFullPusher.isRunning()) {
       return false;
     }

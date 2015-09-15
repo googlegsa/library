@@ -77,7 +77,10 @@ class Dashboard {
     rpcHandler.registerRpcMethod("encodeSensitiveValue",
         new EncodeSensitiveValueMethod(secureValueCodec));
     statRpcMethod = new StatRpcMethod(journal, adaptor,
-        gsaCommHandler.isAdaptorIncremental(), config.getConfigFile());
+        !config.disableFullAndIncrementalListing(),
+        !config.disableFullAndIncrementalListing()
+            && gsaCommHandler.isAdaptorIncremental(),
+        config.getConfigFile());
     rpcHandler.registerRpcMethod("getStats", statRpcMethod);
     rpcHandler.registerRpcMethod("stopAdaptor", new StopAdaptorRpcMethod());
   }
