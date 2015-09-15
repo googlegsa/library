@@ -23,6 +23,7 @@ import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -51,6 +52,15 @@ public class FilterMimetypes implements MetadataTransform {
   private final Set<String> supported;
   private final Set<String> unsupported;
   private final Set<String> excluded;
+  private final Map<String, String> decided;
+
+  private synchronized String lookupDecision(String ct) {
+    return decided.get(ct);
+  }
+
+  private synchronized void insertDecision(String ct, String d) {
+    decided.put(ct, d);
+  }
 
   private FilterMimetypes(Set<String> s, Set<String> u, Set<String> e) {
     if (null == s || null == u || null == e) {
@@ -59,6 +69,7 @@ public class FilterMimetypes implements MetadataTransform {
     supported = s;
     unsupported = u;
     excluded = e;
+    decided = new HashMap<String, String>();
   }
 
   public Set<String> getSupportedMimetypes() {
@@ -85,13 +96,21 @@ public class FilterMimetypes implements MetadataTransform {
       ct = ct.substring(0, semicolonIndex);
     }
     ct = ct.trim().toLowerCase();
+    String decision = lookupDecision(ct);
+    if (null != decision) {
+      params.put("Transmission-Decision", decision);
+      return;
+    }
     if (matches(supported, ct, "supported")) {
+      insertDecision(ct, TransmissionDecision.AS_IS.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.AS_IS.toString());
     } else if (matches(unsupported, ct, "unsupported")) {
+      insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
     } else if (matches(excluded, ct, "excluded")) {
+      insertDecision(ct, TransmissionDecision.DO_NOT_INDEX.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.DO_NOT_INDEX.toString());
     } else {
