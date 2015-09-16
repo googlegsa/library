@@ -70,6 +70,16 @@ import java.util.logging.Logger;
  * <tr><td> </td><td>adaptor.docHeaderTimeoutSecs </td><td> number of seconds
  *     adaptor has to start sending content before it is interrupted.
  *     Defaults to 30
+ * <tr><td> </td><td>adaptor.disableFullAndIncrementalListing </td><td>
+ *      whether to disable calls to {@link Adaptor#getDocIds Adaptor.getDocIds}
+ *      and {@link PollingIncrementalLister#getModifiedDocIds
+ *      PollingIncrementalLister.getModifiedDocIds}.
+ *      If {@code true}, the values of the {@code adaptor.pushDocIdsOnStartup},
+ *      {@code adaptor.fullListingSchedule}, and
+ *      {@code adaptor.incrementalPollPeriodSecs} properties are ignored.
+ *      The {@link AsyncDocIdPusher AsyncDocIdPusher} is still active, but
+ *      adaptors should restrict its use to {@link Adaptor#getDocContent
+ *      Adaptor.getDocContent}.  Defaults to {@code false}.
  * <tr><td> </td><td>adaptor.pushDocIdsOnStartup </td><td> whether to invoke
  *     {@link Adaptor#getDocIds Adaptor.getDocIds} on process start
  *     (in addition to adaptor.fullListingSchedule).   Defaults to true
@@ -279,6 +289,7 @@ public class Config {
     addKey("feed.crawlImmediatelyBitEnabled", "");
     //addKey("feed.noFollowBitEnabled", "false");
     addKey("feed.maxUrls", "5000");
+    addKey("adaptor.disableFullAndIncrementalListing", "false");
     addKey("adaptor.pushDocIdsOnStartup", "true");
     addKey("adaptor.domainFormat", "DNS");
     // 3:00 AM every day.
@@ -537,6 +548,22 @@ public class Config {
       return new OverridableBoolean();
     }
     return new OverridableBoolean(Boolean.parseBoolean(provided));
+  }
+
+  /**
+   * Whether the default {@code main()} should disable pushing document ids
+   * synchronously. If {@code true}, {@link Adaptor#getDocIds Adaptor.getDocIds}
+   * and {@link Adaptor#getModifiedDocIds Adaptor.getModifiedDocIds} are not
+   * called; the values of the {@code adaptor.pushDocIdsOnStartup},
+   * {@code adaptor.fullListingSchedule}, and
+   * {@code adaptor.incrementalPollPeriodSecs} properties are ignored.
+   * The {@link AsyncDocIdPusher AsyncDocIdPusher} is still active, but
+   * adaptors should restrict its use to {@link Adaptor.getDocContent}.
+   * Defaults to {@code false}.
+   */
+  boolean disableFullAndIncrementalListing() {
+    return Boolean.parseBoolean(
+        getValue("adaptor.disableFullAndIncrementalListing"));
   }
 
   /**

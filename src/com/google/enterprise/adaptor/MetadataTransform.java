@@ -24,6 +24,41 @@ import java.util.Map;
  * configuration.
  */
 public interface MetadataTransform {
+
+  public static final String KEY_DOC_ID = "DocId";
+  public static final String KEY_DISPLAY_URL = "Display-URL";
+  public static final String KEY_CONTENT_TYPE = "Content-Type";
+  public static final String KEY_CRAWL_ONCE = "Crawl-Once";
+  public static final String KEY_LOCK = "Lock";
+  public static final String KEY_LAST_MODIFIED_MILLIS_UTC
+      = "Last-Modified-Millis-UTC";
+  public static final String KEY_TRANSMISSION_DECISION 
+      = "Transmission-Decision";
+
+  /** Transforms can cancel sending doc, or cancel sending its contents. */
+  public enum TransmissionDecision {
+    AS_IS("as-is"),
+    DO_NOT_INDEX("do-not-index"),
+    DO_NOT_INDEX_CONTENT("do-not-index-content");
+
+    private final String name;
+
+    private TransmissionDecision(String n) {
+      name = n;
+    }
+
+    public static TransmissionDecision from(String val) {
+      if (null == val) {
+        return AS_IS;
+      }
+      return TransmissionDecision.valueOf(val.replace('-', '_').toUpperCase());
+    }
+
+    public String toString() {
+      return name;
+    }
+  };
+
   /**
    * Any changes to {@code metadata} and {@code params} will be
    * passed on to subsequent transforms. This method must be thread-safe.

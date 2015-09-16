@@ -111,9 +111,12 @@ function getStatsCallback(result, error) {
   $('#type-adaptor').text(data.versionStats.typeAdaptor);
   $('#version-adaptor').text(data.versionStats.versionAdaptor);
 
+  $('#gaf-start-feed-push').attr(
+      'disabled',
+      !data.simpleStats.isFullPushSupported);
   $('#gaf-incremental-feed-push').attr(
       'disabled',
-      !data.simpleStats.isIncrementalSupported);
+      !data.simpleStats.isIncrementalPushSupported);
 
   $('#gaf-num-total-doc-ids-pushed').text(
       data.simpleStats.numTotalDocIdsPushed);

@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static java.util.Arrays.asList;
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.enterprise.adaptor.Metadata;
@@ -22,12 +23,28 @@ import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-/** Transform causing exclusion of certain mime-types. */
+/**
+ * Transform causing exclusion of certain mime-types. 
+ *
+ * <p> The order of checking for known mimetypes is:
+ * <ol>
+ *   <li> Check supported types. If type is supported then
+ *       content, metadata, headers, everything is sent.
+ *   <li> Check if unsupported. If type is unsupported we
+ *       will send headers and metadata but will not send
+ *       content.
+ *   <li> Check is type is excluded. If type is excluded
+ *       we do not send any info about the doc. Instead we
+ *       say to drop the entire document contents, headers,
+ *       et cetera and return a 404 not found code.
+ * </ol>
+ */
 public class FilterMimetypes implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(FilterMimetypes.class.getName());
@@ -35,6 +52,15 @@ public class FilterMimetypes implements MetadataTransform {
   private final Set<String> supported;
   private final Set<String> unsupported;
   private final Set<String> excluded;
+  private final Map<String, String> decided;
+
+  private synchronized String lookupDecision(String ct) {
+    return decided.get(ct);
+  }
+
+  private synchronized void insertDecision(String ct, String d) {
+    decided.put(ct, d);
+  }
 
   private FilterMimetypes(Set<String> s, Set<String> u, Set<String> e) {
     if (null == s || null == u || null == e) {
@@ -43,6 +69,7 @@ public class FilterMimetypes implements MetadataTransform {
     supported = s;
     unsupported = u;
     excluded = e;
+    decided = new HashMap<String, String>();
   }
 
   public Set<String> getSupportedMimetypes() {
@@ -59,7 +86,7 @@ public class FilterMimetypes implements MetadataTransform {
 
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
-    String ct = params.get("Content-Type");
+    String ct = params.get(MetadataTransform.KEY_CONTENT_TYPE);
     if (ct == null) {
       return;
     }
@@ -69,12 +96,23 @@ public class FilterMimetypes implements MetadataTransform {
       ct = ct.substring(0, semicolonIndex);
     }
     ct = ct.trim().toLowerCase();
+    String decision = lookupDecision(ct);
+    if (null != decision) {
+      params.put("Transmission-Decision", decision);
+      return;
+    }
     if (matches(supported, ct, "supported")) {
-      params.put("Transmission-Decision", "as-is");
+      insertDecision(ct, TransmissionDecision.AS_IS.toString());
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+          TransmissionDecision.AS_IS.toString());
     } else if (matches(unsupported, ct, "unsupported")) {
-      params.put("Transmission-Decision", "do-not-index-content");
+      insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+          TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
     } else if (matches(excluded, ct, "excluded")) {
-      params.put("Transmission-Decision", "do-not-index");
+      insertDecision(ct, TransmissionDecision.DO_NOT_INDEX.toString());
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+          TransmissionDecision.DO_NOT_INDEX.toString());
     } else {
       log.info("unknown mime-type: " + ct);
     }

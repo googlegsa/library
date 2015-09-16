@@ -32,15 +32,18 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   private String adaptorVersion = null;
   private String adaptorType = null;
   private Journal journal;
-  private boolean isAdaptorIncremental;
+  private boolean isFullPushSupported;
+  private boolean isIncrementalPushSupported;
   private File configFile;
   private static final Logger log
       = Logger.getLogger(StatRpcMethod.class.getName());
 
   public StatRpcMethod(Journal journal, Adaptor adaptor,
-      boolean isAdaptorIncremental, File configFile) {
+      boolean isFullPushSupported, boolean isIncrementalPushSupported,
+      File configFile) {
     this.journal = journal;
-    this.isAdaptorIncremental = isAdaptorIncremental;
+    this.isFullPushSupported = isFullPushSupported;
+    this.isIncrementalPushSupported = isIncrementalPushSupported;
     this.configFile = configFile;
 
     Class adaptorClass = adaptor.getClass();
@@ -64,7 +67,8 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
 
     {
       Map<String, Object> simple = new TreeMap<String, Object>();
-      simple.put("isIncrementalSupported", isAdaptorIncremental);
+      simple.put("isFullPushSupported", isFullPushSupported);
+      simple.put("isIncrementalPushSupported", isIncrementalPushSupported);
       simple.put("numTotalDocIdsPushed", journalSnap.numTotalDocIdsPushed);
       simple.put("numUniqueDocIdsPushed", journalSnap.numUniqueDocIdsPushed);
       simple.put("numTotalGsaRequests", journalSnap.numTotalGsaRequests);

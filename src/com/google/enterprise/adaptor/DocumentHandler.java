@@ -14,6 +14,14 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_CONTENT_TYPE;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_CRAWL_ONCE;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_DISPLAY_URL;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_DOC_ID;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_LAST_MODIFIED_MILLIS_UTC;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_LOCK;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_TRANSMISSION_DECISION;
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -1096,22 +1104,22 @@ class DocumentHandler implements HttpHandler {
 
     private void transform() {
       Map<String, String> params = new HashMap<String, String>();
-      params.put("DocId", docId.getUniqueId());
-      params.put("Content-Type", contentType);
+      params.put(KEY_DOC_ID, docId.getUniqueId());
+      params.put(KEY_CONTENT_TYPE, contentType);
       if (null != lastModified) {
-        params.put("Last-Modified-Millis-UTC", "" + lastModified.getTime());
+        params.put(KEY_LAST_MODIFIED_MILLIS_UTC, "" + lastModified.getTime());
       }
       String origDisplayUrlStr = null;
       if (null != displayUrl) {
         origDisplayUrlStr = "" + displayUrl;
-        params.put("Display-URL", origDisplayUrlStr);
+        params.put(KEY_DISPLAY_URL, origDisplayUrlStr);
       }
-      params.put("Crawl-Once", "" + crawlOnce);
-      params.put("Lock", "" + lock);
+      params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
+      params.put(KEY_LOCK, "" + lock);
       transform.transform(metadata, params);
-      contentType = params.get("Content-Type");
+      contentType = params.get(KEY_CONTENT_TYPE);
       try {
-        final String lmMillisUTC = params.get("Last-Modified-Millis-UTC");
+        final String lmMillisUTC = params.get(KEY_LAST_MODIFIED_MILLIS_UTC);
         if (!Strings.isNullOrEmpty(lmMillisUTC)) {
           final long lm = Long.parseLong(lmMillisUTC);
           if (lastModified.getTime() != lm) {
@@ -1121,21 +1129,21 @@ class DocumentHandler implements HttpHandler {
       } catch (NumberFormatException e) {
         log.log(Level.WARNING,
             "Failed changing last-modified date {0}",
-            params.get("Last-Modified-Millis-UTC"));
+            params.get(KEY_LAST_MODIFIED_MILLIS_UTC));
       }
       try {
-        final String du = params.get("Display-URL");
+        final String du = params.get(KEY_DISPLAY_URL);
         if (!Strings.isNullOrEmpty(du) && !du.equals(origDisplayUrlStr)) {
           displayUrl = new URI(du);
         }
       } catch (URISyntaxException e) {
         log.log(Level.WARNING, "Failed changing display URL {0}",
-            params.get("Display-URL"));
+            params.get(KEY_DISPLAY_URL));
       }
-      crawlOnce = Boolean.parseBoolean(params.get("Crawl-Once"));
-      lock = Boolean.parseBoolean(params.get("Lock"));
+      crawlOnce = Boolean.parseBoolean(params.get(KEY_CRAWL_ONCE));
+      lock = Boolean.parseBoolean(params.get(KEY_LOCK));
       // TODO: make constants for this growing set of valid keys
-      considerNotSending(params.get("Transmission-Decision"), docId);
+      considerNotSending(params.get(KEY_TRANSMISSION_DECISION), docId);
     }
 
     private void considerNotSending(String secondOpinion, DocId docId) {
@@ -1144,9 +1152,10 @@ class DocumentHandler implements HttpHandler {
         // User gets content.
         return;
       }
-      if (null == secondOpinion || "as-is".equalsIgnoreCase(secondOpinion)) {
+      TransmissionDecision decision = TransmissionDecision.from(secondOpinion);
+      if (TransmissionDecision.AS_IS == decision) {
         return;  // act normally; don't override any sending logic
-      } else if ("do-not-index".equalsIgnoreCase(secondOpinion)) {
+      } else if (TransmissionDecision.DO_NOT_INDEX == decision) {
         switch (state) {
           case NO_CONTENT:
             state = State.NO_CONTENT_TRANSFORMED_TO_NOT_FOUND;
@@ -1161,7 +1170,7 @@ class DocumentHandler implements HttpHandler {
             throw new IllegalStateException(
                 "unexpected state for transform: " + state);
         }
-      } else if ("do-not-index-content".equalsIgnoreCase(secondOpinion)) {
+      } else if (TransmissionDecision.DO_NOT_INDEX_CONTENT == decision) {
         switch (state) {
           case NO_CONTENT:
           case HEAD:

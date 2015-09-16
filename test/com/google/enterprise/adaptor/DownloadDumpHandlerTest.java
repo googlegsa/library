@@ -318,7 +318,7 @@ public class DownloadDumpHandlerTest {
   private static class MockStatRpcMethod extends StatRpcMethod {
     MockStatRpcMethod(Journal journal, Adaptor adaptor,
         boolean isAdaptorIncremental, File configFile) {
-      super(journal, adaptor, isAdaptorIncremental, configFile);
+      super(journal, adaptor, true, isAdaptorIncremental, configFile);
     }
 
     @Override

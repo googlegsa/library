@@ -110,7 +110,7 @@ public class AddContentTypeToMetadata implements MetadataTransform {
 
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
-    String ct = params.get("Content-Type");
+    String ct = params.get(MetadataTransform.KEY_CONTENT_TYPE);
     String type = typeMap.get(ct);
     if (null == type) {
       type = "Other";
