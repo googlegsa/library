@@ -174,32 +174,26 @@ public class FilterMimetypes implements MetadataTransform {
     {
       String value = cfg.get("supportedMimetypeGlobs"); 
       if (null == value) {
-        supported = new TreeSet<String>(SUPPORTED);
-      } else if (value.isEmpty()) {
-        supported = new TreeSet<String>();
-      } else {
-        supported = new TreeSet<String>(asList(value.split("\\s+", 0)));
+        value = SUPPORTED;
       }
+      supported = new TreeSet<String>(asList(value.split("\\s+", 0)));
+      supported.remove("");
     }
     {
       String value = cfg.get("unsupportedMimetypeGlobs"); 
       if (null == value) {
-        unsupported = new TreeSet<String>(UNSUPPORTED);
-      } else if (value.isEmpty()) {
-        unsupported = new TreeSet<String>();
-      } else {
-        unsupported = new TreeSet<String>(asList(value.split("\\s+", 0)));
+        value = UNSUPPORTED;
       }
+      unsupported = new TreeSet<String>(asList(value.split("\\s+", 0)));
+      unsupported.remove("");
     }
     {
       String value = cfg.get("excludedMimetypeGlobs"); 
       if (null == value) {
-        excluded = new TreeSet<String>(EXCLUDED);
-      } else if (value.isEmpty()) {
-        excluded = new TreeSet<String>();
-      } else {
-        excluded = new TreeSet<String>(asList(value.split("\\s+", 0)));
-      }
+        value = EXCLUDED;
+      } 
+      excluded = new TreeSet<String>(asList(value.split("\\s+", 0)));
+      excluded.remove("");
     }
 
     if (cfg.containsKey("supportedMimetypeGlobsAddon")) {
@@ -232,7 +226,7 @@ public class FilterMimetypes implements MetadataTransform {
     return new FilterMimetypes(supported, unsupported, excluded);
   }
 
-  private static final Set<String> SUPPORTED = new TreeSet<String>() {{
+  private static final String SUPPORTED
       /*
         Sets the preferred/supported mime types to index.
         We send content and metadata for these types.
@@ -240,90 +234,99 @@ public class FilterMimetypes implements MetadataTransform {
         file format conversion. Some information may be lost
         or discarded.
       */ 
-      add("text/calendar");
-      add("text/csv");
-      add("text/plain");
-      add("text/html");
-      add("text/sgml");
-      add("text/x-sgml");
-      add("text/tab-separated-values");
-      add("text/xhtml");
-      add("text/xml");
-      add("text/*");
-      add("application/plain");
-      add("application/rdf+xml");
-      add("application/xhtml+xml");
-      add("application/xml");
-      add("message/http");
-      add("message/s-http");
-      add("message/news");
-      add("text/richtext");
-      add("text/rtf");
-      add("application/rtf");
-      add("application/x-rtf");
-      add("text/troff");
-      add("application/x-troff");
-      add("application/pdf");
-      add("application/postscript");
-      add("application/vnd.framemaker");
-      add("application/vnd.mif");
-      add("application/vnd.kde.kpresenter");
-      add("application/vnd.kde.kspread");
-      add("application/vnd.kde.kword");
-      add("application/vnd.lotus-1-2-3");
-      add("application/vnd.lotus-freelance");
-      add("application/x-freelance");
-      add("application/vnd.lotus-notes");
-      add("application/vnd.lotus-wordpro");
-      add("application/excel");
-      add("application/vnd.ms-excel");
-      add("application/x-excel");
-      add("application/x-msexcel");
-      add("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
-      add("application/vnd.ms-excel.*");
-      add("application/vnd.ms-htmlhelp");
-      add("application/vnd.ms-outlook");
-      add("application/mspowerpoint");
-      add("application/powerpoint");
-      add("application/vnd.ms-powerpoint");
-      add("application/vnd.openxmlformats-officedocument.presentationml.presentation");
-      add("application/vnd.ms-powerpoint.macroEnabled.*");
-      add("application/vnd.ms-powerpoint.presentation.macroEnabled.*");
-      add("application/vnd.ms-powerpoint.presentation.*");
-      add("application/vnd.ms-powerpoint.*");
-      add("application/vnd.ms-project");
-      add("application/x-project");
-      add("application/x-mspublisher");
-      add("application/x-msschedule");
-      add("application/msword");
-      add("application/vnd.openxmlformats-officedocument.wordprocessingml.document");
-      add("application/vnd.ms-word.document.macroEnabled.*");
-      add("application/vnd.ms-word.document.*");
-      add("application/vnd.ms-word.macroEnabled.*");
-      add("application/vnd.ms-word.*");
-      add("application/vnd.ms-works");
-      add("application/mswrite");
-      add("application/x-mswrite");
-      add("application/vnd.ms-xpsdocument");
-      add("application/vnd.oasis.opendocument.presentation*");
-      add("application/vnd.oasis.opendocument.spreadsheet*");
-      add("application/vnd.oasis.opendocument.text*");
-      add("application/vnd.quark.quarkxpress");
-      add("application/vnd.scibus");
-      add("application/vnd.wordperfect");
-      add("application/wordperfect");
-      add("application/wordperfect*");
-      add("application/vnd.visio");
-      add("application/x-visio");
-      add("application/x-latex");
-      add("application/x-tex");
-      add("application/x-texinfo");
-      add("application/x-pagemaker");
-      add("mulitpart/appledouble");
-      add("mulitpart/mixed");
-  }};
-  
-  private static final Set<String> UNSUPPORTED = new TreeSet<String>() {{
+      = " application/excel"
+      + " application/mspowerpoint"
+      + " application/msword"
+      + " application/mswrite"
+      + " application/pdf"
+      + " application/plain"
+      + " application/postscript"
+      + " application/powerpoint"
+      + " application/rdf+xml"
+      + " application/rtf"
+      + " application/vnd.framemaker"
+      + " application/vnd.kde.kpresenter"
+      + " application/vnd.kde.kspread"
+      + " application/vnd.kde.kword"
+      + " application/vnd.lotus-1-2-3"
+      + " application/vnd.lotus-freelance"
+      + " application/vnd.lotus-notes"
+      + " application/vnd.lotus-wordpro"
+      + " application/vnd.mif"
+      + " application/vnd.ms-excel"
+      + " application/vnd.ms-excel.*"
+      + " application/vnd.ms-htmlhelp"
+      + " application/vnd.ms-outlook"
+      + " application/vnd.ms-powerpoint"
+      + " application/vnd.ms-powerpoint.*"
+      + " application/vnd.ms-powerpoint.macroEnabled.*"
+      + " application/vnd.ms-powerpoint.presentation.*"
+      + " application/vnd.ms-powerpoint.presentation.macroEnabled.*"
+      + " application/vnd.ms-project"
+      + " application/vnd.ms-word.*"
+      + " application/vnd.ms-word.document.*"
+      + " application/vnd.ms-word.document.macroEnabled.*"
+      + " application/vnd.ms-word.macroEnabled.*"
+      + " application/vnd.ms-works"
+      + " application/vnd.ms-xpsdocument"
+      + " application/vnd.oasis.opendocument.presentation*"
+      + " application/vnd.oasis.opendocument.spreadsheet*"
+      + " application/vnd.oasis.opendocument.text*"
+      + " application/vnd.openxmlformats-officedocument.presentationml.presentation"
+      + " application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+      + " application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+      + " application/vnd.quark.quarkxpress"
+      + " application/vnd.scibus"
+      + " application/vnd.visio"
+      + " application/vnd.wordperfect"
+      + " application/wordperfect"
+      + " application/wordperfect*"
+      + " application/x-bzip"
+      + " application/x-bzip2"
+      + " application/x-compressed"
+      + " application/x-excel"
+      + " application/x-freelance"
+      + " application/x-gtar"
+      + " application/x-gzip"
+      + " application/xhtml+xml"
+      + " application/x-latex"
+      + " application/xml"
+      + " application/x-msexcel"
+      + " application/x-mspublisher"
+      + " application/x-msschedule"
+      + " application/x-mswrite"
+      + " application/x-pagemaker"
+      + " application/x-project"
+      + " application/x-rtf"
+      + " application/x-tar"
+      + " application/x-tex"
+      + " application/x-texinfo"
+      + " application/x-troff"
+      + " application/x-visio"
+      + " application/x-zip"
+      + " application/x-zip-compressed"
+      + " application/zip"
+      + " message/http"
+      + " message/news"
+      + " message/s-http"
+      + " multipart/appledouble"
+      + " multipart/mixed"
+      + " multipart/x-zip"
+      + " text/*"
+      + " text/calendar"
+      + " text/csv"
+      + " text/html"
+      + " text/plain"
+      + " text/richtext"
+      + " text/rtf"
+      + " text/sgml"
+      + " text/tab-separated-values"
+      + " text/troff"
+      + " text/xhtml"
+      + " text/xml"
+      + " text/x-sgml";
+
+  private static final String UNSUPPORTED
       /*
          Sets the unsupported mime types whose content should not be indexed.
          These mime types provide little or no textual content, or are data
@@ -331,68 +334,55 @@ public class FilterMimetypes implements MetadataTransform {
          The connector may still provide meta-data describing the content,
          but the content itself should not be pushed.
       */
-      add("audio/*");
-      add("image/*");
-      add("music/*");
-      add("x-music/*");
-      add("video/*");
-      add("application/octet-stream");
-      add("application/macbinary");
-      add("application/x-binary");
-      add("application/binhex");
-      add("application/binhex4");
-      add("application/gnutar");
-      add("application/mac-binhex");
-      add("application/mac-binhex40");
-      add("application/sea");
-      add("application/x-binhex");
-      add("application/x-binhex40");
-      add("application/x-bzip");
-      add("application/x-bzip2");
-      add("application/x-compressed");
-      add("application/x-gtar");
-      add("application/x-gzip");
-      add("application/x-lzh");
-      add("application/x-sea");
-      add("application/x-sit");
-      add("application/x-stuffit");
-      add("application/x-tar");
-      add("application/x-zip");
-      add("application/x-zip-compressed");
-      add("application/zip");
-      add("multipart/x-zip");
-      add("chemical/*");
-      add("message/*");
-      add("model/*");
-      add("mulitpart/*");
-      add("world/*");
-      add("i-world/*");
-      add("x-world/*");
-      // add("application/");
-  }};
+      = " application/binhex"
+      + " application/binhex4"
+      + " application/gnutar"
+      + " application/macbinary"
+      + " application/mac-binhex"
+      + " application/mac-binhex40"
+      + " application/octet-stream"
+      + " application/sea"
+      + " application/x-binary"
+      + " application/x-binhex"
+      + " application/x-binhex40"
+      + " application/x-lzh"
+      + " application/x-sea"
+      + " application/x-sit"
+      + " application/x-stuffit"
+      + " audio/*"
+      + " chemical/*"
+      + " image/*"
+      + " i-world/*"
+      + " message/*"
+      + " model/*"
+      + " multipart/*"
+      + " music/*"
+      + " video/*"
+      + " world/*"
+      + " x-music/*"
+      + " x-world/*";
 
-  private static final Set<String> EXCLUDED = new TreeSet<String>() {{
+  private static final String EXCLUDED
       /*
          Sets the mime types whose document should not be indexed.
          The connector should skip the document, providing neither meta-data,
          nor the content.
       */
-      add("application/annodex");
-      add("application/internet-property-stream");
-      add("application/mime");
-      add("application/pgp-signature");
-      add("application/solids");
-      add("application/vnd.acucorp");
-      add("application/vnd.koan");
-      add("application/vnd.ibm.modcap");
-      add("application/x-aim");
-      add("application/x-koan");
-      add("application/x-msaccess");
-      add("application/x-msdownload");
-      add("application/x-world");
-      add("message/rfc822");
-      add("text/asp");
-      add("text/vnd.abc");
-      add("text/x-audiosoft-intra");
-  }};
+      = " application/annodex"
+      + " application/internet-property-stream"
+      + " application/mime"
+      + " application/pgp-signature"
+      + " application/solids"
+      + " application/vnd.acucorp"
+      + " application/vnd.ibm.modcap"
+      + " application/vnd.koan"
+      + " application/x-aim"
+      + " application/x-koan"
+      + " application/x-msaccess"
+      + " application/x-msdownload"
+      + " application/x-world"
+      + " message/rfc822"
+      + " text/asp"
+      + " text/vnd.abc"
+      + " text/x-audiosoft-intra";
 }
