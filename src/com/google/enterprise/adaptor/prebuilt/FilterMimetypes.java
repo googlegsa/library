@@ -34,25 +34,36 @@ import java.util.logging.Logger;
  *
  * <p> The order of checking for known mimetypes is:
  * <ol>
- *   <li> Check supported types. If type is supported then
- *       content, metadata, headers, everything is sent.
- *   <li> Check if unsupported. If type is unsupported we
- *       will send headers and metadata but will not send
- *       content.
- *   <li> Check is type is excluded. If type is excluded
- *       we do not send any info about the doc. Instead we
- *       say to drop the entire document contents, headers,
- *       et cetera and return a 404 not found code.
+ *   <li> Check explicitly supported types. If type is 
+ *       explicitly supported then content, metadata, 
+ *       headers, everything is sent.
+ *   <li> Check if explicitly unsupported. If type is 
+ *       explicitly unsupported we will send headers 
+ *       and metadata but will not send content.
+ *   <li> Check if type is explicitly excluded. If type 
+ *       is explicitly excluded we do not send any info
+ *       about the doc. Instead we say to drop the entire
+ *       document contents, headers, et cetera and return
+ *       a 404 not found code.
+ *   <li> Check if supported by matching a supported pattern
+ *       that has a wildcard (*).
+ *   <li> Check if unsupported by matching an usupported
+ *       pattern that has a wildcard (*).
+ *   <li> Check if excluded by matching an excluded pattern
+ *       that has a wildcard (*).
  * </ol>
  */
 public class FilterMimetypes implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(FilterMimetypes.class.getName());
 
-  private final Set<String> supported;
-  private final Set<String> unsupported;
-  private final Set<String> excluded;
-  private final Map<String, String> decided;
+  private Set<String> supportedExplicit = new TreeSet<String>();
+  private Set<String> unsupportedExplicit = new TreeSet<String>();
+  private Set<String> excludedExplicit = new TreeSet<String>();
+  private Set<String> supportedGlobs = new TreeSet<String>();
+  private Set<String> unsupportedGlobs = new TreeSet<String>();
+  private Set<String> excludedGlobs = new TreeSet<String>();
+  private Map<String, String> decided;
 
   private synchronized String lookupDecision(String ct) {
     return decided.get(ct);
@@ -66,22 +77,44 @@ public class FilterMimetypes implements MetadataTransform {
     if (null == s || null == u || null == e) {
       throw new NullPointerException();
     }
-    supported = s;
-    unsupported = u;
-    excluded = e;
+    split(supportedGlobs, supportedExplicit, s);
+    split(unsupportedGlobs, unsupportedExplicit, u);
+    split(excludedGlobs, excludedExplicit, e);
+    supportedExplicit = Collections.unmodifiableSet(supportedExplicit);
+    unsupportedExplicit = Collections.unmodifiableSet(unsupportedExplicit);
+    excludedExplicit = Collections.unmodifiableSet(excludedExplicit);
+    supportedGlobs = Collections.unmodifiableSet(supportedGlobs);
+    unsupportedGlobs = Collections.unmodifiableSet(unsupportedGlobs);
+    excludedGlobs = Collections.unmodifiableSet(excludedGlobs);
     decided = new HashMap<String, String>();
   }
 
+  private void split(Set<String> globs, Set<String> explicit, Set<String> src) {
+    for (String pat : src) {
+      if (-1 == pat.indexOf('*')) {
+        explicit.add(pat);  
+      } else {
+        globs.add(pat);  
+      }
+    }
+  }
+
   public Set<String> getSupportedMimetypes() {
-    return Collections.unmodifiableSet(supported);
+    return addTogether(supportedExplicit, supportedGlobs);
   }
 
   public Set<String> getUnsupportedMimetypes() {
-    return Collections.unmodifiableSet(unsupported);
+    return addTogether(unsupportedExplicit, unsupportedGlobs);
   }
 
   public Set<String> getExcludedMimetypes() {
-    return Collections.unmodifiableSet(excluded);
+    return addTogether(excludedExplicit, excludedGlobs);
+  }
+
+  private static Set<String> addTogether(Set<String> a, Set<String> b) {
+    Set<String> union = new TreeSet<String>(a);
+    union.addAll(b);
+    return union; 
   }
 
   @Override
@@ -101,15 +134,30 @@ public class FilterMimetypes implements MetadataTransform {
       params.put("Transmission-Decision", decision);
       return;
     }
-    if (matches(supported, ct, "supported")) {
+    if (supportedExplicit.contains(ct)) {
+      log.log(Level.FINE, ct + "is explicitly supported");
       insertDecision(ct, TransmissionDecision.AS_IS.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.AS_IS.toString());
-    } else if (matches(unsupported, ct, "unsupported")) {
+    } else if (unsupportedExplicit.contains(ct)) {
+      log.log(Level.FINE, ct + "is explicitly unsupported");
       insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
-    } else if (matches(excluded, ct, "excluded")) {
+    } else if (excludedExplicit.contains(ct)) {
+      log.log(Level.FINE, ct + "is explicitly excluded");
+      insertDecision(ct, TransmissionDecision.DO_NOT_INDEX.toString());
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+          TransmissionDecision.DO_NOT_INDEX.toString());
+    } else if (matches(supportedGlobs, ct, "supported by glob")) {
+      insertDecision(ct, TransmissionDecision.AS_IS.toString());
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+          TransmissionDecision.AS_IS.toString());
+    } else if (matches(unsupportedGlobs, ct, "unsupported by glob")) {
+      insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+          TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
+    } else if (matches(excludedGlobs, ct, "excluded by glob")) {
       insertDecision(ct, TransmissionDecision.DO_NOT_INDEX.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.DO_NOT_INDEX.toString());
@@ -136,17 +184,11 @@ public class FilterMimetypes implements MetadataTransform {
     return str.matches(regex.toString());
   }
 
-  private static boolean matches(Set<String> globs, String ct, String label) {
-    for (String glob : globs) {
-      boolean matched = false;
-      if (-1 != glob.indexOf('*')) {
-        matched = wildcardmatch(glob, ct);
-      } else if (glob.equals(ct)) {
-        matched = true;
-      }
-      if (matched) {
+  private static boolean matches(Set<String> pats, String ct, String label) {
+    for (String pat : pats) {
+      if (wildcardmatch(pat, ct)) {
         log.log(Level.FINE, "{0} matches {1} and is {2}",
-            new Object[] {ct, glob, label});
+            new Object[] {ct, pat, label});
         return true;
       }
     }
@@ -157,11 +199,11 @@ public class FilterMimetypes implements MetadataTransform {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("FilterMimetypes(");
-    sb.append("" + supported);
+    sb.append("" + getSupportedMimetypes());
     sb.append(", ");
-    sb.append("" + unsupported);
+    sb.append("" + getUnsupportedMimetypes());
     sb.append(", ");
-    sb.append("" + excluded);
+    sb.append("" + getExcludedMimetypes());
     sb.append(")");
     return "" + sb;
   }
@@ -172,7 +214,7 @@ public class FilterMimetypes implements MetadataTransform {
     final Set<String> excluded;
 
     {
-      String value = cfg.get("supportedMimetypeGlobs"); 
+      String value = cfg.get("supportedMimetypes"); 
       if (null == value) {
         value = SUPPORTED;
       }
@@ -180,7 +222,7 @@ public class FilterMimetypes implements MetadataTransform {
       supported.remove("");
     }
     {
-      String value = cfg.get("unsupportedMimetypeGlobs"); 
+      String value = cfg.get("unsupportedMimetypes"); 
       if (null == value) {
         value = UNSUPPORTED;
       }
@@ -188,7 +230,7 @@ public class FilterMimetypes implements MetadataTransform {
       unsupported.remove("");
     }
     {
-      String value = cfg.get("excludedMimetypeGlobs"); 
+      String value = cfg.get("excludedMimetypes"); 
       if (null == value) {
         value = EXCLUDED;
       } 
@@ -196,24 +238,24 @@ public class FilterMimetypes implements MetadataTransform {
       excluded.remove("");
     }
 
-    if (cfg.containsKey("supportedMimetypeGlobsAddon")) {
-      for (String re : cfg.get("supportedMimetypeGlobsAddon")
+    if (cfg.containsKey("supportedMimetypesAddon")) {
+      for (String re : cfg.get("supportedMimetypesAddon")
           .split("\\s+", 0)) {
         if (!re.isEmpty()) {
           supported.add(re);
         }
       }
     }
-    if (cfg.containsKey("unsupportedMimetypeGlobsAddon")) {
-      for (String re : cfg.get("unsupportedMimetypeGlobsAddon")
+    if (cfg.containsKey("unsupportedMimetypesAddon")) {
+      for (String re : cfg.get("unsupportedMimetypesAddon")
           .split("\\s+", 0)) {
         if (!re.isEmpty()) {
           unsupported.add(re);
         }
       }
     }
-    if (cfg.containsKey("excludedMimetypeGlobsAddon")) {
-      for (String re : cfg.get("excludedMimetypeGlobsAddon")
+    if (cfg.containsKey("excludedMimetypesAddon")) {
+      for (String re : cfg.get("excludedMimetypesAddon")
           .split("\\s+", 0)) {
         if (!re.isEmpty()) {
           excluded.add(re);

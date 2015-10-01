@@ -187,7 +187,7 @@ public class FilterMimetypesTest {
   @Test
   public void testEmptySupportedConfigLine() {
     FilterMimetypes f = FilterMimetypes.create(new HashMap<String, String>() {{
-      put("supportedMimetypeGlobs", "");
+      put("supportedMimetypes", "");
     }});
     assertEquals(0, f.getSupportedMimetypes().size());
     assertTrue(0 < f.getUnsupportedMimetypes().size());
@@ -197,7 +197,7 @@ public class FilterMimetypesTest {
   @Test
   public void testEmptyUnsupportedConfigLine() {
     FilterMimetypes f = FilterMimetypes.create(new HashMap<String, String>() {{
-      put("unsupportedMimetypeGlobs", "");
+      put("unsupportedMimetypes", "");
     }});
     assertTrue(0 < f.getSupportedMimetypes().size());
     assertEquals(0, f.getUnsupportedMimetypes().size());
@@ -207,7 +207,7 @@ public class FilterMimetypesTest {
   @Test
   public void testEmptyExcludedConfigLine() {
     FilterMimetypes f = FilterMimetypes.create(new HashMap<String, String>() {{
-      put("excludedMimetypeGlobs", "");
+      put("excludedMimetypes", "");
     }});
     assertTrue(0 < f.getSupportedMimetypes().size());
     assertTrue(0 < f.getUnsupportedMimetypes().size());
@@ -222,13 +222,33 @@ public class FilterMimetypesTest {
     int nexcluded = f.getExcludedMimetypes().size();
     FilterMimetypes more = FilterMimetypes.create(
         new HashMap<String, String>() {{
-            put("supportedMimetypeGlobsAddon", "E.T. phone home.");
-            put("unsupportedMimetypeGlobsAddon", "We'll always have Paris.");
-            put("excludedMimetypeGlobsAddon", "Frankly, my dear, I don't give");
+            put("supportedMimetypesAddon", "E.T. phone home.");
+            put("unsupportedMimetypesAddon", "We'll always have Paris.");
+            put("excludedMimetypesAddon", "Frankly, my dear, I don't give");
         }}
     );
     assertEquals(nsupported + 3, more.getSupportedMimetypes().size());
     assertEquals(nunsupported + 4, more.getUnsupportedMimetypes().size());
     assertEquals(nexcluded + 6, more.getExcludedMimetypes().size());
+  }
+
+  @Test
+  public void testExplicitExcludedOverridesSupported() {
+    MetadataTransform transform = defaultFilter();
+    Map<String, String> params = new HashMap<String, String>();
+    /* supported has text/* and excluded has text/asp */
+    params.put("Content-Type", "text/asp");
+    transform.transform(new Metadata(), params);
+    assertEquals("do-not-index", params.get("Transmission-Decision"));
+  }
+
+  @Test
+  public void testExplicitExcludedOverridesUnsupported() {
+    MetadataTransform transform = defaultFilter();
+    Map<String, String> params = new HashMap<String, String>();
+    /* unsupported has message/* and excluded has message/rfc822 */
+    params.put("Content-Type", "message/rfc822");
+    transform.transform(new Metadata(), params);
+    assertEquals("do-not-index", params.get("Transmission-Decision"));
   }
 }
