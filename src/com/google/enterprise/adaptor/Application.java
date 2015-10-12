@@ -555,13 +555,16 @@ public final class Application {
     } catch (InterruptedException e) {
       Thread.currentThread().interrupt();
       log.log(Level.INFO, "Application startup interrupted.", e);
-      throw new StartupException("Application startup interrupted.");
+      throw new StartupException(
+          "Application startup interrupted. " + e.toString());
     } catch (IOException e) {
       log.log(Level.SEVERE, "Failed to start application.", e);
-      throw new StartupException("Failed to start application.");
+      throw new StartupException(
+          "Failed to start application. " + e.toString());
     } catch (RuntimeException e) {
       log.log(Level.SEVERE, "Failed to start application.", e);
-      throw new StartupException("Failed to start application.");
+      throw new StartupException(
+          "Failed to start application. " + e.toString());
     }
   }
 
