@@ -127,6 +127,70 @@ public class AclTransformTest {
         new AclTransform(rules).transform(baseAcl));
   }
 
+  @Test
+  public void testRegexMatching() {
+    List<Rule> rules = Arrays.asList(
+        new Rule(new MatchData(true, ".1", ".*", "ns[0-9]"),
+          new MatchData(null, null, "foundit", null)));
+    assertEquals(new Acl.Builder(baseAcl)
+          .setPermits(Arrays.asList(                   // originals:
+            new UserPrincipal("u1"),                   // U("u1")
+            new GroupPrincipal("g1@d1"),               // G("g1@d1")
+            new GroupPrincipal("D1\\g1"),              // G("D1\\g1")
+            new GroupPrincipal("D1/g1"),               // G("D1/g1")
+            new GroupPrincipal("foundit\\u1", "ns1"),  // G("u1", "ns1")
+            new GroupPrincipal("u1@foundit", "ns2")))  // G("u1@d1", "ns2")
+          .setDenies(Arrays.asList(
+            new UserPrincipal("u1"),                   // U("u1")
+            new GroupPrincipal("g1"),                  // G("g1")
+            new GroupPrincipal("foundit\\g1", "ns1"))) // G(g1", "ns1")
+          .build(),
+        new AclTransform(rules).transform(baseAcl));
+  }
+
+  @Test
+  public void testRegexReplacing() {
+    List<Rule> rules = Arrays.asList(
+        new Rule(
+            new MatchData(true, "(..)", "(.)(.*)", null),
+            new MatchData(null, "\\domain1\\name1", "hello", null)));
+    assertEquals(new Acl.Builder(baseAcl)
+          .setPermits(Arrays.asList(                   // originals:
+            new UserPrincipal("u1"),                   // U("u1")
+            new GroupPrincipal("dg1@hello"),           // G("g1@d1")
+            new GroupPrincipal("hello\\dg1"),          // G("D1\\g1")
+            new GroupPrincipal("hello/dg1"),           // G("D1/g1")
+            new GroupPrincipal("u1", "ns1"),           // G("u1", "ns1")
+            new GroupPrincipal("du1@hello", "ns2")))   // G("u1@d1", "ns2")
+          .setDenies(Arrays.asList(
+            new UserPrincipal("u1"),                   // U("u1")
+            new GroupPrincipal("g1"),                  // G("g1")
+            new GroupPrincipal("g1", "ns1")))          // G(g1", "ns1")
+          .build(),
+        new AclTransform(rules).transform(baseAcl));
+  }
+
+  @Test
+  public void testBackSlashEscape() {
+    List<Rule> rules = Arrays.asList(
+        new Rule(
+            new MatchData(true, "(..)", "(.)(.*)", null),
+            new MatchData(null, "\\domain1ab\\name1", "hello", "\\\\name1")));
+    assertEquals(new Acl.Builder(baseAcl)
+          .setPermits(Arrays.asList(                       // originals:
+            new UserPrincipal("u1"),                       // U("u1")
+            new GroupPrincipal("dabg1@hello", "\\name1"),  // G("g1@d1")
+            new GroupPrincipal("hello\\Dabg1", "\\name1"), // G("D1\\g1")
+            new GroupPrincipal("hello/Dabg1", "\\name1"),  // G("D1/g1")
+            new GroupPrincipal("u1", "ns1"),               // G("u1", "ns1")
+            new GroupPrincipal("dabu1@hello", "\\name1"))) // G("u1@d1", "ns2")
+          .setDenies(Arrays.asList(
+            new UserPrincipal("u1"),                       // U("u1")
+            new GroupPrincipal("g1"),                      // G("g1")
+            new GroupPrincipal("g1", "ns1")))              // G(g1", "ns1")
+          .build(),
+        new AclTransform(rules).transform(baseAcl));  }
+
   @Test(expected = NullPointerException.class)
   public void testRuleNullMatch() {
     new Rule(null, new MatchData(null, null, null, null));

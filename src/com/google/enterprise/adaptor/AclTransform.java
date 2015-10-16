@@ -21,12 +21,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Logger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Transforms Principals in ACLs based on provided rules.
  */
 final class AclTransform {
+  private static final Logger log
+      = Logger.getLogger(AclTransform.class.getName());
   private final List<Rule> rules;
 
   public AclTransform(List<Rule> rules) {
@@ -73,8 +80,9 @@ final class AclTransform {
   private <T extends Principal> T transformInternal(T principal) {
     ParsedPrincipal parsed = principal.parse();
     for (Rule rule : rules) {
-      if (rule.match.matches(parsed)) {
-        parsed = rule.replace.replace(parsed);
+      MatchResult m = rule.match.matches(parsed);
+      if (m.matches()) {
+        parsed = rule.replace.replace(m.getCapturedGroups(), parsed);
       }
     }
     @SuppressWarnings("unchecked")
@@ -137,12 +145,56 @@ final class AclTransform {
     }
   }
 
+  public static final class MatchResult {
+    private boolean matches;
+    /*
+     * AclTransforms that contain matching regular expressions
+     * result in capturedGroups being populated.
+     *
+     * The keys of captured groups are one of "name", "domain", "namespace"
+     * followed by a number.
+     *
+     * For example (not escaped to illustrate the string representation)
+     *   domain=(.)(.*), name=A(.*); name=\name1@\domain2, domain=\domain1
+     *
+     * will result in keys of "name1", "domain1" and "domain2". The values
+     * will later be used as substitutes for "\name1" "\domain1" and
+     * "\domain2".
+     */
+    private Map<String, String> capturedGroups;
+
+    public MatchResult(boolean matches, Map<String, String> capturedGroups) {
+      this.matches = matches;
+      this.capturedGroups = capturedGroups;
+    }
+
+    public boolean matches() {
+      return matches;
+    }
+
+    public Map<String, String> getCapturedGroups() {
+      return capturedGroups;
+    }
+
+    @Override
+    public String toString() {
+      return "MatchResult(matches=" + matches
+          + ",captured=" + capturedGroups + ")";
+    }
+  }
+
   public static final class MatchData {
     // Visible for GsaCommunicationHandler
     final Boolean isGroup;
     private final String name;
     private final String domain;
     private final String namespace;
+
+    // patterns are used only when matching ACL transformation rules
+    // it will be null when using MatchData for replacements
+    private final Pattern namePattern;
+    private final Pattern domainPattern;
+    private final Pattern namespacePattern;
 
     /**
      * For matching, non-{@code null} fields must be equal on Principal. For
@@ -155,37 +207,111 @@ final class AclTransform {
       this.name = name;
       this.domain = domain;
       this.namespace = namespace;
+
+      namePattern = name != null ? Pattern.compile(name) : null;
+      domainPattern = domain != null ? Pattern.compile(domain) : null;
+      namespacePattern = namespace != null ? Pattern.compile(namespace) : null;
     }
 
-    private boolean matches(ParsedPrincipal principal) {
+    /**
+     * Performs regular expression match and captures any defined groups
+     * in the groups parameter
+     *
+     * @param pattern to match against
+     * @param string which is being matched
+     * @param prefix name of how we are going to capture the group
+     * @param groups map of captured values
+     * @return if match has been found
+     */
+    private boolean match(Pattern pattern, String string,
+        String prefix, Map<String, String> groups) {
+      Matcher m = pattern.matcher(string);
+      if (m.matches()) {
+        for (int i = 1; i <= m.groupCount(); ++i) {
+          groups.put(prefix + i, m.group(i));
+        }
+      }
+      return m.matches();
+    }
+
+    private MatchResult matches(ParsedPrincipal principal) {
       boolean matches = true;
       if (isGroup != null) {
         matches = matches && isGroup.equals(principal.isGroup);
       }
+      Map<String, String> groups = new HashMap<String, String>();
       if (name != null) {
-        matches = matches && name.equals(principal.plainName);
+        matches = matches && match(
+            namePattern, principal.plainName, "name", groups);
       }
       if (domain != null) {
-        matches = matches && domain.equals(principal.domain);
+        matches = matches && match(
+            domainPattern, principal.domain, "domain", groups);
       }
       if (namespace != null) {
-        matches = matches && namespace.equals(principal.namespace);
+        matches = matches && match(
+            namespacePattern, principal.namespace, "namespace", groups);
       }
-      return matches;
+      MatchResult result = new MatchResult(matches, groups);
+      log.finest("Matching " + principal + " against "
+          + this.toString() + "; result: " + result.toString());
+      return result;
     }
 
-    private ParsedPrincipal replace(ParsedPrincipal principal) {
+    private String replace(Map<String, String> groups, String template) {
+      StringBuilder sb = new StringBuilder(template.length());
+      try {
+        int i = 0;
+        while (i < template.length()) {
+          // found either slash or substitution pattern
+          boolean found = false;
+
+          if (template.charAt(i) == '\\') {
+            // if the backslash is escaped, skip it
+            if (i + 1 < template.length() && template.charAt(i+1) == '\\') {
+              sb.append('\\');
+              i++; // the second slash will be skipped at the end of the loop
+              found = true;
+            } else {
+              // if the template starts with escaped key, replace it
+              for (String key : groups.keySet()) {
+                if (template.regionMatches(i+1, key, 0, key.length())) {
+                  found = true;
+                  // slash is consumed at the end of the loop
+                  i = i + key.length();
+                  sb.append(groups.get(key));
+                  break;
+                }
+              }
+            }
+          }
+
+          if (!found) {
+            sb.append(template.charAt(i));
+          }
+          i++;
+        }
+      } catch (IndexOutOfBoundsException e) {
+        log.warning("Failed processing ACL transform template " + template);
+        return template;
+      }
+
+      return sb.toString();
+    }
+
+    private ParsedPrincipal replace(
+        Map<String, String> capturedGroups, ParsedPrincipal principal) {
       if (isGroup != null) {
         throw new AssertionError();
       }
       if (name != null) {
-        principal = principal.plainName(name);
+        principal = principal.plainName(replace(capturedGroups, name));
       }
       if (domain != null) {
-        principal = principal.domain(domain);
+        principal = principal.domain(replace(capturedGroups, domain));
       }
       if (namespace != null) {
-        principal = principal.namespace(namespace);
+        principal = principal.namespace(replace(capturedGroups, namespace));
       }
       return principal;
     }
