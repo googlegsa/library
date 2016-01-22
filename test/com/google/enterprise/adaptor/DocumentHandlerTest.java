@@ -834,9 +834,122 @@ public class DocumentHandlerTest {
     @Override
     public void write(final byte[] b) throws IOException {
       if ('2' != b[0]) {
-        throw new IllegalStateException("Write3 not called second");
+        throw new IllegalStateException("Write3 not called third");
       }
       super.write("3".getBytes(Charsets.UTF_8));
+    }
+  }
+
+  // TODO(myk): Move all ContentTransformFactory tests into their own class.
+  @Test
+  public void testContentTransformChain() throws Exception {
+    ContentTransformFactory contentTransformFactory =
+        new ContentTransformFactory(
+            new ArrayList<Map<String, String>>() {
+              {
+                add(new HashMap<String, String>() {{
+                    put("class", DocumentContentTransformA.class.getName());
+                }});
+                add(new HashMap<String, String>() {{
+                    put("class", DocumentContentTransformB.class.getName());
+                }});
+                add(new HashMap<String, String>() {{
+                    put("class", DocumentContentTransformC.class.getName());
+                }});
+              }
+        });
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(final Request request, final Response response)
+          throws IOException, InterruptedException {
+        response.setContentType("image/jpeg");
+        OutputStream os = response.getOutputStream();
+        os.write("some cool stuff".getBytes(Charsets.UTF_8));
+        os.close();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[]{remoteIp})
+        .setContentTransformPipeline(contentTransformFactory)
+        .build();
+    handler.handle(ex);
+    assertEquals("text/plain",
+        contentTransformFactory.calculateResultingContentType("image/jpeg"));
+    assertEquals("foo", contentTransformFactory.calculateContentType("foo", 0));
+    assertEquals("image/gif",
+        contentTransformFactory.calculateContentType("image/jpeg", 1));
+    assertEquals("", contentTransformFactory.calculateContentType("null", 1));
+    assertEquals("image/gif",
+        contentTransformFactory.calculateContentType("image/jpeg", 2));
+    assertEquals("text/plain",
+        contentTransformFactory.calculateContentType("image/jpeg", 3));
+    try {
+      String s = contentTransformFactory.calculateContentType("-1", -1);
+      fail("Didn't catch expected AssertionError");
+    } catch (AssertionError ae) {
+      assertTrue(ae.getMessage().contains("must be non-negative"));
+    }
+    try {
+      String s = contentTransformFactory.calculateContentType("image/jpeg", 10);
+      fail("Didn't catch expected AssertionError");
+    } catch (AssertionError ae) {
+      assertTrue(ae.getMessage().contains("only 3 transform(s) present"));
+    }
+    assertEquals("some stuff: image/jpeg", new String(ex.getResponseBytes()));
+  }
+
+  private static class DocumentContentTransformA extends ContentTransform {
+
+    public DocumentContentTransformA(Map<String, String> config,
+        Metadata metadata, String contentType, OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+      assertEquals("image/jpeg", contentType);
+    }
+
+    public static String getContentTypeOutputForContentTypeInput(String ctIn) {
+      if ("image/jpeg".equalsIgnoreCase(ctIn)) {
+        return "image/gif";
+      }
+      if ("null".equalsIgnoreCase(ctIn)) {
+        return null;
+      }
+      fail("DocumentContentTransformA got the wrong input type -- " + ctIn);
+      return null; // to avoid "error: missing return statement"
+    }
+
+    @Override
+    public void write(final byte[] b) throws IOException {
+      super.write(("some stuff: " + contentType).getBytes(Charsets.UTF_8));
+    }
+  }
+
+  private static class DocumentContentTransformB extends ContentTransform {
+
+    public DocumentContentTransformB(Map<String, String> config,
+        Metadata metadata, String contentType, OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+      assertEquals("image/gif", contentType);
+    }
+
+    // this class has no getContentTypeOutputForContentTypeInput() method.
+  }
+
+  private static class DocumentContentTransformC extends ContentTransform {
+
+    public DocumentContentTransformC(Map<String, String> config,
+        Metadata metadata, String contentType, OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+      assertEquals("image/gif", contentType); // the input contentType
+    }
+
+    public static String getContentTypeOutputForContentTypeInput(String ctIn) {
+      if ("image/gif".equalsIgnoreCase(ctIn)) {
+        return "text/plain";
+      }
+      fail("DocumentContentTransformC got the wrong input type -- " + ctIn);
+      return null; // to avoid "error: missing return statement"
     }
   }
 

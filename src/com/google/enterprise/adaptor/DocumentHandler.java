@@ -626,7 +626,8 @@ class DocumentHandler implements HttpHandler {
     private boolean responseBodyClosed;
     private OutputStream os;
     private CountingOutputStream countingOs;
-    private String contentType;
+    private String originalContentType;
+    private String transformedContentType;
     private Date lastModified;
     private Metadata metadata = new Metadata();
     private Acl acl;
@@ -748,7 +749,7 @@ class DocumentHandler implements HttpHandler {
           os = countingOs;
           if (null != contentTransformFactory) {
             return contentTransformFactory
-                .createPipeline(os, contentType, metadata);
+                .createPipeline(os, originalContentType, metadata);
           }
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND) {
           log.log(Level.INFO, "changed SEND_BODY to NOT_FOUND {0}",
@@ -782,11 +783,17 @@ class DocumentHandler implements HttpHandler {
     }
 
     @Override
-    public void setContentType(String contentType) {
+    public void setContentType(String originalContentType) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
       }
-      this.contentType = contentType;
+      this.originalContentType = originalContentType;
+      if (null == contentTransformFactory) {
+        transformedContentType = originalContentType;
+      } else {
+        transformedContentType = contentTransformFactory
+            .calculateResultingContentType(originalContentType);
+      }
     }
 
     @Override
@@ -1047,7 +1054,8 @@ class DocumentHandler implements HttpHandler {
       } else {
         throw new IllegalStateException("Unexpected state " + state);
       }
-      HttpExchanges.startResponse(ex, responseCode, contentType, hasContent);
+      HttpExchanges.startResponse(ex, responseCode, transformedContentType,
+          hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
         pusher.asyncPushItem(new DocIdSender.AclItem(docId,
             fragment.getKey(), fragment.getValue()));
@@ -1105,7 +1113,7 @@ class DocumentHandler implements HttpHandler {
     private void transform() {
       Map<String, String> params = new HashMap<String, String>();
       params.put(KEY_DOC_ID, docId.getUniqueId());
-      params.put(KEY_CONTENT_TYPE, contentType);
+      params.put(KEY_CONTENT_TYPE, transformedContentType);
       if (null != lastModified) {
         params.put(KEY_LAST_MODIFIED_MILLIS_UTC, "" + lastModified.getTime());
       }
@@ -1117,7 +1125,7 @@ class DocumentHandler implements HttpHandler {
       params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
       params.put(KEY_LOCK, "" + lock);
       transform.transform(metadata, params);
-      contentType = params.get(KEY_CONTENT_TYPE);
+      transformedContentType = params.get(KEY_CONTENT_TYPE);
       try {
         final String lmMillisUTC = params.get(KEY_LAST_MODIFIED_MILLIS_UTC);
         if (!Strings.isNullOrEmpty(lmMillisUTC)) {
