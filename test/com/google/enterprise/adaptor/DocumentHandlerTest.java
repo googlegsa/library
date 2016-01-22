@@ -745,14 +745,12 @@ public class DocumentHandlerTest {
 
   private static class SampleDocumentContentTransform
       extends ContentTransform {
-
     public SampleDocumentContentTransform(Map<String, String> config,
                                           Metadata metadata,
                                           String contentType,
                                           OutputStream originalStream) {
       super(config, metadata, contentType, originalStream);
     }
-
     @Override
     public void write(final byte[] b) throws IOException {
       if (contentType.equals("image/jpeg")) {
@@ -760,6 +758,85 @@ public class DocumentHandlerTest {
       } else {
         super.write(b);
       }
+    }
+  }
+
+  @Test
+  public void testContentTransformOrder() throws Exception {
+    ContentTransformFactory contentTransformFactory =
+        new ContentTransformFactory(
+            new ArrayList<Map<String, String>>() {
+            {
+                add(new HashMap<String, String>() {{
+                    put("class", Write1.class.getName());
+                }});
+                add(new HashMap<String, String>() {{
+                  put("class", Write2.class.getName());
+                }});
+                add(new HashMap<String, String>() {{
+                  put("class", Write3.class.getName());
+                }});
+            }
+        });
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(final Request request, final Response response)
+          throws IOException, InterruptedException {
+        response.setContentType("image/jpeg");
+        OutputStream os = response.getOutputStream();
+        os.write("0".getBytes(Charsets.UTF_8));
+        os.close();
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[]{remoteIp})
+        .setContentTransformPipeline(contentTransformFactory)
+        .build();
+    handler.handle(ex);
+    assertEquals("3", new String(ex.getResponseBytes()));
+  }
+
+  private static class Write1 extends ContentTransform {
+    public Write1(Map<String, String> config, Metadata metadata,
+        String contentType, OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+    }
+    @Override
+    public void write(final byte[] b) throws IOException {
+      if ('0' != b[0]) {
+        throw new IllegalStateException("Write1 not called first");
+      }
+      super.write("1".getBytes(Charsets.UTF_8));
+    }
+  }
+
+  private static class Write2 extends ContentTransform {
+    public Write2(Map<String, String> config, Metadata metadata,
+        String contentType, OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+    }
+    @Override
+    public void write(final byte[] b) throws IOException {
+      if ('1' != b[0]) {
+        throw new IllegalStateException("Write2 not called second");
+      }
+      super.write("2".getBytes(Charsets.UTF_8));
+    }
+  }
+
+  private static class Write3 extends ContentTransform {
+    public Write3(Map<String, String> config, Metadata metadata,
+        String contentType, OutputStream originalStream) {
+      super(config, metadata, contentType, originalStream);
+    }
+    @Override
+    public void write(final byte[] b) throws IOException {
+      if ('2' != b[0]) {
+        throw new IllegalStateException("Write3 not called second");
+      }
+      super.write("3".getBytes(Charsets.UTF_8));
     }
   }
 

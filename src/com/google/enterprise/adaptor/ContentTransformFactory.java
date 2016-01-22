@@ -1,10 +1,12 @@
 package com.google.enterprise.adaptor;
 
+import static java.util.AbstractMap.SimpleEntry;
+
 import com.google.common.base.Strings;
 
 import java.io.OutputStream;
 import java.lang.reflect.Constructor;
-import java.util.LinkedHashMap;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -17,7 +19,7 @@ import java.util.TreeMap;
  */
 class ContentTransformFactory {
 
-  private Map<Constructor<ContentTransform>, Map<String, String>>
+  private List<Map.Entry<Constructor<ContentTransform>, Map<String, String>>>
       transforms;
 
   /**
@@ -36,14 +38,14 @@ class ContentTransformFactory {
     if (configs.size() <= 0) {
       return;
     }
-    this.transforms = new LinkedHashMap<Constructor<ContentTransform>,
-        Map<String, String>>();
-    for (int i = (configs.size() - 1); i >= 0; i--) {
+    this.transforms = new ArrayList<
+        Map.Entry<Constructor<ContentTransform>, Map<String, String>>>();
+    for (int i = configs.size() - 1; i >= 0; i--) {
       final Map<String, String> config = configs.get(i);
       final String className = config.get("class");
       if (Strings.isNullOrEmpty(className)) {
         throw new InvalidConfigurationException(
-            "Document Content Transform class is missing: " + className);
+            "DocumentContentTransform class key is missing: " + config);
       }
       try {
         @SuppressWarnings("unchecked")
@@ -52,7 +54,9 @@ class ContentTransformFactory {
         final Constructor<ContentTransform> constructor =
             clazz.getConstructor(Map.class, Metadata.class,
                 String.class, OutputStream.class);
-        this.transforms.put(constructor, new TreeMap<String, String>(config));
+        this.transforms.add(
+            new SimpleEntry<Constructor<ContentTransform>, Map<String, String>>(
+                constructor, new TreeMap<String, String>(config)));
       } catch (Exception e) {
         throw new InvalidConfigurationException(
             "Cannot get document content transform of type: " + className, e);
@@ -76,7 +80,7 @@ class ContentTransformFactory {
     }
     ContentTransform last = null;
     for (Map.Entry<Constructor<ContentTransform>, Map<String, String>>
-        t : transforms.entrySet()) {
+        t : transforms) {
       try {
         if (null == last) {
           last = t.getKey()
