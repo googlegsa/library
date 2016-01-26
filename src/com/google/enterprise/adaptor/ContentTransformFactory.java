@@ -23,16 +23,19 @@ import java.util.logging.Logger;
  * @author Dominik Weidenfeld (dominik.weidenfeld@twt.de)
  */
 class ContentTransformFactory {
-
   private static final Logger log =
       Logger.getLogger(ContentTransformFactory.class.getName());
-
   /* the method on the ContentTransform that calculates the next ContentType. */
   private static final String METHOD_NAME =
       "getContentTypeOutputForContentTypeInput";
-  private List<Map.Entry<Constructor<ContentTransform>, Map<String, String>>>
-      transforms;
-  private List<Method> contentTypeChain;
+
+  private static class SingleTransform {
+    Constructor<ContentTransform> ctor;
+    Map<String, String> config;
+    Method method;
+  }
+
+  private List<SingleTransform> transforms;
 
   /**
    * Constructs a new ContentTransformFactory. Also checks the basic
@@ -50,9 +53,7 @@ class ContentTransformFactory {
     if (configs.size() <= 0) {
       return;
     }
-    this.transforms = new ArrayList<
-        Map.Entry<Constructor<ContentTransform>, Map<String, String>>>();
-    contentTypeChain = new ArrayList<Method>();
+    transforms = new ArrayList<SingleTransform>();
     for (int i = 0; i < configs.size(); i++) {
       final Map<String, String> config = configs.get(i);
       final String className = config.get("class");
@@ -67,21 +68,16 @@ class ContentTransformFactory {
         final Constructor<ContentTransform> constructor =
             clazz.getConstructor(Map.class, Metadata.class,
                 String.class, OutputStream.class);
-        this.transforms.add(
-            new SimpleEntry<Constructor<ContentTransform>, Map<String, String>>(
-                constructor, new TreeMap<String, String>(config)));
-
-        Method m = null;
-        try {
-          m = clazz.getMethod(METHOD_NAME, String.class);
-        } catch (NoSuchMethodException e) {
-          throw new AssertionError(e);
-        }
+        final Method m = clazz.getMethod(METHOD_NAME, String.class);
         if (m == null) {
           throw new AssertionError("Unable to find method " + METHOD_NAME
               + " in class " + className);
         }
-        this.contentTypeChain.add(m);
+        SingleTransform s = new SingleTransform();
+        s.ctor = constructor; 
+        s.config = new TreeMap<String, String>(config);
+        s.method = m;
+        transforms.add(s);
       } catch (Exception e) {
         throw new InvalidConfigurationException(
             "Cannot get document content transform of type: " + className, e);
@@ -106,15 +102,14 @@ class ContentTransformFactory {
     OutputStream currentOutputStream = original;
     int steps = transforms.size();
     for (int count = steps - 1; count >= 0; count--) {
-      Map.Entry<Constructor<ContentTransform>, Map<String, String>> t =
-          transforms.get(count);
+      SingleTransform s = transforms.get(count);
       try {
-        currentOutputStream = t.getKey().newInstance(t.getValue(), metadata,
+        currentOutputStream = s.ctor.newInstance(s.config, metadata,
             calculateContentType(firstContentType, count), currentOutputStream);
       } catch (Exception e) {
         throw new RuntimeException(
             "Cannot instantiate document content transform: "
-                + t.getKey().getName(), e);
+                + s.ctor.getName(), e);
       }
     }
     return currentOutputStream;
@@ -125,7 +120,7 @@ class ContentTransformFactory {
    * calculated ContentType at the end of the chain.
    */
   public String calculateResultingContentType(String initialContentType) {
-    return calculateContentType(initialContentType, contentTypeChain.size());
+    return calculateContentType(initialContentType, transforms.size());
   }
 
   /**
@@ -136,20 +131,20 @@ class ContentTransformFactory {
    * <code>getContentTypeOutputForContentTypeInput()</code> return a null String
    * it is replaced with the empty String.
    *
-   * @throws AssertionError if n < 0 or n > contentTypeChain.size()
+   * @throws AssertionError if n < 0 or n > transforms.size()
    */
   @VisibleForTesting
   String calculateContentType(String initialContentType, int n) {
     if (n < 0) {
       throw new AssertionError("n must be non-negative");
     }
-    if (n > contentTypeChain.size()) {
-      throw new AssertionError("only " + contentTypeChain.size()
+    if (n > transforms.size()) {
+      throw new AssertionError("only " + transforms.size()
           + " transform(s) present");
     }
     String currentContentType = initialContentType;
     for (int i = 0; i < n; i++) {
-      Method m = contentTypeChain.get(i);
+      Method m = transforms.get(i).method;
       try {
         currentContentType = (String) m.invoke(null, currentContentType);
         if (null == currentContentType) {
