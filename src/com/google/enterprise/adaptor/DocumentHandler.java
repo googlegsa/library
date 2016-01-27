@@ -84,7 +84,7 @@ class DocumentHandler implements HttpHandler {
   private final Set<InetAddress> fullAccessAddresses
       = new HashSet<InetAddress>();
   private final SamlServiceProvider samlServiceProvider;
-  private final MetadataTransformPipeline transform;
+  private final MetadataTransformPipeline metadataTransform;
   private final AclTransform aclTransform;
   private final ContentTransformFactory contentTransformFactory;
   private final boolean useCompression;
@@ -98,14 +98,15 @@ class DocumentHandler implements HttpHandler {
   private final boolean gsaSupports204;
 
   /**
-   * {@code samlServiceProvider} and {@code transform} may be {@code null}.
+   * {@code samlServiceProvider} and {@code metadataTransform} may be
+   * {@code null}.
    */
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
                          AuthzAuthority authzAuthority,
                          String gsaHostname, String[] fullAccessHosts,
                          SamlServiceProvider samlServiceProvider,
-                         MetadataTransformPipeline transform,
+                         MetadataTransformPipeline metadataTransform,
                          AclTransform aclTransform,
                          ContentTransformFactory contentTransformFactory,
                          boolean useCompression,
@@ -126,7 +127,7 @@ class DocumentHandler implements HttpHandler {
     this.adaptor = adaptor;
     this.authzAuthority = authzAuthority;
     this.samlServiceProvider = samlServiceProvider;
-    this.transform = transform;
+    this.metadataTransform = metadataTransform;
     this.aclTransform = aclTransform;
     this.contentTransformFactory = contentTransformFactory;
     this.useCompression = useCompression;
@@ -677,7 +678,7 @@ class DocumentHandler implements HttpHandler {
       }
 
       state = State.NO_CONTENT;
-      if (transform != null) {
+      if (metadataTransform != null) {
         transform();
       }
       if (state == State.NO_CONTENT) {
@@ -718,7 +719,7 @@ class DocumentHandler implements HttpHandler {
         // point. We don't delay sending the headers, however, because of the
         // watchdog.
         state = State.HEAD;
-        if (transform != null) {
+        if (metadataTransform != null) {
           transform();
         }
         if (state == State.HEAD) {
@@ -739,7 +740,7 @@ class DocumentHandler implements HttpHandler {
         }
       } else {
         state = State.SEND_BODY;
-        if (transform != null) {
+        if (metadataTransform != null) {
           transform();
         }
         if (state == State.SEND_BODY) {
@@ -1124,7 +1125,7 @@ class DocumentHandler implements HttpHandler {
       }
       params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
       params.put(KEY_LOCK, "" + lock);
-      transform.transform(metadata, params);
+      metadataTransform.transform(metadata, params);
       transformedContentType = params.get(KEY_CONTENT_TYPE);
       try {
         final String lmMillisUTC = params.get(KEY_LAST_MODIFIED_MILLIS_UTC);
