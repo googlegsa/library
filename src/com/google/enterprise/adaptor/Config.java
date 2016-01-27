@@ -917,6 +917,12 @@ public class Config {
         throw new InvalidConfigurationException(e.getMessage());
       }
     }
+    
+    String scoreType = getValue("gsa.scoringType");
+    if (!"web".equals(scoreType) && !"content".equals(scoreType)) {
+      throw new InvalidConfigurationException(
+          "gsa.scoringType needs to be either web or content");
+    }
 
     Set<String> unset = new HashSet<String>();
     for (String key : noDefaultConfig) {

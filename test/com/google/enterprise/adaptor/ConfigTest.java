@@ -72,6 +72,14 @@ public class ConfigTest {
   }
 
   @Test
+  public void testInvalidScoringType() {
+    config.setValue("gsa.hostname", "something-needed-not-to-blow-up");
+    config.setValue("gsa.scoringType", "");
+    thrown.expect(InvalidConfigurationException.class);
+    config.validate();
+  }
+
+  @Test
   public void testAddDuplicateKeyWithValue() {
     config.addKey("somekey", "value");
     thrown.expect(IllegalStateException.class);
