@@ -85,6 +85,8 @@ public class DocumentHandlerTest {
       new MockHttpContext("/"));
   private MockHttpExchange headEx = new MockHttpExchange("HEAD", defaultPath,
       new MockHttpContext("/"));
+  // this address is reserved as "TEST-NET" in RFC 5737 - it's *not* our IP.
+  private final String NOT_OUR_IP_ADDRESS = "192.0.2.0";
 
   @Before
   public void setUp() {
@@ -397,9 +399,56 @@ public class DocumentHandlerTest {
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
+    assertFalse(handler.considerSkippingTransforms(ex));
     assertEquals(200, ex.getResponseCode());
     assertEquals("docid=test%20docId,testing%20key=TESTING%20VALUE",
                  ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+  }
+
+  @Test
+  public void testSkippingTransform() throws Exception {
+  // very much like the above test, except for the remoteIp and the assertions
+  // after "handler.handle(ex);"
+    final String key = "testing key";
+    List<MetadataTransform> transforms
+        = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        metadata.set(key, metadata.getOneValue(key).toUpperCase());
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    MetadataTransformPipeline transform
+        = new MetadataTransformPipeline(transforms, Arrays.asList("t1"));
+
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build());
+
+    UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.addMetadata(key, "testing value");
+        super.getDocContent(request, response);
+      }
+    };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
+        .setTransform(transform)
+        .setSamlServiceProvider(samlServiceProvider)
+        .setAlwaysGiveAclsAndMetadata(true)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertTrue(handler.considerSkippingTransforms(ex));
+    assertEquals(200, ex.getResponseCode());
+    // Metadata Transform *not* applied - value is lower case
+    assertEquals(Arrays.asList("testing%20key=testing%20value", ""),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   @Test
@@ -704,10 +753,49 @@ public class DocumentHandlerTest {
         .setAclTransform(aclTransform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    assertFalse(handler.considerSkippingTransforms(ex));
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("google%3Aaclusers=u2,google%3Aaclusers=u3",
                  ex.getResponseHeaders().get("X-Gsa-External-Metadata").get(1));
+  }
+
+  @Test
+  public void testSkippingAclTransform() throws Exception {
+    AclTransform aclTransform = new AclTransform(Arrays.asList(
+        new AclTransform.Rule(
+            new AclTransform.MatchData(null, "u1", null, null),
+            new AclTransform.MatchData(null, "u2", null, null))));
+
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build());
+
+    UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setAcl(new Acl.Builder()
+            .setPermitUsers(Arrays.asList(
+                new UserPrincipal("u1"), new UserPrincipal("u3")))
+            .build());
+        super.getDocContent(request, response);
+      }
+    };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
+        .setAclTransform(aclTransform)
+        .setSamlServiceProvider(samlServiceProvider)
+        .setAlwaysGiveAclsAndMetadata(true)
+        .build();
+    assertTrue(handler.considerSkippingTransforms(ex));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    // ACL Transform *not* applied
+    assertEquals(Arrays.asList("", "google%3Aaclusers=u1,google%3Aaclusers=u3"),
+        ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   @Test
@@ -739,6 +827,7 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[]{remoteIp})
         .setContentTransformPipeline(contentTransformFactory)
         .build();
+    assertFalse(handler.considerSkippingTransforms(ex));
     handler.handle(ex);
     assertEquals("some changed stuff", new String(ex.getResponseBytes()));
   }
@@ -759,6 +848,47 @@ public class DocumentHandlerTest {
         super.write(b);
       }
     }
+  }
+
+  @Test
+  public void testSkippingContentTransform() throws Exception {
+    ContentTransformFactory contentTransformFactory =
+        new ContentTransformFactory(
+        new ArrayList<Map<String, String>>() {
+          {
+            add(new HashMap<String, String>() {
+              {
+                put("class", SampleDocumentContentTransform.class.getName());
+              }
+            });
+          }
+        });
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
+        .Builder(new UserPrincipal("test")).build());
+
+    UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setContentType("image/jpeg");
+        OutputStream os = response.getOutputStream();
+        os.write("some unchanged stuff".getBytes(Charsets.UTF_8));
+        os.close();
+      }
+    };
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setAuthzAuthority(adaptor)
+        .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
+        .setContentTransformPipeline(contentTransformFactory)
+        .setSamlServiceProvider(samlServiceProvider)
+        .build();
+    assertTrue(handler.considerSkippingTransforms(ex));
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    // content transform not applied
+    assertEquals("some unchanged stuff", new String(ex.getResponseBytes()));
   }
 
   @Test
@@ -2503,6 +2633,12 @@ public class DocumentHandlerTest {
     
     public DocumentHandlerBuilder setGsaVersion(String gsaVersion) {
       this.gsaVersion = new GsaVersion(gsaVersion);
+      return this;
+    }
+
+    public DocumentHandlerBuilder setAlwaysGiveAclsAndMetadata(
+        boolean alwaysGiveAclsAndMetadata) {
+      this.alwaysGiveAclsAndMetadata = alwaysGiveAclsAndMetadata;
       return this;
     }
 

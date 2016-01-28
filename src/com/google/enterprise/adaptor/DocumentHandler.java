@@ -98,8 +98,8 @@ class DocumentHandler implements HttpHandler {
   private final boolean gsaSupports204;
 
   /**
-   * {@code samlServiceProvider} and {@code metadataTransform} may be
-   * {@code null}.
+   * {@code samlServiceProvider}, {@code metadataTransform} and
+   * {@code contentTransformFactory} may be {@code null}.
    */
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
@@ -228,6 +228,21 @@ class DocumentHandler implements HttpHandler {
     }
 
     return trust;
+  }
+
+  /**
+   * Are all transforms (Metadata, ACL, Content) being skipped?
+   *
+   * Decision is that we only perform (all 3 types) for the GSA or fully-
+   * trusted hosts.
+   *
+   * @return {@code true} if transforms are skipped, {@code false} if
+   * transforms are to be done.
+   */
+  // TODO(myk): Revisit this decision, if necessary.
+  @VisibleForTesting
+  boolean considerSkippingTransforms(HttpExchange ex) {
+    return !requestIsFromFullyTrustedClient(ex);
   }
 
   @Override
@@ -749,14 +764,18 @@ class DocumentHandler implements HttpHandler {
               ex.getResponseBody()));
           os = countingOs;
           if (null != contentTransformFactory) {
-            return contentTransformFactory
-                .createPipeline(os, originalContentType, metadata);
+            if (considerSkippingTransforms(ex)) {
+              log.log(Level.FINER, "Not performing content transform.");
+            } else {
+              os = contentTransformFactory
+                  .createPipeline(os, originalContentType, metadata);
+            }
           }
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND) {
           log.log(Level.INFO, "changed SEND_BODY to NOT_FOUND {0}",
               docId.getUniqueId());
           // Not using startSending. Instead we stop header timer, start
-          // content timer, send not-found page, and setup a sink for 
+          // content timer, send not-found page, and setup a sink for
           // bytes provided by adaptor instance itself.
           watchdog.processingCompleted(workingThread);
           watchdog.processingStarting(workingThread, contentTimeoutMillis);
@@ -789,12 +808,12 @@ class DocumentHandler implements HttpHandler {
         throw new IllegalStateException("Already responded");
       }
       this.originalContentType = originalContentType;
-      if (null == contentTransformFactory) {
+      if (null == contentTransformFactory || considerSkippingTransforms(ex)) {
         transformedContentType = originalContentType;
-      } else {
-        transformedContentType = contentTransformFactory
-            .calculateResultingContentType(originalContentType);
+        return;
       }
+      transformedContentType = contentTransformFactory
+          .calculateResultingContentType(originalContentType);
     }
 
     @Override
@@ -971,6 +990,8 @@ class DocumentHandler implements HttpHandler {
       if (markDocsPublic) {
         acl = null;
         secure = false;
+      } else if (considerSkippingTransforms(ex)) {
+        log.log(Level.FINER, "Not performing ACL transform.");
       } else {
         acl = aclTransform.transform(acl);
       }
@@ -1112,6 +1133,10 @@ class DocumentHandler implements HttpHandler {
     }
 
     private void transform() {
+      if (considerSkippingTransforms(ex)) {
+        log.log(Level.FINER, "Not performing Metadata transform.");
+        return;
+      }
       Map<String, String> params = new HashMap<String, String>();
       params.put(KEY_DOC_ID, docId.getUniqueId());
       params.put(KEY_CONTENT_TYPE, transformedContentType);
