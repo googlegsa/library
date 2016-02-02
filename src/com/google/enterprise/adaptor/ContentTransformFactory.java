@@ -50,9 +50,6 @@ class ContentTransformFactory {
    */
   public ContentTransformFactory(
       final List<Map<String, String>> configs) {
-    if (configs.size() <= 0) {
-      return;
-    }
     transforms = new ArrayList<SingleTransform>();
     for (int i = 0; i < configs.size(); i++) {
       final Map<String, String> config = configs.get(i);
@@ -74,7 +71,7 @@ class ContentTransformFactory {
               + " in class " + className);
         }
         SingleTransform s = new SingleTransform();
-        s.ctor = constructor; 
+        s.ctor = constructor;
         s.config = new TreeMap<String, String>(config);
         s.method = m;
         transforms.add(s);
@@ -96,7 +93,7 @@ class ContentTransformFactory {
   public final OutputStream createPipeline(final OutputStream original,
                                            final String firstContentType,
                                            final Metadata metadata) {
-    if (null == transforms || transforms.size() <= 0) {
+    if (transforms.size() == 0) {
       return original;
     }
     OutputStream currentOutputStream = original;
