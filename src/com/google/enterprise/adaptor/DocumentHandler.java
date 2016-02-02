@@ -588,8 +588,9 @@ class DocumentHandler implements HttpHandler {
   /**
    * The state of the response. The state begins in SETUP mode, after which it
    * should transition to another state. There is a complication where
-   * transform() can change the state further, for example from SEND_BODY
-   * to SEND_BODY_TRANSFORMED_TO_HEAD which makes a regular GET drop content.
+   * transformMetadata() can change the state further, for example from
+   * SEND_BODY to SEND_BODY_TRANSFORMED_TO_HEAD which makes a regular GET drop
+   * content.
    */
   private enum State {
     /** The class has not been informed how to respond, so we can still make
@@ -643,7 +644,7 @@ class DocumentHandler implements HttpHandler {
     private OutputStream os;
     private CountingOutputStream countingOs;
     private String originalContentType;
-    private String transformedContentType;
+    private String finalContentType;  // after content transformations.
     private Date lastModified;
     private Metadata metadata = new Metadata();
     private Acl acl;
@@ -694,7 +695,7 @@ class DocumentHandler implements HttpHandler {
 
       state = State.NO_CONTENT;
       if (metadataTransform != null) {
-        transform();
+        transformMetadata();
       }
       if (state == State.NO_CONTENT) {
         startSending(false);
@@ -735,7 +736,7 @@ class DocumentHandler implements HttpHandler {
         // watchdog.
         state = State.HEAD;
         if (metadataTransform != null) {
-          transform();
+          transformMetadata();
         }
         if (state == State.HEAD) {
           startSending(false);
@@ -756,7 +757,7 @@ class DocumentHandler implements HttpHandler {
       } else {
         state = State.SEND_BODY;
         if (metadataTransform != null) {
-          transform();
+          transformMetadata();
         }
         if (state == State.SEND_BODY) {
           startSending(true);
@@ -809,10 +810,10 @@ class DocumentHandler implements HttpHandler {
       }
       this.originalContentType = originalContentType;
       if (null == contentTransformFactory || considerSkippingTransforms(ex)) {
-        transformedContentType = originalContentType;
+        finalContentType = originalContentType;
         return;
       }
-      transformedContentType = contentTransformFactory
+      finalContentType = contentTransformFactory
           .calculateResultingContentType(originalContentType);
     }
 
@@ -1076,7 +1077,7 @@ class DocumentHandler implements HttpHandler {
       } else {
         throw new IllegalStateException("Unexpected state " + state);
       }
-      HttpExchanges.startResponse(ex, responseCode, transformedContentType,
+      HttpExchanges.startResponse(ex, responseCode, finalContentType,
           hasContent);
       for (Map.Entry<String, Acl> fragment : fragments.entrySet()) {
         pusher.asyncPushItem(new DocIdSender.AclItem(docId,
@@ -1132,14 +1133,14 @@ class DocumentHandler implements HttpHandler {
       return true;
     }
 
-    private void transform() {
+    private void transformMetadata() {
       if (considerSkippingTransforms(ex)) {
         log.log(Level.FINER, "Not performing Metadata transform.");
         return;
       }
       Map<String, String> params = new HashMap<String, String>();
       params.put(KEY_DOC_ID, docId.getUniqueId());
-      params.put(KEY_CONTENT_TYPE, transformedContentType);
+      params.put(KEY_CONTENT_TYPE, finalContentType);
       if (null != lastModified) {
         params.put(KEY_LAST_MODIFIED_MILLIS_UTC, "" + lastModified.getTime());
       }
@@ -1151,7 +1152,7 @@ class DocumentHandler implements HttpHandler {
       params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
       params.put(KEY_LOCK, "" + lock);
       metadataTransform.transform(metadata, params);
-      transformedContentType = params.get(KEY_CONTENT_TYPE);
+      finalContentType = params.get(KEY_CONTENT_TYPE);
       try {
         final String lmMillisUTC = params.get(KEY_LAST_MODIFIED_MILLIS_UTC);
         if (!Strings.isNullOrEmpty(lmMillisUTC)) {
@@ -1202,7 +1203,7 @@ class DocumentHandler implements HttpHandler {
             return;
           default:
             throw new IllegalStateException(
-                "unexpected state for transform: " + state);
+                "unexpected state for metadata transform: " + state);
         }
       } else if (TransmissionDecision.DO_NOT_INDEX_CONTENT == decision) {
         switch (state) {
@@ -1215,7 +1216,7 @@ class DocumentHandler implements HttpHandler {
             return;
           default:
             throw new IllegalStateException(
-                "unexpected state for transform: " + state);
+                "unexpected state for metadata transform: " + state);
         }
       } else {
         log.warning("Transmission-Decision not understood: " + secondOpinion);

@@ -86,7 +86,7 @@ public class DocumentHandlerTest {
   private MockHttpExchange headEx = new MockHttpExchange("HEAD", defaultPath,
       new MockHttpContext("/"));
   // this address is reserved as "TEST-NET" in RFC 5737 - it's *not* our IP.
-  private final String NOT_OUR_IP_ADDRESS = "192.0.2.0";
+  private static final String NOT_OUR_IP_ADDRESS = "192.0.2.0";
 
   @Before
   public void setUp() {
@@ -395,7 +395,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -438,7 +438,7 @@ public class DocumentHandlerTest {
         .setAdaptor(adaptor)
         .setAuthzAuthority(adaptor)
         .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .setSamlServiceProvider(samlServiceProvider)
         .setAlwaysGiveAclsAndMetadata(true)
         .build();
@@ -475,7 +475,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -509,7 +509,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(headEx);
@@ -544,7 +544,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -579,7 +579,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(headEx);
@@ -614,7 +614,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -649,7 +649,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(headEx);
@@ -684,7 +684,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -719,7 +719,7 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createHandlerBuilder()
         .setAdaptor(mockAdaptor)
         .setFullAccessHosts(new String[] {remoteIp})
-        .setTransform(transform)
+        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
@@ -1434,7 +1434,7 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
-        .setTransform(new MetadataTransformPipeline(
+        .setMetadataTransform(new MetadataTransformPipeline(
             Lists.newArrayList(new MetadataTransform() {
           @Override
           public void transform(Metadata metadata, Map<String, String> params) {
@@ -1470,7 +1470,7 @@ public class DocumentHandlerTest {
         .setFullAccessHosts(new String[] {remoteIp})
         .setSendDocControls(true)
         .setGsaVersion("7.4.0-0")
-        .setTransform(new MetadataTransformPipeline(
+        .setMetadataTransform(new MetadataTransformPipeline(
             Lists.newArrayList(new MetadataTransform() {
           @Override
           public void transform(Metadata metadata, Map<String, String> params) {
@@ -2571,7 +2571,7 @@ public class DocumentHandlerTest {
       return this;
     }
 
-    public DocumentHandlerBuilder setTransform(
+    public DocumentHandlerBuilder setMetadataTransform(
         MetadataTransformPipeline transform) {
       this.transform = transform;
       return this;
