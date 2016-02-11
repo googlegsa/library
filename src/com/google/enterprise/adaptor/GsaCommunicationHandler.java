@@ -115,6 +115,7 @@ public final class GsaCommunicationHandler {
    */
   private ExecutorService backgroundExecutor;
   private DocIdCodec docIdCodec;
+  private DocIdCodec heartbeatCodec;
   private DocIdSender docIdSender;
   private AsyncDocIdSender asyncDocIdSender;
   private HttpServerScope dashboardScope;
@@ -209,9 +210,17 @@ public final class GsaCommunicationHandler {
       docUri = new URI(null, null, contextPrefix + config.getServerDocIdPath(),
           null);
     } catch (URISyntaxException ex) {
-      throw new IllegalArgumentException("Invalid prefix or docIdPath", ex);
+      throw new IllegalArgumentException("Invalid document path uri", ex);
     }
     docIdCodec = new DocIdCodec(baseUri.resolve(docUri), config.isDocIdUrl());
+    URI heartbeatUri;
+    try {
+      heartbeatUri = new URI(null, null, contextPrefix
+          + config.getServerHeartbeatPath(), null);
+    } catch (URISyntaxException ex) {
+      throw new IllegalArgumentException("Invalid heartbeat path uri", ex);
+    }
+    heartbeatCodec = new DocIdCodec(baseUri.resolve(heartbeatUri), false);
     GsaFeedFileSender fileSender = new GsaFeedFileSender(
         config.getGsaHostname(), config.isServerSecure(), // use secure bool?
         config.getGsaCharacterEncoding());
@@ -312,7 +321,7 @@ public final class GsaCommunicationHandler {
         samlServiceProvider, createMetadataTransformPipeline(),
         aclTransform, createContentTransformFactory(),
         config.isServerToUseCompression(), watchdog,
-        asyncDocIdSender, 
+        asyncDocIdSender,
         config.doesGsaAcceptDocControlsHeader(),
         config.markAllDocsAsPublic(),
         config.getAdaptorDocHeaderTimeoutMillis(),
@@ -324,6 +333,12 @@ public final class GsaCommunicationHandler {
         + config.getServerDocIdPath();
     HttpContext docContext
         = addFilters(scope.createContext(handlerPath, docHandler));
+    HeartbeatHandler heartbeatHandler = new HeartbeatHandler(heartbeatCodec,
+        docIdCodec, docHandler, new Watchdog(scheduleExecutor),
+        config.getAdaptorHeartbeatTimeoutMillis());
+    String heartbeatPath = config.getServerBaseUri().getPath()
+        + config.getServerHeartbeatPath();
+    addFilters(scope.createContext(heartbeatPath, heartbeatHandler));
     if (config.requireHttpBasicAuthn()) {
       final String requiredUser = config.getHttpBasicUsername();
       final String requiredPasswd = config.getHttpBasicPassword();

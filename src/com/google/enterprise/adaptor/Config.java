@@ -70,6 +70,9 @@ import java.util.logging.Logger;
  * <tr><td> </td><td>adaptor.docHeaderTimeoutSecs </td><td> number of seconds
  *     adaptor has to start sending content before it is interrupted.
  *     Defaults to 30
+ * <tr><td> </td><td>adaptor.heartbeatTimeoutSecs </td><td> number of seconds
+ *     adaptor has to send a heartbeat response before it is interrupted.
+ *     Defaults to same value as adaptor.docHeaderTimeoutSecs.
  * <tr><td> </td><td>adaptor.disableFullAndIncrementalListing </td><td>
  *      whether to disable calls to {@link Adaptor#getDocIds Adaptor.getDocIds}
  *      and {@link PollingIncrementalLister#getModifiedDocIds
@@ -142,6 +145,8 @@ import java.util.logging.Logger;
  *     machine for accessing adaptor's dashboard.   Defaults to  5679
  * <tr><td> </td><td>server.docIdPath </td><td> part of URL preceding
  *     encoded document ids.  Defaults to  /doc/
+ * <tr><td> </td><td>server.heartbeatPath </td><td> part of URL preceding
+ *     encoded heartbeat URIs for document ids.  Defaults to  /heartbeat/
  * <tr><td> </td><td>server.fullAccessHosts </td><td> hosts allowed access
  *     without authentication
  *     (certificates still needed when in secure mode).   Defaults to
@@ -245,6 +250,7 @@ public class Config {
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
+    addKey("server.heartbeatPath", "/heartbeat/");
     addKey("server.secure", "false");
     addKey("server.httpBasic.username", "");
     addKey("server.httpBasic.password", "");
@@ -298,6 +304,7 @@ public class Config {
     addKey("adaptor.incrementalPollPeriodSecs", "900");
     addKey("adaptor.docContentTimeoutSecs", "180");
     addKey("adaptor.docHeaderTimeoutSecs", "30");
+    addKey("adaptor.heartbeatTimeoutSecs", "");
     addKey("metadata.transform.pipeline", "");
     addKey("content.transform.pipeline", "");
     addKey("journal.reducedMem", "true");
@@ -448,6 +455,15 @@ public class Config {
    */
   String getServerDocIdPath() {
     return getValue("server.docIdPath");
+  }
+
+  /**
+   * Optional: Path below {@link #getServerBaseUri(DocId)} where heartbeat
+   * references to documents are namespaced. Generally, should be at least
+   * {@code "/"} and end with a slash.
+   */
+  String getServerHeartbeatPath() {
+    return getValue("server.heartbeatPath");
   }
 
   /**
@@ -611,6 +627,14 @@ public class Config {
 
   long getAdaptorDocContentTimeoutMillis() {
     return Long.parseLong(getValue("adaptor.docContentTimeoutSecs")) * 1000;
+  }
+
+  long getAdaptorHeartbeatTimeoutMillis() {
+    String secondsAsString = getValue("adaptor.heartbeatTimeoutSecs");
+    if ((null == secondsAsString) || "".equals(secondsAsString.trim())) {
+      secondsAsString = getValue("adaptor.docHeaderTimeoutSecs");
+    }
+    return Long.parseLong(secondsAsString) * 1000;
   }
 
   /**
