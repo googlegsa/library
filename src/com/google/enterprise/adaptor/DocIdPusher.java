@@ -194,9 +194,18 @@ public interface DocIdPusher {
     private final boolean crawlImmediately;
     private final boolean crawlOnce;
     private final boolean lock;
+    /**
+     * <p>In general, {@code Metadata} should only be present under one of the
+     * following cases:</p>
+     * <p><ul><li>An adaptor is running as a Lister only</li>
+     * <li>An adaptor's Lister and Retriever return the same {@code Metadata}
+     * elements.</li></ul></p>
+     */
+    private final Metadata metadata;
 
     private Record(DocId docid, boolean delete, Date lastModified,
-        URI link, boolean crawlImmediately, boolean crawlOnce, boolean lock) {
+        URI link, boolean crawlImmediately, boolean crawlOnce, boolean lock,
+        Metadata metadata) {
       this.id = docid;
       this.delete = delete;
       this.lastModified = lastModified;
@@ -204,6 +213,7 @@ public interface DocIdPusher {
       this.crawlImmediately = crawlImmediately;
       this.crawlOnce = crawlOnce;
       this.lock = lock;
+      this.metadata = metadata;
     }
 
     /**
@@ -274,6 +284,20 @@ public interface DocIdPusher {
     }
 
     /**
+     * The {@code Metadata} (possibly null) for the document this record is
+     * providing information for.  See restrictions where {@code metadata} is
+     * declared.
+     *
+     * @return possibly {@code null} metadata for the document
+     */
+    public Metadata getMetadata() {
+      if (metadata == null) {
+        return null;
+      }
+      return metadata.unmodifiableView();
+    }
+
+    /**
      * Checks for equality based on all visible fields.
      */
     @Override
@@ -287,7 +311,8 @@ public interface DocIdPusher {
             && (this.crawlOnce == other.crawlOnce)
             && (this.lock == other.lock)
             && equalsNullSafe(lastModified, other.lastModified)
-            && equalsNullSafe(link, other.link);
+            && equalsNullSafe(link, other.link)
+            && equalsNullSafe(metadata, other.metadata);
       }
       return same;
     }
@@ -314,7 +339,9 @@ public interface DocIdPusher {
           + ",resultLink=" + link
           + ",crawlImmediately=" + crawlImmediately
           + ",crawlOnce=" + crawlOnce
-          + ",lock=" + lock + ")";
+          + ",lock=" + lock
+          + (metadata == null ? "" : ",metadata=" + metadata.toString())
+          + ")";
     }
 
     private static boolean equalsNullSafe(Object a, Object b) {
@@ -340,6 +367,7 @@ public interface DocIdPusher {
       private boolean crawlImmediately = false;
       private boolean crawlOnce = false;
       private boolean lock = false;
+      private Metadata metadata = null;
 
       /**
        * Create mutable builder for building {@link Record} instances.
@@ -367,6 +395,7 @@ public interface DocIdPusher {
         this.crawlImmediately = startPoint.crawlImmediately;
         this.crawlOnce = startPoint.crawlOnce;
         this.lock = startPoint.lock;
+        this.metadata = startPoint.metadata;
       }
 
       /**
@@ -464,12 +493,43 @@ public interface DocIdPusher {
       }
 
       /**
+       * Replace the metadata for the document this record is providing
+       * information for.
+       *
+       * @param metadata Metadata for the document
+       * @return the same instance of the builder, for chaining calls
+       */
+      public Builder setMetadata(Metadata metadata) {
+        this.metadata = metadata;
+        return this;
+      }
+
+      /**
+       * Add a new name/value to the metadata for the document this record is
+       * providing information for. If there is no metadata element, a new one
+       * is created (initially carrying only the key, value passed in).
+       *
+       * @param k key for the new piece of Metadata
+       * @param v value for the new piece of Metadata
+       * @return the same instance of the builder, for chaining calls
+       * @throws NullPointerException if either {@code k} or {@code v} are null.
+       */
+      public Builder addMetadata(String k, String v) {
+        if (null == this.metadata) {
+          // create new metadata element, if needed, to hold key/value pair.
+          this.metadata = new Metadata();
+        }
+        this.metadata.add(k, v);
+        return this;
+      }
+
+      /**
        * Creates single instance of Record.  Does not reset builder.
        * @return instance as specified by ctor and set methods
        */
       public Record build() {
         return new Record(docid, delete, lastModified,
-            link, crawlImmediately, crawlOnce, lock);
+            link, crawlImmediately, crawlOnce, lock, metadata);
       }
     }
   }

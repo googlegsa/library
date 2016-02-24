@@ -91,6 +91,64 @@ public class DocIdSenderTest {
       Arrays.asList(new DocIdPusher.Record[] {records[4]}),
       Arrays.asList(new DocIdPusher.Record[] {records[5]}),
     }), fileMaker.recordses);
+    assertEquals(Arrays.asList(new String[] {
+      "null", "null", "null", "null", "null", "null",
+    }), fileMaker.metadatases);
+
+    assertEquals(Arrays.asList(new String[] {
+      "testing", "testing", "testing", "testing",
+    }), fileSender.datasources);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1", "2", "3",
+    }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {
+      "0", "1", "2", "3",
+    }), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
+  public void testPushDocIdsFromAdaptorWithMetadata() throws Exception {
+    adaptor.pushItems = new ArrayList<List<DocIdPusher.Record>>();
+    DocIdPusher.Record[] records = new DocIdPusher.Record[6];
+    for (int i = 0; i < records.length; i++) {
+      DocId id = new DocId("test" + i);
+      Metadata metadata = new Metadata();
+      if (i < 5) { // have empty (but not null) metadata on the last record
+        metadata.add("id", "test" + i);
+        metadata.add("foo", "bar" + (i * 2));
+      }
+      records[i] = new DocIdPusher.Record.Builder(id).setMetadata(metadata)
+          .build();
+    }
+    List<DocIdPusher.Record> infos = new ArrayList<DocIdPusher.Record>();
+    infos.add(records[0]);
+    infos.add(records[1]);
+    infos.add(records[2]);
+    infos.add(records[3]);
+    infos.add(records[4]);
+    adaptor.pushItems.add(infos);
+    infos = new ArrayList<DocIdPusher.Record>();
+    infos.add(records[5]);
+    adaptor.pushItems.add(infos);
+    config.setValue("feed.maxUrls", "2");
+    config.setValue("feed.name", "testing");
+
+    docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
+    assertEquals(4, fileMaker.i);
+    assertEquals(Arrays.asList(new String[] {
+      "testing", "testing", "testing", "testing",
+    }), fileMaker.names);
+    assertEquals(Arrays.asList(new List[] {
+      Arrays.asList(new DocIdPusher.Record[] {records[0], records[1]}),
+      Arrays.asList(new DocIdPusher.Record[] {records[2], records[3]}),
+      Arrays.asList(new DocIdPusher.Record[] {records[4]}),
+      Arrays.asList(new DocIdPusher.Record[] {records[5]}),
+    }), fileMaker.recordses);
+    assertEquals(Arrays.asList(new String[] {
+      "[foo=bar0, id=test0]", "[foo=bar2, id=test1]", "[foo=bar4, id=test2]",
+      "[foo=bar6, id=test3]", "[foo=bar8, id=test4]", "[]",
+    }), fileMaker.metadatases);
 
     assertEquals(Arrays.asList(new String[] {
       "testing", "testing", "testing", "testing",
@@ -392,6 +450,7 @@ public class DocIdSenderTest {
         = new ArrayList<List<? extends DocIdSender.Item>>();
     // Don't use generics because of limitations in Java
     List<Object> groupses = new ArrayList<Object>();
+    List<String> metadatases = new ArrayList<String>();
     int i;
 
     public MockGsaFeedFileMaker() {
@@ -403,6 +462,12 @@ public class DocIdSenderTest {
         List<? extends DocIdSender.Item> items) {
       names.add(name);
       recordses.add(items);
+      for (DocIdSender.Item item : items) {
+        if (item instanceof DocIdPusher.Record) {
+          DocIdPusher.Record r = (DocIdPusher.Record) item;
+          metadatases.add("" + r.getMetadata());
+        }
+      }
       return "" + i++;
     }
 

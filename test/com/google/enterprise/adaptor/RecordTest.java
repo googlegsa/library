@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -79,6 +80,16 @@ public class RecordTest {
         .setLastModified(new Date(0)).build();
     DocIdPusher.Record link = new DocIdPusher.Record.Builder(defaults)
         .setResultLink(URI.create("http://localhost/something")).build();
+    Metadata m = new Metadata();
+    m.add("foo", "bar");
+    DocIdPusher.Record link2 = new DocIdPusher.Record.Builder(link)
+        .setMetadata(m).build();
+    m = new Metadata();
+    DocIdPusher.Record link3 = new DocIdPusher.Record.Builder(link)
+        .setMetadata(m).addMetadata("foo", "bar").build();
+    m = new Metadata();
+    DocIdPusher.Record link4 = new DocIdPusher.Record.Builder(link)
+        .setMetadata(m).addMetadata("foo", "baz").build();
     assertFalse(defaults.equals(delete));
     assertFalse(defaults.equals(immediately));
     assertFalse(defaults.equals(once));
@@ -87,6 +98,16 @@ public class RecordTest {
     assertFalse(modified.equals(defaults));
     assertFalse(modified.equals(modified2));
     assertFalse(defaults.equals(link));
+    assertFalse(link.equals(link2));
+    assertFalse(link.equals(link3));
+    assertFalse(link.equals(link4));
+    assertEquals(link2, link3);
+    assertFalse(link2.equals(link4));
+    assertFalse(link3.equals(link4));
+    assertNull(link.getMetadata());
+    assertEquals("[foo=bar]", link2.getMetadata().toString());
+    assertEquals("[foo=bar]", link3.getMetadata().toString());
+    assertEquals("[foo=baz]", link4.getMetadata().toString());
   }
 
   @Test
@@ -96,5 +117,39 @@ public class RecordTest {
         + ",crawlOnce=false,lock=false)";
     assertEquals(golden,
         "" + new DocIdPusher.Record.Builder(new DocId("a")).build());
+  }
+
+  @Test
+  public void testToStringWithMetadata() {
+    String golden = "Record(docid=a,delete=false"
+        + ",lastModified=null,resultLink=null,crawlImmediately=false"
+        + ",crawlOnce=false,lock=false,metadata=[foo=bar])";
+    assertEquals(golden,
+        "" + new DocIdPusher.Record.Builder(new DocId("a"))
+            .addMetadata("foo", "bar").build());
+  }
+
+  @Test
+  public void testToStringWithEmptyMetadata() {
+    String golden = "Record(docid=a,delete=false"
+        + ",lastModified=null,resultLink=null,crawlImmediately=false"
+        + ",crawlOnce=false,lock=false,metadata=[])";
+    assertEquals(golden,
+        "" + new DocIdPusher.Record.Builder(new DocId("a"))
+            .setMetadata(new Metadata()).build());
+  }
+
+  @Test
+  public void testNPEonNullMetadataKey() {
+    thrown.expect(NullPointerException.class);
+    DocIdPusher.Record record = new DocIdPusher.Record.Builder(new DocId(""))
+        .addMetadata(null, "value").build();
+  }
+
+  @Test
+  public void testNPEonNullMetadataValue() {
+    thrown.expect(NullPointerException.class);
+    DocIdPusher.Record record = new DocIdPusher.Record.Builder(new DocId(""))
+        .addMetadata("key", null).build();
   }
 }

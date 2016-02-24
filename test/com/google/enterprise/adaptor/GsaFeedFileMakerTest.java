@@ -73,12 +73,24 @@ public class GsaFeedFileMakerTest {
         + "<record mimetype=\"text/plain\""
         + " url=\"http://localhost/E11\"/>\n"
         + "<record mimetype=\"text/plain\""
-        + " url=\"http://localhost/elefenta\"/>\n"
+        + " url=\"http://localhost/elefenta\">\n"
+        + "<metadata>\n"
+        + "<meta content=\"bar\" name=\"foo\"/>\n"
+        + "<meta content=\"baz\" name=\"foo\"/>\n"
+        + "</metadata>\n"
+        + "</record>\n"
+        + "<record mimetype=\"text/plain\""
+        + " url=\"http://localhost/empty-not-null-metadata\">\n"
+        + "<metadata/>\n"
+        + "</record>\n"
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
     ids.add(new DocIdPusher.Record.Builder(new DocId("E11")).build());
-    ids.add(new DocIdPusher.Record.Builder(new DocId("elefenta")).build());
+    ids.add(new DocIdPusher.Record.Builder(new DocId("elefenta"))
+        .addMetadata("foo", "baz").addMetadata("foo", "bar").build());
+    ids.add(new DocIdPusher.Record.Builder(new DocId("empty-not-null-metadata"))
+        .setMetadata(new Metadata()).build());
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
     xml = xml.replaceAll("\r\n", "\n");
     assertEquals(golden, xml);

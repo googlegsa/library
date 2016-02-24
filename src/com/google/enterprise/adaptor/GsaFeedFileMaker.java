@@ -27,6 +27,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -172,6 +173,20 @@ class GsaFeedFileMaker {
       record.setAttribute("authmethod", "httpsso");
     }
     // TODO(pjo): record.setAttribute(no-follow,);
+
+    Metadata metadata = docRecord.getMetadata();
+    if (null != metadata) {
+      Element metadataElement = doc.createElement("metadata");
+      record.appendChild(metadataElement);
+      for (Iterator<Map.Entry<String, String>> i = metadata.iterator();
+          i.hasNext();) {
+        Map.Entry<String, String> e = i.next();
+        Element metadatum = doc.createElement("meta");
+        metadatum.setAttribute("name", e.getKey());
+        metadatum.setAttribute("content", e.getValue());
+        metadataElement.appendChild(metadatum);
+      }
+    }
 
     if (separateClosingRecordTagWorkaround) {
       // GSA 6.14 has a feed parsing bug (fixed in patch 2) that fails to parse
