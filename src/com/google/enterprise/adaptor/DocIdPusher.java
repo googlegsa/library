@@ -195,11 +195,12 @@ public interface DocIdPusher {
     private final boolean crawlOnce;
     private final boolean lock;
     /**
-     * <p>In general, {@code Metadata} should only be present under one of the
-     * following cases:</p>
-     * <p><ul><li>An adaptor is running as a Lister only</li>
-     * <li>An adaptor's Lister and Retriever return the same {@code Metadata}
-     * elements.</li></ul></p>
+     * <p>The GSA maintains separate FeederGate (Lister) and Crawler (Retriever)
+     * {@code Metadata} for any {@code DocId}, and the GSA "Index Diagnostics"
+     * page will display all {@code Metadata} from all sources, not indicating
+     * which source any item is from.  We suggest using {@code Metadata} at
+     * Lister time only if no {@code Metadata} is sent at Retriever time (for
+     * example, an adaptor that runs only as a Lister).</p>
      */
     private final Metadata metadata;
 
