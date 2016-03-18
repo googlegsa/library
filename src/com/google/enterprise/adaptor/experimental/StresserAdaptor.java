@@ -373,6 +373,8 @@ public class StresserAdaptor extends AbstractAdaptor {
 
   /** Call default main for adaptors.
    *  @param args argv
+   *
+   *  @throws Exception when something goes wrong
    */
   public static void main(String[] args) throws Exception {
     if (args.length > 0 && args[args.length - 1].equals("-makeContentOnly")) {

@@ -84,6 +84,9 @@ public class ContentTransform extends OutputStream {
    * Because this is a static function, subclasses may *hide* this method by
    * writing another method with the same signature, but make sure not to use
    * the @Override declaration, because Java will flag that as an error.
+   *
+   * @param ctIn input {@code ContentType} of the Transformation step.
+   * @return output {@code ContentType} of the Transformation step.
    */
   public static String getContentTypeOutputForContentTypeInput(String ctIn) {
     // default is just to return the same ContentType as we are passed in.
