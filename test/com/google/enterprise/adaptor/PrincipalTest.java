@@ -134,6 +134,16 @@ public class PrincipalTest {
     Principal p3 = new UserPrincipal("id", "N");
     assertFalse(p1.equals(p3));
     assertFalse(p2.equals(p3));
+
+    Principal p4 = new UserPrincipal("user@domain.local", "Default");
+    Principal p5 = new UserPrincipal("domain.local\\user", "Default");
+    Principal p6 = new UserPrincipal("domain.local/user", "Default");
+
+    Principal g1 = new GroupPrincipal("domain.local/user", "Default");
+
+    assertEquals(p4, p5);
+    assertEquals(p4, p6);
+    assertFalse(p6.equals(g1));
   }
 
   @Test
@@ -162,7 +172,7 @@ public class PrincipalTest {
     Set<Principal> p = new HashSet<Principal>();
     p.add(p1);
     p.add(p2);
-    assertEquals(1, p.size()); 
+    assertEquals(1, p.size());
   }
 
   @Test
@@ -173,7 +183,7 @@ public class PrincipalTest {
     Set<Principal> p = new HashSet<Principal>();
     p.add(p1);
     p.add(p2);
-    assertEquals(1, p.size()); 
+    assertEquals(1, p.size());
   }
 
   @Test
@@ -190,11 +200,11 @@ public class PrincipalTest {
      List<Principal> sorted = Collections.unmodifiableList(Arrays.asList(
        new UserPrincipal("Garbie", "Newbies"),
        new GroupPrincipal("Dragons", "Newbies"),
-       new UserPrincipal("Honeysuckle", "Oldies"), 
-       new UserPrincipal("Honeysuckle", "Oldies"), 
-       new UserPrincipal("Honeysuckle", "Oldies"), 
-       new UserPrincipal("Morning Glory", "Oldies"), 
-       new UserPrincipal("Rosedust", "Oldies"), 
+       new UserPrincipal("Honeysuckle", "Oldies"),
+       new UserPrincipal("Honeysuckle", "Oldies"),
+       new UserPrincipal("Honeysuckle", "Oldies"),
+       new UserPrincipal("Morning Glory", "Oldies"),
+       new UserPrincipal("Rosedust", "Oldies"),
        new GroupPrincipal("Flutter Ponies", "Oldies")
      ));
      int ntrials = 10;

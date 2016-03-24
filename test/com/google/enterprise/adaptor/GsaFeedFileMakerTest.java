@@ -126,21 +126,21 @@ public class GsaFeedFileMakerTest {
         + "</group>\n"
         + "</gsafeed>\n";
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    DocIdPusher.Record.Builder attrBuilder 
+    DocIdPusher.Record.Builder attrBuilder
         = new DocIdPusher.Record.Builder(new DocId("E11"));
 
     attrBuilder.setResultLink(new URI("http://f000nkey.net"));
     ids.add(attrBuilder.build());
 
-    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    
-    attrBuilder.setLastModified(new Date(0));    
-    attrBuilder.setCrawlImmediately(true);    
+    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));
+    attrBuilder.setLastModified(new Date(0));
+    attrBuilder.setCrawlImmediately(true);
     attrBuilder.setDocId(new DocId("elefenta"));
     ids.add(attrBuilder.build());
 
-    attrBuilder.setResultLink(new URI("http://google.com/news"));    
-    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
-    attrBuilder.setCrawlImmediately(false);    
+    attrBuilder.setResultLink(new URI("http://google.com/news"));
+    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));
+    attrBuilder.setCrawlImmediately(false);
     attrBuilder.setDocId(new DocId("gone"));
     ids.add(attrBuilder.build());
 
@@ -364,7 +364,7 @@ public class GsaFeedFileMakerTest {
         + "<membership>\n"
         + "<principal namespace=\"Default\" scope=\"GROUP\">immortals</principal>\n"
         + "<members>\n"
-        + "<principal" 
+        + "<principal"
         + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
         + " namespace=\"Default\""
         + " scope=\"USER\""
@@ -392,27 +392,27 @@ public class GsaFeedFileMakerTest {
         + "<membership>\n"
         + "<principal namespace=\"Default\" scope=\"GROUP\">immortals</principal>\n"
         + "<members>\n"
-        + "<principal" 
-        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
-        + " namespace=\"Default\""
-        + " scope=\"USER\""
-        + ">MacLeod\\Duncan</principal>\n"
-        + "<principal" 
+        + "<principal"
         + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
         + " namespace=\"Default\""
         + " scope=\"USER\""
         + ">Methos</principal>\n"
+        + "<principal"
+        + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
+        + " namespace=\"Default\""
+        + " scope=\"USER\""
+        + ">MacLeod\\Duncan</principal>\n"
         + "</members>\n"
         + "</membership>\n"
         + "<membership>\n"
         + "<principal namespace=\"Default\" scope=\"GROUP\">sounds</principal>\n"
         + "<members>\n"
-        + "<principal" 
+        + "<principal"
         + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
         + " namespace=\"Default\""
         + " scope=\"USER\""
         + ">plump</principal>\n"
-        + "<principal" 
+        + "<principal"
         + " case-sensitivity-type=\"EVERYTHING_CASE_INSENSITIVE\""
         + " namespace=\"Default\""
         + " scope=\"USER\""
@@ -450,7 +450,7 @@ public class GsaFeedFileMakerTest {
         + " namespace=\"3vil\""
         + " scope=\"GROUP\""
         + ">badguys</principal>\n"
-        + "<principal" 
+        + "<principal"
         + " case-sensitivity-type=\"EVERYTHING_CASE_SENSITIVE\""
         + " namespace=\"goodguys\""
         + " scope=\"USER\""
@@ -554,7 +554,7 @@ public class GsaFeedFileMakerTest {
         + "</gsafeed>\n";
 
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    DocIdPusher.Record.Builder attrBuilder 
+    DocIdPusher.Record.Builder attrBuilder
         = new DocIdPusher.Record.Builder(new DocId("E11"));
 
     // (1)
@@ -562,17 +562,17 @@ public class GsaFeedFileMakerTest {
     ids.add(attrBuilder.build());
 
     // (2)
-    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    
-    attrBuilder.setLastModified(new Date(0));    
-    attrBuilder.setCrawlImmediately(true);    
+    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));
+    attrBuilder.setLastModified(new Date(0));
+    attrBuilder.setCrawlImmediately(true);
     attrBuilder.setDocId(new DocId("elefenta"));
     ids.add(attrBuilder.build());
 
     // (3)
-    attrBuilder.setResultLink(new URI("http://google.com/news"));    
-    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
-    attrBuilder.setCrawlImmediately(false);    
-    attrBuilder.setCrawlOnce(false);    
+    attrBuilder.setResultLink(new URI("http://google.com/news"));
+    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));
+    attrBuilder.setCrawlImmediately(false);
+    attrBuilder.setCrawlOnce(false);
     attrBuilder.setDocId(new DocId("gone"));
     ids.add(attrBuilder.build());
 
@@ -640,7 +640,7 @@ public class GsaFeedFileMakerTest {
         + "</gsafeed>\n";
 
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
-    DocIdPusher.Record.Builder attrBuilder 
+    DocIdPusher.Record.Builder attrBuilder
         = new DocIdPusher.Record.Builder(new DocId("E11"));
 
     // (1)
@@ -648,17 +648,17 @@ public class GsaFeedFileMakerTest {
     ids.add(attrBuilder.build());
 
     // (2)
-    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));    
-    attrBuilder.setLastModified(new Date(0));    
-    attrBuilder.setCrawlImmediately(true);    
+    attrBuilder.setResultLink(new URI("http://yankee.doodle.com"));
+    attrBuilder.setLastModified(new Date(0));
+    attrBuilder.setCrawlImmediately(true);
     attrBuilder.setDocId(new DocId("elefenta"));
     ids.add(attrBuilder.build());
 
     // (3)
-    attrBuilder.setResultLink(new URI("http://google.com/news"));    
-    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));    
-    attrBuilder.setCrawlImmediately(false);    
-    attrBuilder.setCrawlOnce(false);    
+    attrBuilder.setResultLink(new URI("http://google.com/news"));
+    attrBuilder.setLastModified(new Date(1000 * 60 * 60 * 24));
+    attrBuilder.setCrawlImmediately(false);
+    attrBuilder.setCrawlOnce(false);
     attrBuilder.setDocId(new DocId("gone"));
     ids.add(attrBuilder.build());
 
@@ -696,7 +696,7 @@ public class GsaFeedFileMakerTest {
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
         + "<gsafeed>\n"
-        + "<!--We must prepare for tomorrow night.-->\n" 
+        + "<!--We must prepare for tomorrow night.-->\n"
         + "<!--Why? What are we going to do tomorrow night?-->\n"
         + "<!--The same thing we do every night, Pinky "
             + " - try to take over the world!-->\n"

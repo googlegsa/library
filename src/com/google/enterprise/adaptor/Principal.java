@@ -55,16 +55,14 @@ public abstract class Principal implements Comparable<Principal> {
 
   public abstract boolean isGroup();
 
-  // TODO: change equals/hashCode/compareTo to use ParsedPrincipal.
-  // GSA will send username and domain info but not any clue of the domainFormat
-  // (@, \\, /). So, as the receiver, we can not really tell the difference
-  // between a Principal of test@google.com and google.com\\test.
   @Override
   public boolean equals(Object other) {
     boolean same = other instanceof Principal;
     if (same) {
       Principal p = (Principal) other;
-      same = p.isUser() == isUser() && p.name.equals(name)
+      same = p.isUser() == isUser()
+          && p.parse().domain.equals(parse().domain)
+          && p.parse().plainName.equals(parse().plainName)
           && p.namespace.equals(namespace);
     }
     return same;
@@ -72,7 +70,8 @@ public abstract class Principal implements Comparable<Principal> {
 
   @Override
   public int hashCode() {
-    return Arrays.hashCode(new Object[]{ isUser(), name, namespace });
+    return Arrays.hashCode(new Object[]{ isUser(), parse().domain,
+        parse().plainName, namespace });
   }
 
   @Override
@@ -96,6 +95,18 @@ public abstract class Principal implements Comparable<Principal> {
       return isUser() ? -1 : 1;
     }
     // OK, same namespace and same type
+
+    // We need to compare domain name and plainName separately
+    // for users.
+    if (isUser()) {
+      int domainCmp = parse().domain.compareTo(other.parse().domain);
+      if (0 != domainCmp) {
+        return domainCmp;
+      }
+      // OK, same domain
+
+      return parse().plainName.compareTo(other.parse().plainName);
+    }
 
     return name.compareTo(other.name);
   }
@@ -132,7 +143,7 @@ public abstract class Principal implements Comparable<Principal> {
      */
     NETBIOS_FORWARDSLASH,
     ;
-    
+
     String format(String plainName, String domain) {
       String name;
       switch (this) {
