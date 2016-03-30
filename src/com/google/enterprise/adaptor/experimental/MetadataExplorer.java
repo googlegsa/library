@@ -143,7 +143,7 @@ public class MetadataExplorer extends AbstractAdaptor {
 
   /**
    * Gives the bytes of a document referenced with id.
-   * Includes "Retriever Metadata" and "Interal Metadata" elements.
+   * Includes "Retriever Metadata" and "Internal Metadata" elements.
    */
   @Override
   public void getDocContent(Request req, Response resp) throws IOException {

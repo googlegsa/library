@@ -179,7 +179,7 @@ class GsaFeedFileSender {
     if ("Success".equals(reply) || "success".equals(reply)) {
       log.info("success message received. code:" + responseCode);
     } else if ("Error - Unauthorized Request".equals(reply)) {
-      throw new IllegalStateException("Unathorized request. "
+      throw new IllegalStateException("Unauthorized request. "
           + "Perhaps add this machine's IP to GSA's Feeds' list "
           + "of trusted IP addresses. code:" + responseCode);
     } else {

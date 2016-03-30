@@ -73,7 +73,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Provides ability to recieve and respond to SAML authn requests.
+ * Provides ability to receive and respond to SAML authn requests.
  *
  * <p>This functions as the Identity Provider (IdP) role in SAML. An IdP
  * authenticates users when requested by a Service Provider (SP) and sends the

@@ -131,7 +131,7 @@ public class HTTPSOAP11MultiContextDecoder extends BaseSAML2MessageDecoder {
 
     if (!(incomingMessage instanceof SAMLObject)) {
       throw new MessageDecodingException(
-          "Unexpected SOAP body content.  Expected a SAML request but recieved "
+          "Unexpected SOAP body content.  Expected a SAML request but received "
               + incomingMessage.getElementQName());
     }
     SAMLObject samlMessage = (SAMLObject) incomingMessage;

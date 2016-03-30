@@ -78,7 +78,7 @@ class DocIdSender extends AbstractDocIdPusher
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
-        log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+        log.log(Level.INFO, "Trying again... Number of attempts: {0}", ntries);
       } else {
         journal.recordFullPushFailed();
         log.warning("Gave up. Failed getDocIds");
@@ -115,7 +115,7 @@ class DocIdSender extends AbstractDocIdPusher
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
-        log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+        log.log(Level.INFO, "Trying again... Number of attempts: {0}", ntries);
       } else {
         journal.recordIncrementalPushFailed();
         log.warning("Gave up. Failed getModifiedDocIds");
@@ -332,7 +332,7 @@ class DocIdSender extends AbstractDocIdPusher
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
-        log.log(Level.INFO, "trying again... number of attemps: {0}", ntries);
+        log.log(Level.INFO, "trying again... number of attempts: {0}", ntries);
       }
     }
     GroupPrincipal last = null;
@@ -369,7 +369,7 @@ class DocIdSender extends AbstractDocIdPusher
         keepGoing = handler.handleException(ex, ntries);
       }
       if (keepGoing) {
-        log.log(Level.INFO, "Trying again... Number of attemps: {0}", ntries);
+        log.log(Level.INFO, "Trying again... Number of attempts: {0}", ntries);
       }
     }
     if (success) {

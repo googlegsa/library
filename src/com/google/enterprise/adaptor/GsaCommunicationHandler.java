@@ -504,7 +504,7 @@ public final class GsaCommunicationHandler {
         aclConfig.put(Integer.parseInt(me.getKey()), me.getValue());
       } catch (NumberFormatException ex) {
         // Don't insert into map.
-        log.log(Level.FINE, "Ignorning transform.acl.{0} because {0} is not an "
+        log.log(Level.FINE, "Ignoring transform.acl.{0} because {0} is not an "
             + "integer", me.getKey());
       }
     }

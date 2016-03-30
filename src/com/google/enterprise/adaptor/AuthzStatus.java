@@ -23,9 +23,9 @@ public enum AuthzStatus {
   /** The authorization is explicitly forbidden. */
   DENY("Access DENIED"),
   /**
-   * Permission is neither granted nor forbidden. If a consumer recieves this
+   * Permission is neither granted nor forbidden. If a consumer receives this
    * code it may decide to try other means to get an explicit decision (i.e.,
-   * {@code PERMIT} or {@code DENY}.
+   * {@code PERMIT} or {@code DENY}).
    */
   INDETERMINATE("No access decision");
 

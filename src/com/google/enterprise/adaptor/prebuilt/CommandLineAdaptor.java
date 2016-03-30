@@ -184,7 +184,7 @@ public class CommandLineAdaptor extends AbstractAdaptor
       log.finest("Command: " + Arrays.asList(commandLine));
       commandResult = executeRetriever(commandLine, null, stdin, stderr);
     } catch (InterruptedException e) {
-      throw new IOException("Thread intrupted while waiting for external command.", e);
+      throw new IOException("Thread interrupted while waiting for external command.", e);
     } catch (IOException e) {
       throw new IOException("External command could not be executed.", e);
     }
