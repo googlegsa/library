@@ -21,6 +21,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import com.google.common.collect.Sets;
+
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -136,9 +137,9 @@ public class AclTest {
     final Acl.InheritanceType goldenInheritType
         = Acl.InheritanceType.CHILD_OVERRIDES;
 
-    Set<GroupPrincipal> denyGroups 
+    Set<GroupPrincipal> denyGroups
         = new HashSet<GroupPrincipal>(goldenDenyGroups);
-    Set<GroupPrincipal> permitGroups 
+    Set<GroupPrincipal> permitGroups
         = new HashSet<GroupPrincipal>(goldenPermitGroups);
     Set<UserPrincipal> denyUsers
         = new HashSet<UserPrincipal>(goldenDenyUsers);
@@ -339,11 +340,11 @@ public class AclTest {
     builder.setPermitUsers(U("testing"));
     builder.setDenyUsers(U("testing"));
     Acl withCase = builder.build();
-    Acl noCase = builder.setEverythingCaseInsensitive().build(); 
+    Acl noCase = builder.setEverythingCaseInsensitive().build();
     Acl caseAgain = builder.setEverythingCaseSensitive().build();
     builder.setEverythingCaseInsensitive();
-    Acl noCase2 = builder.setPermitUsers(U("TeSTiNg")).build(); 
-    Acl noCase3 = builder.setPermitUsers(U("tEstInG")).build(); 
+    Acl noCase2 = builder.setPermitUsers(U("TeSTiNg")).build();
+    Acl noCase3 = builder.setPermitUsers(U("tEstInG")).build();
     assertEquals(withCase, caseAgain);
     assertEquals(noCase2, noCase);
     assertEquals(noCase2, noCase3);
@@ -1103,6 +1104,114 @@ public class AclTest {
         createIdentity("denyUser")));
     assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
         createIdentity("unknownUser")));
+  }
+
+  @Test
+  public void testDomainFormatUserCaseInsensitive() {
+    Acl acl = new Acl.Builder()
+        .setPermitUsers(U("PermiTUser@Domain", "BotHUser"))
+        .setDenyUsers(U("DenYUser@Domain", "BotHUser"))
+        .setEverythingCaseInsensitive()
+        .build();
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("domain\\permituser")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("domain/permituser")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyuser@domain")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("domain\\denyuser")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("domain/denyuser")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@nb-domain")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("nb-domain\\permituser")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("nb-domain/permituser")));
+  }
+
+  @Test
+  public void testDomainFormatGroupCaseInsensitive() {
+    Acl acl = new Acl.Builder()
+        .setPermitGroups(G("PermiTGroup@Domain"))
+        .setDenyGroups(G("DenYGroup@Domain"))
+        .setEverythingCaseInsensitive()
+        .build();
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "permitgroup@domain")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "domain\\permitgroup")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "domain/permitgroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "denygroup@domain")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "domain\\denygroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "domain/denygroup")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "permitgroup@nb-domain")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "nb-domain\\permitgroup")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "nb-domain/permitgroup")));
+  }
+
+  @Test
+  public void testDomainFormatUserCaseSensitive() {
+    Acl acl = new Acl.Builder()
+        .setPermitUsers(U("PermiTUser@Domain", "BotHUser"))
+        .setDenyUsers(U("DenYUser@Domain", "BotHUser"))
+        .setEverythingCaseSensitive()
+        .build();
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("PermiTUser@Domain")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("Domain\\PermiTUser")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("Domain/PermiTUser")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("DenYUser@Domain")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("Domain\\DenYUser")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("Domain/DenYUser")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("domain\\permituser")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("domain/permituser")));
+  }
+
+  @Test
+  public void testDomainFormatGroupCaseSensitive() {
+    Acl acl = new Acl.Builder()
+        .setPermitGroups(G("PermiTGroup@Domain"))
+        .setDenyGroups(G("DenYGroup@Domain"))
+        .setEverythingCaseSensitive()
+        .build();
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "PermiTGroup@Domain")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "Domain\\PermiTGroup")));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "Domain/PermiTGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "DenYGroup@Domain")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "Domain\\DenYGroup")));
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "Domain/DenYGroup")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "permitgroup@domain")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "domain\\permitgroup")));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", "domain/permitgroup")));
   }
 
   private AuthnIdentity createIdentity(String username, String... groups) {

@@ -96,19 +96,13 @@ public abstract class Principal implements Comparable<Principal> {
     }
     // OK, same namespace and same type
 
-    // We need to compare domain name and plainName separately
-    // for users.
-    if (isUser()) {
-      int domainCmp = parse().domain.compareTo(other.parse().domain);
-      if (0 != domainCmp) {
-        return domainCmp;
-      }
-      // OK, same domain
-
-      return parse().plainName.compareTo(other.parse().plainName);
+    int domainCmp = parse().domain.compareTo(other.parse().domain);
+    if (0 != domainCmp) {
+      return domainCmp;
     }
+    // OK, same domain
 
-    return name.compareTo(other.name);
+    return parse().plainName.compareTo(other.parse().plainName);
   }
 
   ParsedPrincipal parse() {

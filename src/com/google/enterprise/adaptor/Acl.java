@@ -100,6 +100,7 @@ public class Acl {
   private static class CaseInsensitiveCmp<P extends Principal>
       implements Comparator<P> {
     /** Does not differentiate between UserPrincipal and GroupPrincipal */
+    @Override
     public int compare(P p1, P p2) {
       String ns1 = p1.getNamespace().toLowerCase(CASE_LOCALE);
       String ns2 = p2.getNamespace().toLowerCase(CASE_LOCALE);
@@ -108,12 +109,21 @@ public class Acl {
         return nscmp;
       }
       // OK, same namespace
- 
-      String n1 = p1.getName().toLowerCase(CASE_LOCALE);
-      String n2 = p2.getName().toLowerCase(CASE_LOCALE);
+
+      String d1 = p1.parse().domain.toLowerCase(CASE_LOCALE);
+      String d2 = p2.parse().domain.toLowerCase(CASE_LOCALE);
+      int dcmp = d1.compareTo(d2);
+      if (0 != dcmp) {
+        return dcmp;
+      }
+      // OK, same domain
+
+      String n1 = p1.parse().plainName.toLowerCase(CASE_LOCALE);
+      String n2 = p2.parse().plainName.toLowerCase(CASE_LOCALE);
       return n1.compareTo(n2);
     }
 
+    @Override
     public boolean equals(Object o) {
       return o instanceof CaseInsensitiveCmp;
     }
@@ -251,6 +261,7 @@ public class Acl {
     commonGroups.clear();
     commonGroups.addAll(permitGroups);
     commonGroups.retainAll(userGroups);
+
     if (permitUsers.contains(userIdentifier) || !commonGroups.isEmpty()) {
       return AuthzStatus.PERMIT;
     }
@@ -770,7 +781,7 @@ public class Acl {
     }
 
     /**
-     * Set the parent to inherit ACLs from. 
+     * Set the parent to inherit ACLs from.
      * Note that the parent's {@code InheritanceType}
      * determines how to combine results with this ACL.
      * <p>
