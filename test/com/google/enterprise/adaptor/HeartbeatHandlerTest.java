@@ -152,6 +152,35 @@ public class HeartbeatHandlerTest {
   }
 
   @Test
+  public void testAuthzSkippedWhenAllDocsMarkedAsPublic()
+      throws Exception {
+    Adaptor adaptor = new PrivateMockAdaptor();
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    DocumentHandler docHandler = createDocHandlerBuilder()
+        .setAdaptor(adaptor).setSamlServiceProvider(samlServiceProvider)
+        .setMarkDocsPublic(true).build();
+    HeartbeatHandler handler = createHeartbeatHandlerBuilder()
+        .setDocHandler(docHandler).build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecMgrDeniedDespiteAllDocsMarkedAsPublic()
+      throws Exception {
+    Adaptor adaptor = new PrivateMockAdaptor();
+    MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
+    DocumentHandler docHandler = createDocHandlerBuilder()
+        .setAdaptor(adaptor).setSamlServiceProvider(samlServiceProvider)
+        .setMarkDocsPublic(true).build();
+    HeartbeatHandler handler = createHeartbeatHandlerBuilder()
+        .setDocHandler(docHandler).build();
+    ex.getRequestHeaders().add("User-Agent", "SecMgr");
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
   public void testNormal() throws Exception {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());

@@ -145,6 +145,30 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testAuthzSkippedWhenAllDocsMarkedAsPublic()
+      throws Exception {
+    // isUserAuthorized always returns AuthzStatus.DENY
+    Adaptor adaptor = new PrivateMockAdaptor();
+    AuthzAuthority authzAuthority = (AuthzAuthority) adaptor;
+    DocumentHandler handler = createHandlerBuilder().setAdaptor(adaptor)
+        .setAuthzAuthority(authzAuthority).setMarkDocsPublic(true).build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+
+  @Test
+  public void testSecMgrDeniedDespiteAllDocsMarkedAsPublic()
+      throws Exception {
+    Adaptor adaptor = new PrivateMockAdaptor();
+    AuthzAuthority authzAuthority = (AuthzAuthority) adaptor;
+    DocumentHandler handler = createHandlerBuilder().setAdaptor(adaptor)
+        .setAuthzAuthority(authzAuthority).setMarkDocsPublic(true).build();
+    ex.getRequestHeaders().add("User-Agent", "SecMgr");
+    handler.handle(ex);
+    assertEquals(403, ex.getResponseCode());
+  }
+
+  @Test
   public void testSecurityDenyWithAuthnHandler() throws Exception {
     SamlServiceProvider samlServiceProvider = new MockSamlServiceProvider() {
       @Override

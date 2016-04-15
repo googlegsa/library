@@ -286,8 +286,10 @@ class DocumentHandler implements HttpHandler {
   }
 
   /**
-   * Check authz of user to access document. If the user is not authzed, the
-   * method handles responding to the HttpExchange.
+   * Check authz of user to access document.  If adaptor.markAllDocsAsPublic is
+   * configured, treat it as though the user is authzed (regardless of docId).
+   * If the user is not authzed, the method handles responding to the
+   * HttpExchange.
    *
    * @return {@code true} if user authzed
    */
@@ -298,6 +300,14 @@ class DocumentHandler implements HttpHandler {
       HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
           Translation.HTTP_FORBIDDEN_SECMGR);
       return false;
+    }
+    if (markDocsPublic) {
+      if (requestIsFromFullyTrustedClient(ex)) {
+        journal.recordGsaContentRequest(docId);
+      } else {
+        journal.recordNonGsaContentRequest(docId);
+      }
+      return true;
     }
 
     if (requestIsFromFullyTrustedClient(ex)) {
