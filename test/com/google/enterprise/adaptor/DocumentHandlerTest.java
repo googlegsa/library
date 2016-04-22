@@ -169,6 +169,19 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testAuthzSkippedWhenAllHostsTrusted() throws Exception {
+    // isUserAuthorized always returns AuthzStatus.DENY
+    Adaptor adaptor = new PrivateMockAdaptor();
+    AuthzAuthority authzAuthority = (AuthzAuthority) adaptor;
+    DocumentHandler handler = createHandlerBuilder().setAdaptor(adaptor)
+        .setAuthzAuthority(authzAuthority)
+        .setFullAccessHosts(new String[] {"0.0.0.0/0"}) // matches all hosts
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+  }
+
+  @Test
   public void testSecurityDenyWithAuthnHandler() throws Exception {
     SamlServiceProvider samlServiceProvider = new MockSamlServiceProvider() {
       @Override

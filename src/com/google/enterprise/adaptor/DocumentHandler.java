@@ -83,6 +83,11 @@ class DocumentHandler implements HttpHandler {
    */
   private final Set<InetAddress> fullAccessAddresses
       = new HashSet<InetAddress>();
+  /**
+   * Set of (Ranges of IPs) that are provided full access when in insecure mode.
+   */
+  private final Set<CIDRAddress> fullAccessAddressRanges
+      = new HashSet<CIDRAddress>();
   private final SamlServiceProvider samlServiceProvider;
   private final MetadataTransformPipeline metadataTransform;
   private final AclTransform aclTransform;
@@ -158,15 +163,26 @@ class DocumentHandler implements HttpHandler {
 
     for (String hostname : fullAccessCommonNames) {
       try {
-        InetAddress[] ips = InetAddress.getAllByName(hostname);
-        fullAccessAddresses.addAll(Arrays.asList(ips));
+        if (hostname.indexOf("/") > 0) {
+          int index = hostname.indexOf("/");
+          String addressPart = hostname.substring(0, index);
+          int maskLength = Integer.parseInt(hostname.substring(index + 1));
+          InetAddress address = InetAddress.getByName(addressPart);
+          fullAccessAddressRanges.add(new CIDRAddress(address, maskLength));
+        } else {
+          InetAddress[] ips = InetAddress.getAllByName(hostname);
+          fullAccessAddresses.addAll(Arrays.asList(ips));
+        }
       } catch (UnknownHostException ex) {
         log.log(Level.WARNING, "Could not resolve hostname. Not adding it to "
                 + "full access list of IPs: " + hostname, ex);
       }
     }
+    ArrayList<Object> addressesAndRanges = new ArrayList<Object>();
+    addressesAndRanges.addAll(fullAccessAddresses);
+    addressesAndRanges.addAll(fullAccessAddressRanges);
     log.log(Level.INFO, "When not in secure mode, IPs that are given full "
-            + "access to content: {0}", new Object[] {fullAccessAddresses});
+            + "access to content: {0}", new Object[] {addressesAndRanges});
   }
 
   private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {
@@ -219,6 +235,17 @@ class DocumentHandler implements HttpHandler {
     } else {
       InetAddress addr = ex.getRemoteAddress().getAddress();
       trust = fullAccessAddresses.contains(addr);
+      // Only go through the ranges of addresses if we haven't already found
+      // our address in the list of uniquely-identified trusted hosts.  If any
+      // range contains our address, we can stop searching.
+      if (!trust) {
+        for (CIDRAddress address : fullAccessAddressRanges) {
+          if (address.isInRange(addr)) {
+            trust = true;
+            break;
+          }
+        }
+      }
       if (trust) {
         log.log(Level.FINE, "Client is trusted in non-secure mode: {0}", addr);
       } else {
