@@ -57,20 +57,20 @@ import java.util.regex.Pattern;
  * key, regardless of value:
  * <pre><code>
    metadata.transform.pipeline=skipDocumentFilter
-   metadata.transform.pipeline.skipDocumentFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create;
+   metadata.transform.pipeline.skipDocumentFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create
    metadata.transform.pipeline.skipDocumentFilter.propertyName=NoIndex
-   </code></pre></p>
+   </code></pre>
  *
  * <p>Example 2: skips documents whose Metadata {@code Classification} property
  * is neither {@code PUBLIC} nor {@code DECLASSIFIED}:
  * <pre><code>
    metadata.transform.pipeline=skipDocumentFilter
-   metadata.transform.pipeline.skipDocumentFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create;
+   metadata.transform.pipeline.skipDocumentFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create
    metadata.transform.pipeline.skipDocumentFilter.propertyName=Classification
    metadata.transform.pipeline.skipDocumentFilter.pattern=(PUBLIC)|(DECLASSIFIED)
    metadata.transform.pipeline.skipDocumentFilter.skipOnMatch=false
    metadata.transform.pipeline.skipDocumentFilter.corpora=metadata
-   </code></pre></p>
+   </code></pre>
  */
 public class SkipDocumentFilter implements MetadataTransform {
   /**
