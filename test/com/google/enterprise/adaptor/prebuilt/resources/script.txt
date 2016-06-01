@@ -1,0 +1,12 @@
+# test file for testMultiValueFlagsFromScriptFile()
+
+# line above is blank; line below contains (only) spaces
+        
+crawlImmediately
+aclAllowUsers one
+aclallowusers two,three
+aclDenyUsers four,five
+suffixToIgnore .gif # comment
+acldenyusers six
+suffixtoignore .jpg
+dontsend

@@ -94,6 +94,7 @@ class SendToGsa {
       String flag = args[i];
       if (flag == null) {  // let parseFlag handle the error reporting
         config.parseFlag(null, null);
+        continue;
       }
       if (flag.startsWith("-")) {
         i += config.parseFlag(flag, i < args.length - 1 ? args[i + 1] : null);
@@ -117,6 +118,13 @@ class SendToGsa {
    */
   public void pushFeedFile() {
     log.info("not yet pushing any sort of feed...");
+  }
+
+  /**
+   * Returns a copy of the config (so that the original is not tampered with).
+   */
+  public Config getConfig() {
+    return new Config(config);
   }
 
   /** SendToGsa main method.  Creates and optionally sends a Feed to the GSA.
@@ -146,6 +154,16 @@ class SendToGsa {
     }
 
     /**
+     * Returns a copy of the config.  The original config may be modified after
+     * this routine is invoked.
+     */
+    public Config(Config existingConfig) {
+      flags = new TreeMap<String, String>(existingConfig.flags);
+      filenames = new ArrayList<String>(existingConfig.filenames);
+      errors = new ArrayList<String>(existingConfig.errors);
+    }
+
+    /**
      * Parse (and validate) a single flag.  Returns 0 if the flag
      * doesn't require any values (meaning that the next command-line flag
      * follows the current one).  Returns 1 if the flag does require a value
@@ -157,6 +175,7 @@ class SendToGsa {
     int parseFlag(String flag, String value) {
       if (null == flag) {
         errors.add("Encountered null flag");
+        return 0;
       }
       flag = flag.toLowerCase();
       // skip over leading hyphens, extract flag (leave alone if hyphens only)
