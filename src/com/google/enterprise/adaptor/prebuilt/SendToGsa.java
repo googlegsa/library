@@ -14,8 +14,14 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import com.google.enterprise.adaptor.GsaFeedFileArchiver;
 import com.google.enterprise.adaptor.InvalidConfigurationException;
+import com.google.enterprise.adaptor.Principal;
+import com.google.enterprise.adaptor.SimpleGsaFeedFileMaker;
+import com.google.enterprise.adaptor.GsaFeedFileSender;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -23,15 +29,23 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-
+import java.nio.charset.Charset;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Feed-making and feed-sending program (that isn't an Adaptor).
@@ -42,6 +56,9 @@ class SendToGsa {
       = Logger.getLogger(SendToGsa.class.getName());
 
   private Config config;
+
+  private static final Pattern DATASOURCE_FORMAT
+      = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
 
   // complete set of command-line flags that do not take a value
   private static final Set<String> ZERO_VALUE_FLAGS =
@@ -108,44 +125,123 @@ class SendToGsa {
   /**
    * Creates the feed file as specified in the config, but does not push it.
    */
-  public void createFeedFile() {
-    log.info("not yet creating any sort of feed...");
+  @VisibleForTesting
+  String createFeedFile() {
+    Config c = config;
+    final GsaFeedFileArchiver saver = new GsaFeedFileArchiver(c.feeddirectory);
+    final SimpleGsaFeedFileMaker maker;
+    if ("web".equals(c.feedtype)) {
+      maker = new SimpleGsaFeedFileMaker.MetadataAndUrl(c.crawlimmediately,
+          c.crawlonce);
+    } else {
+      maker = new SimpleGsaFeedFileMaker.Content(c.feedtype);
+    }
+
+    if (c.aclpublic) {
+      maker.setPublicAcl();
+    } else {
+      maker.setAclProperties(c.aclcaseinsensitive, c.aclnamespace,
+          Arrays.asList(c.allowusers.split(",", 0)),
+          Arrays.asList(c.allowgroups.split(",", 0)),
+          Arrays.asList(c.denyusers.split(",", 0)),
+          Arrays.asList(c.denygroups.split(",", 0)));
+    }
+    maker.setDataSource(c.datasource);
+    maker.setLastModified(c.lastmodified);
+    maker.setLock(c.lock);
+    maker.setMimetype(c.mimetype);
+    // TODO(myk): add calls to setNoArchive / setNoFollow, when FeederGate
+    // supports them.
+    for (String fname : config.filenames) {
+      try {
+        maker.addFile(new File(fname));
+      } catch (IOException e) {
+        log.log(Level.WARNING, "Unable to add file '" + fname + "' - ignored",
+            e);
+      }
+    }
+    String feed = maker.toXmlString();
+    saver.saveFeed("send2gsa", feed);
+    return feed;
   }
 
   /**
    * Pushes the created feed (unless the config indicates that it should not
    * be pushed).
    */
-  public void pushFeedFile() {
-    log.info("not yet pushing any sort of feed...");
+  @VisibleForTesting
+  void pushFeedFile(String xmlDoc) throws IOException {
+    if (config.dontsend) {
+      log.info("Not pushing feed file; see directory " + config.feeddirectory
+          + " for feed file.");
+      return;
+    }
+    GsaFeedFileSender sender = new GsaFeedFileSender(config.gsa, config.secure,
+        Charset.forName("UTF-8"));
+    if ("web".equals(config.feedtype)) {
+      sender.sendMetadataAndUrl(config.datasource, xmlDoc,
+          false /* useCompression */);
+    } else if ("incremental".equals(config.feedtype)) {
+      sender.sendIncremental(config.datasource, xmlDoc,
+          false /* useCompression */);
+    } else if ("full".equals(config.feedtype)) {
+      sender.sendFull(config.datasource, xmlDoc, false /* useCompression */);
+    } else {
+      throw new AssertionError("feedType must be set to 'full', 'incremental'"
+          + ", or 'web', not '" + config.feedtype + "'");
+    }
   }
 
   /**
    * Returns a copy of the config (so that the original is not tampered with).
    */
-  public Config getConfig() {
+  @VisibleForTesting
+  Config getConfig() {
     return new Config(config);
   }
 
   /** SendToGsa main method.  Creates and optionally sends a Feed to the GSA.
    *  @param args flags and values that control the feed.
    */
-  public static void main(String[] args) {
+  public static void main(String[] args) throws IOException {
     SendToGsa instance = new SendToGsa();
     instance.parseArgs(args);
-    instance.createFeedFile();
-    instance.pushFeedFile();
+    String xml = instance.createFeedFile();
+    instance.pushFeedFile(xml);
   }
 
   /**
    * non-Adaptor Config class that parses all command line flags.
    */
-  protected static class Config { // TODO(myk): investigate using something
+  static class Config { // TODO(myk): investigate using something
         // along the lines of https://commons.apache.org/proper/commons-cli/
     /* stores configuration data as we parse flags/values */
     private final Map<String, String> flags;
     private final Collection<String> filenames;
     private final Collection<String> errors;
+
+    // variables available after validation is complete.  (A few are set during
+    // the validation process.)
+    private boolean aclcaseinsensitive;
+    private String aclnamespace;
+    private boolean aclpublic;
+    private String allowgroups;
+    private String allowusers;
+    private boolean crawlimmediately;
+    private boolean crawlonce;
+    private String datasource;
+    private String denygroups;
+    private String denyusers;
+    private boolean dontsend;
+    private String feeddirectory;
+    private String feedtype;
+    private String gsa;
+    private Date lastmodified;
+    private String mimetype;
+    private boolean lock;
+    private boolean noarchive;
+    private boolean nofollow;
+    private boolean secure;
 
     public Config() {
       flags = new TreeMap<String, String>();
@@ -322,29 +418,31 @@ class SendToGsa {
      * Validate the configuration.  Prints out warnings (but continues), unless
      * something is so wrong that it requires an abort.
      */
-    protected void validate() {
-      // first, check ACLs.  Either "aclPublic" or at least one of the
+    @VisibleForTesting
+    void validate() {
+      // first, check ACLs.  Either "aclpublic" or at least one of the
       // "acl{allow,deny}{users,groups}" options must have been set.
-      boolean aclPublic = (null != flags.get("aclpublic"));
+      aclpublic = (null != flags.get("aclpublic"));
       boolean aclSet = ((null != flags.get("aclallowusers"))
           || (null != flags.get("aclallowgroups"))
           || (null != flags.get("acldenyusers"))
           || (null != flags.get("acldenygroups")));
-      if (aclPublic && aclSet) {
+      if (aclpublic && aclSet) {
         errors.add("aclPublic flag may not be set together with any of the "
             + "aclAllowUsers/aclAllowGroups/aclDenyUsers/aclDenyGroups flags");
       }
-      if (!aclPublic && !aclSet) {
+      if (!aclpublic && !aclSet) {
         errors.add("either aclPublic flag or at least one of the "
             + "aclAllowUsers/aclAllowGroups/aclDenyUsers/aclDenyGroups flags "
             + "must be set");
       }
 
-      String feedtype = flags.get("feedtype");
+      feedtype = flags.get("feedtype");
       // certain flags imply feedtype web
-      if ((null != flags.get("crawlimmediately"))
-          || (null != flags.get("crawlonce"))
-          || (null != flags.get("filesofurls"))) {
+      crawlimmediately = (null != flags.get("crawlimmediately"));
+      crawlonce = (null != flags.get("crawlonce"));
+      boolean filesofurls = (null != flags.get("filesofurls"));
+      if (crawlimmediately || crawlonce || filesofurls) {
         if (null == feedtype) {
           flags.put("feedtype", "web");
           feedtype = "web";
@@ -407,8 +505,31 @@ class SendToGsa {
            + "empty list of files");
       }
 
-      if (null == flags.get("dontsend") && null == flags.get("gsa")) {
+      gsa = flags.get("gsa");
+      dontsend = (null != flags.get("dontsend"));
+
+      if (!dontsend && null == gsa) {
         errors.add("You must either specify the 'gsa' or the 'dontSend' flag");
+      }
+
+      if (null == flags.get("lastmodified")) {
+        lastmodified = null;
+      } else {
+        lastmodified = parseLastModifiedTime(flags.get("lastmodified"));
+      }
+
+      datasource = flags.get("datasource");
+      if (null == datasource) {
+        if ("web".equals(feedtype)) {
+          datasource = feedtype;
+        } else {
+          datasource = "send2gsa";
+        }
+      }
+      if (!DATASOURCE_FORMAT.matcher(datasource).matches()) {
+        errors.add("Data source contains illegal characters: " + datasource
+            + " (it must start with a letter then consist of only letters, "
+            + "numbers, underscores, and dashes.)");
       }
 
       if (!errors.isEmpty()) {
@@ -418,6 +539,87 @@ class SendToGsa {
         throw new InvalidConfigurationException("Encountered " + errors.size()
             + " error(s) in configuration: " + errors);
       }
+
+      // provide some defaults
+      mimetype = flags.get("mimetype");
+      if (null == mimetype) {
+        mimetype = "text/plain";  // FeederGate requires a value be specified
+      }
+
+      // validation successful; set remaining config variables for easy access
+      aclcaseinsensitive = (null != flags.get("aclcaseinsensitive"));
+      lock = (null != flags.get("lock"));
+      noarchive = (null != flags.get("noarchive"));
+      nofollow = (null != flags.get("nofollow"));
+      secure = (null != flags.get("secure"));
+
+      allowgroups = flags.get("aclallowgroups");
+      if (null == allowgroups) {
+        allowgroups = "";
+      }
+
+      allowusers = flags.get("aclallowusers");
+      if (null == allowusers) {
+        allowusers = "";
+      }
+
+      denygroups = flags.get("acldenygroups");
+      if (null == denygroups) {
+        denygroups = "";
+      }
+
+      denyusers = flags.get("acldenyusers");
+      if (null == denyusers) {
+        denyusers = "";
+      }
+
+      aclnamespace = flags.get("aclnamespace");
+      if (null == aclnamespace) {
+        aclnamespace = Principal.DEFAULT_NAMESPACE;
+      }
+
+      feeddirectory = flags.get("feeddirectory");
+      if (null == feeddirectory) {
+        File tempdir;
+        try {
+          tempdir = Files.createTempDir();
+          feeddirectory = tempdir.getAbsolutePath();
+        } catch (IllegalStateException e) {
+          throw new RuntimeException("Could not create temporary directory", e);
+        }
+      }
+    }
+
+    /**
+     * Tries a few different @{code SimpleDateFormat}s to parse the
+     * user-specified time, returning as soon as one can parse the input.  If
+     * none can match, an error message is added.
+     * @param time user-specified time (for lastModified values)
+     * @return Date that matches time, if parsing successful.
+     */
+    @VisibleForTesting
+    Date parseLastModifiedTime(String time) {
+      // first one on the list is rfc822 format; rest are simple variants on
+      // Month/day/year or year-month-day with optional time specifiers.
+      List<String> formats = Arrays.asList("EEE, dd MMM yyyy HH:mm:ss Z",
+          "yyyy-MM-dd'T'HH:mm:ssZ", /* ISO 6001 with suffix e.g. -0700 */
+          "yyyy-MM-dd'T'HH:mm:ssXXX", /* ISO 6001 with suffix e.g. -07:00 */
+          "yyyy-MM-dd HH:mm:ssZ", "yyyy-MM-dd HH:mm:ssXXX",
+          "yyyy-MM-dd HH:mm:ss Z", "yyyy-MM-dd HH:mm:ss XXX",
+          "yyyy-MM-dd HH:mm:ss", "yyyy-MM-dd",
+          "M/d/y H:m:s Z", "M/d/y H:m:s XXX", "M/d/y H:m:s",
+          "M/d/y H:m Z", "M/d/y H:m XXX", "M/d/y H:m",
+          "M/d/y Z", "M/d/y XXX", "M/d/y");
+      for (String format : formats) {
+        SimpleDateFormat sdf = new SimpleDateFormat(format, Locale.ENGLISH);
+        try {
+          return sdf.parse(time);
+        } catch (ParseException pe) {
+          // just drop the exception on the floor
+        }
+      }
+      errors.add("Could not parse lastModified time of '" + time + "'");
+      return null;
     }
 
     public String toString() {

@@ -9,4 +9,3 @@ aclDenyUsers four,five
 suffixToIgnore .gif # comment
 acldenyusers six
 suffixtoignore .jpg
-dontsend
