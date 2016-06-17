@@ -212,6 +212,11 @@ public class GsaFeedFileSender {
   /**
    * Sends XML with provided datasource name and feedtype "metadata-and-url".
    * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
+   *
+   * @param datasource name for the source of documents
+   * @param xmlString the message (feed) to send
+   * @param useCompression whether or not to attempt using compressed messages
+   * @throws IOException when something goes wrong with GSA communications
    */
   public void sendMetadataAndUrl(String datasource, String xmlString,
       boolean useCompression) throws IOException {
@@ -222,6 +227,11 @@ public class GsaFeedFileSender {
   /**
    * Sends XML with provided datasource name and feedtype "incremental".
    * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
+   *
+   * @param datasource name for the source of documents
+   * @param xmlString the message (feed) to send
+   * @param useCompression whether or not to attempt using compressed messages
+   * @throws IOException when something goes wrong with GSA communications
    */
   public void sendIncremental(String datasource, String xmlString,
       boolean useCompression) throws IOException {
@@ -231,6 +241,11 @@ public class GsaFeedFileSender {
   /**
    * Sends XML with provided datasource name and feedtype "full".
    * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
+   *
+   * @param datasource name for the source of documents
+   * @param xmlString the message (feed) to send
+   * @param useCompression whether or not to attempt using compressed messages
+   * @throws IOException when something goes wrong with GSA communications
    */
   public void sendFull(String datasource, String xmlString,
       boolean useCompression) throws IOException {
