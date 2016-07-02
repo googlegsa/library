@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -68,6 +69,12 @@ public class SimpleGsaFeedFileMakerTest {
           + "ljYWxseSBrbm9ja2luZyBwZW9wbGXigJlzIGhhdHMgb2ZmIOKAlCB0aGVuLCBJIGFj"
           + "Y291bnQgaXQgaGlnaCB0aW1lIHRvCmdldCB0byBzZWEgYXMgc29vbiBhcyBJIGNhbi"
           + "4iCg==</content>";
+
+  @Before
+  public void setUp() {
+    new File(TOM_SAWYER_FILE).setLastModified(1464800136000L);
+    new File(MOBY_DICK_FILE).setLastModified(1464799981000L);
+  }
 
   @Test
   public void testIncremental_Empty() {
