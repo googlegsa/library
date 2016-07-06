@@ -64,8 +64,7 @@ class SendToGsa {
   private static final Set<String> ZERO_VALUE_FLAGS =
       Collections.unmodifiableSet(Sets.newHashSet(
           "aclcaseinsensitive", "aclpublic", "crawlimmediately", "crawlonce",
-          "dontsend", "filesofurls", "lock", "noarchive", "nofollow",
-          "secure"));
+          "dontsend", "filesofurls", "lock", "secure"));
 
   // set of command-line flags that take a value that are additive (they may
   // be called more than once, and each call appends to previous values)
@@ -157,8 +156,6 @@ class SendToGsa {
     maker.setLastModified(c.lastmodified);
     maker.setLock(c.lock);
     maker.setMimetype(c.mimetype);
-    // TODO(myk): add calls to setNoArchive / setNoFollow, when FeederGate
-    // supports them.
     for (String fname : config.filenames) {
       try {
         maker.addFile(new File(fname));
@@ -220,8 +217,7 @@ class SendToGsa {
   /**
    * non-Adaptor Config class that parses all command line flags.
    */
-  static class Config { // TODO(myk): investigate using something
-        // along the lines of https://commons.apache.org/proper/commons-cli/
+  static class Config {
     /* stores configuration data as we parse flags/values */
     private final Map<String, String> flags;
     private final Collection<String> filenames;
@@ -246,8 +242,6 @@ class SendToGsa {
     private Date lastmodified;
     private String mimetype;
     private boolean lock;
-    private boolean noarchive;
-    private boolean nofollow;
     private boolean secure;
 
     public Config() {
@@ -356,9 +350,10 @@ class SendToGsa {
      * Read flags/values from the specified file.
      */
     protected void parseFlagFile(String filename) {
+      FileReader fileReader = null;
       try {
         File file = new File(filename);
-        FileReader fileReader = new FileReader(file);
+        fileReader = new FileReader(file);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
         String line;
         while ((line = bufferedReader.readLine()) != null) {
@@ -390,13 +385,21 @@ class SendToGsa {
             }
           }
         }
-        fileReader.close();
-        // TODO(myk): consider handling fileReader.close() extra carefully
       } catch (IOException e) {
         PrintWriter pw = new PrintWriter(new StringWriter());
         e.printStackTrace(pw);
         errors.add("Unexpected Exception in the " + filename + " script: "
             + pw.toString());
+      } finally {
+        try {
+          if (null != fileReader) {
+            fileReader.close();
+          }
+        } catch (IOException e) {
+          // log warning, but continue without calling it an "error"/aborting
+          log.log(Level.WARNING, "Unexpected Exception while closing script "
+              + filename, e);
+        }
       }
     }
 
@@ -535,8 +538,8 @@ class SendToGsa {
       }
       if (!DATASOURCE_FORMAT.matcher(datasource).matches()) {
         errors.add("Data source contains illegal characters: " + datasource
-            + " (it must start with a letter then consist of only letters, "
-            + "numbers, underscores, and dashes.)");
+            + " (it must start with a letter or underscore, followed by only "
+            + "letters, numbers, underscores, or dashes.)");
       }
 
       if (!errors.isEmpty()) {
@@ -556,8 +559,6 @@ class SendToGsa {
       // validation successful; set remaining config variables for easy access
       aclcaseinsensitive = (null != flags.get("aclcaseinsensitive"));
       lock = (null != flags.get("lock"));
-      noarchive = (null != flags.get("noarchive"));
-      nofollow = (null != flags.get("nofollow"));
       secure = (null != flags.get("secure"));
 
       allowgroups = flags.get("aclallowgroups");

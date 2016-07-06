@@ -44,6 +44,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
+
 
 import javax.xml.bind.DatatypeConverter;
 import javax.xml.parsers.DocumentBuilder;
@@ -90,8 +92,6 @@ public abstract class SimpleGsaFeedFileMaker {
   private Date lastModified;
   private boolean lock;
   private String mimetype;
-  // TODO(myk): add support for noArchive and noFollow, once a future FeederGate
-  // allows them to be specified.
 
   // DOM objects exposed to subclasses
   private Document doc; // XML Document for entire feed
@@ -131,11 +131,20 @@ public abstract class SimpleGsaFeedFileMaker {
     this.acl = false;
   }
 
+ /**
+  * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
+  */
   public void setDataSource(String dataSource) {
+    Pattern dataSource_format = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
+
     if (null == dataSource) {
       throw new IllegalArgumentException("dataSource must be non-null");
     }
-    // TODO(myk): consider validating against GsaFeedFileMaker.DATASOURCE_FORMAT
+    if (!dataSource_format.matcher(dataSource).matches()) {
+      throw new IllegalArgumentException("dataSource must start with a letter "
+          + "or underscore, and be followed only by alphanumeric characters, "
+          + "underscores, or hyphens.");
+    }
     this.dataSource = dataSource;
   }
 

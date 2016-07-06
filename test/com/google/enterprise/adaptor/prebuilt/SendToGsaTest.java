@@ -57,11 +57,10 @@ public class SendToGsaTest {
   @Test
   public void testZeroValueFlagsThatDontForceWebFeed() throws Exception {
     String[] args = new String[]{"--aclCaseInsensitive", "--aclPublic",
-        "--dontSend", "-lock", "--noarchive", "--nofollow", FILE_1};
+        "--dontSend", "-lock", FILE_1};
     String goldenConfig = "Config(aclcaseinsensitive=true,aclpublic=true,"
-        + "dontsend=true,feedtype=incremental,lock=true,noarchive=true,"
-        + "nofollow=true,files to feed: [test/com/google/enterprise/adaptor/"
-        + "prebuilt/resources/TomSawyer.txt])";
+        + "dontsend=true,feedtype=incremental,lock=true,files to feed: [test/"
+        + "com/google/enterprise/adaptor/prebuilt/resources/TomSawyer.txt])";
     SendToGsa test = new SendToGsa();
     test.parseArgs(args);
     assertEquals(goldenConfig, test.getConfig().toString());

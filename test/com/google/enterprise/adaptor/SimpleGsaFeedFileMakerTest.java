@@ -347,11 +347,19 @@ public class SimpleGsaFeedFileMakerTest {
   }
 
   @Test
-  public void testIncremental_IllegalDataSource() {
+  public void testIncremental_IllegalDataSourceNull() {
     thrown.expect(IllegalArgumentException.class);
     maker = new SimpleGsaFeedFileMaker.ContentIncremental();
     maker.setDataSource(null);
     fail("expected an IllegalArgumentException for null datasource.");
+  }
+
+  @Test
+  public void testIncremental_IllegalDataSourceBadPattern() {
+    thrown.expect(IllegalArgumentException.class);
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
+    maker.setDataSource("3_bad_first_char");
+    fail("expected an IllegalArgumentException for invalid datasource.");
   }
 
   // helper routines
