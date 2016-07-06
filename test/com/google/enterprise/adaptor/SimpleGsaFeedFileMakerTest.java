@@ -78,7 +78,7 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testIncremental_Empty() {
-    maker = new SimpleGsaFeedFileMaker.Content(/*feedtype=*/ "incremental");
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
@@ -99,7 +99,7 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testFull_Empty() {
-    maker = new SimpleGsaFeedFileMaker.Content(/*feedtype=*/ "full");
+    maker = new SimpleGsaFeedFileMaker.ContentFull();
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
@@ -142,7 +142,7 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testFull_SampleContent() throws IOException {
-    maker = new SimpleGsaFeedFileMaker.Content(/*feedtype=*/ "full");
+    maker = new SimpleGsaFeedFileMaker.ContentFull();
     String hostname = getHostname();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -180,7 +180,7 @@ public class SimpleGsaFeedFileMakerTest {
   @Test
   public void testIncremental_TwoFilesWithDifferentPermissions()
       throws IOException {
-    maker = new SimpleGsaFeedFileMaker.Content(/*feedtype=*/ "incremental");
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
     String hostname = getHostname();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -349,16 +349,9 @@ public class SimpleGsaFeedFileMakerTest {
   @Test
   public void testIncremental_IllegalDataSource() {
     thrown.expect(IllegalArgumentException.class);
-    maker = new SimpleGsaFeedFileMaker.Content(/*feedtype=*/ "incremental");
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
     maker.setDataSource(null);
     fail("expected an IllegalArgumentException for null datasource.");
-  }
-
-  @Test
-  public void testIncremental_IllegalFeedType() {
-    thrown.expect(IllegalArgumentException.class);
-    maker = new SimpleGsaFeedFileMaker.Content(/*feedtype=*/ "bogus");
-    fail("expected an IllegalArgumentException for illegal feedType.");
   }
 
   // helper routines

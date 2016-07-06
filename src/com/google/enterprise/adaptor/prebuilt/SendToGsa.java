@@ -136,8 +136,12 @@ class SendToGsa {
       metaMaker.setCrawlImmediately(c.crawlimmediately);
       metaMaker.setCrawlOnce(c.crawlonce);
       maker = metaMaker;
+    } else if ("incremental".equals(c.feedtype)) {
+      maker = new SimpleGsaFeedFileMaker.ContentIncremental();
+    } else if ("full".equals(c.feedtype)) {
+      maker = new SimpleGsaFeedFileMaker.ContentFull();
     } else {
-      maker = new SimpleGsaFeedFileMaker.Content(c.feedtype);
+      throw new AssertionError("invalid feedtype: " + c.feedtype);
     }
 
     if (c.aclpublic) {

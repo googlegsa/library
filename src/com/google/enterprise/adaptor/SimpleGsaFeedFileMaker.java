@@ -319,13 +319,13 @@ public abstract class SimpleGsaFeedFileMaker {
    * and incremental).  Each file we put generates one record in the feed,
    * including the file's content.
    */
-  public static class Content extends SimpleGsaFeedFileMaker {
+  private static class Content extends SimpleGsaFeedFileMaker {
     private Collection<Element> savedRecords = new ArrayList<Element>();
     // <record> elements are created and stored as items are added
 
     private String feedType;
 
-    public Content(String feedType) {
+    protected Content(String feedType) {
       setFeedType(feedType);
     }
 
@@ -418,6 +418,18 @@ public abstract class SimpleGsaFeedFileMaker {
             DatatypeConverter.printBase64Binary(fileContent)));
       }
       return record;
+    }
+  }
+
+  public static class ContentIncremental extends Content {
+    public ContentIncremental() {
+      super("incremental");
+    }
+  }
+
+  public static class ContentFull extends Content {
+    public ContentFull() {
+      super("full");
     }
   }
 
