@@ -131,8 +131,11 @@ class SendToGsa {
     final GsaFeedFileArchiver saver = new GsaFeedFileArchiver(c.feeddirectory);
     final SimpleGsaFeedFileMaker maker;
     if ("web".equals(c.feedtype)) {
-      maker = new SimpleGsaFeedFileMaker.MetadataAndUrl(c.crawlimmediately,
-          c.crawlonce);
+      SimpleGsaFeedFileMaker.MetadataAndUrl metaMaker
+          = new SimpleGsaFeedFileMaker.MetadataAndUrl();
+      metaMaker.setCrawlImmediately(c.crawlimmediately);
+      metaMaker.setCrawlOnce(c.crawlonce);
+      maker = metaMaker;
     } else {
       maker = new SimpleGsaFeedFileMaker.Content(c.feedtype);
     }

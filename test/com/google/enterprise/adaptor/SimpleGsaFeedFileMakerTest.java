@@ -120,8 +120,8 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testMetadataAndUrl_Empty() {
-    maker = new SimpleGsaFeedFileMaker.MetadataAndUrl(
-        /*crawlImmediately=*/ false, /*crawlOnce=*/ false);
+    SimpleGsaFeedFileMaker.MetadataAndUrl maker
+        = new SimpleGsaFeedFileMaker.MetadataAndUrl();
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
@@ -201,7 +201,7 @@ public class SimpleGsaFeedFileMakerTest {
             + TOM_SAWYER_CONTENT
             + "\n</record>\n";
     String goldenBook2 =
-        "<record crawl-immediately=\"true\" crawl-once=\"true\" last-modified="
+        "<record last-modified="
             + "\"Sun, 06 Nov 1994 00:49:38 -0800\" lock=\"true\" mimetype=\""
             + "text/other\" url=\"googleconnector://" + hostname
             + "/test/com/google/enterprise/adaptor/prebuilt/resources/MobyDick"
@@ -243,8 +243,6 @@ public class SimpleGsaFeedFileMakerTest {
     assertEquals(golden1, xml1);
 
     // different permissions for second file
-    maker.setCrawlImmediately(true);
-    maker.setCrawlOnce(true);
     maker.setLastModified(new Date(784111778L  * 1000));
     maker.setLock(true);
     maker.setMimetype("text/other");
@@ -264,8 +262,8 @@ public class SimpleGsaFeedFileMakerTest {
   @Test
   public void testMetadataAndUrl_TwoSetsOfUrlsWithDifferentPermissions()
       throws IOException {
-    maker = new SimpleGsaFeedFileMaker.MetadataAndUrl(
-        /*crawlImmediately=*/ false, /*crawlOnce=*/ false);
+    SimpleGsaFeedFileMaker.MetadataAndUrl maker
+        = new SimpleGsaFeedFileMaker.MetadataAndUrl();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "

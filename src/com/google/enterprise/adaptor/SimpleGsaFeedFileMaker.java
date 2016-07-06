@@ -86,8 +86,6 @@ public abstract class SimpleGsaFeedFileMaker {
   private String namespace;
 
   // and then the non-ACL-related properties
-  private boolean crawlImmediately;
-  private boolean crawlOnce;
   private String dataSource;
   private Date lastModified;
   private boolean lock;
@@ -131,14 +129,6 @@ public abstract class SimpleGsaFeedFileMaker {
     this.deniedUsers = Collections.emptyList();
     this.deniedGroups = Collections.emptyList();
     this.acl = false;
-  }
-
-  public void setCrawlImmediately(boolean crawlImmediately) {
-    this.crawlImmediately = crawlImmediately;
-  }
-
-  public void setCrawlOnce(boolean crawlOnce) {
-    this.crawlOnce = crawlOnce;
   }
 
   public void setDataSource(String dataSource) {
@@ -409,12 +399,6 @@ public abstract class SimpleGsaFeedFileMaker {
         String dateStr = rfc822format.format(super.lastModified);
         record.setAttribute("last-modified", dateStr);
       }
-      if (super.crawlImmediately) {
-        record.setAttribute("crawl-immediately", "true");
-      }
-      if (super.crawlOnce) {
-        record.setAttribute("crawl-once", "true");
-      }
       if (super.lock) {
         record.setAttribute("lock", "true");
       }
@@ -446,10 +430,18 @@ public abstract class SimpleGsaFeedFileMaker {
     // <record> elements are created and stored as content is added
 
     private String feedType = "incremental";
+    private boolean crawlImmediately;
+    private boolean crawlOnce;
 
-    public MetadataAndUrl(boolean crawlImmediately, boolean crawlOnce) {
-      super.setCrawlImmediately(crawlImmediately);
-      super.setCrawlOnce(crawlOnce);
+    public MetadataAndUrl() {
+    }
+
+    public void setCrawlImmediately(boolean crawlImmediately) {
+      this.crawlImmediately = crawlImmediately;
+    }
+
+    public void setCrawlOnce(boolean crawlOnce) {
+      this.crawlOnce = crawlOnce;
     }
 
     void constructFeedFileHead(Document doc, Element root) {
@@ -531,10 +523,10 @@ public abstract class SimpleGsaFeedFileMaker {
       Element record = doc.createElement("record");
       record.setAttribute("url", url);
       record.setAttribute("mimetype", super.mimetype);
-      if (super.crawlImmediately) {
+      if (crawlImmediately) {
         record.setAttribute("crawl-immediately", "true");
       }
-      if (super.crawlOnce) {
+      if (crawlOnce) {
         record.setAttribute("crawl-once", "true");
       }
       if (super.lock) {
