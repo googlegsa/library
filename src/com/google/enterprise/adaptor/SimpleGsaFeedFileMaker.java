@@ -184,6 +184,9 @@ public abstract class SimpleGsaFeedFileMaker {
   public abstract void addInputStream(InputStream ins, String name)
       throws IOException;
 
+  // TODO(myk): replace each Collection<String> with Collection<Principal>
+  // (and eliminate the namespace parameter, since that is implicit within
+  // each Principal).
   public void setAclProperties(boolean caseInsensitivity, String namespace,
       Collection<String> allowedUsers, Collection<String> allowedGroups,
       Collection<String> deniedUsers, Collection<String> deniedGroups) {
@@ -539,6 +542,8 @@ public abstract class SimpleGsaFeedFileMaker {
     /**
      * Creates a record for a URL
      */
+    // TODO(myk): consider a public wrapper to this, either addUrl(String url)
+    // or addUrl(URL url).
     private Element constructWebSingleFeedFileRecord(Document doc,
         String url) {
       Element record = doc.createElement("record");
