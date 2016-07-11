@@ -78,78 +78,82 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testIncremental_Empty() {
-    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental("t3sT");
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>incremental</feedtype>\n"
         + "</header>\n"
         + "<group/>\n"
         + "</gsafeed>\n";
-    maker.setDataSource("t3sT");
     String xml = maker.toXmlString();
     xml = xml.replaceAll("\r\n", "\n");
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(golden, xml);
   }
 
   @Test
   public void testFull_Empty() {
-    maker = new SimpleGsaFeedFileMaker.ContentFull();
+    maker = new SimpleGsaFeedFileMaker.ContentFull("t3sT");
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>full</feedtype>\n"
         + "</header>\n"
         + "<group/>\n"
         + "</gsafeed>\n";
-    maker.setDataSource("t3sT");
     String xml = maker.toXmlString();
     xml = xml.replaceAll("\r\n", "\n");
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(golden, xml);
   }
 
   @Test
   public void testMetadataAndUrl_Empty() {
     SimpleGsaFeedFileMaker.MetadataAndUrl maker
-        = new SimpleGsaFeedFileMaker.MetadataAndUrl();
+        = new SimpleGsaFeedFileMaker.MetadataAndUrl("t3sT");
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>web</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
         + "</header>\n"
         + "<group/>\n"
         + "</gsafeed>\n";
-    maker.setDataSource("t3sT");
     String xml = maker.toXmlString();
     xml = xml.replaceAll("\r\n", "\n");
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(golden, xml);
   }
 
   @Test
   public void testFull_SampleContent() throws IOException {
-    maker = new SimpleGsaFeedFileMaker.ContentFull();
+    maker = new SimpleGsaFeedFileMaker.ContentFull("sampleContent");
     String hostname = getHostname();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>sampleContent</datasource>\n"
         + "<feedtype>full</feedtype>\n"
@@ -167,27 +171,28 @@ public class SimpleGsaFeedFileMakerTest {
         + "</group>\n"
         + "</gsafeed>\n";
     String golden = goldenHeader + goldenBody;
-    maker.setDataSource("sampleContent");
     maker.setPublicAcl();
     File moby = new File(MOBY_DICK_FILE);
     maker.addFile(moby);
     String xml = maker.toXmlString();
-    xml = removePathPrefixOfTestDirectory(hostname, xml, 1);
     xml = xml.replaceAll("\r\n", "\n");
+    xml = removePathPrefixOfTestDirectory(hostname, xml, 1);
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(golden, xml);
   }
 
   @Test
   public void testIncremental_TwoFilesWithDifferentPermissions()
       throws IOException {
-    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental("t3sT");
     String hostname = getHostname();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>incremental</feedtype>\n"
@@ -233,13 +238,13 @@ public class SimpleGsaFeedFileMakerTest {
         + "</gsafeed>\n";
     String golden1 = goldenHeader + goldenBody1;
     String golden2 = goldenHeader + goldenBody2;
-    maker.setDataSource("t3sT");
     maker.setPublicAcl();
     File tom = new File(TOM_SAWYER_FILE);
     maker.addFile(tom);
     String xml1 = maker.toXmlString();
-    xml1 = removePathPrefixOfTestDirectory(hostname, xml1, 1);
     xml1 = xml1.replaceAll("\r\n", "\n");
+    xml1 = removePathPrefixOfTestDirectory(hostname, xml1, 1);
+    xml1 = removeJavaVersion(System.getProperty("java.version"), xml1);
     assertEquals(golden1, xml1);
 
     // different permissions for second file
@@ -254,8 +259,9 @@ public class SimpleGsaFeedFileMakerTest {
     File moby = new File(MOBY_DICK_FILE);
     maker.addFile(moby);
     String xml2 = maker.toXmlString();
-    xml2 = removePathPrefixOfTestDirectory(hostname, xml2, 2);
     xml2 = xml2.replaceAll("\r\n", "\n");
+    xml2 = removePathPrefixOfTestDirectory(hostname, xml2, 2);
+    xml2 = removeJavaVersion(System.getProperty("java.version"), xml2);
     assertEquals(golden2, xml2);
   }
 
@@ -263,13 +269,14 @@ public class SimpleGsaFeedFileMakerTest {
   public void testMetadataAndUrl_TwoSetsOfUrlsWithDifferentPermissions()
       throws IOException {
     SimpleGsaFeedFileMaker.MetadataAndUrl maker
-        = new SimpleGsaFeedFileMaker.MetadataAndUrl();
+        = new SimpleGsaFeedFileMaker.MetadataAndUrl("t3sT");
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>web</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -323,13 +330,12 @@ public class SimpleGsaFeedFileMakerTest {
         + "</gsafeed>\n";
     String golden1 = goldenHeader + goldenBody1;
     String golden2 = goldenHeader + goldenBody2;
-    maker.setDataSource("t3sT");
     maker.setPublicAcl();
     maker.setMimetype("text/plain");
     File urls = new File(URLS_FILE);
     maker.addFile(urls);
     String xml1 = maker.toXmlString().replaceAll("\r\n", "\n");
-    assertEquals(golden1, xml1);
+    xml1 = removeJavaVersion(System.getProperty("java.version"), xml1);
 
     // different permissions for second set of (same) urls
     maker.setCrawlImmediately(true);
@@ -343,22 +349,21 @@ public class SimpleGsaFeedFileMakerTest {
         Collections.<String>emptyList());
     maker.addFile(urls);
     String xml2 = maker.toXmlString().replaceAll("\r\n", "\n");
+    xml2 = removeJavaVersion(System.getProperty("java.version"), xml2);
     assertEquals(golden2, xml2);
   }
 
   @Test
   public void testIncremental_IllegalDataSourceNull() {
     thrown.expect(IllegalArgumentException.class);
-    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
-    maker.setDataSource(null);
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental(null);
     fail("expected an IllegalArgumentException for null datasource.");
   }
 
   @Test
   public void testIncremental_IllegalDataSourceBadPattern() {
     thrown.expect(IllegalArgumentException.class);
-    maker = new SimpleGsaFeedFileMaker.ContentIncremental();
-    maker.setDataSource("3_bad_first_char");
+    maker = new SimpleGsaFeedFileMaker.ContentIncremental("3_bad_first_char");
     fail("expected an IllegalArgumentException for invalid datasource.");
   }
 
@@ -399,5 +404,18 @@ public class SimpleGsaFeedFileMakerTest {
           + removePathPrefixOfTestDirectory(hostname,
               xml.substring(testLocation), times - 1);
     }
+  }
+
+  /**
+   * Allows the xml to match the golden xml by removing the specific Java
+   * version from the gsafeed header.
+   */
+  private static String removeJavaVersion(String javaVersion, String xml) {
+    String versionPrefix = "<!--Version ";
+    int javaLocation = xml.indexOf(versionPrefix + javaVersion);
+    if (javaLocation == -1) {
+      fail("could not find Java version string in xml '" + xml + "'");
+    }
+    return xml.replace(versionPrefix + javaVersion, versionPrefix + "X.Y.Z");
   }
 }

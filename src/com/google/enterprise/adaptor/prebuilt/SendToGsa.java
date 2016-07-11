@@ -131,14 +131,14 @@ class SendToGsa {
     final SimpleGsaFeedFileMaker maker;
     if ("web".equals(c.feedtype)) {
       SimpleGsaFeedFileMaker.MetadataAndUrl metaMaker
-          = new SimpleGsaFeedFileMaker.MetadataAndUrl();
+          = new SimpleGsaFeedFileMaker.MetadataAndUrl(c.datasource);
       metaMaker.setCrawlImmediately(c.crawlimmediately);
       metaMaker.setCrawlOnce(c.crawlonce);
       maker = metaMaker;
     } else if ("incremental".equals(c.feedtype)) {
-      maker = new SimpleGsaFeedFileMaker.ContentIncremental();
+      maker = new SimpleGsaFeedFileMaker.ContentIncremental(c.datasource);
     } else if ("full".equals(c.feedtype)) {
-      maker = new SimpleGsaFeedFileMaker.ContentFull();
+      maker = new SimpleGsaFeedFileMaker.ContentFull(c.datasource);
     } else {
       throw new AssertionError("invalid feedtype: " + c.feedtype);
     }
@@ -152,7 +152,6 @@ class SendToGsa {
           Arrays.asList(c.denyusers.split(",", 0)),
           Arrays.asList(c.denygroups.split(",", 0)));
     }
-    maker.setDataSource(c.datasource);
     maker.setLastModified(c.lastmodified);
     maker.setLock(c.lock);
     maker.setMimetype(c.mimetype);

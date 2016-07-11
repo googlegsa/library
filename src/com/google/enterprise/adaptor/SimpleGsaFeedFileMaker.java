@@ -75,8 +75,10 @@ public abstract class SimpleGsaFeedFileMaker {
   final DateFormat rfc822format = new SimpleDateFormat(
       "EEE, dd MMM yyyy HH:mm:ss Z", Locale.ENGLISH);
 
-  private static final List<String> COMMENTS_FOR_FEED =
-      Collections.singletonList("Feed file created by send2gsa.");
+  private static final List<String> COMMENTS_FOR_FEED = Arrays.asList(
+      Application.productVersion(Application.class),
+      new Dashboard.JavaVersionStatusSource().retrieveStatus().getMessage(
+          Locale.ENGLISH));
 
   // visible to subclasses -- first, the ACL-related properties
   private Collection<String> allowedGroups;
@@ -88,7 +90,7 @@ public abstract class SimpleGsaFeedFileMaker {
   private String namespace;
 
   // and then the non-ACL-related properties
-  private String dataSource;
+  private final String dataSource;
   private Date lastModified;
   private boolean lock;
   private String mimetype;
@@ -100,7 +102,21 @@ public abstract class SimpleGsaFeedFileMaker {
   private boolean feedConstructed = false;
   private static String hostname = null;
 
-  private SimpleGsaFeedFileMaker() {
+ /**
+  * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
+  */
+  private SimpleGsaFeedFileMaker(String dataSource) {
+    Pattern dataSource_format = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
+
+    if (null == dataSource) {
+      throw new IllegalArgumentException("dataSource must be non-null");
+    }
+    if (!dataSource_format.matcher(dataSource).matches()) {
+      throw new IllegalArgumentException("dataSource must start with a letter "
+          + "or underscore, and be followed only by alphanumeric characters, "
+          + "underscores, or hyphens.");
+    }
+    this.dataSource = dataSource;
     try {
       DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
       DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
@@ -129,23 +145,6 @@ public abstract class SimpleGsaFeedFileMaker {
     this.deniedUsers = Collections.emptyList();
     this.deniedGroups = Collections.emptyList();
     this.acl = false;
-  }
-
- /**
-  * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
-  */
-  public void setDataSource(String dataSource) {
-    Pattern dataSource_format = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
-
-    if (null == dataSource) {
-      throw new IllegalArgumentException("dataSource must be non-null");
-    }
-    if (!dataSource_format.matcher(dataSource).matches()) {
-      throw new IllegalArgumentException("dataSource must start with a letter "
-          + "or underscore, and be followed only by alphanumeric characters, "
-          + "underscores, or hyphens.");
-    }
-    this.dataSource = dataSource;
   }
 
   public void setLastModified(Date lastModified) {
@@ -184,9 +183,6 @@ public abstract class SimpleGsaFeedFileMaker {
   public abstract void addInputStream(InputStream ins, String name)
       throws IOException;
 
-  // TODO(myk): replace each Collection<String> with Collection<Principal>
-  // (and eliminate the namespace parameter, since that is implicit within
-  // each Principal).
   public void setAclProperties(boolean caseInsensitivity, String namespace,
       Collection<String> allowedUsers, Collection<String> allowedGroups,
       Collection<String> deniedUsers, Collection<String> deniedGroups) {
@@ -337,7 +333,8 @@ public abstract class SimpleGsaFeedFileMaker {
 
     private String feedType;
 
-    protected Content(String feedType) {
+    protected Content(String dataSource, String feedType) {
+      super(dataSource);
       setFeedType(feedType);
     }
 
@@ -434,14 +431,14 @@ public abstract class SimpleGsaFeedFileMaker {
   }
 
   public static class ContentIncremental extends Content {
-    public ContentIncremental() {
-      super("incremental");
+    public ContentIncremental(String dataSource) {
+      super(dataSource, "incremental");
     }
   }
 
   public static class ContentFull extends Content {
-    public ContentFull() {
-      super("full");
+    public ContentFull(String dataSource) {
+      super(dataSource, "full");
     }
   }
 
@@ -457,7 +454,8 @@ public abstract class SimpleGsaFeedFileMaker {
     private boolean crawlImmediately;
     private boolean crawlOnce;
 
-    public MetadataAndUrl() {
+    public MetadataAndUrl(String dataSource) {
+      super(dataSource);
     }
 
     public void setCrawlImmediately(boolean crawlImmediately) {

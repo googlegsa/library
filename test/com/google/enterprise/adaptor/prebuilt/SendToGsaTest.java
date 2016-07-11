@@ -273,7 +273,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>send2gsa</datasource>\n"
         + "<feedtype>incremental</feedtype>\n"
@@ -298,6 +299,7 @@ public class SendToGsaTest {
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
     xml = removePathPrefixOfTestDirectory(hostname, xml);
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
   }
 
@@ -313,7 +315,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>send2gsa</datasource>\n"
         + "<feedtype>full</feedtype>\n"
@@ -338,6 +341,7 @@ public class SendToGsaTest {
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
     xml = removePathPrefixOfTestDirectory(hostname, xml);
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
   }
 
@@ -353,7 +357,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>web</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -368,6 +373,7 @@ public class SendToGsaTest {
     test.parseArgs(args);
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
   }
 
@@ -385,7 +391,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>send2gsa</datasource>\n"
         + "<feedtype>incremental</feedtype>\n"
@@ -418,6 +425,7 @@ public class SendToGsaTest {
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
     xml = removePathPrefixOfTestDirectory(hostname, xml);
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
   }
 
@@ -442,7 +450,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>web</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -466,6 +475,7 @@ public class SendToGsaTest {
     test.parseArgs(args);
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
   }
 
@@ -481,7 +491,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>send2gsa</datasource>\n"
         + "<feedtype>incremental</feedtype>\n"
@@ -523,6 +534,7 @@ public class SendToGsaTest {
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
     xml = removePathPrefixOfTestDirectory(hostname, xml);
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
 
     Charset charset = Charset.forName("UTF-8");
@@ -558,7 +570,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>send2gsa</datasource>\n"
         + "<feedtype>full</feedtype>\n"
@@ -608,6 +621,7 @@ public class SendToGsaTest {
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
     xml = removePathPrefixOfTestDirectory(hostname, xml);
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
 
     Charset charset = Charset.forName("UTF-8");
@@ -648,7 +662,8 @@ public class SendToGsaTest {
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
         + "\"gsafeed.dtd\">\n"
         + "<gsafeed>\n"
-        + "<!--Feed file created by send2gsa.-->\n"
+        + "<!--Product Version: Application  (unknown version)-->\n"
+        + "<!--Version X.Y.Z of Java is supported.-->\n"
         + "<header>\n"
         + "<datasource>web</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -689,6 +704,7 @@ public class SendToGsaTest {
     test.parseArgs(args);
     assertEquals(goldenConfig, test.getConfig().toString());
     String xml = test.createFeedFile();
+    xml = removeJavaVersion(System.getProperty("java.version"), xml);
     assertEquals(goldenXml, xml);
 
     Charset charset = Charset.forName("UTF-8");
@@ -740,5 +756,18 @@ public class SendToGsaTest {
       fail("could not find test directory in xml '" + xml + "'");
     }
     return xml.substring(0, hostnameLocation) + xml.substring(testLocation);
+  }
+
+  /**
+   * Allows the xml to match the golden xml by removing the specific Java
+   * version from the gsafeed header.
+   */
+  private static String removeJavaVersion(String javaVersion, String xml) {
+    String versionPrefix = "<!--Version ";
+    int javaLocation = xml.indexOf(versionPrefix + javaVersion);
+    if (javaLocation == -1) {
+      fail("could not find Java version string in xml '" + xml + "'");
+    }
+    return xml.replace(versionPrefix + javaVersion, versionPrefix + "X.Y.Z");
   }
 }
