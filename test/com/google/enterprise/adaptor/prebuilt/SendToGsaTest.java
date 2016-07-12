@@ -21,25 +21,20 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
-import com.sun.net.httpserver.HttpsConfigurator;
-import com.sun.net.httpserver.HttpsServer;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.FileNotFoundException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -723,6 +718,32 @@ public class SendToGsaTest {
         new String(handler.getRequestBytes(), charset));
     server.stop(5 /* seconds */); // allow enough time to tear down the server
     server = null;
+  }
+
+  @Test
+  public void testGetUrlsFromFile_threeValid() throws Exception {
+    List<URL> goldenUrls = Arrays.asList(new URL("http://www.google.com/"),
+        new URL("https://www.google.com/"), new URL("http://www.yahoo.com/"));
+    assertEquals(goldenUrls, SendToGsa.getUrlsFromFile(FILE_URLS));
+  }
+
+  @Test
+  public void testGetUrlsFromFile_fileWithNoUrlsReturnsEmptyList()
+      throws Exception {
+    Collection<URL> goldenUrls = new ArrayList<URL>();
+    assertEquals(goldenUrls, SendToGsa.getUrlsFromFile(SCRIPT_FILE));
+  }
+
+  @Test
+  public void testGetUrlsFromFile_fileNotFoundThrowsException()
+      throws Exception {
+    Collection<URL> urls;
+    try {
+      urls = SendToGsa.getUrlsFromFile("file that does not exist");
+      fail("expected FileNotFoundException");
+    } catch (FileNotFoundException e) {
+      // ignore expected exception
+    }
   }
 
   // helper routines

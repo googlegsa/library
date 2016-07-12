@@ -22,13 +22,10 @@ import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.StringWriter;
 import java.net.InetAddress;
 import java.net.URL;
@@ -106,12 +103,12 @@ public abstract class SimpleGsaFeedFileMaker {
   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
   */
   private SimpleGsaFeedFileMaker(String dataSource) {
-    Pattern dataSource_format = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
+    Pattern dataSourceFormat = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
 
     if (null == dataSource) {
       throw new IllegalArgumentException("dataSource must be non-null");
     }
-    if (!dataSource_format.matcher(dataSource).matches()) {
+    if (!dataSourceFormat.matcher(dataSource).matches()) {
       throw new IllegalArgumentException("dataSource must start with a letter "
           + "or underscore, and be followed only by alphanumeric characters, "
           + "underscores, or hyphens.");
@@ -163,25 +160,6 @@ public abstract class SimpleGsaFeedFileMaker {
     }
     this.mimetype = mimetype;
   }
-
-  public void addFile(File file) throws IOException {
-    final Date lastModifiedOnEntry = this.lastModified;
-    try {
-      if (null == this.lastModified) {
-        this.lastModified = new Date(file.lastModified());
-      }
-      FileInputStream fins = new FileInputStream(file); 
-      addInputStream(fins, file.getCanonicalPath());
-      fins.close();
-    } finally {
-      this.lastModified = lastModifiedOnEntry;
-    }
-  }
-
-  // Subclasses must implement this method in a way that applies 
-  // current settings (ACLs, binary options) to this input.
-  public abstract void addInputStream(InputStream ins, String name)
-      throws IOException;
 
   public void setAclProperties(boolean caseInsensitivity, String namespace,
       Collection<String> allowedUsers, Collection<String> allowedGroups,
@@ -324,16 +302,16 @@ public abstract class SimpleGsaFeedFileMaker {
 
   /**
    * A version of SimpleGsaFeedFileMaker that creates Content feeds (both full
-   * and incremental).  Each file we put generates one record in the feed,
+   * and incremental).  Each file we add generates one record in the feed,
    * including the file's content.
    */
-  private static class Content extends SimpleGsaFeedFileMaker {
+  public static class Content extends SimpleGsaFeedFileMaker {
     private Collection<Element> savedRecords = new ArrayList<Element>();
     // <record> elements are created and stored as items are added
 
     private String feedType;
 
-    protected Content(String dataSource, String feedType) {
+    private Content(String dataSource, String feedType) {
       super(dataSource);
       setFeedType(feedType);
     }
@@ -367,7 +345,34 @@ public abstract class SimpleGsaFeedFileMaker {
       feedtype.appendChild(feedText);
     }
 
-    @Override
+    /** Creates a <record> element with the file's contents and attributes,
+     * part of the feed generated when {@code toXmlString()} in called.  This
+     * method is basically a wrapper to {@code addInputStream()} that interacts
+     * with the {@code lastModified} variable from the superclass:
+     * {@code addInputStream()} does not look at last-modified time, but
+     * {@code constructContentSingleFeedFileRecord()}, which
+     * {@code addInputStream()} calls, extracts it and writes it out (in RFC-822
+     * format).  If {@code super.lastModified} is set (non-null), this method
+     * leaves it alone.  If not, we set {@code super.lastModified} to this
+     * file's actual last-modified time, then set it back after we've finished
+     * creating the file's XML <record> element.
+     *
+     * @param file the {@code File} to read content and last-modified time from
+     */
+    public void addFile(File file) throws IOException {
+      final Date lastModifiedOnEntry = super.lastModified;
+      try {
+        if (null == super.lastModified) {
+          setLastModified(new Date(file.lastModified()));
+        }
+        FileInputStream fins = new FileInputStream(file);
+        addInputStream(fins, file.getCanonicalPath());
+        fins.close();
+      } finally {
+        setLastModified(lastModifiedOnEntry);
+      }
+    }
+
     public void addInputStream(InputStream ins, String name)
         throws IOException {
       savedRecords.add(
@@ -430,12 +435,18 @@ public abstract class SimpleGsaFeedFileMaker {
     }
   }
 
+  /**
+   * A version of SimpleGsaFeedFileMaker that creates incremental content feeds.
+   */
   public static class ContentIncremental extends Content {
     public ContentIncremental(String dataSource) {
       super(dataSource, "incremental");
     }
   }
 
+  /**
+   * A version of SimpleGsaFeedFileMaker that creates full content feeds.
+   */
   public static class ContentFull extends Content {
     public ContentFull(String dataSource) {
       super(dataSource, "full");
@@ -486,13 +497,6 @@ public abstract class SimpleGsaFeedFileMaker {
       feedtype.appendChild(feedText);
     }
 
-    @Override
-    public void addInputStream(InputStream ins, String name)
-        throws IOException {
-      savedRecords.addAll(
-          constructWebFeedFileBodyForFile(super.doc, ins, name));
-    }
-
     /** Adds all the DocIds into feed-file-document one record at a time. */
     void constructFeedFileBody(Document doc, Element root) {
       Element group;
@@ -510,40 +514,18 @@ public abstract class SimpleGsaFeedFileMaker {
       }
     }
 
-    /** Creates all the Records from the URLs found in the given input. */
-    private Collection<Element> constructWebFeedFileBodyForFile(Document doc,
-        InputStream ins, String name) throws IOException {
-      Collection<Element> records = new ArrayList<Element>();
-      long urlsFound = 0;
-      BufferedReader reader = new BufferedReader(new InputStreamReader(ins));
-      String line;
-      long lineCounter = 0;
-      while ((line = reader.readLine()) != null) {
-        line = line.trim();
-        lineCounter++;
-        try {
-          URL valid = new URL(line);
-          urlsFound++;
-          records.add(constructWebSingleFeedFileRecord(doc, line));
-        } catch (java.net.MalformedURLException e) {
-          // warn about lines that aren't valid URLs.
-          if (!"".equals(line) && !line.startsWith("#")) {
-            log.warning("Ignoring line " + lineCounter + " of URL file "
-                + name + " - " + line + " is not a URL");
-          }
-        }
-      }
-      log.fine("Found " + urlsFound + " URL(s) in file " + name);
-      return records;
+    /**
+     * Adds a <record> element for the specified URL
+     */
+    public void addUrl(URL url) {
+      savedRecords.add(constructWebSingleFeedFileRecord(super.doc,
+          url.toString()));
     }
 
     /**
      * Creates a record for a URL
      */
-    // TODO(myk): consider a public wrapper to this, either addUrl(String url)
-    // or addUrl(URL url).
-    private Element constructWebSingleFeedFileRecord(Document doc,
-        String url) {
+    private Element constructWebSingleFeedFileRecord(Document doc, String url) {
       Element record = doc.createElement("record");
       record.setAttribute("url", url);
       record.setAttribute("mimetype", super.mimetype);

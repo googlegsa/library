@@ -25,10 +25,13 @@ import com.google.enterprise.adaptor.GsaFeedFileSender;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.io.InputStreamReader;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -97,6 +100,8 @@ class SendToGsa {
     ONE_VALUE_FLAGS = Collections.unmodifiableSet(allOneValueFlags);
   }
 
+  // keep track of files (that were supposed to be part of our feed) that erred
+  private static final Collection<String> errorFiles = new ArrayList<String>();
 
   /**
    * Parse (and validate) the command-line values.
@@ -135,14 +140,29 @@ class SendToGsa {
       metaMaker.setCrawlImmediately(c.crawlimmediately);
       metaMaker.setCrawlOnce(c.crawlonce);
       maker = metaMaker;
+      setMakerAttributes(maker, c);
+      fillMetadataAndUrlFeed(metaMaker, c.filenames);
     } else if ("incremental".equals(c.feedtype)) {
-      maker = new SimpleGsaFeedFileMaker.ContentIncremental(c.datasource);
+      SimpleGsaFeedFileMaker.Content contentMaker
+          = new SimpleGsaFeedFileMaker.ContentIncremental(c.datasource);
+      maker = contentMaker;
+      setMakerAttributes(maker, c);
+      fillContentFeed(contentMaker, c.filenames);
     } else if ("full".equals(c.feedtype)) {
-      maker = new SimpleGsaFeedFileMaker.ContentFull(c.datasource);
+      SimpleGsaFeedFileMaker.Content contentMaker
+          = new SimpleGsaFeedFileMaker.ContentFull(c.datasource);
+      maker = contentMaker;
+      setMakerAttributes(maker, c);
+      fillContentFeed(contentMaker, c.filenames);
     } else {
       throw new AssertionError("invalid feedtype: " + c.feedtype);
     }
+    String feed = maker.toXmlString();
+    saver.saveFeed("send2gsa", feed);
+    return feed;
+  }
 
+  private void setMakerAttributes(SimpleGsaFeedFileMaker maker, Config c) {
     if (c.aclpublic) {
       maker.setPublicAcl();
     } else {
@@ -155,17 +175,91 @@ class SendToGsa {
     maker.setLastModified(c.lastmodified);
     maker.setLock(c.lock);
     maker.setMimetype(c.mimetype);
-    for (String fname : config.filenames) {
+  }
+
+  private void fillMetadataAndUrlFeed(
+      SimpleGsaFeedFileMaker.MetadataAndUrl maker,
+      Collection<String> files) {
+    for (String name : files) {
+      Collection<URL> urls = Collections.emptyList();
       try {
-        maker.addFile(new File(fname));
+        urls = getUrlsFromFile(name);
       } catch (IOException e) {
-        log.log(Level.WARNING, "Unable to add file '" + fname + "' - ignored",
+        log.log(Level.WARNING, "Unable to add file '" + name + "' - ignored",
             e);
+        addErrorFile(name);
+      }
+      for (URL url : urls) {
+        maker.addUrl(url);
       }
     }
-    String feed = maker.toXmlString();
-    saver.saveFeed("send2gsa", feed);
-    return feed;
+  }
+
+  private void fillContentFeed(SimpleGsaFeedFileMaker.Content maker,
+      Collection<String> files) {
+    for (String name : files) {
+      try {
+        maker.addFile(new File(name));
+      } catch (IOException e) {
+        log.log(Level.WARNING, "Unable to add file '" + name + "' - ignored",
+            e);
+        addErrorFile(name);
+      }
+    }
+  }
+
+  /**
+   * Extract all URLs found in the given file.
+   */
+  @VisibleForTesting
+  static Collection<URL> getUrlsFromFile(String filename) throws IOException {
+    File f;
+    FileInputStream fis = null;
+    BufferedReader reader = null;
+    long urlsFound = 0;
+    Collection<URL> urls = new ArrayList<URL>();
+    try {
+      f = new File(filename);
+      fis = new FileInputStream(f);
+      reader = new BufferedReader(new InputStreamReader(fis));
+      String line;
+      long lineCounter = 0;
+      while ((line = reader.readLine()) != null) {
+        line = line.trim();
+        lineCounter++;
+        try {
+          URL valid = new URL(line);
+          urlsFound++;
+          urls.add(valid);
+        } catch (java.net.MalformedURLException e) {
+          // warn about lines that aren't valid URLs.
+          if (!"".equals(line) && !line.startsWith("#")) {
+            log.warning("Ignoring line " + lineCounter + " of URL file "
+                + filename + " - " + line + " is not a URL");
+          }
+        }
+      }
+    } catch (IOException e) {
+      log.warning("Unexpected exception when reading '" + filename + "'; "
+          + urlsFound + " URL(s) ignored.");
+      throw e;
+    } finally {
+      // if either of our close() methods throw an IOException, we re-throw it
+      // (after logging that the URLs were not retained).
+      try {
+        if (null != reader) {
+          reader.close();
+        }
+        if (null != fis) {
+          fis.close();
+        }
+      } catch (IOException ex) {
+        log.log(Level.WARNING, "Unexpected Exception while closing '"
+            + filename + "'  -- continuing", ex);
+      }
+    }
+    log.fine("Found " + urlsFound + " URL(s) in file '" + filename + "'");
+    return urls;
   }
 
   /**
@@ -203,14 +297,34 @@ class SendToGsa {
     return new Config(config);
   }
 
+  public static void addErrorFile(String filename) {
+    errorFiles.add(filename);
+  }
+
+  public static int errorFileCount() {
+    return errorFiles.size();
+  }
+
   /** SendToGsa main method.  Creates and optionally sends a Feed to the GSA.
    *  @param args flags and values that control the feed.
    */
   public static void main(String[] args) throws IOException {
-    SendToGsa instance = new SendToGsa();
-    instance.parseArgs(args);
-    String xml = instance.createFeedFile();
-    instance.pushFeedFile(xml);
+    try {
+      SendToGsa instance = new SendToGsa();
+      instance.parseArgs(args);
+      String xml = instance.createFeedFile();
+      instance.pushFeedFile(xml);
+      if (0 == errorFileCount()) {
+        System.exit(0);
+      } else {
+        System.err.println(errorFileCount() + " file(s) had errors.");
+        System.exit(1);
+      }
+    } catch (Throwable t) {
+      System.err.println("Could not proceed after fatal error:");
+      t.printStackTrace();
+      System.exit(2);
+    }
   }
 
   /**

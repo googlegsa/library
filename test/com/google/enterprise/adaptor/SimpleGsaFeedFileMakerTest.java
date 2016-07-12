@@ -25,7 +25,9 @@ import org.junit.rules.ExpectedException;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.MalformedURLException;
 import java.net.UnknownHostException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -78,7 +80,8 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testIncremental_Empty() {
-    maker = new SimpleGsaFeedFileMaker.ContentIncremental("t3sT");
+    SimpleGsaFeedFileMaker maker =
+        new SimpleGsaFeedFileMaker.ContentIncremental("t3sT");
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
@@ -145,7 +148,9 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testFull_SampleContent() throws IOException {
-    maker = new SimpleGsaFeedFileMaker.ContentFull("sampleContent");
+    SimpleGsaFeedFileMaker.Content contentMaker =
+        new SimpleGsaFeedFileMaker.ContentFull("sampleContent");
+    maker = contentMaker;
     String hostname = getHostname();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -173,7 +178,7 @@ public class SimpleGsaFeedFileMakerTest {
     String golden = goldenHeader + goldenBody;
     maker.setPublicAcl();
     File moby = new File(MOBY_DICK_FILE);
-    maker.addFile(moby);
+    contentMaker.addFile(moby);
     String xml = maker.toXmlString();
     xml = xml.replaceAll("\r\n", "\n");
     xml = removePathPrefixOfTestDirectory(hostname, xml, 1);
@@ -184,7 +189,9 @@ public class SimpleGsaFeedFileMakerTest {
   @Test
   public void testIncremental_TwoFilesWithDifferentPermissions()
       throws IOException {
-    maker = new SimpleGsaFeedFileMaker.ContentIncremental("t3sT");
+    SimpleGsaFeedFileMaker.Content contentMaker =
+        new SimpleGsaFeedFileMaker.ContentIncremental("t3sT");
+    maker = contentMaker;
     String hostname = getHostname();
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -240,7 +247,7 @@ public class SimpleGsaFeedFileMakerTest {
     String golden2 = goldenHeader + goldenBody2;
     maker.setPublicAcl();
     File tom = new File(TOM_SAWYER_FILE);
-    maker.addFile(tom);
+    contentMaker.addFile(tom);
     String xml1 = maker.toXmlString();
     xml1 = xml1.replaceAll("\r\n", "\n");
     xml1 = removePathPrefixOfTestDirectory(hostname, xml1, 1);
@@ -257,7 +264,7 @@ public class SimpleGsaFeedFileMakerTest {
         Collections.singletonList("deniedUser"),
         Collections.singletonList("deniedGroup"));
     File moby = new File(MOBY_DICK_FILE);
-    maker.addFile(moby);
+    contentMaker.addFile(moby);
     String xml2 = maker.toXmlString();
     xml2 = xml2.replaceAll("\r\n", "\n");
     xml2 = removePathPrefixOfTestDirectory(hostname, xml2, 2);
@@ -267,9 +274,12 @@ public class SimpleGsaFeedFileMakerTest {
 
   @Test
   public void testMetadataAndUrl_TwoSetsOfUrlsWithDifferentPermissions()
-      throws IOException {
+      throws IOException, MalformedURLException {
     SimpleGsaFeedFileMaker.MetadataAndUrl maker
         = new SimpleGsaFeedFileMaker.MetadataAndUrl("t3sT");
+    String url1 = "http://www.google.com/";
+    String url2 = "https://www.google.com/";
+    String url3 = "http://www.yahoo.com/";
     String goldenHeader =
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" "
@@ -303,20 +313,20 @@ public class SimpleGsaFeedFileMakerTest {
         + "namespace=\"namespace\" scope=\"user\">six</principal>\n"
         + "</acl>\n";
     String goldenUrls1 =
-        "<record mimetype=\"text/plain\" url=\"http://www.google.com/\"/>\n"
-        + "<record mimetype=\"text/plain\" url=\"https://www.google.com/\"/>\n"
-        + "<record mimetype=\"text/plain\" url=\"http://www.yahoo.com/\"/>\n";
+        "<record mimetype=\"text/plain\" url=\"" + url1 + "\"/>\n"
+        + "<record mimetype=\"text/plain\" url=\"" + url2 + "\"/>\n"
+        + "<record mimetype=\"text/plain\" url=\"" + url3 + "\"/>\n";
     String goldenUrls2 =
         "<record crawl-immediately=\"true\" crawl-once=\"true\" lock=\"true\" "
-        + "mimetype=\"text/other\" url=\"http://www.google.com/\">\n"
+        + "mimetype=\"text/other\" url=\"" + url1 + "\">\n"
         + goldenAcl
         + "</record>\n"
         + "<record crawl-immediately=\"true\" crawl-once=\"true\" lock=\"true\""
-        + " mimetype=\"text/other\" url=\"https://www.google.com/\">\n"
+        + " mimetype=\"text/other\" url=\"" + url2 + "\">\n"
         + goldenAcl
         + "</record>\n"
         + "<record crawl-immediately=\"true\" crawl-once=\"true\" lock=\"true\""
-        + " mimetype=\"text/other\" url=\"http://www.yahoo.com/\">\n"
+        + " mimetype=\"text/other\" url=\"" + url3 + "\">\n"
         + goldenAcl
         + "</record>\n";
     String goldenBody1 =
@@ -332,8 +342,9 @@ public class SimpleGsaFeedFileMakerTest {
     String golden2 = goldenHeader + goldenBody2;
     maker.setPublicAcl();
     maker.setMimetype("text/plain");
-    File urls = new File(URLS_FILE);
-    maker.addFile(urls);
+    maker.addUrl(new URL(url1));
+    maker.addUrl(new URL(url2));
+    maker.addUrl(new URL(url3));
     String xml1 = maker.toXmlString().replaceAll("\r\n", "\n");
     xml1 = removeJavaVersion(System.getProperty("java.version"), xml1);
 
@@ -347,7 +358,9 @@ public class SimpleGsaFeedFileMakerTest {
         Collections.<String>emptyList(),
         Arrays.asList("four", "five", "six"),
         Collections.<String>emptyList());
-    maker.addFile(urls);
+    maker.addUrl(new URL(url1));
+    maker.addUrl(new URL(url2));
+    maker.addUrl(new URL(url3));
     String xml2 = maker.toXmlString().replaceAll("\r\n", "\n");
     xml2 = removeJavaVersion(System.getProperty("java.version"), xml2);
     assertEquals(golden2, xml2);
