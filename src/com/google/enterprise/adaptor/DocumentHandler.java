@@ -164,7 +164,7 @@ class DocumentHandler implements HttpHandler {
   private void initSkipCertAddresses(String[] skipCertCheckHosts) {
     for (String hostname : skipCertCheckHosts) {
       try {
-        if(hostname.indexOf("/") > 0) {
+        if (hostname.indexOf("/") > 0) {
           int index = hostname.indexOf("/");
           String addressPart = hostname.substring(0, index);
           int maskLength = Integer.parseInt(hostname.substring(index + 1));
@@ -173,7 +173,7 @@ class DocumentHandler implements HttpHandler {
         } else {
           InetAddress[] ips = InetAddress.getAllByName(hostname);
           skipCertAddresses.addAll(Arrays.asList(ips));
-          log.log(Level.INFO, "skipCertCheckHosts IP added: {0}", ips);
+          log.log(Level.FINE, "skipCertCheckHosts IP added: {0}", ips);
         }
       } catch (UnknownHostException ex) {
         log.log(Level.WARNING, "Could not resolve hostname. Not adding it to "
@@ -220,19 +220,19 @@ class DocumentHandler implements HttpHandler {
 
   private boolean addressIsInFullAccess(InetAddress addr) {
     boolean trust;
-	trust = fullAccessAddresses.contains(addr);
-	// Only go through the ranges of addresses if we haven't already found
-	// our address in the list of uniquely-identified trusted hosts.  If any
-	// range contains our address, we can stop searching.
-	if (!trust) {
-	  for (CIDRAddress address : fullAccessAddressRanges) {
-	    if (address.isInRange(addr)) {
-	  	trust = true;
-		 break;
-	    }
-	  }
-	}
-	return trust;
+    trust = fullAccessAddresses.contains(addr);
+    // Only go through the ranges of addresses if we haven't already found
+    // our address in the list of uniquely-identified trusted hosts.  If any
+    // range contains our address, we can stop searching.
+    if (!trust) {
+      for (CIDRAddress address : fullAccessAddressRanges) {
+        if (address.isInRange(addr)) {
+          trust = true;
+          break;
+        }
+      }
+    }
+    return trust;
   }
 
   private boolean addressIsInSkipCertAddresses(InetAddress addr) {
@@ -244,8 +244,8 @@ class DocumentHandler implements HttpHandler {
     if (!trust) {
       for (CIDRAddress address : skipCertAddressRanges) {
         if (address.isInRange(addr)) {
-        trust = true;
-         break;
+          trust = true;
+          break;
         }
       }
     }
@@ -293,20 +293,16 @@ class DocumentHandler implements HttpHandler {
       commonName = commonName.toLowerCase(Locale.ENGLISH);
       trust = fullAccessCommonNames.contains(commonName);
       if (trust) {
-        log.log(Level.FINE, "Client is trusted in secure mode: {0}",
-                commonName);
+        log.log(Level.FINE, "Client is trusted in secure mode: {0}", commonName);
       } else {
-        log.log(Level.FINE, "Client is not trusted in secure mode: {0}",
-                commonName);
+        log.log(Level.FINE, "Client is not trusted in secure mode: {0}", commonName);
       }
       InetAddress addr = ex.getRemoteAddress().getAddress();
       trust = trust || addressIsInSkipCertAddresses(addr);
       if (addressIsInSkipCertAddresses(addr)) {
-        log.log(Level.FINE, "IP is trusted in secure mode: {0}",
-            addr);
+        log.log(Level.FINE, "IP is trusted in secure mode: {0}", addr);
       } else {
-        log.log(Level.FINE, "IP is not trusted in secure mode: {0}",
-            addr);
+        log.log(Level.FINE, "IP is not trusted in secure mode: {0}", addr);
       }
     } else {
       InetAddress addr = ex.getRemoteAddress().getAddress();
