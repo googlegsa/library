@@ -88,6 +88,17 @@ class DocumentHandler implements HttpHandler {
    */
   private final Set<CIDRAddress> fullAccessAddressRanges
       = new HashSet<CIDRAddress>();
+  /**
+   * Comma-separated list of IPs or hostnames/IPs that can skip certificate checks.
+   */
+  private final Set<InetAddress> skipCertAddresses
+      = new HashSet<InetAddress>();
+  /**
+   * Set of (Ranges of IPs) that are provided full access when in insecure mode.
+   */
+  private final Set<CIDRAddress> skipCertAddressRanges
+      = new HashSet<CIDRAddress>();
+  
   private final SamlServiceProvider samlServiceProvider;
   private final MetadataTransformPipeline metadataTransform;
   private final AclTransform aclTransform;
@@ -109,7 +120,7 @@ class DocumentHandler implements HttpHandler {
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
                          AuthzAuthority authzAuthority,
-                         String gsaHostname, String[] fullAccessHosts,
+                         String gsaHostname, String[] fullAccessHosts, String[] skipCertHosts,
                          SamlServiceProvider samlServiceProvider,
                          MetadataTransformPipeline metadataTransform,
                          AclTransform aclTransform,
@@ -147,6 +158,29 @@ class DocumentHandler implements HttpHandler {
     this.gsaVersion = gsaVersion;
     this.gsaSupports204 = gsaVersion.isAtLeast("7.4.0-0");
     initFullAccess(gsaHostname, fullAccessHosts);
+    initSkipCertAddresses(skipCertHosts);
+  }
+
+  private void initSkipCertAddresses(String[] skipCertCheckHosts) {
+
+    for (String hostname : skipCertCheckHosts) {
+      try {
+        if(hostname.indexOf("/") > 0) {
+          int index = hostname.indexOf("/");
+          String addressPart = hostname.substring(0, index);
+          int maskLength = Integer.parseInt(hostname.substring(index + 1));
+          InetAddress address = InetAddress.getByName(addressPart);
+          skipCertAddressRanges.add(new CIDRAddress(address, maskLength));
+        } else {
+          InetAddress[] ips = InetAddress.getAllByName(hostname);
+          skipCertAddresses.addAll(Arrays.asList(ips));
+          log.log(Level.INFO, "skipCertCheckHosts IP added: {0}", ips);
+        }
+      } catch (UnknownHostException ex) {
+        log.log(Level.WARNING, "Could not resolve hostname. Not adding it to "
+                + "skip certificate check list of IPs: " + hostname, ex);
+      }
+    }
   }
 
   private void initFullAccess(String gsaHostname, String[] fullAccessHosts) {
@@ -183,6 +217,40 @@ class DocumentHandler implements HttpHandler {
     addressesAndRanges.addAll(fullAccessAddressRanges);
     log.log(Level.INFO, "When not in secure mode, IPs that are given full "
             + "access to content: {0}", new Object[] {addressesAndRanges});
+  }
+
+  private boolean addressIsInFullAccess(InetAddress addr) {
+    boolean trust;
+	trust = fullAccessAddresses.contains(addr);
+	// Only go through the ranges of addresses if we haven't already found
+	// our address in the list of uniquely-identified trusted hosts.  If any
+	// range contains our address, we can stop searching.
+	if (!trust) {
+	  for (CIDRAddress address : fullAccessAddressRanges) {
+	    if (address.isInRange(addr)) {
+	  	trust = true;
+		 break;
+	    }
+	  }
+	}
+	return trust;
+  }
+
+  private boolean addressIsInSkipCertAddresses(InetAddress addr) {
+    boolean trust;
+    trust = skipCertAddresses.contains(addr);
+    // Only go through the ranges of addresses if we haven't already found
+    // our address in the list of uniquely-identified trusted hosts.  If any
+    // range contains our address, we can stop searching.
+    if (!trust) {
+      for (CIDRAddress address : skipCertAddressRanges) {
+        if (address.isInRange(addr)) {
+        trust = true;
+         break;
+        }
+      }
+    }
+    return trust;
   }
 
   private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {
@@ -232,6 +300,15 @@ class DocumentHandler implements HttpHandler {
         log.log(Level.FINE, "Client is not trusted in secure mode: {0}",
                 commonName);
       }
+      InetAddress addr = ex.getRemoteAddress().getAddress();
+      trust = trust || addressIsInSkipCertAddresses(addr);
+      if (addressIsInSkipCertAddresses(addr)) {
+        log.log(Level.FINE, "IP is trusted in secure mode: {0}",
+            addr);
+      } else {
+        log.log(Level.FINE, "IP is not trusted in secure mode: {0}",
+            addr);
+      }
     } else {
       InetAddress addr = ex.getRemoteAddress().getAddress();
       trust = fullAccessAddresses.contains(addr);
@@ -269,7 +346,10 @@ class DocumentHandler implements HttpHandler {
   // TODO(myk): Revisit this decision, if necessary.
   @VisibleForTesting
   boolean considerSkippingTransforms(HttpExchange ex) {
-    return !requestIsFromFullyTrustedClient(ex);
+    InetAddress addr = ex.getRemoteAddress().getAddress();
+    log.log(Level.FINE, "considerSkippingTransforms: {0}",
+        !(requestIsFromFullyTrustedClient(ex) && addressIsInFullAccess(addr)));
+    return !(requestIsFromFullyTrustedClient(ex) && addressIsInFullAccess(addr));
   }
 
   @Override
@@ -337,7 +417,11 @@ class DocumentHandler implements HttpHandler {
       return true;
     }
 
-    if (requestIsFromFullyTrustedClient(ex)) {
+    InetAddress addr = ex.getRemoteAddress().getAddress();
+
+    if (requestIsFromFullyTrustedClient(ex) && addressIsInFullAccess(addr)) {
+      // this will end up with return true;
+      // only for case, when documents are public or request is from fullAccessAddresses
       journal.recordGsaContentRequest(docId);
     } else if (authzAuthority == null) {
       HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_FORBIDDEN,
@@ -1033,9 +1117,12 @@ class DocumentHandler implements HttpHandler {
       } else {
         acl = aclTransform.transform(acl);
       }
-      if (requestIsFromFullyTrustedClient(ex) || alwaysGiveAcl) {
+
+      // client cert is trusted and client host is in fullAccessHosts
+      if (!considerSkippingTransforms(ex) || alwaysGiveAcl) {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
+
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
              formMetadataHeader(metadata));
         if (sendDocControls) {
