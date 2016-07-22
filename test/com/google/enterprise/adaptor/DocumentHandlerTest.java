@@ -268,13 +268,11 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
-    // createDefaultHandlerForAdaptor has GSAHost set to localhost.
-    // localhost is also used as trusted CN. We adjusting IP address to localhost
+    // setting corresponding between CN=localhost, and remoteAddress
     httpEx.setRemoteAddress(new InetSocketAddress(
         InetAddress.getByAddress("localhost",
           new byte[] {127, 0, 0, 1}),
         65000));
-
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
     handler.handle(ex);
@@ -2494,7 +2492,7 @@ public class DocumentHandlerTest {
   // server.fullAccessHosts=192.0.2.0
   // server.skipCertCheckHosts=192.0.2.0
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhost
   // result: 403, no headers, skipTransforms=true
   @Test
@@ -2537,14 +2535,13 @@ public class DocumentHandlerTest {
     assertTrue(handler.considerSkippingTransforms(httpsEx));
     // response code 403 - adaptor trusts to CN=localhost, but requestor ip is unknown
     assertEquals(403, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata not provided
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   // server.fullAccessHosts=192.0.2.0
   // server.skipCertCheckHosts=192.0.2.0
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhostbad
   // result: 403, no headers, skipTransforms=true
   @Test
@@ -2586,14 +2583,13 @@ public class DocumentHandlerTest {
     assertTrue(handler.considerSkippingTransforms(httpsEx));
     // response code 403 - adaptor doesn't trust to CN=badlocalhost
     assertEquals(403, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata not provided
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhostbad
   // result: 403, no headers
   @Test
@@ -2634,17 +2630,16 @@ public class DocumentHandlerTest {
     handler.handle(httpsEx);
 
     assertTrue(handler.considerSkippingTransforms(httpsEx));
-    // response code 403 - even SkipCertHosts contains requestor IP
-    // this is not enough to return document content
+    // response code 403 - SkipCertHosts contains requestor IP
+    // this is not enough to return document content (document is not public, no user is provided)
     assertEquals(403, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata not provided
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   // server.fullAccessHosts=127.0.0.3
   // server.skipCertCheckHosts=127.0.0.3
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhostbad
   // result: 200, headers are returned
 
@@ -2684,19 +2679,18 @@ public class DocumentHandlerTest {
     handler.handle(httpsEx);
 
     assertFalse(handler.considerSkippingTransforms(httpsEx));
-    // response code 200 - adaptor doesn't trusts to CN=localhostbad
-    // but setSkipCertHosts contains requestor IP
+    // response code 200 - adaptor doesn't trust CN=localhostbad
+    // but setSkipCertHosts contains requestor IP and setFullAccessHosts permits GSA headers
     assertEquals(200, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata provided. transformation applied
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
   }
 
-  // server.fullAccessHosts=127.0.0.3
-  // server.skipCertCheckHosts=127.0.0.3
+  // server.fullAccessHosts=127.0.0.3/8
+  // server.skipCertCheckHosts=127.0.0.3/8
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhostbad
   // result: 200, headers are returned
 
@@ -2736,10 +2730,9 @@ public class DocumentHandlerTest {
     handler.handle(httpsEx);
 
     assertFalse(handler.considerSkippingTransforms(httpsEx));
-    // response code 200 - adaptor doesn't trusts to CN=localhostbad
-    // but setSkipCertHosts contains requestor IP
+    // response code 200 due
+    // setSkipCertHosts includes requestor IP and setFullAccessHosts permits GSA headers
     assertEquals(200, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata provided. transformation applied
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
@@ -2748,7 +2741,7 @@ public class DocumentHandlerTest {
   // server.fullAccessHosts=127.0.0.3
   // server.skipCertCheckHosts=NOT_OUR_IP_ADDRESS
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhost
   // result: 200, headers are returned
 
@@ -2788,10 +2781,9 @@ public class DocumentHandlerTest {
     handler.handle(httpsEx);
 
     assertFalse(handler.considerSkippingTransforms(httpsEx));
-    // response code 200 - adaptor doesn't trusts to CN=localhostbad
-    // but setSkipCertHosts contains requestor IP
+    // response code 200 - adaptor trusts to CN=localhost
+    // and setFullAccessHosts permits GSA headers
     assertEquals(200, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata provided. transformation applied
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
 
@@ -2850,7 +2842,7 @@ public class DocumentHandlerTest {
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhostbad
   // result: 200, no headers
   @Test
@@ -2893,16 +2885,15 @@ public class DocumentHandlerTest {
     assertTrue(handler.considerSkippingTransforms(httpsEx));
     // response code 200 - adaptor trusts to skipCertHosts, doc is public
     assertEquals(200, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata not provided
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
   // adaptor trusts to CN=localhost
-  // requestor ip = 127.0.0.3
+  // requestor ip=127.0.0.3
   // requestor CN=localhostbad
-  // saml returns PERMIT for any document
+  // saml returns PERMIT
   // result: 200, no headers
   @Test
   public void testSkipCertCheckGoodSkipCertHostsUserHasAccess() throws Exception {
@@ -2946,9 +2937,8 @@ public class DocumentHandlerTest {
     handler.handle(httpsEx);
 
     assertTrue(handler.considerSkippingTransforms(httpsEx));
-    // response code 200 - adaptor trusts to skipCertHosts
+    // response code 200 - user has access to this document
     assertEquals(200, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata not provided
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
@@ -2958,8 +2948,8 @@ public class DocumentHandlerTest {
   // adaptor trusts to CN=localhost
   // requestor ip=127.0.0.3
   // requestor CN=localhostbad
-  // saml returns DENY for any document
-  // result: 200, no headers
+  // saml returns DENY
+  // result: 403, no headers
   @Test
   public void testSkipCertCheckGoodSkipCertHostsUserHasDeny() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
@@ -2995,9 +2985,8 @@ public class DocumentHandlerTest {
     handler.handle(httpsEx);
 
     assertTrue(handler.considerSkippingTransforms(httpsEx));
-    // response code 403 - user is not trusted
+    // response code 403 - user doesn't have access to this document
     assertEquals(403, httpsEx.getResponseCode());
-    // X-Gsa-External-Metadata not provided
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 

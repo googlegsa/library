@@ -162,7 +162,6 @@ class DocumentHandler implements HttpHandler {
   }
 
   private void initSkipCertAddresses(String[] skipCertCheckHosts) {
-
     for (String hostname : skipCertCheckHosts) {
       try {
         if(hostname.indexOf("/") > 0) {
@@ -418,7 +417,6 @@ class DocumentHandler implements HttpHandler {
     }
 
     InetAddress addr = ex.getRemoteAddress().getAddress();
-
     if (requestIsFromFullyTrustedClient(ex) && addressIsInFullAccess(addr)) {
       // this will end up with return true;
       // only for case, when documents are public or request is from fullAccessAddresses
@@ -1118,11 +1116,10 @@ class DocumentHandler implements HttpHandler {
         acl = aclTransform.transform(acl);
       }
 
-      // client cert is trusted and client host is in fullAccessHosts
+      // client is trusted to receive GSA headers
       if (!considerSkippingTransforms(ex) || alwaysGiveAcl) {
         // Always specify metadata and ACLs, even when empty, to replace
         // previous values.
-
         ex.getResponseHeaders().add("X-Gsa-External-Metadata",
              formMetadataHeader(metadata));
         if (sendDocControls) {
