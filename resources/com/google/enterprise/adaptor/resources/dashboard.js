@@ -131,6 +131,12 @@ function getStatsCallback(result, error) {
       notAvailableInReducedMemMode(data.simpleStats.numUniqueNonGsaRequests));
   $('#gaf-when-started').text(String(new Date(data.simpleStats.whenStarted)));
   $('#gaf-time-resolution').text(data.simpleStats.timeResolution);
+  $('#gaf-num-total-groups-pushed').text(
+      data.simpleStats.numTotalGroupsPushed);
+  $('#gaf-num-total-group-members-pushed').text(
+      data.simpleStats.numTotalGroupMembersPushed);
+  $('#gaf-num-unique-groups-pushed').text(
+      notAvailableInReducedMemMode(data.simpleStats.numUniqueGroupsPushed));
 
   var hadSuccessfulFullPush = Boolean(
       data.simpleStats.lastSuccessfulFullPushStart);
@@ -162,6 +168,22 @@ function getStatsCallback(result, error) {
   $('#gaf-current-incr-push').text(
       curIncrementalPushStart
       ? "Started " + String(new Date(curIncrementalPushStart))
+      : "None in progress");
+
+  var hadSuccessfulGroupPush = Boolean(
+      data.simpleStats.lastSuccessfulGroupPushEnd);
+  $('#gaf-last-successful-group-push-start').text(
+      hadSuccessfulGroupPush
+      ? String(new Date(data.simpleStats.lastSuccessfulGroupPushStart))
+      : "None yet");
+  $('#gaf-last-successful-group-push-end').text(
+      hadSuccessfulGroupPush
+      ? String(new Date(data.simpleStats.lastSuccessfulGroupPushEnd))
+      : "None yet");
+  var groupPushInProgress = Boolean(data.simpleStats.currentGroupPushStart);
+  $('#gaf-current-group-push').text(
+      groupPushInProgress
+      ? "Started " + String(new Date(data.simpleStats.currentGroupPushStart))
       : "None in progress");
 
   var vals = [];

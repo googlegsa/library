@@ -17,13 +17,18 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.AbstractMap;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Tests for {@link Journal}.
@@ -39,10 +44,27 @@ public class JournalTest {
     DocId id2 = new DocId("id2");
     DocId id3 = new DocId("id3");
     DocId id4 = new DocId("id4");
+    GroupPrincipal g1 = new GroupPrincipal("group1");
+    GroupPrincipal g2 = new GroupPrincipal("group2");
+    GroupPrincipal g3 = new GroupPrincipal("group3");
+    Principal u1 = new UserPrincipal("user1");
+    Principal u2 = new UserPrincipal("user2");
     ArrayList<DocIdPusher.Record> docs = new ArrayList<DocIdPusher.Record>();
     docs.add(new DocIdPusher.Record.Builder(id).build());
     docs.add(new DocIdPusher.Record.Builder(id2).build());
     docs.add(new DocIdPusher.Record.Builder(id3).build());
+    ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>> groups =
+        new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>();
+    List<Principal> g1members = new ArrayList<Principal>();
+    List<Principal> g2members = new ArrayList<Principal>();
+    List<Principal> g3members = new ArrayList<Principal>();
+    g1members.add(new UserPrincipal("Marc"));
+    g1members.add(new UserPrincipal("John"));
+    g2members.add(new UserPrincipal("PJ"));
+    g3members.add(new UserPrincipal("Bill"));
+    g3members.add(new UserPrincipal("Tony"));
+    groups.add(new AbstractMap.SimpleEntry(g1, g1members));
+    groups.add(new AbstractMap.SimpleEntry(g2, g2members));
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     journal.recordDocIdPush(docs);
@@ -50,6 +72,19 @@ public class JournalTest {
     docs.add(new DocIdPusher.Record.Builder(id4).build());
     journal.recordDocIdPush(docs);
     assertEquals(4, journal.getSnapshot().numUniqueDocIdsPushed);
+    journal.recordGroupPush(groups);
+    assertEquals(2, journal.getSnapshot().numTotalGroupsPushed);
+    assertEquals(2, journal.getSnapshot().numUniqueGroupsPushed);
+    assertEquals(3, journal.getSnapshot().numTotalGroupMembersPushed);
+    journal.recordGroupPush(groups);
+    assertEquals(4, journal.getSnapshot().numTotalGroupsPushed);
+    assertEquals(2, journal.getSnapshot().numUniqueGroupsPushed);
+    assertEquals(6, journal.getSnapshot().numTotalGroupMembersPushed);
+    groups.add(new AbstractMap.SimpleEntry(g3, g3members));
+    journal.recordGroupPush(groups);
+    assertEquals(7, journal.getSnapshot().numTotalGroupsPushed);
+    assertEquals(3, journal.getSnapshot().numUniqueGroupsPushed);
+    assertEquals(11, journal.getSnapshot().numTotalGroupMembersPushed);
   }
 
   @Test
@@ -58,6 +93,9 @@ public class JournalTest {
     journal.recordDocIdPush(Collections.singletonList(
         new DocIdPusher.Record.Builder(new DocId("id")).build()));
     assertEquals(-1, journal.getSnapshot().numUniqueDocIdsPushed);
+    assertEquals(-1, journal.getSnapshot().numUniqueGroupsPushed);
+    assertEquals(0, journal.getSnapshot().numTotalGroupsPushed);
+    assertEquals(0, journal.getSnapshot().numTotalGroupMembersPushed);
   }
 
   @Test
@@ -388,6 +426,55 @@ public class JournalTest {
     journal.recordIncrementalPushSuccessful();
     assertEquals(Journal.CompletionStatus.SUCCESS,
         journal.getLastIncrementalPushStatus());
+  }
+
+  @Test
+  public void testLastGroupPushStatus() {
+    final MockTimeProvider timeProvider = new MockTimeProvider();
+    final Journal journal = new Journal(timeProvider);
+
+    assertEquals(Journal.CompletionStatus.SUCCESS,
+        journal.getLastGroupPushStatus());
+
+    journal.recordGroupPushStarted();
+    journal.recordGroupPushInterrupted();
+    assertEquals(Journal.CompletionStatus.INTERRUPTION,
+        journal.getLastGroupPushStatus());
+
+    journal.recordGroupPushStarted();
+    journal.recordGroupPushFailed();
+    assertEquals(Journal.CompletionStatus.FAILURE,
+        journal.getLastGroupPushStatus());
+
+    journal.recordGroupPushStarted();
+    journal.recordGroupPushSuccessful();
+    assertEquals(Journal.CompletionStatus.SUCCESS,
+        journal.getLastGroupPushStatus());
+
+    // attempt to start two simultaneous group pushes
+    try {
+      journal.recordGroupPushStarted();
+      journal.recordGroupPushStarted();
+      fail ("Second group push should have thrown IllegalStateException");
+    } catch (IllegalStateException e) {
+      journal.recordGroupPushSuccessful(); // resets currentGroupPushStart
+    };
+
+    // attempt to interrupt a group push (when it was never started)
+    try {
+      journal.recordGroupPushInterrupted();
+      fail ("Interrupting non-existing group push shouldn't have worked");
+    } catch (IllegalStateException e) {
+      // ignore expected exception
+    };
+
+    // attempt to mark a group push as a failure (when it was never started)
+    try {
+      journal.recordGroupPushFailed();
+      fail ("Failing non-existing group push shouldn't have worked");
+    } catch (IllegalStateException e) {
+      // ignore expected exception
+    };
   }
 
   @Test

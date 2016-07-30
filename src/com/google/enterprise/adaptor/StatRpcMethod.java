@@ -71,6 +71,10 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
       simple.put("isIncrementalPushSupported", isIncrementalPushSupported);
       simple.put("numTotalDocIdsPushed", journalSnap.numTotalDocIdsPushed);
       simple.put("numUniqueDocIdsPushed", journalSnap.numUniqueDocIdsPushed);
+      simple.put("numTotalGroupsPushed", journalSnap.numTotalGroupsPushed);
+      simple.put("numTotalGroupMembersPushed",
+                 journalSnap.numTotalGroupMembersPushed);
+      simple.put("numUniqueGroupsPushed", journalSnap.numUniqueGroupsPushed);
       simple.put("numTotalGsaRequests", journalSnap.numTotalGsaRequests);
       simple.put("numUniqueGsaRequests", journalSnap.numUniqueGsaRequests);
       simple.put("numTotalNonGsaRequests", journalSnap.numTotalNonGsaRequests);
@@ -88,6 +92,11 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
                  journalSnap.lastSuccessfulIncrementalPushEnd);
       simple.put("currentIncrementalPushStart",
                  journalSnap.currentIncrementalPushStart);
+      simple.put("lastSuccessfulGroupPushStart",
+                 journalSnap.lastSuccessfulGroupPushStart);
+      simple.put("lastSuccessfulGroupPushEnd",
+                 journalSnap.lastSuccessfulGroupPushEnd);
+      simple.put("currentGroupPushStart", journalSnap.currentGroupPushStart);
       simple.put("whenStarted", journalSnap.whenStarted);
       map.put("simpleStats", simple);
     }

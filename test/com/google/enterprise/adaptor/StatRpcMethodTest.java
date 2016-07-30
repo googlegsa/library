@@ -52,6 +52,12 @@ public class StatRpcMethodTest {
       simpleStats.put("lastSuccessfulIncrementalPushStart", 0L);
       simpleStats.put("lastSuccessfulIncrementalPushEnd", 0L);
       simpleStats.put("currentIncrementalPushStart", 0L);
+      simpleStats.put("lastSuccessfulGroupPushStart", 0L);
+      simpleStats.put("lastSuccessfulGroupPushEnd", 0L);
+      simpleStats.put("currentGroupPushStart", 0L);
+      simpleStats.put("numTotalGroupsPushed", 0L);
+      simpleStats.put("numTotalGroupMembersPushed", 0L);
+      simpleStats.put("numUniqueGroupsPushed", 0L);
       simpleStats.put("whenStarted", 0L);
       golden.put("simpleStats", simpleStats);
 

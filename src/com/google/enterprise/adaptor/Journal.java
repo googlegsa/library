@@ -14,6 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.annotations.VisibleForTesting;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +33,13 @@ class Journal {
 
   private Map<DocId, Integer> timesNonGsaRequested;
   private long totalNonGsaRequests;
+
+  private Map<GroupPrincipal, Integer> timesGroupPushed;
+  private long totalGroupPushes; // Equal to sum of values in timesGroupPushed.
+
+  // accumulates total numbers of members pushed throughout all group pushes.
+  private Map<GroupPrincipal, Integer> groupMembersPushed;
+  private long totalGroupMemberPushes; // Sum of values in groupMembersPushed.
 
   private final TimeProvider timeProvider;
   private final long startedAt;
@@ -63,6 +73,11 @@ class Journal {
   private long lastSuccessfulIncrementalPushStart;
   private long lastSuccessfulIncrementalPushEnd;
   private CompletionStatus lastIncrementalPushStatus = CompletionStatus.SUCCESS;
+
+  private long currentGroupPushStart;
+  private long lastSuccessfulGroupPushStart;
+  private long lastSuccessfulGroupPushEnd;
+  private CompletionStatus lastGroupPushStatus = CompletionStatus.SUCCESS;
 
   enum CompletionStatus {
     SUCCESS,
@@ -102,10 +117,14 @@ class Journal {
       timesPushed = new NegSizeFakeMap<DocId, Integer>();
       timesGsaRequested = new NegSizeFakeMap<DocId, Integer>();
       timesNonGsaRequested = new NegSizeFakeMap<DocId, Integer>();
+      timesGroupPushed = new NegSizeFakeMap<GroupPrincipal, Integer>();
+      groupMembersPushed = new NegSizeFakeMap<GroupPrincipal, Integer>();
     } else {
       timesPushed = new HashMap<DocId, Integer>();
       timesGsaRequested = new HashMap<DocId, Integer>();
       timesNonGsaRequested = new HashMap<DocId, Integer>();
+      timesGroupPushed = new HashMap<GroupPrincipal, Integer>();
+      groupMembersPushed = new HashMap<GroupPrincipal, Integer>();
     }
   }
 
@@ -122,6 +141,74 @@ class Journal {
       }
     }
     totalPushes += pushed.size();
+  }
+
+  synchronized <T extends Collection<Principal>> void recordGroupPush(List<
+      Map.Entry<GroupPrincipal, T>> pushed) {
+    for (Map.Entry<GroupPrincipal, T> item : pushed) {
+      groupIncrement(timesGroupPushed, item.getKey(), 1);
+      groupIncrement(groupMembersPushed, item.getKey(), item.getValue().size());
+      totalGroupPushes++;
+      totalGroupMemberPushes += item.getValue().size();
+    }
+  }
+
+  private static void groupIncrement(Map<GroupPrincipal, Integer> counts,
+      GroupPrincipal id, int count) {
+    if (!counts.containsKey(id)) {
+      counts.put(id, count);
+    } else {
+      counts.put(id, count + counts.get(id));
+    }
+  }
+
+  /**
+   * Record that a group push has started. Only one is tracked at a time.
+   */
+  synchronized void recordGroupPushStarted() {
+    if (currentGroupPushStart != 0) {
+      throw new IllegalStateException("Group push already started");
+    }
+    currentGroupPushStart = timeProvider.currentTimeMillis();
+  }
+
+  /**
+   * Record that the group push completed successfully.
+   */
+  void recordGroupPushSuccessful() {
+    long endTime = timeProvider.currentTimeMillis();
+    synchronized (this) {
+      this.lastSuccessfulGroupPushStart = currentGroupPushStart;
+      this.lastSuccessfulGroupPushEnd = endTime;
+      currentGroupPushStart = 0;
+      lastGroupPushStatus = CompletionStatus.SUCCESS;
+    }
+  }
+
+  /**
+   * Record that the group push was interrupted prematurely.
+   */
+  synchronized void recordGroupPushInterrupted() {
+    if (currentGroupPushStart == 0) {
+      throw new IllegalStateException("Group push not started yet");
+    }
+    currentGroupPushStart = 0;
+    lastGroupPushStatus = CompletionStatus.INTERRUPTION;
+  }
+
+  /**
+   * Record that the group push completed unsuccessfully.
+   */
+  synchronized void recordGroupPushFailed() {
+    if (currentGroupPushStart == 0) {
+      throw new IllegalStateException("Group push not started yet");
+    }
+    currentGroupPushStart = 0;
+    lastGroupPushStatus = CompletionStatus.FAILURE;
+  }
+
+  synchronized CompletionStatus getLastGroupPushStatus() {
+    return lastGroupPushStatus;
   }
 
   void recordGsaContentRequest(DocId docId) {
@@ -390,6 +477,9 @@ class Journal {
   static class JournalSnapshot {
     final long numUniqueDocIdsPushed;
     final long numTotalDocIdsPushed;
+    final long numUniqueGroupsPushed;
+    final long numTotalGroupsPushed;
+    final long numTotalGroupMembersPushed;
     final long numUniqueGsaRequests;
     final long numTotalGsaRequests;
     final long numUniqueNonGsaRequests;
@@ -403,11 +493,18 @@ class Journal {
     final long lastSuccessfulIncrementalPushStart;
     final long lastSuccessfulIncrementalPushEnd;
     final long currentIncrementalPushStart;
+    final long lastSuccessfulGroupPushStart;
+    final long lastSuccessfulGroupPushEnd;
+    final long currentGroupPushStart;
     final Stats[] timeStats;
 
+    @VisibleForTesting
     JournalSnapshot(Journal journal, long currentTime, Stats[] timeStatsClone) {
       this.numUniqueDocIdsPushed = journal.timesPushed.size();
       this.numTotalDocIdsPushed = journal.totalPushes;
+      this.numUniqueGroupsPushed = journal.timesGroupPushed.size();
+      this.numTotalGroupsPushed = journal.totalGroupPushes;
+      this.numTotalGroupMembersPushed = journal.totalGroupMemberPushes;
       this.numUniqueGsaRequests = journal.timesGsaRequested.size();
       this.numTotalGsaRequests = journal.totalGsaRequests;
       this.numUniqueNonGsaRequests = journal.timesNonGsaRequested.size();
@@ -421,6 +518,9 @@ class Journal {
       this.lastSuccessfulIncrementalPushEnd
           = journal.lastSuccessfulIncrementalPushEnd;
       this.currentIncrementalPushStart = journal.currentIncrementalPushStart;
+      this.lastSuccessfulGroupPushStart = journal.lastSuccessfulGroupPushStart;
+      this.lastSuccessfulGroupPushEnd = journal.lastSuccessfulGroupPushEnd;
+      this.currentGroupPushStart = journal.currentGroupPushStart;
       this.whenStarted = journal.startedAt;
       this.currentTime = currentTime;
       this.timeStats = timeStatsClone;

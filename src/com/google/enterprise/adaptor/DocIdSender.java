@@ -256,13 +256,19 @@ class DocIdSender extends AbstractDocIdPusher
       Map<GroupPrincipal, T> defs,
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException {
+    int numGroups = 0;
+    int numMembers = 0;
     if (defs.isEmpty()) {
+      log.log(Level.FINE,
+          "called pushGroupDefinitions() with no groups to push");
       return null;
     }
+    journal.recordGroupPushStarted();
     String gsaVerString = config.getGsaVersion();
     if (!new GsaVersion(gsaVerString).isAtLeast("7.2.0-0")) {
       log.log(Level.WARNING,
           "GSA ver {0} doesn't accept group definitions", gsaVerString);
+      journal.recordGroupPushFailed();
       return defs.entrySet().iterator().next().getKey();
     }
     if (null == handler) {
@@ -274,26 +280,37 @@ class DocIdSender extends AbstractDocIdPusher
         = defs.entrySet().iterator();
     List<Map.Entry<GroupPrincipal, T>> batch
         = new ArrayList<Map.Entry<GroupPrincipal, T>>();
+    int batchMemberCount;
     while (defsIterator.hasNext()) {
       batch.clear();
+      batchMemberCount = 0;
       for (int j = 0; j < max; j++) {
         if (!defsIterator.hasNext()) {
           break;
         }
-        batch.add(defsIterator.next());
+        Map.Entry<GroupPrincipal, T> nextGroup = defsIterator.next();
+        batchMemberCount += nextGroup.getValue().size();
+        batch.add(nextGroup);
       }
       log.log(Level.INFO, "Pushing batch of {0} groups", batch.size());
       GroupPrincipal failedId;
       try {
         failedId = pushSizedBatchOfGroups(batch, caseSensitive, handler);
+        if (failedId == null) {
+          // TODO(myk): determine if it makes sense to count the include the
+          // counts from a partial batch in our totals (if the batch fails).
+          numGroups += batch.size();
+          numMembers += batchMemberCount;
+        }
       } catch (InterruptedException ex) {
+        journal.recordGroupPushInterrupted();
         if (firstBatch) {
           throw ex;
         } else {
           // If this is not the first batch, then some items have already been
           // sent. Thus, return gracefully instead of throwing an exception so
           // that the caller can discover what was sent.
-          log.log(Level.INFO, "Pushing items interrupted");
+          log.log(Level.INFO, "Pushing groups interrupted");
           Thread.currentThread().interrupt();
           return batch.get(0).getKey();
         }
@@ -301,11 +318,18 @@ class DocIdSender extends AbstractDocIdPusher
       if (failedId != null) {
         log.log(Level.INFO, "Failed to push all groups. Failed on: {0}",
             failedId);
+        journal.recordGroupPushFailed();
         return failedId;
       }
       firstBatch = false;
     }
-    log.info("Pushed groups");
+    log.log(Level.INFO, "Pushed {0} groups containing {1} memberships",
+        new Object[] { numGroups, numMembers });
+    if (0 != numGroups) {
+      double mean = ((double) numMembers) / numGroups;
+      log.finer("mean size of groups: " + mean);
+    }
+    journal.recordGroupPushSuccessful();
     return null;
   }
 
@@ -339,6 +363,7 @@ class DocIdSender extends AbstractDocIdPusher
     if (success) {
       log.info("pushing groups batch succeeded");
       fileArchiver.saveFeed(feedSourceName, groupsDefXml);
+      journal.recordGroupPush(defs);
     } else {
       last = defs.get(0).getKey();  // checked in pushGroupDefinitionsInternal()
       log.log(Level.WARNING, "gave up pushing groups. First item: {0}", last);
