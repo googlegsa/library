@@ -250,7 +250,6 @@ public class Config {
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
-    addKey("server.skipCertCheckHosts", "");
     addKey("server.heartbeatPath", "/heartbeat/");
     addKey("server.secure", "false");
     addKey("server.httpBasic.username", "");
@@ -426,10 +425,9 @@ public class Config {
    * authentication checks. The GSA's hostname is implicitly in this list.
    *
    * <p>When in secure mode, clients are requested to provide a client
-   * certificate or be in server.skipCertCheckHosts. If the provided client certificate
-   * is valid and the Common Name (CN) of the Subject is in this list
-   * (case-insensitively), then it is given access. Otherwise, If client IP is in
-   * server.skipCertCheckHosts), then it is given access.
+   * certificate. If the provided client certificate is valid and the Common
+   * Name (CN) of the Subject is in this list (case-insensitively), then it is
+   * given access.
    *
    * <p>In non-secure mode, the hostnames in this list are resolved to IPs at
    * startup and when a request is made from one of those IPs the client is
@@ -437,24 +435,6 @@ public class Config {
    */
   String[] getServerFullAccessHosts() {
     return getValue("server.fullAccessHosts").split(",");
-  }
-
-  /**
-   * Comma-separated list of IPs or hostnames/IPs that can skip
-   * certificate checks.
-   *
-   * <p>When in secure mode, clients are requested to provide either (a trusted
-   * client certificate, OR to be in server.skipCertCheckHosts list) AND (
-   * 1. be in server.fullAccessHosts OR
-   * 2. requested document is public OR
-   * 3. User agent is authenticated shtrough SAML)
-   *
-   * Only for these conditions, web browser can get document content from connector
-   *
-   * <p>In non-secure mode, this option is not used at all.
-   */
-  String[] getServerSkipCertCheckHosts() {
-    return getValue("server.skipCertCheckHosts").split(",");
   }
 
   /**

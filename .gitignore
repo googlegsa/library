@@ -7,7 +7,6 @@ cacerts.jks
 keys.jks
 adaptor.crt
 gsa.crt
-*.class
 
 # IntelliJ files
 workspace/

@@ -318,7 +318,6 @@ public final class GsaCommunicationHandler {
         docIdCodec, docIdCodec, journal, adaptor, adaptorContext.authzAuthority,
         config.getGsaHostname(),
         config.getServerFullAccessHosts(),
-        config.getServerSkipCertCheckHosts(),
         samlServiceProvider, createMetadataTransformPipeline(),
         aclTransform, createContentTransformFactory(),
         config.isServerToUseCompression(), watchdog,

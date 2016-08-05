@@ -434,7 +434,7 @@ public class HeartbeatHandlerTest {
     Adaptor adaptor = new UserPrivateMockAdaptor();
     DocumentHandler docHandler = new DocumentHandler(docIdCodec, docIdCodec,
         new Journal(new MockTimeProvider()), adaptor, (AuthzAuthority) adaptor,
-        "localhost", new String[0], new String[0], samlServiceProvider,
+        "localhost", new String[0], samlServiceProvider,
         null /* metadataTransformPipeline */,
         new AclTransform(Arrays.<AclTransform.Rule>asList()),
         null /* contentTransformFactory */, false /* useCompression */,
@@ -563,7 +563,6 @@ public class HeartbeatHandlerTest {
     private AuthzAuthority authzAuthority;
     private String gsaHostname;
     private String[] fullAccessHosts = new String[0];
-    private String[] skipCertHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private MetadataTransformPipeline transform;
     private ContentTransformFactory contentTransformPipeline;
@@ -697,7 +696,7 @@ public class HeartbeatHandlerTest {
 
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
-          authzAuthority, gsaHostname, fullAccessHosts, skipCertHosts, samlServiceProvider,
+          authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
           transform, aclTransform, contentTransformPipeline, useCompression,
           watchdog, pusher, sendDocControls, markDocsPublic,
           headerTimeoutMillis, contentTimeoutMillis, scoring,
