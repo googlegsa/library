@@ -152,6 +152,8 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
                 stat.requestProcessingsMaxDuration);
     statMap.put("requestProcessingsThroughput",
                 stat.requestProcessingsThroughput);
+    statMap.put("groupsPushed", stat.groupsPushed);
+    statMap.put("membersPushed", stat.membersPushed);
     return statMap;
   }
 

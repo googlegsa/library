@@ -59,7 +59,9 @@ function formatChartData(stats, timeResolution) {
     processingsAvg: [],
     processingsMax: [],
     processingsCount: [],
-    processingsThroughput: []
+    processingsThroughput: [],
+    numberOfGroupsPushed: [],
+    numberOfMembersPushed: []
   };
   $.each(stats.statData, function(key, val) {
     var time = new Date(val.time);
@@ -89,6 +91,8 @@ function formatChartData(stats, timeResolution) {
         val.requestProcessingsCount / (snapshotDuration / 1000)]);
     data.processingsThroughput.push([time,
         val.requestProcessingsThroughput / (snapshotDuration / 1000) / 1024]);
+    data.numberOfGroupsPushed.push([time, val.groupsPushed]);
+    data.numberOfMembersPushed.push([time, val.membersPushed]);
   });
   return data;
 }
@@ -217,6 +221,18 @@ function getStatsCallback(result, error) {
       [vals[2].processingsThroughput],
       'Last Day', ['Response'], 'Time Period',
       'Throughput (KiB/s)', null, '%#I:%M %p');
+  loadChartData('gaf-groups-chart-minute',
+      [vals[0].numberOfGroupsPushed],
+      'Last Minute', ['Groups'], 'Time Period',
+      '# Groups pushed', null, '%#I:%M %p');
+  loadChartData('gaf-groups-chart-hour',
+      [vals[1].numberOfGroupsPushed],
+      'Last Hour', ['Groups'], 'Time Period',
+      '# Groups pushed', null, '%#I:%M %p');
+  loadChartData('gaf-groups-chart-day',
+      [vals[2].numberOfGroupsPushed],
+      'Last Day', ['Groups'], 'Time Period',
+      '# Groups pushed', null, '%#I:%M %p');
 }
 
 var xsrfToken;

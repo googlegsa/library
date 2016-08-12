@@ -145,11 +145,24 @@ class Journal {
 
   synchronized <T extends Collection<Principal>> void recordGroupPush(List<
       Map.Entry<GroupPrincipal, T>> pushed) {
+    long time = timeProvider.currentTimeMillis();
+    long numberOfGroupsPushed = 0;
+    long numberOfMembersPushed = 0;  // sum over all groups pushed
+
     for (Map.Entry<GroupPrincipal, T> item : pushed) {
       groupIncrement(timesGroupPushed, item.getKey(), 1);
       groupIncrement(groupMembersPushed, item.getKey(), item.getValue().size());
-      totalGroupPushes++;
-      totalGroupMemberPushes += item.getValue().size();
+      numberOfGroupsPushed++;
+      numberOfMembersPushed += item.getValue().size();
+    }
+    totalGroupPushes += numberOfGroupsPushed;
+    totalGroupMemberPushes += numberOfMembersPushed;
+
+    // update dashboard graph stats
+    for (Stats stats : timeStats) {
+      Stat stat = stats.getCurrentStat(time);
+      stat.groupsPushed += numberOfGroupsPushed;
+      stat.membersPushed += numberOfMembersPushed;
     }
   }
 
@@ -640,6 +653,14 @@ class Journal {
      * True if the GSA requested a document.
      */
     boolean gsaRetrievedDocument;
+    /**
+     * Number of groups pushed by the adaptor.
+     */
+    long groupsPushed;
+    /**
+     * Sum of number of members in all groups pushed by the adaptor.
+     */
+    long membersPushed;
 
     public Stat() {
       reset();
@@ -655,6 +676,8 @@ class Journal {
       requestProcessingsMaxDuration = 0;
       requestProcessingsThroughput = 0;
       gsaRetrievedDocument = false;
+      groupsPushed = 0;
+      membersPushed = 0;
     }
 
     public Stat clone() {
