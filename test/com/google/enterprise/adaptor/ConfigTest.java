@@ -80,6 +80,15 @@ public class ConfigTest {
   }
 
   @Test
+  public void testInvalidFeedName() {
+    config.setValue("gsa.hostname", "something-needed-not-to-blow-up");
+    config.setValue("gsa.scoringType", "web");
+    config.setValue("feed.name", "2MSQL-FilePath");
+    thrown.expect(InvalidConfigurationException.class);
+    config.validate();
+  }
+
+  @Test
   public void testAddDuplicateKeyWithValue() {
     config.addKey("somekey", "value");
     thrown.expect(IllegalStateException.class);

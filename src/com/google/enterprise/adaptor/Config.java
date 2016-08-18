@@ -39,6 +39,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.regex.Pattern;
 
 /**
  * Configuration values for this program, like the GSA's hostname. Also several
@@ -197,6 +198,9 @@ import java.util.logging.Logger;
  */
 public class Config {
   private static final Logger log = Logger.getLogger(Config.class.getName());
+
+  private static final Pattern DATASOURCE_FORMAT
+      = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_-]*");
 
   /** Configuration keys whose default value is {@code null}. */
   private final Set<String> noDefaultConfig = new HashSet<String>();
@@ -958,6 +962,19 @@ public class Config {
       throw new InvalidConfigurationException(
           "Missing configuration values: " + unset);
     }
+
+    String feedData = getValue("feed.name");
+    if (feedData != null && !DATASOURCE_FORMAT.matcher(feedData).matches()) {
+      throw new InvalidConfigurationException("feed.name contains illegal "
+          + "characters: " + feedData + " . The first character of the "
+          + "feed.name must be from this set: a-zA-Z_. The second and "
+          + "remaining characters must be from this set: a-zA-Z0-9_-. "
+          + "Subsequent characters can contain only alphanumeric "
+          + "characters, underscores, and hyphens");
+    }
+
+    //TODO: extend validation for other configuration parameters
+
   }
 
   /**
