@@ -130,7 +130,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
       StringBuilder line3 = new StringBuilder();
       for (int i = 1; i < (numberOfColumns + 1); i++) {
         String tableName = rsMetaData.getTableName(i);
-        String columnName = rsMetaData.getColumnName(i);
+        String columnName = rsMetaData.getColumnLabel(i);
         Object value = rs.getObject(i);
         line1.append(",");
         line1.append(makeIntoCsvField(tableName));
