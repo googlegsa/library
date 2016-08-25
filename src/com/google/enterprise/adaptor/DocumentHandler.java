@@ -88,6 +88,11 @@ class DocumentHandler implements HttpHandler {
    */
   private final Set<CIDRAddress> fullAccessAddressRanges
       = new HashSet<CIDRAddress>();
+  /**
+   * Comma-separated list of IPs that can skip certificate checks.
+   */
+  private final Set<InetAddress> skipCertAddresses = 
+      new HashSet<InetAddress>();  
   private final SamlServiceProvider samlServiceProvider;
   private final MetadataTransformPipeline metadataTransform;
   private final AclTransform aclTransform;
@@ -109,7 +114,7 @@ class DocumentHandler implements HttpHandler {
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
                          AuthzAuthority authzAuthority,
-                         String gsaHostname, String[] fullAccessHosts,
+                         String gsaHostname, String[] fullAccessHosts, String[] skipCertHosts,
                          SamlServiceProvider samlServiceProvider,
                          MetadataTransformPipeline metadataTransform,
                          AclTransform aclTransform,
@@ -147,6 +152,25 @@ class DocumentHandler implements HttpHandler {
     this.gsaVersion = gsaVersion;
     this.gsaSupports204 = gsaVersion.isAtLeast("7.4.0-0");
     initFullAccess(gsaHostname, fullAccessHosts);
+    initSkipCertAddresses(skipCertHosts);
+  }
+
+  private void initSkipCertAddresses(String[] skipCertCheckHosts) {
+    for (String hostname : skipCertCheckHosts) {
+      try {
+        if (hostname.indexOf("/") > 0) {
+          log.log(Level.WARNING, "skipCertCheckHosts doesn't support networks:"
+                 + hostname, ex); 
+        } else {
+          InetAddress[] ips = InetAddress.getAllByName(hostname);
+          skipCertAddresses.addAll(Arrays.asList(ips));
+          log.log(Level.FINE, "skipCertCheckHosts IP added: {0}", ips);
+        }
+      } catch (UnknownHostException ex) {
+        log.log(Level.WARNING, "Could not resolve hostname. Not adding it to "
+                + "skip certificate check list of IPs: " + hostname, ex);
+      }
+    }
   }
 
   private void initFullAccess(String gsaHostname, String[] fullAccessHosts) {
@@ -183,6 +207,15 @@ class DocumentHandler implements HttpHandler {
     addressesAndRanges.addAll(fullAccessAddressRanges);
     log.log(Level.INFO, "When not in secure mode, IPs that are given full "
             + "access to content: {0}", new Object[] {addressesAndRanges});
+  }
+
+  private boolean requestIsFromSkipCertAddresses(HttpExchange ex) {
+    InetAddress addr = ex.getRemoteAddress().getAddress();
+    return addressIsInSkipCertAddresses(addr);
+  }
+
+  private boolean addressIsInSkipCertAddresses(InetAddress addr) {
+    return skipCertAddresses.contains(addr);
   }
 
   private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {

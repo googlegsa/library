@@ -254,6 +254,7 @@ public class Config {
     addKey("server.dashboardPort", "5679");
     addKey("server.docIdPath", "/doc/");
     addKey("server.fullAccessHosts", "");
+    addKey("server.skipCertCheckHosts", "");
     addKey("server.heartbeatPath", "/heartbeat/");
     addKey("server.secure", "false");
     addKey("server.httpBasic.username", "");
@@ -439,6 +440,26 @@ public class Config {
    */
   String[] getServerFullAccessHosts() {
     return getValue("server.fullAccessHosts").split(",");
+  }
+
+  /**
+   * DANGER, use for debugging only.
+   * Comma-separated list of IPs or hostnames that can skip
+   * certificate checks. Used only for server.secure=true mode
+   *
+   * <p>When in secure mode, clients are requested to provide either (a trusted
+   * client certificate, OR to be in server.skipCertCheckHosts list) AND (
+   * 1. be in server.fullAccessHosts OR
+   * 2. requested document is public OR
+   * 3. User agent is authenticated trough SAML)
+   *
+   * Only for these conditions, web browser can get document content from 
+   * connector
+   *
+   * <p>In non-secure mode, this option is not used at all.
+   */
+  String[] getServerSkipCertCheckHosts() {
+    return getValue("server.skipCertCheckHosts").split(",");
   }
 
   /**

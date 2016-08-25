@@ -2548,6 +2548,7 @@ public class DocumentHandlerTest {
     private AuthzAuthority authzAuthority;
     private String gsaHostname;
     private String[] fullAccessHosts = new String[0];
+    private String[] skipCertHosts = new String[0];
     private SamlServiceProvider samlServiceProvider;
     private MetadataTransformPipeline transform;
     private ContentTransformFactory contentTransformPipeline;
@@ -2599,6 +2600,11 @@ public class DocumentHandlerTest {
 
     public DocumentHandlerBuilder setFullAccessHosts(String[] fullAccessHosts) {
       this.fullAccessHosts = fullAccessHosts;
+      return this;
+    }
+
+    public DocumentHandlerBuilder setSkipCertHosts(String[] skipCertHosts) {
+      this.skipCertHosts = skipCertHosts;
       return this;
     }
 
@@ -2681,7 +2687,7 @@ public class DocumentHandlerTest {
 
     public DocumentHandler build() {
       return new DocumentHandler(docIdDecoder, docIdEncoder, journal, adaptor,
-          authzAuthority, gsaHostname, fullAccessHosts, samlServiceProvider,
+          authzAuthority, gsaHostname, fullAccessHosts, skipCertHosts, samlServiceProvider,
           transform, aclTransform, contentTransformPipeline, useCompression,
           watchdog, pusher, sendDocControls, markDocsPublic,
           headerTimeoutMillis, contentTimeoutMillis, scoring,
