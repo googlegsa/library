@@ -160,7 +160,7 @@ class DocumentHandler implements HttpHandler {
       try {
         if (hostname.indexOf("/") > 0) {
           log.log(Level.WARNING, "skipCertCheckHosts doesn't support networks:"
-                 + hostname, ex); 
+                 + hostname); 
         } else {
           InetAddress[] ips = InetAddress.getAllByName(hostname);
           skipCertAddresses.addAll(Arrays.asList(ips));
