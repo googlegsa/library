@@ -451,7 +451,7 @@ public class Config {
    * client certificate, OR to be in server.skipCertCheckHosts list) AND (
    * 1. be in server.fullAccessHosts OR
    * 2. requested document is public OR
-   * 3. User agent is authenticated trough SAML)
+   * 3. User agent is authenticated and authorized for document)
    *
    * Only for these conditions, web browser can get document content from 
    * connector
