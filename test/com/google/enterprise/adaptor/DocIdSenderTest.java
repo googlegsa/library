@@ -294,8 +294,11 @@ public class DocIdSenderTest {
 
     Thread.currentThread().interrupt();
     thrown.expect(InterruptedException.class);
-    docIdSender.pushDocIds(ids);
-    assertTrue(fileArchiver.feeds.isEmpty());
+    try {
+      docIdSender.pushDocIds(ids);
+    } finally {
+      assertTrue(fileArchiver.feeds.isEmpty());
+    }
   }
 
   @Test

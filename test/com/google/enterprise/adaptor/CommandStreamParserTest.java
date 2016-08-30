@@ -107,16 +107,20 @@ public class CommandStreamParserTest {
     String source = "GSA Adaptor Data Version 1 [" + delimiter + "]" + delimiter + "id=123";
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    if (!isValid) {
-      thrown.expect(IOException.class);
-    }
     AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
-    parser.readFromLister(pusher, null);
 
-    if (isValid) {
+    boolean catched = false;
+    try {
+      parser.readFromLister(pusher, null);
+    } catch(IOException e) {
+      // expected for not Valid
+      catched = true;
+    }
+    if (!isValid) {
+      assertTrue(catched);
+    } else {
       assertEquals(new DocId("123"), pusher.getDocIds().get(0)); //.getUniqueId());
     }
-
   }
 
   @Test
