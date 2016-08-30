@@ -76,6 +76,10 @@ class DocIdSender extends AbstractDocIdPusher
       } catch (Exception ex) {
         log.log(Level.WARNING, "Exception during getDocIds", ex);
         keepGoing = handler.handleException(ex, ntries);
+      } catch (Error t) {
+        // Stop early in case of Error
+        journal.recordFullPushFailed();
+        throw t;
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attempts: {0}", ntries);
@@ -113,6 +117,10 @@ class DocIdSender extends AbstractDocIdPusher
       } catch (Exception ex) {
         log.log(Level.WARNING, "Exception during getModifiedDocIds", ex);
         keepGoing = handler.handleException(ex, ntries);
+      } catch (Error t) {
+        // Stop early in case of Error
+        journal.recordIncrementalPushFailed();
+        throw t;
       }
       if (keepGoing) {
         log.log(Level.INFO, "Trying again... Number of attempts: {0}", ntries);

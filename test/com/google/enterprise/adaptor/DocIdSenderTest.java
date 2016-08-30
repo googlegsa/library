@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.enterprise.adaptor.Journal.CompletionStatus;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -185,6 +186,27 @@ public class DocIdSenderTest {
   }
 
   @Test
+  public void testPushDocIdsFailureByError() throws Exception {
+    class InternalErrorInTest extends Error {}
+    MockAdaptor adaptor = new MockAdaptor() {
+      @Override
+      public void getDocIds(DocIdPusher pusher) throws InterruptedException {
+        throw new InternalErrorInTest();
+      }
+    };
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
+
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastFullPushStatus());
+    thrown.expect(InternalErrorInTest.class);
+    try {
+      docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
+    } finally {
+      assertEquals(CompletionStatus.FAILURE, journal.getLastFullPushStatus());
+    }
+  }
+
+  @Test
   public void testPushDocIdsFailure() throws Exception {
     class FailureAdaptor extends MockAdaptor {
       private int times;
@@ -298,6 +320,28 @@ public class DocIdSenderTest {
     Thread.currentThread().interrupt();
     assertEquals(new DocId("test2"), docIdSender.pushDocIds(ids));
     assertTrue(Thread.currentThread().isInterrupted());
+  }
+
+  @Test
+  public void testPushIncrementalDocIdsFailureByError() throws Exception {
+    class InternalErrorInTest extends Error {};
+    PollingIncrementalLister listener = new PollingIncrementalLister() {
+      @Override
+      public void getModifiedDocIds(DocIdPusher pusher) throws IOException, InterruptedException {
+        throw new InternalErrorInTest();
+      }
+    };
+
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+                                  config, adaptor);
+
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastIncrementalPushStatus());
+    thrown.expect(InternalErrorInTest.class);
+    try {
+      docIdSender.pushIncrementalDocIdsFromAdaptor(listener, runtimeExceptionHandler);
+    } finally {
+      assertEquals(CompletionStatus.FAILURE, journal.getLastIncrementalPushStatus());
+    }
   }
 
   @Test

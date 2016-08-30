@@ -857,8 +857,11 @@ public final class GsaCommunicationHandler {
         docIdSender.pushFullDocIdsFromAdaptor(handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
-      } catch (Throwable t) {
+      } catch (Exception t) {
         log.log(Level.WARNING, "Failure during full polling", t);
+      } catch (Throwable t) {
+        log.log(Level.SEVERE, "Error during full polling", t);
+        // TODO: in case of Error we need to shutdown adaptor
       }
     }
   }
@@ -883,8 +886,11 @@ public final class GsaCommunicationHandler {
             incrementalLister, handler);
       } catch (InterruptedException ex) {
         Thread.currentThread().interrupt();
-      } catch (Throwable t) {
+      } catch (Exception t) {
         log.log(Level.WARNING, "Failure during incremental polling", t);
+      } catch (Throwable t) {
+        log.log(Level.SEVERE, "Error during incremental polling", t);
+       // TODO: in case of Error we need to shutdown adaptor
       }
     }
   }
