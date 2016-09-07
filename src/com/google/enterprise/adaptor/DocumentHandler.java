@@ -209,18 +209,36 @@ class DocumentHandler implements HttpHandler {
             + "access to content: {0}", new Object[] {addressesAndRanges});
   }
 
-  private boolean requestIsFromSkipCertAddresses(HttpExchange ex) {
-    InetAddress addr = ex.getRemoteAddress().getAddress();
-    return addressIsInSkipCertAddresses(addr);
-  }
-
-  private boolean addressIsInSkipCertAddresses(InetAddress addr) {
-    return skipCertAddresses.contains(addr);
+  private boolean isFullAccessHost(InetAddress addr) {
+    boolean trust = fullAccessAddresses.contains(addr);
+    if (!trust) {
+      for (CIDRAddress address : fullAccessAddressRanges) {
+        if (address.isInRange(addr)) {
+          trust = true;
+          break;
+        }
+      }
+    }
+    return trust;
   }
 
   private boolean requestIsFromFullyTrustedClient(HttpExchange ex) {
-    boolean trust;
-    if (ex instanceof HttpsExchange) {
+    InetAddress addr = ex.getRemoteAddress().getAddress();
+    if (ex instanceof HttpsExchange && skipCertAddresses.contains(addr)) {
+      String danger = "skip cert setting is on! turn off after debugging";
+      log.log(Level.WARNING, danger);
+      boolean trust = isFullAccessHost(addr);
+      if (trust) {
+        log.log(Level.FINE, "client is trusted because is in"
+            + " full-access-hosts and is in skip-cert-check: {0}",
+            addr);
+      } else {
+        log.log(Level.FINE, "client is NOT trusted because is NOT in"
+            + " full-access-hosts (while being in skip-cert-check): {0}",
+            addr);
+      }
+      return trust;
+    } else if (ex instanceof HttpsExchange) {
       java.security.Principal principal;
       try {
         principal = ((HttpsExchange) ex).getSSLSession().getPeerPrincipal();
@@ -257,37 +275,27 @@ class DocumentHandler implements HttpHandler {
         return false;
       }
       commonName = commonName.toLowerCase(Locale.ENGLISH);
-      trust = fullAccessCommonNames.contains(commonName);
+      boolean trust = fullAccessCommonNames.contains(commonName);
       if (trust) {
-        log.log(Level.FINE, "Client is trusted in secure mode: {0}",
+        log.log(Level.FINE, "client is trusted in secure mode: {0}",
                 commonName);
       } else {
-        log.log(Level.FINE, "Client is not trusted in secure mode: {0}",
+        log.log(Level.FINE, "client is not trusted in secure mode: {0}",
                 commonName);
       }
-    } else {
-      InetAddress addr = ex.getRemoteAddress().getAddress();
-      trust = fullAccessAddresses.contains(addr);
-      // Only go through the ranges of addresses if we haven't already found
-      // our address in the list of uniquely-identified trusted hosts.  If any
-      // range contains our address, we can stop searching.
-      if (!trust) {
-        for (CIDRAddress address : fullAccessAddressRanges) {
-          if (address.isInRange(addr)) {
-            trust = true;
-            break;
-          }
-        }
-      }
+      return trust;
+    } else if (ex instanceof HttpExchange) {
+      boolean trust = isFullAccessHost(addr);
       if (trust) {
-        log.log(Level.FINE, "Client is trusted in non-secure mode: {0}", addr);
+        log.log(Level.FINE, "client is trusted in non-secure mode: {0}", addr);
       } else {
-        log.log(Level.FINE, "Client is not trusted in non-secure mode: {0}",
+        log.log(Level.FINE, "client is not trusted in non-secure mode: {0}",
                 addr);
       }
+      return trust;
+    } else {
+      throw new AssertionError("invalid exchange type: " + ex.getClass());
     }
-
-    return trust;
   }
 
   /**
