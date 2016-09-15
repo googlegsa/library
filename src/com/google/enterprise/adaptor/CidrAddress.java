@@ -35,9 +35,9 @@ import java.util.logging.Logger;
  * that {@code (start.compareTo(addr) < 1) && (addr.compareTo(end) < 1)}).
  */
 
-class CIDRAddress {
+class CidrAddress {
   private static final Logger log
-      = Logger.getLogger(CIDRAddress.class.getName());
+      = Logger.getLogger(CidrAddress.class.getName());
 
   /** The lowest address in our range.  For the given example, calling
    * {@code toByteArray()} would give [0, 192, 168, 0, 0] -- the first zero byte
@@ -64,7 +64,7 @@ class CIDRAddress {
    * @throws IllegalArgumentException if the netmaskLength is too large for
    * the given address.
    */
-  public CIDRAddress(InetAddress inetAddress, int netmaskLength) {
+  public CidrAddress(InetAddress inetAddress, int netmaskLength) {
     this.inetAddress = inetAddress;
     this.netmaskLength = netmaskLength;
     int bufferSize = inetAddress.getAddress().length;  // 4 (IPv4) or 16 (IPv6)

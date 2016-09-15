@@ -86,8 +86,8 @@ class DocumentHandler implements HttpHandler {
   /**
    * Set of (Ranges of IPs) that are provided full access when in insecure mode.
    */
-  private final Set<CIDRAddress> fullAccessAddressRanges
-      = new HashSet<CIDRAddress>();
+  private final Set<CidrAddress> fullAccessAddressRanges
+      = new HashSet<CidrAddress>();
   /**
    * Comma-separated list of IPs that can skip certificate checks.
    */
@@ -192,7 +192,7 @@ class DocumentHandler implements HttpHandler {
           String addressPart = hostname.substring(0, index);
           int maskLength = Integer.parseInt(hostname.substring(index + 1));
           InetAddress address = InetAddress.getByName(addressPart);
-          fullAccessAddressRanges.add(new CIDRAddress(address, maskLength));
+          fullAccessAddressRanges.add(new CidrAddress(address, maskLength));
         } else {
           InetAddress[] ips = InetAddress.getAllByName(hostname);
           fullAccessAddresses.addAll(Arrays.asList(ips));
@@ -212,7 +212,7 @@ class DocumentHandler implements HttpHandler {
   private boolean isFullAccessHost(InetAddress addr) {
     boolean trust = fullAccessAddresses.contains(addr);
     if (!trust) {
-      for (CIDRAddress address : fullAccessAddressRanges) {
+      for (CidrAddress address : fullAccessAddressRanges) {
         if (address.isInRange(addr)) {
           trust = true;
           break;
