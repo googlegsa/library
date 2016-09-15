@@ -184,28 +184,6 @@ public class ApplicationTest {
   }
 
   @Test
-  public void testConfigReload() throws Exception {
-    app.start();
-    assertTrue(adaptor.inited);
-    assertFalse(adaptor.hasBeenShutdownAtSomePoint);
-    configFile.setFileContents("server.hostname=127.0.0.10\n");
-    config.load(configFile);
-    assertTrue(adaptor.inited);
-    assertTrue(adaptor.hasBeenShutdownAtSomePoint);
-  }
-
-  @Test
-  public void testConfigReloadNoRestart() throws Exception {
-    app.start();
-    assertTrue(adaptor.inited);
-    assertFalse(adaptor.hasBeenShutdownAtSomePoint);
-    configFile.setFileContents("adaptor.fullListingSchedule=1 1 1 1 1\n");
-    config.load(configFile);
-    assertTrue(adaptor.inited);
-    assertFalse(adaptor.hasBeenShutdownAtSomePoint);
-  }
-
-  @Test
   public void testFastShutdownWhenStarting() throws Exception {
     class FailAlwaysAdaptor extends NullAdaptor {
       @Override

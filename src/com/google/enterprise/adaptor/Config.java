@@ -36,7 +36,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -215,8 +214,6 @@ public class Config {
    */
   private File configFile;
   private long configFileLastModified;
-  private List<ConfigModificationListener> modificationListeners
-      = new CopyOnWriteArrayList<ConfigModificationListener>();
   /**
    * Map from config key to computer that generates the value for the key. These
    * generated values are generally due to one value being formed from other
@@ -829,38 +826,21 @@ public class Config {
   }
 
   /**
-   * Load user-provided configuration file, replacing any previously loaded file
-   * configuration.
+   * Load user-provided configuration file
    */
   private void load(Reader configFile) throws IOException {
     Properties newConfigFileProperties = new Properties(defaultConfig);
     newConfigFileProperties.load(configFile);
 
-    Config fakeOldConfig;
-    Set<String> differentKeys;
-    synchronized (this) {
-      // Create replacement config.
-      Properties newConfig = new Properties(newConfigFileProperties);
-      for (Object o : config.keySet()) {
-        newConfig.put(o, config.get(o));
-      }
-
-      // Find differences.
-      differentKeys = findDifferences(config, newConfig);
-
-      if (differentKeys.isEmpty()) {
-        log.info("No configuration changes found");
-        return;
-      }
-
-      validate(newConfig);
-
-      fakeOldConfig = new Config();
-      fakeOldConfig.config = config;
-      this.config = newConfig;
+    // Create replacement config.
+    Properties newConfig = new Properties(newConfigFileProperties);
+    for (Object o : config.keySet()) {
+      newConfig.put(o, config.get(o));
     }
+
+    validate(newConfig);
+    this.config = newConfig;
     log.info("New configuration file loaded");
-    fireConfigModificationEvent(fakeOldConfig, differentKeys);
   }
 
   Reader createReader(File configFile) throws IOException {
@@ -909,44 +889,6 @@ public class Config {
       value = value.substring(0, value.length() - numCharsToTakeOff);
     }
     return value;
-  }
-
-  /**
-   * @return {@code true} if configuration file was modified
-   * @throws IOException if fails reading config
-   */
-  public boolean ensureLatestConfigLoaded() throws IOException {
-    synchronized (this) {
-      if (configFile == null || !configFile.exists() || !configFile.isFile()) {
-        return false;
-      }
-      // Check for modifications.
-      long newLastModified = configFile.lastModified();
-      if (configFileLastModified == newLastModified || newLastModified == 0) {
-        return false;
-      }
-      log.info("Noticed modified configuration file");
-
-      load(configFile);
-    }
-    return true;
-  }
-
-  private Set<String> findDifferences(Properties config, Properties newConfig) {
-    Set<String> differentKeys = new HashSet<String>();
-    Set<String> names = new HashSet<String>();
-    names.addAll(config.stringPropertyNames());
-    names.addAll(newConfig.stringPropertyNames());
-    for (String name : names) {
-      String value = config.getProperty(name);
-      String newValue = newConfig.getProperty(name);
-      boolean equal = (value == null && newValue == null)
-          || (value != null && value.equals(newValue));
-      if (!equal) {
-        differentKeys.add(name);
-      }
-    }
-    return differentKeys;
   }
 
   public void validate() {
@@ -1108,30 +1050,6 @@ public class Config {
    */
   synchronized void setValue(String key, String value) {
     config.setProperty(key, value);
-  }
-
-  void addConfigModificationListener(
-      ConfigModificationListener listener) {
-    modificationListeners.add(listener);
-  }
-
-  void removeConfigModificationListener(
-      ConfigModificationListener listener) {
-    modificationListeners.remove(listener);
-  }
-
-  private void fireConfigModificationEvent(Config oldConfig,
-                                           Set<String> modifiedKeys) {
-    ConfigModificationEvent ev
-        = new ConfigModificationEvent(this, oldConfig, modifiedKeys);
-    for (ConfigModificationListener listener : modificationListeners) {
-      try {
-        listener.configModified(ev);
-      } catch (Exception ex) {
-        log.log(Level.WARNING,
-                "Unexpected exception. Consider filing a bug.", ex);
-      }
-    }
   }
 
   interface ValueComputer {

@@ -15,7 +15,6 @@
 package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,7 +26,6 @@ import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -114,55 +112,6 @@ public class ConfigTest {
     assertEquals("computed", config.getValue("somekey"));
   }
 
-  @Test
-  public void testConfigModificationDetection() throws Exception {
-    configFile.setFileContents("adaptor.fullListingSchedule=1\n");
-    config.setValue("gsa.hostname", "notreal");
-    config.load(configFile);
-    assertEquals("notreal", config.getGsaHostname());
-    assertEquals("1", config.getAdaptorFullListingSchedule());
-    assertEquals(configFile, config.getConfigFile());
-
-    final List<ConfigModificationEvent> events
-        = new LinkedList<ConfigModificationEvent>();
-    ConfigModificationListener listener = new ConfigModificationListener() {
-      @Override
-      public void configModified(ConfigModificationEvent ev) {
-        events.add(ev);
-      }
-    };
-    configFile.setFileContents("adaptor.fullListingSchedule=2\n");
-    config.addConfigModificationListener(listener);
-    config.ensureLatestConfigLoaded();
-    assertEquals("1", config.getAdaptorFullListingSchedule());
-    assertEquals(0, events.size());
-
-    configFile.setLastModified(configFile.lastModified() + 1);
-    config.ensureLatestConfigLoaded();
-    assertEquals("2", config.getAdaptorFullListingSchedule());
-    assertEquals("notreal", config.getGsaHostname());
-    assertEquals(1, events.size());
-    assertEquals(1, events.get(0).getModifiedKeys().size());
-    assertTrue(events.get(0).getModifiedKeys()
-               .contains("adaptor.fullListingSchedule"));
-    events.clear();
-
-    // Change nothing.
-    configFile.setLastModified(configFile.lastModified() + 1);
-    config.ensureLatestConfigLoaded();
-    assertEquals(0, events.size());
-    assertEquals("2", config.getAdaptorFullListingSchedule());
-    assertEquals("notreal", config.getGsaHostname());
-
-    config.removeConfigModificationListener(listener);
-    configFile.setFileContents("adaptor.fullListingSchedule=3\n");
-    configFile.setLastModified(configFile.lastModified() + 1);
-    config.ensureLatestConfigLoaded();
-    assertEquals(0, events.size());
-    assertEquals("3", config.getAdaptorFullListingSchedule());
-    assertEquals("notreal", config.getGsaHostname());
-  }
-
   public void testAdminHostname() throws Exception {
     configFile.setFileContents(
         "gsa.hostname=feedhost\n" + "gsa.admin.hostname=admin\n");
@@ -175,26 +124,6 @@ public class ConfigTest {
     configFile.setFileContents("gsa.hostname=feedhost\n");
     config.load(configFile);
     assertEquals(config.getGsaHostname(), config.getGsaAdminHostname());
-  }
-
-  // TODO(ejona): Enable test once config allows gsa.hostname changes.
-  // **DISABLED** @Test
-  public void testConfigModifiedInvalid() throws Exception {
-    configFile.setFileContents("gsa.hostname=notreal\n");
-    config.load(configFile);
-    assertEquals("notreal", config.getGsaHostname());
-
-    // Missing gsa.hostname.
-    configFile.setFileContents("");
-    configFile.setLastModified(configFile.lastModified() + 1);
-    boolean threwException = false;
-    try {
-      config.ensureLatestConfigLoaded();
-    } catch (IllegalStateException e) {
-      threwException = true;
-    }
-    assertTrue(threwException);
-    assertEquals("notreal", config.getGsaHostname());
   }
 
   @Test
@@ -228,14 +157,6 @@ public class ConfigTest {
     config.setValue("gsa.hostname", "notreal");
     config.load(configFile);
     assertEquals(golden, config.getMetadataTransformPipelineSpec());
-  }
-
-  @Test
-  public void testGetTransformPipelineSpecEmpty() throws Exception {
-    configFile.setFileContents("metadata.transform.pipeline=\n");
-    config.load(configFile);
-    assertEquals(Collections.emptyList(),
-        config.getMetadataTransformPipelineSpec());
   }
 
   @Test
