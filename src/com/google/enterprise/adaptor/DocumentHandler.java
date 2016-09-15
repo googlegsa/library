@@ -73,26 +73,17 @@ class DocumentHandler implements HttpHandler {
   private final AuthzAuthority authzAuthority;
   private final Watchdog watchdog;
   private final AsyncPusher pusher;
-  /**
-   * List of Common Names of Subjects that are provided full access when in
-   * secure mode. All entries should be lower case.
-   */
-  private final Set<String> fullAccessCommonNames = new HashSet<String>();
-  /**
-   * List of IPs that are provided full access when not in secure mode.
-   */
+
+   /** IPs that are provided full access when not in secure mode. */
   private final Set<InetAddress> fullAccessAddresses
       = new HashSet<InetAddress>();
-  /**
-   * Set of (Ranges of IPs) that are provided full access when in insecure mode.
-   */
-  private final Set<CidrAddress> fullAccessAddressRanges
-      = new HashSet<CidrAddress>();
-  /**
-   * Comma-separated list of IPs that can skip certificate checks.
-   */
-  private final Set<InetAddress> skipCertAddresses = 
-      new HashSet<InetAddress>();  
+  /** Ranges of IPs that are provided full access when not in secure mode. */
+  private final Set<CidrAddress> fullAccessRanges = new HashSet<CidrAddress>();
+  /** Lower case common names provided full access when in secure mode. */
+  private final Set<String> fullAccessCommonNames = new HashSet<String>();
+  /** IPs that can skip certificate checks. */
+  private final Set<InetAddress> skipCertAddresses = new HashSet<InetAddress>();
+
   private final SamlServiceProvider samlServiceProvider;
   private final MetadataTransformPipeline metadataTransform;
   private final AclTransform aclTransform;
@@ -113,8 +104,8 @@ class DocumentHandler implements HttpHandler {
    */
   public DocumentHandler(DocIdDecoder docIdDecoder, DocIdEncoder docIdEncoder,
                          Journal journal, Adaptor adaptor,
-                         AuthzAuthority authzAuthority,
-                         String gsaHostname, String[] fullAccessHosts, String[] skipCertHosts,
+                         AuthzAuthority authzAuthority, String gsaHostname,
+                         String[] fullAccessHosts, String[] skipCertHosts,
                          SamlServiceProvider samlServiceProvider,
                          MetadataTransformPipeline metadataTransform,
                          AclTransform aclTransform,
@@ -173,46 +164,52 @@ class DocumentHandler implements HttpHandler {
     }
   }
 
-  private void initFullAccess(String gsaHostname, String[] fullAccessHosts) {
-    fullAccessCommonNames.add(gsaHostname.toLowerCase(Locale.ENGLISH));
+  private static Set<String> lowercase(String fullAccessHosts[]) {
+    Set<String> filtered = new HashSet<String>();    
     for (String hostname : fullAccessHosts) {
       hostname = hostname.trim();
       if ("".equals(hostname)) {
         continue;
       }
-      fullAccessCommonNames.add(hostname.toLowerCase(Locale.ENGLISH));
+      filtered.add(hostname.toLowerCase(Locale.ENGLISH));
     }
-    log.log(Level.INFO, "When in secure mode, common names that are given full "
-            + "access to content: {0}", new Object[] {fullAccessCommonNames});
+    return filtered;
+  }
 
-    for (String hostname : fullAccessCommonNames) {
+  private void initFullAccess(String gsaHostname, String[] fullAccessHosts) {
+    Set<String> hosts = lowercase(fullAccessHosts);
+    hosts.add(gsaHostname.toLowerCase(Locale.ENGLISH));
+    for (String hostname : hosts) {
       try {
         if (hostname.indexOf("/") > 0) {
           int index = hostname.indexOf("/");
           String addressPart = hostname.substring(0, index);
           int maskLength = Integer.parseInt(hostname.substring(index + 1));
           InetAddress address = InetAddress.getByName(addressPart);
-          fullAccessAddressRanges.add(new CidrAddress(address, maskLength));
+          fullAccessRanges.add(new CidrAddress(address, maskLength));
         } else {
+          fullAccessCommonNames.add(hostname);
           InetAddress[] ips = InetAddress.getAllByName(hostname);
           fullAccessAddresses.addAll(Arrays.asList(ips));
         }
       } catch (UnknownHostException ex) {
         log.log(Level.WARNING, "Could not resolve hostname. Not adding it to "
-                + "full access list of IPs: " + hostname, ex);
+            + "full access list of IPs: " + hostname, ex);
       }
     }
     ArrayList<Object> addressesAndRanges = new ArrayList<Object>();
     addressesAndRanges.addAll(fullAccessAddresses);
-    addressesAndRanges.addAll(fullAccessAddressRanges);
+    addressesAndRanges.addAll(fullAccessRanges);
     log.log(Level.INFO, "When not in secure mode, IPs that are given full "
-            + "access to content: {0}", new Object[] {addressesAndRanges});
+        + "access to content: {0}", new Object[] {addressesAndRanges});
+    log.log(Level.INFO, "When in secure mode, common names that are given full "
+        + "access to content: {0}", new Object[] {fullAccessCommonNames});
   }
 
   private boolean isFullAccessHost(InetAddress addr) {
     boolean trust = fullAccessAddresses.contains(addr);
     if (!trust) {
-      for (CidrAddress address : fullAccessAddressRanges) {
+      for (CidrAddress address : fullAccessRanges) {
         if (address.isInRange(addr)) {
           trust = true;
           break;
