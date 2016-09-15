@@ -355,28 +355,6 @@ function startIncrementalFeedPush() {
   });
 }
 
-// TODO(myk): button removed - code to follow suit
-function checkConfig() {
-  var sending = $('#gaf-check-config-sending');
-  sending.show();
-  rpc('checkForUpdatedConfig', null, function(result, error) {
-    sending.hide();
-    if (result === null) {
-      throw error !== null ? error : "Invalid response from server";
-    }
-    var notificationSpan = result ? $('#gaf-check-config-updated')
-        : $('#gaf-check-config-not-updated');
-    notificationSpan.show();
-    window.setTimeout(function() {
-      notificationSpan.fadeOut();
-    }, 5000);
-    if (result) {
-      // Config was updated; auto-update displayed config.
-      rpc('getConfig', null, getConfigCallback);
-    }
-  });
-}
-
 function encodeSensitiveValue() {
   var valuesArray = $('#gaf-sec-form').serializeArray();
   var values = {};

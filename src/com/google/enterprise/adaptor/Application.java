@@ -33,12 +33,9 @@ import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map.Entry;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executor;
@@ -69,8 +66,6 @@ public final class Application {
 
   private final Config config;
   private final GsaCommunicationHandler gsa;
-  private final ConfigModificationListener configModListener
-      = new ConfigModListener();
   /**
    * An "inverted" semaphore that has permits available when stop() is running;
    * at all other times it has no permits. This allows start() to sleep on the
@@ -199,11 +194,9 @@ public final class Application {
         }
         sleepDurationMillis
             = Math.min(sleepDurationMillis * 2, maxSleepDurationMillis);
-        gsa.ensureLatestConfigLoaded();
       }
     }
 
-    config.addConfigModificationListener(configModListener);
     gsa.start(new ShutdownHook());
   }
 
@@ -239,7 +232,6 @@ public final class Application {
         if (primaryServer == null) {
           return;  // Already stopped.
         }
-        config.removeConfigModificationListener(configModListener);
         gsa.stop(time, unit);
         try {
           gsa.getAdaptor().destroy();
@@ -632,38 +624,6 @@ public final class Application {
         r.run();
       } finally {
         abortImmediately.set(null);
-      }
-    }
-  }
-
-  // TODO: remove all config mod listening code
-  private class ConfigModListener implements ConfigModificationListener {
-    @Override
-    public void configModified(ConfigModificationEvent ev) {
-      Set<String> modifiedKeys = ev.getModifiedKeys();
-      if (modifiedKeys.contains("adaptor.fullListingSchedule")) {
-        gsa.rescheduleFullListing(
-            ev.getNewConfig().getAdaptorFullListingSchedule());
-      }
-
-      // List of "safe" keys that can be updated without a restart.
-      List<String> safeKeys = Arrays.asList("adaptor.fullListingSchedule");
-      // Set of "unsafe" keys that have been modified.
-      Set<String> modifiedKeysRequiringRestart
-          = new HashSet<String>(modifiedKeys);
-      modifiedKeysRequiringRestart.removeAll(safeKeys);
-      // If there are modified "unsafe" keys, then we restart things to make
-      // sure all the code is up-to-date with the new values.
-      if (!modifiedKeysRequiringRestart.isEmpty()) {
-        log.warning("Unsafe configuration keys modified. To ensure a sane "
-                    + "state, the adaptor is restarting.");
-        daemonStop(3, TimeUnit.SECONDS);
-        try {
-          daemonStart();
-        } catch (Exception ex) {
-          log.log(Level.SEVERE, "Automatic restart failed", ex);
-          throw new RuntimeException(ex);
-        }
       }
     }
   }

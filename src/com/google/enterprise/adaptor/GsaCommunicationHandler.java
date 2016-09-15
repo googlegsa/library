@@ -789,16 +789,6 @@ public final class GsaCommunicationHandler {
     return adaptorContext.pollingIncrementalLister != null;
   }
 
-  boolean ensureLatestConfigLoaded() {
-    try {
-      return config.ensureLatestConfigLoaded();
-    } catch (Exception ex) {
-      log.log(Level.WARNING, "Error while trying to reload configuration",
-              ex);
-      return false;
-    }
-  }
-
   synchronized void rescheduleFullListing(String schedule) {
     if (sendDocIdsFuture == null) {
       return;
