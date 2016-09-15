@@ -268,10 +268,6 @@ public class DocumentHandlerTest {
     DocumentHandler handler = createDefaultHandlerForAdaptor(
         new PrivateMockAdaptor());
     MockHttpExchange httpEx = ex;
-    // setting correct IP for CN=localhost
-    httpEx.setRemoteAddress(new InetSocketAddress(
-        InetAddress.getByAddress("localhost", new byte[] {127, 0, 0, 1}),
-        65000));
     MockHttpsExchange ex = new MockHttpsExchange(httpEx, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
     handler.handle(ex);
@@ -2491,32 +2487,20 @@ public class DocumentHandlerTest {
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=NOT_OUR_IP_ADDRESS
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // result: 403, no headers
   @Test
-  public void testSkipCertCheckBadCNBadIP() throws Exception {
+  public void testHttpsConnectionFromUntrustedCN() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
-
-    final String key = "testing key";
-    List<MetadataTransform> transforms
-        = new LinkedList<MetadataTransform>();
-    transforms.add(new MetadataTransform() {
-      @Override
-      public void transform(Metadata metadata, Map<String, String> params) {
-        metadata.set(key, metadata.getOneValue(key).toUpperCase());
-      }
-    });
-    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
-        Arrays.asList("t1"));
-
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
+    
     UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException, InterruptedException {
-        response.addMetadata(key, "testing value");
+        response.addMetadata("testing key", "testing value");
         super.getDocContent(request, response);
       }
     };
@@ -2525,45 +2509,33 @@ public class DocumentHandlerTest {
         .setAuthzAuthority(adaptor)
         .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
         .setSkipCertHosts(new String[] {NOT_OUR_IP_ADDRESS})
-        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
 
     handler.handle(httpsEx);
 
-    // response code 403 - adaptor doesn't trust to CN=badlocalhost
+    // response code 403
+    // requestor's certificate CN is no equal to "localhost"
     assertEquals(403, httpsEx.getResponseCode());
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // result: 403, no headers
   @Test
-  public void testSkipCertCheckGoodSkipCertHosts() throws Exception {
+  public void testIpSkipsCertCheckButIpIsNotFullAccess() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
-
-    final String key = "testing key";
-    List<MetadataTransform> transforms
-        = new LinkedList<MetadataTransform>();
-    transforms.add(new MetadataTransform() {
-      @Override
-      public void transform(Metadata metadata, Map<String, String> params) {
-        metadata.set(key, metadata.getOneValue(key).toUpperCase());
-      }
-    });
-    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
-        Arrays.asList("t1"));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
     UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException, InterruptedException {
-        response.addMetadata(key, "testing value");
+        response.addMetadata("testing key", "testing value");
         super.getDocContent(request, response);
       }
     };
@@ -2572,7 +2544,6 @@ public class DocumentHandlerTest {
         .setAuthzAuthority(adaptor)
         .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
         .setSkipCertHosts(new String[] {"127.0.0.3"})
-        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
 
@@ -2586,15 +2557,14 @@ public class DocumentHandlerTest {
 
   // server.fullAccessHosts=127.0.0.3
   // server.skipCertCheckHosts=127.0.0.3
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // result: 200, headers are returned
-
   @Test
-  public void testSkipCertCheckGoodSkipCertHostGoodFullAccessHosts() throws Exception {
+  public void testIpSkipsCertCheckAndIpIsFullAccess() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
     final String key = "testing key";
     List<MetadataTransform> transforms
@@ -2626,42 +2596,30 @@ public class DocumentHandlerTest {
 
     handler.handle(httpsEx);
 
-    // response code 200 - adaptor doesn't trust CN=localhostbad
-    // but setSkipCertHosts contains requestor IP and setFullAccessHosts permits GSA headers
+    // response code 200 - requestor's certificate is not equal to "localhost"
+    // but setSkipCertHosts contains requestor IP AND setFullAccessHosts 
+    // permits GSA headers
     assertEquals(200, httpsEx.getResponseCode());
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
-
   }
 
   // server.fullAccessHosts=127.0.0.0/8
   // server.skipCertCheckHosts=127.0.0.0/8
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // result: 403, no headers
-
   @Test
-  public void testSkipCertCheckGoodSkipCertHostGoodFullAccessHostsNetwork() throws Exception {
+  public void testIpSkipsCertCheckAndIpIsFullAccessRange() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
-
-    final String key = "testing key";
-    List<MetadataTransform> transforms
-        = new LinkedList<MetadataTransform>();
-    transforms.add(new MetadataTransform() {
-      @Override
-      public void transform(Metadata metadata, Map<String, String> params) {
-        metadata.set(key, metadata.getOneValue(key).toUpperCase());
-      }
-    });
-    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
-        Arrays.asList("t1"));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
+    
     UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException, InterruptedException {
-        response.addMetadata(key, "testing value");
+        response.addMetadata("testing key", "testing value");
         super.getDocContent(request, response);
       }
     };
@@ -2670,26 +2628,23 @@ public class DocumentHandlerTest {
         .setAuthzAuthority(adaptor)
         .setFullAccessHosts(new String[] {"127.0.0.0/8"})
         .setSkipCertHosts(new String[] {"127.0.0.3/8"})
-        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
 
     handler.handle(httpsEx);
 
     // response code 403 due
-    // setSkipCertHosts doesn't support networks, so it is actually empty
+    // setSkipCertHosts doesn't support networks
     assertEquals(403, httpsEx.getResponseCode());
     assertNull(ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
-
   }
 
   // server.fullAccessHosts=127.0.0.3
   // server.skipCertCheckHosts=NOT_OUR_IP_ADDRESS
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
   // requestor CN=localhost
   // result: 200, headers are returned
-
   @Test
   public void testSkipCertCheckGoodCNGoodFullAccessHosts() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
@@ -2725,22 +2680,21 @@ public class DocumentHandlerTest {
 
     handler.handle(httpsEx);
 
-    // response code 200 - adaptor trusts to CN=localhost
+    // response code 200 - requestor's certificate CN is equal to "localhost"
     // and setFullAccessHosts permits GSA headers
     assertEquals(200, httpsEx.getResponseCode());
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
-
   }
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=NOT_OUR_IP_ADDRESS
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
   // requestor CN=localhost
   // result: 200, headers are returned
   @Test
-  public void testSkipCertCheckGoodCNBadFullAccessHosts() throws Exception {
+  public void testSkipCertCheckGoodCNButIpIsNotFullAccess() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
   
@@ -2774,41 +2728,28 @@ public class DocumentHandlerTest {
   
     handler.handle(httpsEx);
   
-    // response code 200 - adaptor trusts to CN=localhost
+    // response code 200 - requestor's certificate CN is equal to "localhost"
     assertEquals(200, httpsEx.getResponseCode());
-    // We trust CN of requestor, so GSA headers will be returned
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
     }
 
   // server.fullAccessHosts=127.0.0.3
   // server.skipCertCheckHosts=NOT_OUR_IP_ADDRESS
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // result: 403, no headers
   @Test
   public void testSkipCertCheckGoodFullAccessHostsOnly() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
-
-    final String key = "testing key";
-    List<MetadataTransform> transforms
-        = new LinkedList<MetadataTransform>();
-    transforms.add(new MetadataTransform() {
-      @Override
-      public void transform(Metadata metadata, Map<String, String> params) {
-        metadata.set(key, metadata.getOneValue(key).toUpperCase());
-      }
-    });
-    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
-        Arrays.asList("t1"));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
     UserPrivateMockAdaptor adaptor = new UserPrivateMockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException, InterruptedException {
-        response.addMetadata(key, "testing value");
+        response.addMetadata("testing key", "testing value");
         super.getDocContent(request, response);
       }
     };
@@ -2817,13 +2758,12 @@ public class DocumentHandlerTest {
         .setAuthzAuthority(adaptor)
         .setFullAccessHosts(new String[] {"127.0.0.3"})
         .setSkipCertHosts(new String[] {NOT_OUR_IP_ADDRESS})
-        .setMetadataTransform(transform)
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
 
     handler.handle(httpsEx);
 
-    // response code 403 - adaptor does not trusts to CN=localhostbad
+    // response code 403 - adaptor does not trusts to CN=untrusted
     // and setSkipCertHosts doesn't contains requestor IP
     assertEquals(403, httpsEx.getResponseCode());
     // X-Gsa-External-Metadata not provided
@@ -2832,14 +2772,14 @@ public class DocumentHandlerTest {
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // result: 200, no headers
   @Test
-  public void testSkipCertCheckGoodSkipCertHostsPublicDoc() throws Exception {
+  public void testIpSkipsCertCheckPublicDoc() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
     final String key = "testing key";
     List<MetadataTransform> transforms
@@ -2872,7 +2812,7 @@ public class DocumentHandlerTest {
 
     handler.handle(httpsEx);
 
-    // response code 200 - adaptor trusts to skipCertHosts, doc is public
+    // response code 200 - requestor is in skipCertHosts, doc is public
     assertEquals(200, httpsEx.getResponseCode());
     // no headers provided, since requestor is not in fullAccessHosts
     assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
@@ -2880,12 +2820,12 @@ public class DocumentHandlerTest {
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=NOT_OUR_IP_ADDRESS
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
   // requestor CN=localhost
   // result: 200, headers are returned
   @Test
-  public void testSkipCertCheckGoodCNPublicDoc() throws Exception {
+  public void testTrustedCNGetsPublicDoc() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
   
@@ -2920,24 +2860,24 @@ public class DocumentHandlerTest {
   
     handler.handle(httpsEx);
   
-    // response code 200 - adaptor trusts to CN, public doc is not counted
+    // response code 200:
+    // requestor's certificate CN is equal to "localhost"
     assertEquals(200, httpsEx.getResponseCode());
-    // We trust CN of requestor, so GSA headers will be returned
     assertEquals(Arrays.asList("testing%20key=TESTING%20VALUE", ""),
         ex.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // saml returns PERMIT
   // result: 200, no headers
   @Test
-  public void testSkipCertCheckGoodSkipCertHostsUserHasAccess() throws Exception {
+  public void testSkipCertCheckGoodSkipCertHostsUserIsPermited() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
     final String key = "testing key";
     List<MetadataTransform> transforms
@@ -2982,27 +2922,15 @@ public class DocumentHandlerTest {
   
   // server.fullAccessHosts=NOT_OUR_IP_ADDRESS
   // server.skipCertCheckHosts=127.0.0.3
-  // adaptor trusts to CN=localhost
+  // requestor's certificate CN must be equal to "localhost"
   // requestor ip=127.0.0.3
-  // requestor CN=localhostbad
+  // requestor CN=untrusted
   // saml returns DENY
   // result: 403, no headers
   @Test
-  public void testSkipCertCheckGoodSkipCertHostsUserHasDeny() throws Exception {
+  public void testIpSkipsCertCheckUserIsDenied() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
-        new X500Principal("CN=localhostbad, OU=Unknown, O=Unknown, C=Unknown")));
-
-    final String key = "testing key";
-    List<MetadataTransform> transforms
-        = new LinkedList<MetadataTransform>();
-    transforms.add(new MetadataTransform() {
-      @Override
-      public void transform(Metadata metadata, Map<String, String> params) {
-        metadata.set(key, metadata.getOneValue(key).toUpperCase());
-      }
-    });
-    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
-        Arrays.asList("t1"));
+        new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
     MockSamlServiceProvider samlServiceProvider = new MockSamlServiceProvider();
     samlServiceProvider.setUserIdentity(new AuthnIdentityImpl
@@ -3016,14 +2944,12 @@ public class DocumentHandlerTest {
         .setSamlServiceProvider(samlServiceProvider)
         .setFullAccessHosts(new String[] {NOT_OUR_IP_ADDRESS})
         .setSkipCertHosts(new String[] {"127.0.0.3"})
-        .setMetadataTransform(transform)
         .build();
 
     handler.handle(httpsEx);
 
     // response code 403 - user doesn't have access to this document
     assertEquals(403, httpsEx.getResponseCode());
-    assertNull(httpsEx.getResponseHeaders().get("X-Gsa-External-Metadata"));
   }
 
   private static class UserPrivateMockAdaptor extends MockAdaptor {
