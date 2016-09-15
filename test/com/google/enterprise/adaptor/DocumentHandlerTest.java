@@ -2646,7 +2646,7 @@ public class DocumentHandlerTest {
   // requestor CN=localhost
   // result: 200, headers are returned
   @Test
-  public void testSkipCertCheckGoodCNGoodFullAccessHosts() throws Exception {
+  public void testSecureConnectionFromTrustedCn() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
 
@@ -2694,7 +2694,8 @@ public class DocumentHandlerTest {
   // requestor CN=localhost
   // result: 200, headers are returned
   @Test
-  public void testSkipCertCheckGoodCNButIpIsNotFullAccess() throws Exception {
+  public void testSecureConnectionFromTrustedCnWithoutIpCheck()
+      throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=localhost, OU=Unknown, O=Unknown, C=Unknown")));
   
@@ -2741,7 +2742,8 @@ public class DocumentHandlerTest {
   // requestor CN=untrusted
   // result: 403, no headers
   @Test
-  public void testSkipCertCheckGoodFullAccessHostsOnly() throws Exception {
+  public void testSecureConnectionFromUntrustedCnFullAccessIPDoesNotMatter()
+      throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
@@ -2777,7 +2779,7 @@ public class DocumentHandlerTest {
   // requestor CN=untrusted
   // result: 200, no headers
   @Test
-  public void testIpSkipsCertCheckPublicDoc() throws Exception {
+  public void testUntrustedCnGetsPublicDocButNoHeaders() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
@@ -2875,7 +2877,7 @@ public class DocumentHandlerTest {
   // saml returns PERMIT
   // result: 200, no headers
   @Test
-  public void testSkipCertCheckGoodSkipCertHostsUserIsPermited() throws Exception {
+  public void testSkipCertCheckButNotFullAccessHost() throws Exception {
     MockHttpsExchange httpsEx = new MockHttpsExchange(ex, new MockSslSession(
         new X500Principal("CN=untrusted, OU=Unknown, O=Unknown, C=Unknown")));
 
