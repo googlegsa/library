@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.AbstractMap;
+import static java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,11 @@ import java.util.Map;
 public class JournalTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
+
+  private static SimpleEntry<GroupPrincipal, Collection<Principal>> 
+      makePair(GroupPrincipal g, Collection<Principal> members) {
+    return new SimpleEntry<GroupPrincipal, Collection<Principal>>(g, members);
+  }
 
   @Test
   public void testPushCounts() {
@@ -63,8 +69,8 @@ public class JournalTest {
     g2members.add(new UserPrincipal("PJ"));
     g3members.add(new UserPrincipal("Bill"));
     g3members.add(new UserPrincipal("Tony"));
-    groups.add(new AbstractMap.SimpleEntry(g1, g1members));
-    groups.add(new AbstractMap.SimpleEntry(g2, g2members));
+    groups.add(makePair(g1, g1members));
+    groups.add(makePair(g2, g2members));
     journal.recordDocIdPush(docs);
     assertEquals(3, journal.getSnapshot().numUniqueDocIdsPushed);
     journal.recordDocIdPush(docs);
@@ -80,7 +86,7 @@ public class JournalTest {
     assertEquals(4, journal.getSnapshot().numTotalGroupsPushed);
     assertEquals(2, journal.getSnapshot().numUniqueGroupsPushed);
     assertEquals(6, journal.getSnapshot().numTotalGroupMembersPushed);
-    groups.add(new AbstractMap.SimpleEntry(g3, g3members));
+    groups.add(makePair(g3, g3members));
     journal.recordGroupPush(groups);
     assertEquals(7, journal.getSnapshot().numTotalGroupsPushed);
     assertEquals(3, journal.getSnapshot().numUniqueGroupsPushed);
