@@ -311,7 +311,8 @@ public final class GsaCommunicationHandler {
     // than using ThreadPoolExecutor. ThreadPoolExecutor does not create threads
     // as would be expected from a thread pool.
     backgroundExecutor = Executors.newCachedThreadPool(
-        new ThreadFactoryBuilder().setDaemon(true).setNameFormat("background")
+        new ThreadFactoryBuilder().setDaemon(true)
+        .setNameFormat("background-%d")
         .build());
     backgroundExecutor.execute(waiter.runnable(asyncDocIdSender.worker()));
     DocumentHandler docHandler = new DocumentHandler(
