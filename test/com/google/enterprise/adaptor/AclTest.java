@@ -45,7 +45,7 @@ public class AclTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private static Set<UserPrincipal> U(String... names) {
+  private static Set<UserPrincipal> user(String... names) {
     Set<UserPrincipal> set = new TreeSet<UserPrincipal>();
     for (String n : names) {
       set.add(new UserPrincipal(n));
@@ -53,7 +53,7 @@ public class AclTest {
     return set;
   }
 
-  private static Set<GroupPrincipal> G(String... names) {
+  private static Set<GroupPrincipal> group(String... names) {
     Set<GroupPrincipal> set = new TreeSet<GroupPrincipal>();
     for (String n : names) {
       set.add(new GroupPrincipal(n));
@@ -64,10 +64,10 @@ public class AclTest {
   @Test
   public void testNonHierarchialUsage() {
     Acl acl = new Acl.Builder()
-        .setPermitGroups(G("permitGroup"))
-        .setDenyGroups(G("denyGroup"))
-        .setPermitUsers(U("permitUser", "bothUser"))
-        .setDenyUsers(U("denyUser", "bothUser"))
+        .setPermitGroups(group("permitGroup"))
+        .setDenyGroups(group("denyGroup"))
+        .setPermitUsers(user("permitUser", "bothUser"))
+        .setDenyUsers(user("denyUser", "bothUser"))
         .build();
     // Test all main combinations:
     // (user permitted, denied, or indeterminate) x (group permitted, denied,
@@ -126,13 +126,13 @@ public class AclTest {
   @Test
   public void testAccessors() {
     final Set<GroupPrincipal> goldenDenyGroups = Collections.unmodifiableSet(
-        new HashSet<GroupPrincipal>(G("dg1", "dg2", "g3")));
+        new HashSet<GroupPrincipal>(group("dg1", "dg2", "g3")));
     final Set<GroupPrincipal> goldenPermitGroups = Collections.unmodifiableSet(
-        new HashSet<GroupPrincipal>(G("pg1", "pg2", "g3")));
+        new HashSet<GroupPrincipal>(group("pg1", "pg2", "g3")));
     final Set<UserPrincipal> goldenDenyUsers = Collections.unmodifiableSet(
-        new HashSet<UserPrincipal>(U("du1", "du2", "du3", "u4")));
+        new HashSet<UserPrincipal>(user("du1", "du2", "du3", "u4")));
     final Set<UserPrincipal> goldenPermitUsers = Collections.unmodifiableSet(
-        new HashSet<UserPrincipal>(U("pu1", "pu2", "u4", "g3")));
+        new HashSet<UserPrincipal>(user("pu1", "pu2", "u4", "g3")));
     final DocId goldenInheritFrom = new DocId("something");
     final Acl.InheritanceType goldenInheritType
         = Acl.InheritanceType.CHILD_OVERRIDES;
@@ -184,37 +184,37 @@ public class AclTest {
   @Test
   public void testTypeAgnosticAccessors() {
     Acl acl = new Acl.Builder()
-        .setPermitUsers(U("todelete1")).setDenyUsers(U("todelete2"))
-        .setPermitGroups(G("todelete3")).setDenyGroups(G("todelete4"))
-        .setPermits(Sets.union(U("good1"), G("good2")))
-        .setDenies(Sets.union(U("good3"), G("good4")))
+        .setPermitUsers(user("todelete1")).setDenyUsers(user("todelete2"))
+        .setPermitGroups(group("todelete3")).setDenyGroups(group("todelete4"))
+        .setPermits(Sets.union(user("good1"), group("good2")))
+        .setDenies(Sets.union(user("good3"), group("good4")))
         .build();
     assertEquals(new Acl.Builder()
-        .setPermitUsers(U("good1")).setDenyUsers(U("good3"))
-        .setPermitGroups(G("good2")).setDenyGroups(G("good4"))
+        .setPermitUsers(user("good1")).setDenyUsers(user("good3"))
+        .setPermitGroups(group("good2")).setDenyGroups(group("good4"))
         .build(), acl);
-    assertEquals(Sets.union(U("good1"), G("good2")), acl.getPermits());
-    assertEquals(Sets.union(U("good3"), G("good4")), acl.getDenies());
+    assertEquals(Sets.union(user("good1"), group("good2")), acl.getPermits());
+    assertEquals(Sets.union(user("good3"), group("good4")), acl.getDenies());
   }
 
   @Test
   public void testDenyGroupsImmutability() {
     Acl acl = new Acl.Builder().setEverythingCaseInsensitive()
-        .setDenyGroups(G("item")).build();
+        .setDenyGroups(group("item")).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getDenyGroups().clear();
   }
 
   @Test
   public void testPermitGroupsImmutability() {
-    Acl acl = new Acl.Builder().setPermitGroups(G("item")).build();
+    Acl acl = new Acl.Builder().setPermitGroups(group("item")).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getPermitGroups().clear();
   }
 
   @Test
   public void testDenyUsersImmutability() {
-    Acl acl = new Acl.Builder().setDenyUsers(U("item")).build();
+    Acl acl = new Acl.Builder().setDenyUsers(user("item")).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getDenyUsers().clear();
   }
@@ -222,7 +222,7 @@ public class AclTest {
   @Test
   public void testPermitUsersImmutability() {
     Acl acl = new Acl.Builder().setEverythingCaseInsensitive()
-        .setPermitUsers(U("item")).build();
+        .setPermitUsers(user("item")).build();
     thrown.expect(UnsupportedOperationException.class);
     acl.getPermitUsers().clear();
   }
@@ -238,30 +238,30 @@ public class AclTest {
   public void testEmptyGroup() {
     Acl.Builder builder = new Acl.Builder();
     thrown.expect(IllegalArgumentException.class);
-    builder.setDenyGroups(G(""));
+    builder.setDenyGroups(group(""));
   }
 
   @Test
   public void testWhitespaceSurroundingUserBefore() {
     Acl.Builder builder = new Acl.Builder();
-    Acl a = builder.setDenyUsers(U(" test")).build();
-    assertEquals(U("test"), a.getDenyUsers());
+    Acl a = builder.setDenyUsers(user(" test")).build();
+    assertEquals(user("test"), a.getDenyUsers());
   }
 
   @Test
   public void testWhitespaceSurroundingUserAfter() {
     Acl.Builder builder = new Acl.Builder();
-    Acl a = builder.setDenyUsers(U("test\t")).build();
-    assertEquals(U("test"), a.getDenyUsers());
+    Acl a = builder.setDenyUsers(user("test\t")).build();
+    assertEquals(user("test"), a.getDenyUsers());
   }
 
   @Test
   public void testToString() {
     Acl acl = new Acl.Builder()
-        .setDenyGroups(new HashSet<GroupPrincipal>(G("dg1", "dg2", "g3")))
-        .setPermitGroups(new HashSet<GroupPrincipal>(G("pg1", "pg2", "g3")))
-        .setDenyUsers(new HashSet<UserPrincipal>(U("du1", "du2", "du3", "u4")))
-        .setPermitUsers(new HashSet<UserPrincipal>(U("pu1", "pu2", "u4", "g3")))
+        .setDenyGroups(new HashSet<GroupPrincipal>(group("dg1", "dg2", "g3")))
+        .setPermitGroups(new HashSet<GroupPrincipal>(group("pg1", "pg2", "g3")))
+        .setDenyUsers(new HashSet<UserPrincipal>(user("du1", "du2", "du3", "u4")))
+        .setPermitUsers(new HashSet<UserPrincipal>(user("pu1", "pu2", "u4", "g3")))
         .setInheritFrom(new DocId("something"))
         .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES).build();
 
@@ -284,19 +284,19 @@ public class AclTest {
     Acl.Builder builder = new Acl.Builder();
     Acl base = builder.build();
 
-    builder.setPermitGroups(G("testing"));
+    builder.setPermitGroups(group("testing"));
     Acl permitGroups = builder.build();
     builder.setPermitGroups(Collections.<GroupPrincipal>emptySet());
 
-    builder.setDenyGroups(G("testing"));
+    builder.setDenyGroups(group("testing"));
     Acl denyGroups = builder.build();
     builder.setDenyGroups(Collections.<GroupPrincipal>emptySet());
 
-    builder.setPermitUsers(U("testing"));
+    builder.setPermitUsers(user("testing"));
     Acl permitUsers = builder.build();
     builder.setPermitUsers(Collections.<UserPrincipal>emptySet());
 
-    builder.setDenyUsers(U("testing"));
+    builder.setDenyUsers(user("testing"));
     Acl denyUsers = builder.build();
     builder.setDenyUsers(Collections.<UserPrincipal>emptySet());
 
@@ -335,16 +335,16 @@ public class AclTest {
     assertEquals(base.hashCode(), base.hashCode());
     assertEquals(base.hashCode(), baseAgain.hashCode());
 
-    builder.setPermitGroups(G("testing"));
-    builder.setDenyGroups(G("testing"));
-    builder.setPermitUsers(U("testing"));
-    builder.setDenyUsers(U("testing"));
+    builder.setPermitGroups(group("testing"));
+    builder.setDenyGroups(group("testing"));
+    builder.setPermitUsers(user("testing"));
+    builder.setDenyUsers(user("testing"));
     Acl withCase = builder.build();
     Acl noCase = builder.setEverythingCaseInsensitive().build();
     Acl caseAgain = builder.setEverythingCaseSensitive().build();
     builder.setEverythingCaseInsensitive();
-    Acl noCase2 = builder.setPermitUsers(U("TeSTiNg")).build();
-    Acl noCase3 = builder.setPermitUsers(U("tEstInG")).build();
+    Acl noCase2 = builder.setPermitUsers(user("TeSTiNg")).build();
+    Acl noCase3 = builder.setPermitUsers(user("tEstInG")).build();
     assertEquals(withCase, caseAgain);
     assertEquals(noCase2, noCase);
     assertEquals(noCase2, noCase3);
@@ -360,13 +360,13 @@ public class AclTest {
   @Test
   public void testCopy() {
     Set<GroupPrincipal> denyGroups = Collections.unmodifiableSet(
-        new HashSet<GroupPrincipal>(G("dg1", "dg2", "g3")));
+        new HashSet<GroupPrincipal>(group("dg1", "dg2", "g3")));
     Set<GroupPrincipal> permitGroups = Collections.unmodifiableSet(
-        new HashSet<GroupPrincipal>(G("pg1", "pg2", "g3")));
+        new HashSet<GroupPrincipal>(group("pg1", "pg2", "g3")));
     Set<UserPrincipal> denyUsers = Collections.unmodifiableSet(
-        new HashSet<UserPrincipal>(U("du1", "du2", "du3", "u4")));
+        new HashSet<UserPrincipal>(user("du1", "du2", "du3", "u4")));
     Set<UserPrincipal> permitUsers = Collections.unmodifiableSet(
-        new HashSet<UserPrincipal>(U("pu1", "pu2", "u4", "g3")));
+        new HashSet<UserPrincipal>(user("pu1", "pu2", "u4", "g3")));
     DocId inheritFrom = new DocId("something");
     Acl.InheritanceType inheritType = Acl.InheritanceType.CHILD_OVERRIDES;
 
@@ -387,12 +387,12 @@ public class AclTest {
 
   @Test
   public void testInheritance() {
-    Acl root = new Acl.Builder().setPermitUsers(U("user"))
+    Acl root = new Acl.Builder().setPermitUsers(user("user"))
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES).build();
     Acl middle = new Acl.Builder()
         .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES)
         .setInheritFrom(new DocId("parent")).build();
-    Acl leaf = new Acl.Builder().setDenyUsers(U("user"))
+    Acl leaf = new Acl.Builder().setDenyUsers(user("user"))
         .setInheritFrom(new DocId("parent")).build();
     Collection<String> empty
         = Collections.unmodifiableList(Collections.<String>emptyList());
@@ -444,7 +444,7 @@ public class AclTest {
     DocId id = new DocId("1");
     DocId id2 = new DocId("2");
     acls.put(id, new Acl.Builder().setInheritFrom(id2)
-        .setPermitUsers(U("user")).build());
+        .setPermitUsers(user("user")).build());
     Acl.BatchRetriever retriever = new MockBatchRetriever(acls);
 
     AuthnIdentity identity = createIdentity("user", "wrong group");
@@ -460,7 +460,7 @@ public class AclTest {
     final Map<DocId, Acl> acls = new HashMap<DocId, Acl>();
     acls.put(file, new Acl.Builder().setInheritFrom(parent).build());
     acls.put(parent,
-        new Acl.Builder().setPermitUsers(U("user"))
+        new Acl.Builder().setPermitUsers(user("user"))
         .setInheritanceType(Acl.InheritanceType.CHILD_OVERRIDES).build());
 
     Acl.BatchRetriever retriever = new Acl.BatchRetriever() {
@@ -490,11 +490,11 @@ public class AclTest {
     final Map<DocId, Acl> acls = new HashMap<DocId, Acl>();
     acls.put(file1, new Acl.Builder().setInheritFrom(parent).build());
     acls.put(file2, new Acl.Builder().setInheritFrom(missingParent)
-        .setDenyUsers(U("unrelated")).build());
+        .setDenyUsers(user("unrelated")).build());
     acls.put(parent, new Acl.Builder().setInheritFrom(root)
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES).build());
     acls.put(root,
-        new Acl.Builder().setPermitUsers(U("user"))
+        new Acl.Builder().setPermitUsers(user("user"))
         .setInheritanceType(Acl.InheritanceType.PARENT_OVERRIDES).build());
 
     Acl.BatchRetriever retriever = new Acl.BatchRetriever() {
@@ -557,10 +557,10 @@ public class AclTest {
   private static Acl buildAcl(String permitUsers, String permitGroups,
                               String denyUsers, String denyGroups) {
     return new Acl.Builder()
-        .setPermitUsers(U(split(permitUsers)))
-        .setPermitGroups(G(split(permitGroups)))
-        .setDenyUsers(U(split(denyUsers)))
-        .setDenyGroups(G(split(denyGroups)))
+        .setPermitUsers(user(split(permitUsers)))
+        .setPermitGroups(group(split(permitGroups)))
+        .setDenyUsers(user(split(denyUsers)))
+        .setDenyGroups(group(split(denyGroups)))
         .build();
   }
 
@@ -1092,10 +1092,10 @@ public class AclTest {
   @Test
   public void testCaseInsensitiveUsage() {
     Acl acl = new Acl.Builder()
-        .setPermitGroups(G("PermiTGroup"))
-        .setDenyGroups(G("DenYGroup"))
-        .setPermitUsers(U("PermiTUser", "BotHUser"))
-        .setDenyUsers(U("DenYUser", "BotHUser"))
+        .setPermitGroups(group("PermiTGroup"))
+        .setDenyGroups(group("DenYGroup"))
+        .setPermitUsers(user("PermiTUser", "BotHUser"))
+        .setDenyUsers(user("DenYUser", "BotHUser"))
         .setEverythingCaseInsensitive()
         .build();
     assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
@@ -1109,8 +1109,8 @@ public class AclTest {
   @Test
   public void testDomainFormatUserCaseInsensitive() {
     Acl acl = new Acl.Builder()
-        .setPermitUsers(U("PermiTUser@Domain", "BotHUser"))
-        .setDenyUsers(U("DenYUser@Domain", "BotHUser"))
+        .setPermitUsers(user("PermiTUser@Domain", "BotHUser"))
+        .setDenyUsers(user("DenYUser@Domain", "BotHUser"))
         .setEverythingCaseInsensitive()
         .build();
     assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
@@ -1136,8 +1136,8 @@ public class AclTest {
   @Test
   public void testDomainFormatGroupCaseInsensitive() {
     Acl acl = new Acl.Builder()
-        .setPermitGroups(G("PermiTGroup@Domain"))
-        .setDenyGroups(G("DenYGroup@Domain"))
+        .setPermitGroups(group("PermiTGroup@Domain"))
+        .setDenyGroups(group("DenYGroup@Domain"))
         .setEverythingCaseInsensitive()
         .build();
     assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
@@ -1163,8 +1163,8 @@ public class AclTest {
   @Test
   public void testDomainFormatUserCaseSensitive() {
     Acl acl = new Acl.Builder()
-        .setPermitUsers(U("PermiTUser@Domain", "BotHUser"))
-        .setDenyUsers(U("DenYUser@Domain", "BotHUser"))
+        .setPermitUsers(user("PermiTUser@Domain", "BotHUser"))
+        .setDenyUsers(user("DenYUser@Domain", "BotHUser"))
         .setEverythingCaseSensitive()
         .build();
     assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
@@ -1190,8 +1190,8 @@ public class AclTest {
   @Test
   public void testDomainFormatGroupCaseSensitive() {
     Acl acl = new Acl.Builder()
-        .setPermitGroups(G("PermiTGroup@Domain"))
-        .setDenyGroups(G("DenYGroup@Domain"))
+        .setPermitGroups(group("PermiTGroup@Domain"))
+        .setDenyGroups(group("DenYGroup@Domain"))
         .setEverythingCaseSensitive()
         .build();
     assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(

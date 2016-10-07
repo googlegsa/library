@@ -180,6 +180,8 @@ public final class ExportedState {
       String username;
       String domain;
       String password;
+      // Note about the unsuppressable lint warning: This field is used
+      // by reflection and "name_space" is baked into the wire protocol.
       String name_space;
       ImmutableSet<Group> groups;
 

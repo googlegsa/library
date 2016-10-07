@@ -20,14 +20,14 @@ import org.opensaml.xml.AbstractExtensibleXMLObject;
 import javax.xml.XMLConstants;
 import javax.xml.namespace.QName;
 
-// This class should be part of OpenSAML but is missing from there.
+/** This class should be part of OpenSAML but is missing from there. */
 public class AttributeValueImpl
     extends AbstractExtensibleXMLObject
     implements AttributeValue {
 
-  private static final QName xsiType =
+  private static final QName XSI_TYPE =
       new QName(XMLConstants.W3C_XML_SCHEMA_INSTANCE_NS_URI, "type");
-  private static final String xsString = "xs:string";
+  private static final String XS_STRING = "xs:string";
 
   private String value;
 
@@ -47,6 +47,6 @@ public class AttributeValueImpl
 
   public void setValue(String value) {
     this.value = prepareForAssignment(this.value, value);
-    this.getUnknownAttributes().put(xsiType, xsString);
+    this.getUnknownAttributes().put(XSI_TYPE, XS_STRING);
   }
 }

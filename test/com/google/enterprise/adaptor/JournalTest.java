@@ -463,7 +463,7 @@ public class JournalTest {
       fail ("Second group push should have thrown IllegalStateException");
     } catch (IllegalStateException e) {
       journal.recordGroupPushSuccessful(); // resets currentGroupPushStart
-    };
+    }
 
     // attempt to interrupt a group push (when it was never started)
     try {
@@ -471,7 +471,7 @@ public class JournalTest {
       fail ("Interrupting non-existing group push shouldn't have worked");
     } catch (IllegalStateException e) {
       // ignore expected exception
-    };
+    }
 
     // attempt to mark a group push as a failure (when it was never started)
     try {
@@ -479,7 +479,7 @@ public class JournalTest {
       fail ("Failing non-existing group push shouldn't have worked");
     } catch (IllegalStateException e) {
       // ignore expected exception
-    };
+    }
   }
 
   @Test

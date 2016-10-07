@@ -19,7 +19,7 @@ import org.opensaml.xml.XMLObject;
 import org.opensaml.xml.util.XMLHelper;
 import org.w3c.dom.Element;
 
-// This class should be part of OpenSAML but is missing from there.
+/** This class should be part of OpenSAML but is missing from there. */
 public class AttributeValueMarshaller
     extends AbstractSAMLObjectMarshaller {
   @Override

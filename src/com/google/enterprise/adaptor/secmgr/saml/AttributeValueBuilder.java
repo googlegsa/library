@@ -17,7 +17,7 @@ package com.google.enterprise.adaptor.secmgr.saml;
 import org.opensaml.common.impl.AbstractSAMLObjectBuilder;
 import org.opensaml.saml2.core.AttributeValue;
 
-// This class should be part of OpenSAML but is missing from there.
+/** This class should be part of OpenSAML but is missing from there. */
 public class AttributeValueBuilder
     extends AbstractSAMLObjectBuilder<AttributeValue> {
   @Override
