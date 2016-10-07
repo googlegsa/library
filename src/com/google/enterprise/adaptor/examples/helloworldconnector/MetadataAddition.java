@@ -14,8 +14,8 @@ package com.google.enterprise.adaptor.examples.helloworldconnector;
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Arrays;
 import java.util.HashSet;

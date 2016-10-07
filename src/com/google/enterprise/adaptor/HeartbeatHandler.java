@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-
 class HeartbeatHandler implements HttpHandler {
   private static final Logger log
       = Logger.getLogger(HeartbeatHandler.class.getName());

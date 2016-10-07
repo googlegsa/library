@@ -14,13 +14,12 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.InvalidConfigurationException;
-import com.google.enterprise.adaptor.MockHttpHandler;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import com.google.enterprise.adaptor.InvalidConfigurationException;
+import com.google.enterprise.adaptor.MockHttpHandler;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.Test;
 

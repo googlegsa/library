@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor;
 import java.math.BigInteger;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-
 import java.util.logging.Logger;
 
 /**

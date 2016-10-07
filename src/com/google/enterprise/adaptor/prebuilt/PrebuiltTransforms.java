@@ -14,8 +14,8 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.ArrayList;
 import java.util.Collection;

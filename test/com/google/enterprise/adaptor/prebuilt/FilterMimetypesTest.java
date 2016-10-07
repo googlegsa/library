@@ -22,7 +22,6 @@ import com.google.enterprise.adaptor.MetadataTransform;
 
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;

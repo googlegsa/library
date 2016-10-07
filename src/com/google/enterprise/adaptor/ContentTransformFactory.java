@@ -1,7 +1,5 @@
 package com.google.enterprise.adaptor;
 
-import static java.util.AbstractMap.SimpleEntry;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
 
@@ -12,9 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
 
 /**
  * The content transform factory holds all document content transforms

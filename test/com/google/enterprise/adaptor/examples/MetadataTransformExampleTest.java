@@ -16,8 +16,8 @@ package com.google.enterprise.adaptor.examples;
 
 import static org.junit.Assert.assertEquals;
 
-import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform;
 
 import org.junit.Rule;
 import org.junit.Test;

@@ -23,7 +23,6 @@ import com.sun.net.httpserver.HttpExchange;
 
 import org.json.simple.JSONObject;
 import org.json.simple.JSONValue;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

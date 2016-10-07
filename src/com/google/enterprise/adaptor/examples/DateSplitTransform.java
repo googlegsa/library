@@ -1,7 +1,7 @@
 package com.google.enterprise.adaptor.examples;
 
-import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;

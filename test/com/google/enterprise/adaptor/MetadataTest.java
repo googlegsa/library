@@ -16,7 +16,6 @@ package com.google.enterprise.adaptor;
 
 import static java.util.AbstractMap.SimpleEntry;
 import static java.util.Map.Entry;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

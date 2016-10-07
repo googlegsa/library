@@ -15,7 +15,6 @@
 package com.google.enterprise.adaptor;
 
 import static com.google.enterprise.adaptor.SensitiveValueCodec.SecurityLevel;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

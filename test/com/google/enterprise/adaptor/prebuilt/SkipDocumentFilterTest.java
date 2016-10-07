@@ -25,7 +25,6 @@ import org.junit.rules.ExpectedException;
 
 import java.util.HashMap;
 import java.util.Map;
-
 import java.util.regex.PatternSyntaxException;
 
 /** Unit tests for {@link SkipDocumentFilter}. */

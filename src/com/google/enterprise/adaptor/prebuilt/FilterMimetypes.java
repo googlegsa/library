@@ -14,14 +14,13 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static java.util.Arrays.asList;
 import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+import static java.util.Arrays.asList;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -29,6 +28,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 /**
  * Transform causing exclusion of certain mime-types. 
  *

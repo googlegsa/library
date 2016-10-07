@@ -16,9 +16,9 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static java.util.AbstractMap.SimpleEntry;
 
-import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.IOHelper;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.io.File;
 import java.io.FileInputStream;

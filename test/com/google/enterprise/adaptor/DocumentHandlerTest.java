@@ -34,8 +34,6 @@ import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.text.DateFormat;
