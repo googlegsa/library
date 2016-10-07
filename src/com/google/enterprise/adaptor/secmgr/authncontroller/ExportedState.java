@@ -151,8 +151,12 @@ public final class ExportedState {
 
     @Override
     public boolean equals(Object object) {
-      if (object == this) { return true; }
-      if (!(object instanceof Credentials)) { return false; }
+      if (object == this) {
+        return true;
+      }
+      if (!(object instanceof Credentials)) {
+        return false;
+      }
       Credentials other = (Credentials) object;
       return Objects.equal(getUsername(), other.getUsername())
           && Objects.equal(getDomain(), other.getDomain())

@@ -51,8 +51,8 @@ public class SamlLogUtil {
     try {
       element = Configuration.getMarshallerFactory().getMarshaller(so).marshall(so);
     } catch (MarshallingException e) {
-      return message + ": MarshallingException while marshalling " + so.toString() +
-          ": " + e.getMessage();
+      return message + ": MarshallingException while marshalling " + so.toString()
+          + ": " + e.getMessage();
     }
     if (element == null) {
       return message + ": SAMLObject marshalls to null " + so.toString();

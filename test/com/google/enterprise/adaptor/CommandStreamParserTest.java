@@ -45,8 +45,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testReadDocIds() throws Exception {
-    String source = "GSA Adaptor Data Version 1 [\n]\nid=123\nid=456\n" +
-        "id-list\n10\n20\n30\n\nid=789\n";
+    String source = "GSA Adaptor Data Version 1 [\n]\nid=123\nid=456\n"
+        + "id-list\n10\n20\n30\n\nid=789\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -63,8 +63,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testInvalidHeaderString() throws Exception {
-    String source = "GSA Adaptor Data Ver 1 [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
-        "\nend-message";
+    String source = "GSA Adaptor Data Ver 1 [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789"
+        + "\nend-message";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -77,8 +77,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testInvalidVersion() throws Exception {
-    String source = "GSA Adaptor Data Version 1a [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n" +
-        "id=789\n";
+    String source = "GSA Adaptor Data Version 1a [\n]\nid=123\nid=456\nid-list\n10\n20\n30\n\n"
+        + "id=789\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -91,8 +91,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testEmptyDelimiter() throws Exception {
-    String source = "GSA Adaptor Data Version 1 []\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789" +
-        "\n";
+    String source = "GSA Adaptor Data Version 1 []\nid=123\nid=456\nid-list\n10\n20\n30\n\nid=789"
+        + "\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -112,7 +112,7 @@ public class CommandStreamParserTest {
     boolean catched = false;
     try {
       parser.readFromLister(pusher, null);
-    } catch(IOException e) {
+    } catch (IOException e) {
       // expected for not Valid
       catched = true;
     }
@@ -161,21 +161,21 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetriever() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=123\n" +
-        "up-to-date\n" +
-        "UNKNOWN_COMMAND=abcdefghi\n" +
-        "meta-name=project\nmeta-value=plexi\n" +
-        "last-modified=15\n" +
-        "secure=true\n" +
-        "anchor-uri=http://example.com/doc\nanchor-text=It is an example\n" +
-        "no-index=true\n" +
-        "no-follow=true\n" +
-        "no-archive=true\n" +
-        "display-url=http://example.com/thisDoc\n" +
-        "crawl-once=true\n" +
-        "lock=true\n" +
-        "content\n2468";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "up-to-date\n"
+        + "UNKNOWN_COMMAND=abcdefghi\n"
+        + "meta-name=project\nmeta-value=plexi\n"
+        + "last-modified=15\n"
+        + "secure=true\n"
+        + "anchor-uri=http://example.com/doc\nanchor-text=It is an example\n"
+        + "no-index=true\n"
+        + "no-follow=true\n"
+        + "no-archive=true\n"
+        + "display-url=http://example.com/thisDoc\n"
+        + "crawl-once=true\n"
+        + "lock=true\n"
+        + "content\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -205,9 +205,9 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverWithoutAcl() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=isacltest\n" +
-        "content\npick-up-sticks";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=isacltest\n"
+        + "content\npick-up-sticks";
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -223,10 +223,10 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverNamespaceAloneDoesntMakeAcl() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=isacltest\n" +
-        "namespace=winds\n" + 
-        "content\npick-up-sticks";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=isacltest\n"
+        + "namespace=winds\n"
+        + "content\npick-up-sticks";
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -258,21 +258,21 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverSimpleAcl() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=isacltest\n" +
-        "acl\n" +
-        "acl-permit-user=ted@abc\n" +
-        "acl-deny-group=todd@abc\n" +
-        "namespace=Winds\n" +
-        "acl-permit-user=Banjo@Zephyr\n" +
-        "acl-permit-group=ward@Zephyr\n" +
-        "namespace=RockaRollas\n" +
-        "acl-deny-user=bob.dylan@rocka\n" +
-        "acl-deny-user=paul@rocka\n" +
-        "acl-deny-group=beatles@rocka\n" +
-        "acl-inherit-from=oxfords\n" +
-        "acl-inheritance-type=and-both-permit\n" +
-        "content\npick-up-sticks";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=isacltest\n"
+        + "acl\n"
+        + "acl-permit-user=ted@abc\n"
+        + "acl-deny-group=todd@abc\n"
+        + "namespace=Winds\n"
+        + "acl-permit-user=Banjo@Zephyr\n"
+        + "acl-permit-group=ward@Zephyr\n"
+        + "namespace=RockaRollas\n"
+        + "acl-deny-user=bob.dylan@rocka\n"
+        + "acl-deny-user=paul@rocka\n"
+        + "acl-deny-group=beatles@rocka\n"
+        + "acl-inherit-from=oxfords\n"
+        + "acl-inheritance-type=and-both-permit\n"
+        + "content\npick-up-sticks";
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -294,11 +294,11 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverInsensitiveAcl() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=isacltest\n" +
-        "acl\n" +
-        "acl-case-insensitive\n" +
-        "content\npick-up-sticks";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=isacltest\n"
+        + "acl\n"
+        + "acl-case-insensitive\n"
+        + "content\npick-up-sticks";
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -314,14 +314,14 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverLastSensitiveStick() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=isacltest\n" +
-        "acl\n" +
-        "acl-case-insensitive\n" +
-        "acl-case-sensitive\n" +
-        "acl-case-insensitive\n" +
-        "acl-case-sensitive\n" +
-        "content\npick-up-sticks";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=isacltest\n"
+        + "acl\n"
+        + "acl-case-insensitive\n"
+        + "acl-case-sensitive\n"
+        + "acl-case-insensitive\n"
+        + "acl-case-sensitive\n"
+        + "content\npick-up-sticks";
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -337,14 +337,14 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverAclHasFragment() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=isacltest\n" +
-        "acl-inherit-from=london\n" +
-        "acl-inherit-from=oxfords\n" +
-        "acl\n" +
-        "acl-inherit-fragment=topleft\n" +
-        "acl-inherit-fragment=lowerright\n" +
-        "content\npick-up-sticks";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=isacltest\n"
+        + "acl-inherit-from=london\n"
+        + "acl-inherit-from=oxfords\n"
+        + "acl\n"
+        + "acl-inherit-fragment=topleft\n"
+        + "acl-inherit-fragment=lowerright\n"
+        + "content\npick-up-sticks";
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -361,12 +361,12 @@ public class CommandStreamParserTest {
 
   @Test
   public void testRetrieverMultipleMetadataValuesSameKey() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=123\n" +
-        "up-to-date\n" +
-        "UNKNOWN_COMMAND=abcdefghi\n" +
-        "meta-name=project\nmeta-value=plexi\n" +
-        "meta-name=project\nmeta-value=klexa\ncontent\n2468";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "up-to-date\n"
+        + "UNKNOWN_COMMAND=abcdefghi\n"
+        + "meta-name=project\nmeta-value=plexi\n"
+        + "meta-name=project\nmeta-value=klexa\ncontent\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
@@ -513,8 +513,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testAuthorizorDataStartsWithDocId() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\nauthz-status=PERMIT\n" +
-        "id=001\nauthz-status=DENY\n";
+    String source = "GSA Adaptor Data Version 1 [\n]\nauthz-status=PERMIT\n"
+        + "id=001\nauthz-status=DENY\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -524,8 +524,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testAuthorizor() throws IOException {
-    String source = "GSA Adaptor Data Version 1 [\n]\nid=001\nauthz-status=PERMIT\n" +
-        "id=002\nauthz-status=DENY\nid=003\nauthz-status=INDETERMINATE";
+    String source = "GSA Adaptor Data Version 1 [\n]\nid=001\nauthz-status=PERMIT\n"
+        + "id=002\nauthz-status=DENY\nid=003\nauthz-status=INDETERMINATE";
     Map<DocId, AuthzStatus> expected = new HashMap<DocId, AuthzStatus>();
 
     expected.put(new DocId("001"), AuthzStatus.PERMIT);
@@ -551,8 +551,8 @@ public class CommandStreamParserTest {
 
   @Test
   public void testListerDataStartsWithDocId() throws Exception {
-    String source = "GSA Adaptor Data Version 1 [\n]\nlock\n" +
-        "id=001\n";
+    String source = "GSA Adaptor Data Version 1 [\n]\nlock\n"
+        + "id=001\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
@@ -563,11 +563,11 @@ public class CommandStreamParserTest {
 
   @Test
   public void testLister() throws Exception {
-    String source = "GSA Adaptor Data Version 1 [\n]\n" +
-        "id=001\nlock\ncrawl-once\ndelete\ncrawl-immediately\n" +
-        "last-modified=1292805597\n" +
-        "result-link=http://docs.google.com/myfolder/mydoc.pdf\n" +
-        "lock\ndelete\n";
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=001\nlock\ncrawl-once\ndelete\ncrawl-immediately\n"
+        + "last-modified=1292805597\n"
+        + "result-link=http://docs.google.com/myfolder/mydoc.pdf\n"
+        + "lock\ndelete\n";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);

@@ -258,8 +258,8 @@ public final class ResponseParser {
 
   private boolean isValidIssuer(Issuer issuer) {
     return warnIfFalse(issuer.getFormat() == null || NameIDType.ENTITY.equals(issuer.getFormat()),
-                "Issuer contains a format: " + issuer.getFormat() +
-                " but is not equal to expected format: " + NameIDType.ENTITY)
+                "Issuer contains a format: " + issuer.getFormat()
+                + " but is not equal to expected format: " + NameIDType.ENTITY)
         && warnIfFalse(client.getPeerEntity().getEntityID().equals(issuer.getValue()),
                 "Issuer value: " + issuer.getValue() + " is not equals to "
                 + "expected value: " + client.getPeerEntity().getEntityID());
@@ -310,17 +310,17 @@ public final class ResponseParser {
 
   private boolean isValidSubjectConfirmationData(SubjectConfirmationData data) {
     return warnIfFalse(recipient.equals(data.getRecipient()),
-                "SubjectConfirmationData - recipient not equals : " + recipient +
-                "but was instead: " + data.getRecipient())
+                "SubjectConfirmationData - recipient not equals : " + recipient
+                + "but was instead: " + data.getRecipient())
         && warnIfFalse(isValidExpiration(data.getNotOnOrAfter()), "Invalid expiration.")
         && warnIfFalse(client.getRequestId().equals((data.getInResponseTo())),
-                "Assertion inResponseTo: " + data.getInResponseTo() +
-                  " was not equal to this client's RequestID: " + client.getRequestId());
+                "Assertion inResponseTo: " + data.getInResponseTo()
+                + " was not equal to this client's RequestID: " + client.getRequestId());
   }
 
   private boolean isValidExpiration(DateTime expiration) {
-    return warnIfFalse(expiration != null, "Assertion expiration was null.") &&
-           warnIfFalse(SecurityManagerUtil.isRemoteOnOrAfterTimeValid(expiration.getMillis(), now),
+    return warnIfFalse(expiration != null, "Assertion expiration was null.")
+        && warnIfFalse(SecurityManagerUtil.isRemoteOnOrAfterTimeValid(expiration.getMillis(), now),
                 "The assertion's expiration time is invalid.",
                 "Security Manager Current Time: " + new DateTime(now).toString(),
                 "Assertion expiration:" + new DateTime(expiration.getMillis()).toString());
@@ -335,18 +335,18 @@ public final class ResponseParser {
         && warnIfFalse(isValidConditionNotOnOrAfter(conditions.getNotOnOrAfter()),
                 "ConditionNotOnOrAfter is invalid: " + conditions.getNotOnOrAfter())
         && warnIfFalse(isValidConditionAudienceRestrictions(conditions.getAudienceRestrictions()),
-                "ConditionAudienceRestrictions is invalid: " +
-                conditions.getAudienceRestrictions());
+                "ConditionAudienceRestrictions is invalid: "
+                + conditions.getAudienceRestrictions());
   }
 
   private boolean isValidConditionNotBefore(DateTime notBefore) {
-    return notBefore == null ||
-        SecurityManagerUtil.isRemoteBeforeTimeValid(notBefore.getMillis(), now);
+    return notBefore == null
+        || SecurityManagerUtil.isRemoteBeforeTimeValid(notBefore.getMillis(), now);
   }
 
   private boolean isValidConditionNotOnOrAfter(DateTime notOnOrAfter) {
-    return notOnOrAfter == null ||
-        SecurityManagerUtil.isRemoteOnOrAfterTimeValid(notOnOrAfter.getMillis(), now);
+    return notOnOrAfter == null
+        || SecurityManagerUtil.isRemoteOnOrAfterTimeValid(notOnOrAfter.getMillis(), now);
   }
 
   private boolean isValidConditionAudienceRestrictions(List<AudienceRestriction> restrictions) {

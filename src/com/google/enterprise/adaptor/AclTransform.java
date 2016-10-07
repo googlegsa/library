@@ -268,14 +268,14 @@ final class AclTransform {
 
           if (template.charAt(i) == '\\') {
             // if the backslash is escaped, skip it
-            if (i + 1 < template.length() && template.charAt(i+1) == '\\') {
+            if (i + 1 < template.length() && template.charAt(i + 1) == '\\') {
               sb.append('\\');
               i++; // the second slash will be skipped at the end of the loop
               found = true;
             } else {
               // if the template starts with escaped key, replace it
               for (String key : groups.keySet()) {
-                if (template.regionMatches(i+1, key, 0, key.length())) {
+                if (template.regionMatches(i + 1, key, 0, key.length())) {
                   found = true;
                   // slash is consumed at the end of the loop
                   i = i + key.length();

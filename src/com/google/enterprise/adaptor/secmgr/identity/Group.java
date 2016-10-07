@@ -73,8 +73,12 @@ public class Group {
 
   @Override
   public boolean equals(Object object) {
-    if (object == this) { return true; }
-    if (!(object instanceof Group)) { return false; }
+    if (object == this) {
+      return true;
+    }
+    if (!(object instanceof Group)) {
+      return false;
+    }
     Group group = (Group) object;
     return oequals(name, group.getName())
         && oequals(namespace, group.getNamespace())
