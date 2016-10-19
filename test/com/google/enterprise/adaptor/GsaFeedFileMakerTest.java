@@ -14,12 +14,14 @@
 
 package com.google.enterprise.adaptor;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-
+import org.xmlunit.builder.DiffBuilder;
+import org.xmlunit.builder.Input;
+import org.xmlunit.diff.Diff;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,8 +46,8 @@ public class GsaFeedFileMakerTest {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -54,8 +56,11 @@ public class GsaFeedFileMakerTest {
         + "</gsafeed>\n";
     String xml = meker.makeMetadataAndUrlXml("t3sT",
         new ArrayList<DocIdPusher.Record>());
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -63,8 +68,8 @@ public class GsaFeedFileMakerTest {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -92,8 +97,11 @@ public class GsaFeedFileMakerTest {
     ids.add(new DocIdPusher.Record.Builder(new DocId("empty-not-null-metadata"))
         .setMetadata(new Metadata()).build());
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -102,8 +110,8 @@ public class GsaFeedFileMakerTest {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -151,8 +159,11 @@ public class GsaFeedFileMakerTest {
         .setDeleteFromIndex(true).build());
 
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -160,8 +171,8 @@ public class GsaFeedFileMakerTest {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>test</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -214,8 +225,11 @@ public class GsaFeedFileMakerTest {
         .build()));
 
     String xml = meker.makeMetadataAndUrlXml("test", acls);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -223,8 +237,8 @@ public class GsaFeedFileMakerTest {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>test</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -247,13 +261,16 @@ public class GsaFeedFileMakerTest {
         new AclTransform.MatchData(null, "pu2", null, null))));
     meker = new GsaFeedFileMaker(encoder, aclTransform);
     String xml = meker.makeMetadataAndUrlXml("test", acls);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
   public void testUnsupportedDocIdSenderItemMetadataAndUrl() {
-    class UnsupportedItem implements DocIdSender.Item {};
+    class UnsupportedItem implements DocIdSender.Item {}
     List<UnsupportedItem> items = new ArrayList<UnsupportedItem>();
     items.add(new UnsupportedItem());
     thrown.expect(IllegalArgumentException.class);
@@ -265,8 +282,8 @@ public class GsaFeedFileMakerTest {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>test</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -283,8 +300,11 @@ public class GsaFeedFileMakerTest {
     meker = new GsaFeedFileMaker(encoder, aclTransform,
         true /* 6.14 workaround */, false);
     String xml = meker.makeMetadataAndUrlXml("test", records);
-    xml = xml.replace("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -292,8 +312,8 @@ public class GsaFeedFileMakerTest {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>test</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -310,8 +330,11 @@ public class GsaFeedFileMakerTest {
     meker = new GsaFeedFileMaker(encoder, aclTransform, false,
         true /* 7.0 workaround */);
     String xml = meker.makeMetadataAndUrlXml("test", records);
-    xml = xml.replace("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -319,8 +342,8 @@ public class GsaFeedFileMakerTest {
     String golden
         = "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>test</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -336,8 +359,11 @@ public class GsaFeedFileMakerTest {
           new Acl.Builder()
             .setInheritFrom(new DocId("docid2"), "generated").build());
     String xml = meker.makeMetadataAndUrlXml("test", Arrays.asList(acl));
-    xml = xml.replace("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -350,8 +376,11 @@ public class GsaFeedFileMakerTest {
         + "</xmlgroups>\n";
     String xml = meker.makeGroupDefinitionsXml(
         new TreeMap<GroupPrincipal, List<Principal>>().entrySet(), true);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -378,8 +407,11 @@ public class GsaFeedFileMakerTest {
     members.add(new UserPrincipal("MacLeod\\Duncan"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -431,8 +463,11 @@ public class GsaFeedFileMakerTest {
     members2.add(new UserPrincipal("plump"));
     groupDefs.put(new GroupPrincipal("sounds"), members2);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -465,8 +500,11 @@ public class GsaFeedFileMakerTest {
     members.add(new GroupPrincipal("badguys", "3vil"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), true);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -499,8 +537,11 @@ public class GsaFeedFileMakerTest {
           new AclTransform.MatchData(null, "Clan MacLeod", null, null))));
     meker = new GsaFeedFileMaker(encoder, aclTransform);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -515,8 +556,8 @@ public class GsaFeedFileMakerTest {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -585,8 +626,11 @@ public class GsaFeedFileMakerTest {
         .setDeleteFromIndex(true).build());
 
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -601,8 +645,8 @@ public class GsaFeedFileMakerTest {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--GSA EasyConnector-->\n"
+        + "<gsafeed>\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
         + "<feedtype>metadata-and-url</feedtype>\n"
@@ -671,8 +715,11 @@ public class GsaFeedFileMakerTest {
         .setDeleteFromIndex(true).build());
 
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 
   @Test
@@ -695,12 +742,12 @@ public class GsaFeedFileMakerTest {
     String golden =
         "<?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>\n"
         + "<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"\">\n"
-        + "<gsafeed>\n"
         + "<!--We must prepare for tomorrow night.-->\n"
         + "<!--Why? What are we going to do tomorrow night?-->\n"
         + "<!--The same thing we do every night, Pinky "
             + " - try to take over the world!-->\n"
         + "<!--They're Pinky, They're Pinky and the Brain Brain Brain Brain!-->"
+        + "<gsafeed>\n"
         + "\n"
         + "<header>\n"
         + "<datasource>t3sT</datasource>\n"
@@ -711,7 +758,10 @@ public class GsaFeedFileMakerTest {
 
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
-    assertEquals(golden, xml);
+    Diff diff = DiffBuilder.compare(Input.fromString(golden)).withTest(Input.fromString(xml))
+        .checkForSimilar()
+        .ignoreWhitespace()
+        .build();
+    assertFalse("XML similar " + diff.toString(), diff.hasDifferences());
   }
 }

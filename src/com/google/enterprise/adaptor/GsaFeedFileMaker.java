@@ -17,8 +17,11 @@ package com.google.enterprise.adaptor;
 import org.w3c.dom.Comment;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
-import org.w3c.dom.Text;
-
+import com.google.enterprise.adaptor.ext.feedtype.Group;
+import com.google.enterprise.adaptor.ext.feedtype.Gsafeed;
+import com.google.enterprise.adaptor.ext.feedtype.Header;
+import com.google.enterprise.adaptor.ext.feedtype.Meta;
+import com.google.enterprise.adaptor.ext.feedtype.Record;
 import java.io.StringWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -33,6 +36,10 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.TreeSet;
+import javax.xml.bind.JAXBContext;
+import javax.xml.bind.JAXBException;
+import javax.xml.bind.Marshaller;
+import javax.xml.bind.PropertyException;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
@@ -115,84 +122,70 @@ class GsaFeedFileMaker {
 
   /** Adds header to document's root.
       @param srcName Used as datasource name. */
-  private void constructMetadataAndUrlFeedFileHead(Document doc,
-      Element root, String srcName) {
+  private void constructMetadataAndUrlFeedFileHead(Gsafeed feed, String srcName,
+      StringBuilder comments) {
     for (String commentString : commentsForFeed) {
-      Comment comment = doc.createComment(commentString);
-      root.appendChild(comment);
+      comments.append("<!--").append(commentString).append("-->\n");
     }
-    Element header = doc.createElement("header");
-    root.appendChild(header);
-    Element datasource = doc.createElement("datasource");
-    header.appendChild(datasource);
-    Element feedtype = doc.createElement("feedtype");
-    header.appendChild(feedtype);
-    Text srcText = doc.createTextNode(srcName);
-    datasource.appendChild(srcText);
-    Text feedText = doc.createTextNode("metadata-and-url");
-    feedtype.appendChild(feedText);
+    Header header = new Header(); 
+    feed.setHeader(header);
+    header.setDatasource(srcName);
+    header.setFeedtype("metadata-and-url");
   }
 
   /** Adds a single record to feed-file-document's group,
       communicating the information represented by DocId. */
-  private void constructSingleMetadataAndUrlFeedFileRecord(
-      Document doc, Element group, DocIdPusher.Record docRecord) {
+  private void constructSingleMetadataAndUrlFeedFileRecord(Group group,
+      DocIdPusher.Record docRecord) {
     DocId docForGsa = docRecord.getDocId();
-    Element record = doc.createElement("record");
-    group.appendChild(record);
-    record.setAttribute("url", "" + idEncoder.encodeDocId(docForGsa));
+    Record record = new Record();
+    group.getAclOrRecord().add(record);
+    record.setUrl("" + idEncoder.encodeDocId(docForGsa));
     // We are no longer automatically clearing the displayurl if unset. We are
     // moving the setting of displayurl to crawl-time and we don't want a lister
     // and retriever to fight.
     if (null != docRecord.getResultLink()) {
-      record.setAttribute("displayurl", "" + docRecord.getResultLink());
+      record.setDisplayurl("" + docRecord.getResultLink());
     }
     if (docRecord.isToBeDeleted()) {
-      record.setAttribute("action", "delete");
+      record.setAction("delete");
     }
-    record.setAttribute("mimetype", "text/plain"); // Required but ignored :)
+    record.setMimetype("text/plain"); // Required but ignored :)
     if (null != docRecord.getLastModified()) {
       String dateStr = rfc822Format.get().format(docRecord.getLastModified());
-      record.setAttribute("last-modified", dateStr);
+      record.setLastModified(dateStr);
     }
     if (docRecord.isToBeLocked()) {
-      record.setAttribute("lock", "true");
+      record.setLock("true");
     }
     if (crawlImmediatelyIsOverriden) {
-      record.setAttribute("crawl-immediately",
-          "" + crawlImmediatelyOverrideValue);
+      record.setCrawlImmediately("" + crawlImmediatelyOverrideValue);
     } else if (docRecord.isToBeCrawledImmediately()) {
-      record.setAttribute("crawl-immediately", "true");
+      record.setCrawlImmediately("true");
     }
     if (crawlOnceIsOverriden) {
-      record.setAttribute("crawl-once", "" + crawlOnceOverrideValue);
+      record.setCrawlOnce("" + crawlOnceOverrideValue);
     } else if (docRecord.isToBeCrawledOnce()) {
-      record.setAttribute("crawl-once", "true");
+      record.setCrawlOnce("true");
     }
     if (useAuthMethodWorkaround) {
-      record.setAttribute("authmethod", "httpsso");
+      record.setAuthmethod("httpsso");
     }
     // TODO(pjo): record.setAttribute(no-follow,);
 
     Metadata metadata = docRecord.getMetadata();
     if (null != metadata) {
-      Element metadataElement = doc.createElement("metadata");
-      record.appendChild(metadataElement);
+      com.google.enterprise.adaptor.ext.feedtype.Metadata metadataElement = 
+          new com.google.enterprise.adaptor.ext.feedtype.Metadata();
+      record.getMetadata().add(metadataElement);
       for (Iterator<Map.Entry<String, String>> i = metadata.iterator();
           i.hasNext();) {
         Map.Entry<String, String> e = i.next();
-        Element metadatum = doc.createElement("meta");
-        metadatum.setAttribute("name", e.getKey());
-        metadatum.setAttribute("content", e.getValue());
-        metadataElement.appendChild(metadatum);
+        Meta metadatum = new Meta();
+        metadatum.setName(e.getKey());
+        metadatum.setContent(e.getValue());
+        metadataElement.getMeta().add(metadatum);
       }
-    }
-
-    if (separateClosingRecordTagWorkaround) {
-      // GSA 6.14 has a feed parsing bug (fixed in patch 2) that fails to parse
-      // self-closing record tags. Thus, here we force record to have a separate
-      // close tag.
-      record.appendChild(doc.createTextNode(" "));
     }
   }
 
@@ -200,10 +193,10 @@ class GsaFeedFileMaker {
    * Adds a single ACL tag to the provided group, communicating the named
    * resource's information provided in {@code docAcl}.
    */
-  private void constructSingleMetadataAndUrlFeedFileAcl(
-      Document doc, Element group, DocIdSender.AclItem docAcl) {
-    Element aclElement = doc.createElement("acl");
-    group.appendChild(aclElement);
+  private void constructSingleMetadataAndUrlFeedFileAcl(Group group, DocIdSender.AclItem docAcl) {
+    com.google.enterprise.adaptor.ext.feedtype.Acl aclElement = 
+        new com.google.enterprise.adaptor.ext.feedtype.Acl();
+    group.getAclOrRecord().add(aclElement);
     URI uri = idEncoder.encodeDocId(docAcl.getDocId());
     try {
       // Although it is named "fragment", we put the docIdFragment in the query
@@ -214,7 +207,7 @@ class GsaFeedFileMaker {
     } catch (URISyntaxException ex) {
       throw new AssertionError(ex);
     }
-    aclElement.setAttribute("url", uri.toString());
+    aclElement.setUrl(uri.toString());
     Acl acl = docAcl.getAcl();
     acl = aclTransform.transform(acl);
     if (acl.getInheritFrom() != null) {
@@ -228,61 +221,58 @@ class GsaFeedFileMaker {
       } catch (URISyntaxException ex) {
         throw new AssertionError(ex);
       }
-      aclElement.setAttribute("inherit-from", inheritFrom.toString());
+      aclElement.setInheritFrom(inheritFrom.toString());
     }
     if (acl.getInheritanceType() != Acl.InheritanceType.LEAF_NODE) {
-      aclElement.setAttribute("inheritance-type",
-          acl.getInheritanceType().getCommonForm());
+      aclElement.setInheritanceType(acl.getInheritanceType().getCommonForm());
     }
     boolean noCase = acl.isEverythingCaseInsensitive();
     for (UserPrincipal permitUser : acl.getPermitUsers()) {
-      constructMetadataAndUrlPrincipal(doc, aclElement, "permit",
+      constructMetadataAndUrlPrincipal(aclElement, "permit",
           permitUser, noCase);
     }
     for (GroupPrincipal permitGroup : acl.getPermitGroups()) {
-      constructMetadataAndUrlPrincipal(doc, aclElement, "permit",
+      constructMetadataAndUrlPrincipal(aclElement, "permit",
           permitGroup, noCase);
     }
     for (UserPrincipal denyUser : acl.getDenyUsers()) {
-      constructMetadataAndUrlPrincipal(doc, aclElement, "deny",
+      constructMetadataAndUrlPrincipal(aclElement, "deny",
           denyUser, noCase);
     }
     for (GroupPrincipal denyGroup : acl.getDenyGroups()) {
-      constructMetadataAndUrlPrincipal(doc, aclElement, "deny",
+      constructMetadataAndUrlPrincipal(aclElement, "deny",
           denyGroup, noCase);
     }
   }
 
-  private void constructMetadataAndUrlPrincipal(Document doc, Element acl,
+  private void constructMetadataAndUrlPrincipal(com.google.enterprise.adaptor.ext.feedtype.Acl acl,
       String access, Principal principal, boolean everythingCaseInsensitive) {
     String scope = principal.isUser() ? "user" : "group";
-    Element principalElement = doc.createElement("principal");
-    principalElement.setAttribute("scope", scope);
-    principalElement.setAttribute("access", access);
+    com.google.enterprise.adaptor.ext.feedtype.Principal principalElement = 
+        new com.google.enterprise.adaptor.ext.feedtype.Principal();
+    principalElement.setScope(scope);
+    principalElement.setAccess(access);
     if (!Principal.DEFAULT_NAMESPACE.equals(principal.getNamespace())) {
-      principalElement.setAttribute("namespace", principal.getNamespace());
+      principalElement.setNamespace(principal.getNamespace());
     }
     if (everythingCaseInsensitive) {
-      principalElement.setAttribute(
-          "case-sensitivity-type", "everything-case-insensitive");
+      principalElement.setCaseSensitivityType("everything-case-insensitive");
     }
-    principalElement.appendChild(doc.createTextNode(principal.getName()));
-    acl.appendChild(principalElement);
+    principalElement.setvalue(principal.getName());
+    acl.getPrincipal().add(principalElement);
   }
 
   /** Adds all the DocIds into feed-file-document one record
     at a time. */
-  private void constructMetadataAndUrlFeedFileBody(Document doc,
-      Element root, List<? extends DocIdSender.Item> items) {
-    Element group = doc.createElement("group");
-    root.appendChild(group);
+  private void constructMetadataAndUrlFeedFileBody(Gsafeed feed,
+      List<? extends DocIdSender.Item> items) {
+    Group group = new Group();
+    feed.getGroup().add(group);
     for (DocIdSender.Item item : items) {
       if (item instanceof DocIdPusher.Record) {
-        constructSingleMetadataAndUrlFeedFileRecord(doc, group,
-                                                    (DocIdPusher.Record) item);
+        constructSingleMetadataAndUrlFeedFileRecord(group, (DocIdPusher.Record) item);
       } else if (item instanceof DocIdSender.AclItem) {
-        constructSingleMetadataAndUrlFeedFileAcl(doc, group,
-                                                 (DocIdSender.AclItem) item);
+        constructSingleMetadataAndUrlFeedFileAcl(group, (DocIdSender.AclItem) item);
       } else {
         throw new IllegalArgumentException("Unable to process class: "
                                            + item.getClass().getName());
@@ -291,12 +281,10 @@ class GsaFeedFileMaker {
   }
 
   /** Puts all DocId into metadata-and-url GSA feed file. */
-  private void constructMetadataAndUrlFeedFile(Document doc,
-      String srcName, List<? extends DocIdSender.Item> items) {
-    Element root = doc.createElement("gsafeed");
-    doc.appendChild(root);
-    constructMetadataAndUrlFeedFileHead(doc, root, srcName);
-    constructMetadataAndUrlFeedFileBody(doc, root, items);
+  private void constructMetadataAndUrlFeedFile(Gsafeed feed, String srcName,
+      List<? extends DocIdSender.Item> items, StringBuilder comments) {
+    constructMetadataAndUrlFeedFileHead(feed, srcName, comments);
+    constructMetadataAndUrlFeedFileBody(feed, items);
   }
 
   /** Makes a Java String from the XML feed-file-document passed in. */
@@ -323,18 +311,26 @@ class GsaFeedFileMaker {
   public String makeMetadataAndUrlXml(String srcName,
       List<? extends DocIdSender.Item> items) {
     try {
-      DocumentBuilderFactory dbfac = DocumentBuilderFactory.newInstance();
-      DocumentBuilder docBuilder = dbfac.newDocumentBuilder();
-      Document doc = docBuilder.newDocument();
-      constructMetadataAndUrlFeedFile(doc, srcName, items);
-      String xmlString = documentToString(doc); 
-      return xmlString;
-    } catch (TransformerConfigurationException tce) {
-      throw new IllegalStateException(tce);
-    } catch (TransformerException te) {
-      throw new IllegalStateException(te);
-    } catch (ParserConfigurationException pce) {
-      throw new IllegalStateException(pce);
+      Gsafeed feed = new Gsafeed();
+      StringBuilder comments = new StringBuilder();
+      constructMetadataAndUrlFeedFile(feed, srcName, items, comments);
+      JAXBContext jaxbContext = JAXBContext.newInstance(Gsafeed.class);
+      Marshaller jaxbMarshaller = jaxbContext.createMarshaller();
+      jaxbMarshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE);
+      StringBuilder xmlHeaders = new StringBuilder();
+      xmlHeaders.append("<!DOCTYPE gsafeed PUBLIC \"-//Google//DTD GSA Feeds//EN\" \"http://gsa/gsafeed.dtd\">\n");
+      xmlHeaders.append(comments.toString());
+      try {
+        jaxbMarshaller.setProperty("com.sun.xml.bind.xmlHeaders", xmlHeaders.toString());
+      } catch (PropertyException ex) {
+        // JDK 1.6
+        jaxbMarshaller.setProperty("com.sun.xml.internal.bind.xmlHeaders", xmlHeaders.toString());
+      }
+      StringWriter sw = new StringWriter();
+      jaxbMarshaller.marshal(feed, sw);
+      return sw.toString();
+    } catch (JAXBException ex) {
+      throw new IllegalStateException(ex);
     }
   }
 
