@@ -8,7 +8,7 @@
   <property name="compile.java.bootclasspath" value="${build.bootclasspath}"/>
 
   <property name="src.dir" location="src"/>
-	<property name="src-gen.dir" location="src-gen"/>
+  <property name="src-gen.dir" location="src-gen"/>
   <property name="prebuilt.dir" location="prebuilt"/>
   <property name="test.dir" location="test"/>
   <property name="test.class" value="*Test"/>
@@ -124,16 +124,16 @@
     </uptodate>
   </target>
 
- <target name="generate-gsa-feedtype">
-  <mkdir dir="${src-gen.dir}"/>
- 	<java classname="com.sun.tools.internal.xjc.XJCFacade">
- 		<arg value="-p" />
-    <arg value="com.google.enterprise.adaptor.ext.feedtype"/>
-    <arg value="-d" />
-    <arg value="${src-gen.dir}"/>
-    <arg value="-dtd" />
-    <arg value="resources/gsafeed.dtd" />
-  </java>
+  <target name="generate-gsa-feedtype">
+    <mkdir dir="${src-gen.dir}"/>
+    <java classname="com.sun.tools.internal.xjc.XJCFacade">
+      <arg value="-p" />
+      <arg value="com.google.enterprise.adaptor.ext.feedtype"/>
+      <arg value="-d" />
+      <arg value="${src-gen.dir}"/>
+      <arg value="-dtd" />
+      <arg value="resources/gsafeed.dtd" />
+    </java>
   </target>
 
   <target name="build"
@@ -147,7 +147,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8"
       target="${compile.java.version}" source="${compile.java.version}">
-    	<src path="${src-gen.dir}" />
+      <src path="${src-gen.dir}" />
       <compilerarg value="-Xlint:unchecked"/>
       <compilerarg value="-Xlint:deprecation"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
@@ -432,7 +432,7 @@
   <target name="clean" description="Remove build output">
     <delete dir="${build.dir}"/>
     <delete dir="${dist.dir}"/>
-  	<delete dir="${src-gen.dir}"/>
+    <delete dir="${src-gen.dir}"/>
   </target>
 
   <target name="run" depends="build" description="Run default adaptor">
