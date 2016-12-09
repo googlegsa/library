@@ -235,7 +235,6 @@
     <delete dir="${dist.dir}"/>
 
     <mkdir dir="${build.dir}/dist"/>
-    <mkdir dir="${build.dir}/dist/send2gsa"/>
     <mkdir dir="${build.dir}/dist/staging"/>
     <mkdir dir="${build.dir}/dist/staging/examples"/>
     <mkdir dir="${dist.dir}"/>
@@ -294,20 +293,6 @@
       <zipfileset excludes="META-INF/**/*.DSA,META-INF/**/*.SF"
         src="${build.dir}/dist/adaptor-withlib.tmp.jar"/>
     </zip>
-
-    <!-- send2gsa.jar, containing same files as adaptor-withlib.jar and a
-         manifest that specifies to run send2gsa -->
-    <jar destfile="${build.dir}/dist/send2gsa/send2gsa.jar">
-      <manifest>
-        <attribute name="Main-Class" value="com.google.enterprise.adaptor.prebuilt.SendToGsa"/>
-      </manifest>
-      <zipfileset src="${dist.staging.dir}/adaptor${adaptorlib.suffix}-withlib.jar"/>
-    </jar>
-    <copy todir="${build.dir}/dist/send2gsa">
-      <fileset dir="${prebuilt.dir}" includes="send2gsa.*"/>
-    </copy>
-    <chmod file="${build.dir}/dist/send2gsa/send2gsa.sh" perm="ugo+rx"/>
-    <chmod file="${build.dir}/dist/send2gsa/send2gsa.bat" perm="ugo+rx"/>
 
     <!-- adaptor-examples.jar -->
     <pathconvert pathsep="," refid="examples.run.classpath"
