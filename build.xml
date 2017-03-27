@@ -1,5 +1,5 @@
 <project name="plexi" default="build" basedir=".">
-  <description>GSA Adaptor library</description>
+  <description>Adaptor Library</description>
   <tstamp/>
   
   <!-- Load build environment specific properties. -->
@@ -249,8 +249,7 @@
       basedir="${build-src.dir}" excludes="${adaptor.pkg.dir}/examples/**">
       <manifest>
         <section name="com/google/enterprise/adaptor/">
-          <attribute name="Implementation-Title"
-            value="Google Adaptor Library"/>
+          <attribute name="Implementation-Title" value="Adaptor Library"/>
           <attribute name="Implementation-Vendor" value="Google Inc."/>
           <attribute name="Implementation-Version"
             value="${adaptorlib.version}"/>
@@ -303,8 +302,7 @@
       basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/examples/**">
       <manifest>
         <section name="com/google/enterprise/adaptor/examples/">
-          <attribute name="Implementation-Title"
-            value="Google Example Adaptors"/>
+          <attribute name="Implementation-Title" value="Example Adaptors"/>
           <attribute name="Implementation-Vendor" value="Google Inc."/>
           <attribute name="Implementation-Version"
             value="${adaptorlib.version}"/>
@@ -364,8 +362,7 @@
       basedir="${build-src.dir}"
       includes="${adaptor.pkg.dir}/**/AdaptorTemplate.class">
       <manifest>
-        <attribute name="Implementation-Title"
-          value="Google Adaptor Template"/>
+        <attribute name="Implementation-Title" value="Adaptor Template"/>
         <attribute name="Implementation-Vendor" value="Google Inc."/>
         <attribute name="Implementation-Version"
           value="${adaptorlib.version}"/>
