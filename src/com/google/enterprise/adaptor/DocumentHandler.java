@@ -679,13 +679,22 @@ class DocumentHandler implements HttpHandler {
         Note: short-circuits closing connection and so does not propagate
         errors that may happen related to document contents. */
     HEAD,
+    /** 200 response code; do NOT send headers (other than Robots noindex).
+        Note: short-circuits closing connection and so does not propagate
+        errors that may happen related to document contents. */
+    HEAD_TRANSFORMED_TO_NO_INDEX,
     /** Stream document bytes as adaptor gives them. */
     SEND_BODY,
-    /** 200 response code; do send headers; drop document body; use same 
-        timeouts and error handling as SEND_BODY. */
+    /** 404 response code with same timeouts and error handling as SEND_BODY. */
+    SEND_BODY_TRANSFORMED_TO_NO_INDEX,
+    /** 200 response code; do send headers (other than Robots noindex);
+        drop document body; use same timeouts and error handling as SEND_BODY.*/
     SEND_BODY_TRANSFORMED_TO_HEAD,
     /** No file content to send but we send metadata and ACLs. */
     NO_CONTENT,
+    /** 204 or 304 response code; no metadata (other than Robots noindex);
+        no ACLs. */
+    NO_CONTENT_TRANSFORMED_TO_NO_INDEX
   }
 
   /**
@@ -766,6 +775,18 @@ class DocumentHandler implements HttpHandler {
       }
       if (state == State.NO_CONTENT) {
         startSending(false);
+      } else if (state == State.NO_CONTENT_TRANSFORMED_TO_NO_INDEX) {
+        log.log(Level.INFO, "changed NO_CONTENT to DO_NOT_INDEX {0}",
+            docId.getUniqueId());
+        // Send no metadata, other than Robots noindex.
+        ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
+        // Respond with 304 instead of 204 when talking with non GSA requests
+        // such as browsers.
+        HttpExchanges.respond(ex,
+            (requestIsFromFullyTrustedClient(ex)
+                ? HttpURLConnection.HTTP_NO_CONTENT
+                : HttpURLConnection.HTTP_NOT_MODIFIED),
+            "text/plain", (byte[]) null);
       } else {
         throw new IllegalStateException("unexpected state: " + state);
       }
@@ -778,7 +799,9 @@ class DocumentHandler implements HttpHandler {
           // We will need to make an OutputStream.
           break;
         case HEAD:
+        case HEAD_TRANSFORMED_TO_NO_INDEX:
         case SEND_BODY:
+        case SEND_BODY_TRANSFORMED_TO_NO_INDEX:
         case SEND_BODY_TRANSFORMED_TO_HEAD:
           // Already called before. Provide saved OutputStream.
           return os;
@@ -787,6 +810,7 @@ class DocumentHandler implements HttpHandler {
         case NOT_FOUND:
           throw new IllegalStateException("respondNotFound already called");
         case NO_CONTENT:
+        case NO_CONTENT_TRANSFORMED_TO_NO_INDEX:
           throw new IllegalStateException("respondNoContent already called");
         default:
           throw new IllegalStateException("Already responded");
@@ -802,6 +826,18 @@ class DocumentHandler implements HttpHandler {
         if (state == State.HEAD) {
           startSending(false);
           os = new SinkOutputStream();
+        } else if (state == State.HEAD_TRANSFORMED_TO_NO_INDEX) {
+          log.log(Level.INFO, "changed HEAD to DO_NOT_INDEX {0}",
+              docId.getUniqueId());
+          // Follow the precedent of HEAD doing a short-circuit out
+          // and potentially not reporting some later adaptor errors.
+          os = new SinkOutputStream();
+          // Send no metadata, other than Robots noindex.
+          ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
+          // Do not wait until call to complete() in order to short-circuit.
+          // The following line is a 200 without body (because for HEAD).
+          HttpExchanges.respondToHead(ex, HttpURLConnection.HTTP_OK,
+              "text/plain");
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
@@ -823,13 +859,28 @@ class DocumentHandler implements HttpHandler {
                   .createPipeline(os, originalContentType, metadata);
             }
           }
+        } else if (state == State.SEND_BODY_TRANSFORMED_TO_NO_INDEX) {
+          log.log(Level.INFO, "changed SEND_BODY to DO_NOT_INDEX {0}",
+              docId.getUniqueId());
+          // Not using startSending. Instead we stop header timer, start
+          // content timer, send not-found page, and setup a sink for
+          // bytes provided by adaptor instance itself.
+          watchdog.processingCompleted(workingThread);
+          watchdog.processingStarting(workingThread, contentTimeoutMillis);
+          // Follow the precedent of HEAD doing a short-circuit out
+          // and potentially not reporting some later adaptor errors.
+          os = new CloseNotifyOutputStream(new SinkOutputStream());
+          // Send no metadata, other than Robots noindex.
+          ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
+          // Do not wait until call to complete() in order to short-circuit.
+          // The following line is a 200 with an empty body.
+          HttpExchanges.respond(ex, HttpURLConnection.HTTP_OK,
+              "text/plain", new byte[0]);
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
           log.log(Level.INFO, "changed SEND_BODY to HEAD {0}",
               docId.getUniqueId());
           startSending(true);  // Lie about content. Will be 0bytes chunked.
-          countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
-              ex.getResponseBody()));
-          os = new SinkOutputStream(countingOs);
+          os = new CloseNotifyOutputStream(new SinkOutputStream());
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
@@ -971,9 +1022,11 @@ class DocumentHandler implements HttpHandler {
               Translation.HTTP_NOT_FOUND);
           break;
 
+        case NO_CONTENT_TRANSFORMED_TO_NO_INDEX:
         case NO_CONTENT:
           break;
 
+        case SEND_BODY_TRANSFORMED_TO_NO_INDEX:
         case SEND_BODY_TRANSFORMED_TO_HEAD:
           // Treat adaptor code as if it was in normal SEND_BODY even when
           // transform overrides the sending logic.  If there are errors
@@ -1002,6 +1055,8 @@ class DocumentHandler implements HttpHandler {
           // has been called.
           break;
 
+        case HEAD_TRANSFORMED_TO_NO_INDEX:
+          // Follow precedent of HEAD which already short-circuted completion.
         case HEAD:
           break;
 
@@ -1217,9 +1272,13 @@ class DocumentHandler implements HttpHandler {
       } else if (TransmissionDecision.DO_NOT_INDEX == decision) {
         switch (state) {
           case NO_CONTENT:
+            state = State.NO_CONTENT_TRANSFORMED_TO_NO_INDEX;
+            return;
           case HEAD:
+            state = State.HEAD_TRANSFORMED_TO_NO_INDEX;
+            return;
           case SEND_BODY:
-            noIndex = true;
+            state = State.SEND_BODY_TRANSFORMED_TO_NO_INDEX;
             return;
           default:
             throw new IllegalStateException(
