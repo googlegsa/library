@@ -518,7 +518,8 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(200, ex.getResponseCode());
     assertEquals("noindex", ex.getResponseHeaders().getFirst("X-Robots-Tag"));
-    assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertEquals(null,
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     assertArrayEquals(new byte[0], ex.getResponseBytes());
   }
 
@@ -553,7 +554,8 @@ public class DocumentHandlerTest {
     assertEquals(200, headEx.getResponseCode());
     assertEquals("noindex",
         headEx.getResponseHeaders().getFirst("X-Robots-Tag"));
-    assertNull(headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertEquals(null,
+        headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     // Response to HEAD request does not have content (it is HEAD)
     assertArrayEquals(new byte[0], headEx.getResponseBytes());
   }
@@ -728,7 +730,8 @@ public class DocumentHandlerTest {
     handler.handle(ex);
     assertEquals(204, ex.getResponseCode());
     assertEquals("noindex", ex.getResponseHeaders().getFirst("X-Robots-Tag"));
-    assertNull(ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertEquals(null,
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     assertArrayEquals(new byte[0], ex.getResponseBytes());
   }
 

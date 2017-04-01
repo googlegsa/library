@@ -863,24 +863,22 @@ class DocumentHandler implements HttpHandler {
           log.log(Level.INFO, "changed SEND_BODY to DO_NOT_INDEX {0}",
               docId.getUniqueId());
           // Not using startSending. Instead we stop header timer, start
-          // content timer, send not-found page, and setup a sink for
+          // content timer, discard metadata and content, and setup a sink for
           // bytes provided by adaptor instance itself.
           watchdog.processingCompleted(workingThread);
           watchdog.processingStarting(workingThread, contentTimeoutMillis);
-          // Follow the precedent of HEAD doing a short-circuit out
-          // and potentially not reporting some later adaptor errors.
-          os = new CloseNotifyOutputStream(new SinkOutputStream());
-          // Send no metadata, other than Robots noindex.
+          // Send no body and no metadata, other than Robots noindex.
           ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
-          // Do not wait until call to complete() in order to short-circuit.
-          // The following line is a 200 with an empty body.
-          HttpExchanges.respond(ex, HttpURLConnection.HTTP_OK,
-              "text/plain", new byte[0]);
+          int rc = HttpURLConnection.HTTP_OK;
+          HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ false);
+          os = new SinkOutputStream(new CloseNotifyOutputStream(
+              ex.getResponseBody()));
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
           log.log(Level.INFO, "changed SEND_BODY to HEAD {0}",
               docId.getUniqueId());
           startSending(true);  // Lie about content. Will be 0bytes chunked.
-          os = new CloseNotifyOutputStream(new SinkOutputStream());
+          os = new SinkOutputStream(new CloseNotifyOutputStream(
+              ex.getResponseBody()));
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
