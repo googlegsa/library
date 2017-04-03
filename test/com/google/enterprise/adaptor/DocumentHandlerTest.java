@@ -731,7 +731,7 @@ public class DocumentHandlerTest {
     assertEquals(204, ex.getResponseCode());
     assertEquals("noindex", ex.getResponseHeaders().getFirst("X-Robots-Tag"));
     assertEquals(null,
-        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     assertArrayEquals(new byte[0], ex.getResponseBytes());
   }
 
