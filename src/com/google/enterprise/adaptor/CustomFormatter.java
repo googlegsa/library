@@ -65,6 +65,16 @@ public class CustomFormatter extends Formatter {
     }
   }
 
+  public CustomFormatter(boolean useColor) {
+    setUseColor(useColor);
+  }
+
+  public class NoColor extends CustomFormatter {
+    public NoColor() {
+      super(false);
+    }
+  }
+
   public synchronized String format(LogRecord record) {
     buffer.delete(0, buffer.length());
 
