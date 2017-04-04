@@ -555,7 +555,7 @@ public class DocumentHandlerTest {
     assertEquals("noindex",
         headEx.getResponseHeaders().getFirst("X-Robots-Tag"));
     assertEquals(null,
-        headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+         headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     // Response to HEAD request does not have content (it is HEAD)
     assertArrayEquals(new byte[0], headEx.getResponseBytes());
   }
