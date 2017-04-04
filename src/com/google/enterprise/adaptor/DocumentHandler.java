@@ -870,15 +870,17 @@ class DocumentHandler implements HttpHandler {
           // Send no body and no metadata, other than Robots noindex.
           ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
           int rc = HttpURLConnection.HTTP_OK;
-          HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ false);
-          os = new SinkOutputStream(new CloseNotifyOutputStream(
+          HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ true);
+          countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
               ex.getResponseBody()));
+          os = new SinkOutputStream(countingOs);
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
           log.log(Level.INFO, "changed SEND_BODY to HEAD {0}",
               docId.getUniqueId());
           startSending(true);  // Lie about content. Will be 0bytes chunked.
-          os = new SinkOutputStream(new CloseNotifyOutputStream(
+          countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
               ex.getResponseBody()));
+          os = new SinkOutputStream(countingOs);
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
