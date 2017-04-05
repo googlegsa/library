@@ -489,7 +489,7 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testDoNotIndexForGetRequest() throws Exception {
+  public void testDroppingDocForGetRequest() throws Exception {
     List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
     transforms.add(new MetadataTransform() {
       @Override
@@ -516,15 +516,14 @@ public class DocumentHandlerTest {
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
-    assertEquals(200, ex.getResponseCode());
-    assertEquals("noindex", ex.getResponseHeaders().getFirst("X-Robots-Tag"));
+    assertEquals(404, ex.getResponseCode());
     assertEquals(null,
          ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
-    assertArrayEquals(new byte[0], ex.getResponseBytes());
+    assertArrayEquals("Error 404: Not Found".getBytes(), ex.getResponseBytes());
   }
 
   @Test
-  public void testDoNotIndexForHeadRequest() throws Exception {
+  public void testDroppingDocForHeadRequest() throws Exception {
     List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
     transforms.add(new MetadataTransform() {
       @Override
@@ -551,13 +550,11 @@ public class DocumentHandlerTest {
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(headEx);
-    assertEquals(200, headEx.getResponseCode());
-    assertEquals("noindex",
-        headEx.getResponseHeaders().getFirst("X-Robots-Tag"));
+    assertEquals(404, headEx.getResponseCode());
     assertEquals(null,
          headEx.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
-    // Response to HEAD request does not have content (it is HEAD)
-    assertArrayEquals(new byte[0], headEx.getResponseBytes());
+    // 404 response to HEAD request does not have content (it is HEAD)
+    assertArrayEquals("".getBytes(), headEx.getResponseBytes());
   }
 
   @Test
@@ -701,7 +698,7 @@ public class DocumentHandlerTest {
   }
 
   @Test
-  public void testDoNotIndexAfterNoContent() throws Exception {
+  public void testDroppingDocAfterNoContent() throws Exception {
     List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
     transforms.add(new MetadataTransform() {
       @Override
@@ -728,11 +725,11 @@ public class DocumentHandlerTest {
         .build();
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
-    assertEquals(204, ex.getResponseCode());
-    assertEquals("noindex", ex.getResponseHeaders().getFirst("X-Robots-Tag"));
+    assertEquals(404, ex.getResponseCode());
     assertEquals(null,
          ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
-    assertArrayEquals(new byte[0], ex.getResponseBytes());
+    // The 204 that would not have content becomes a 404 with content
+    assertArrayEquals("Error 404: Not Found".getBytes(), ex.getResponseBytes());
   }
 
   @Test
@@ -764,7 +761,6 @@ public class DocumentHandlerTest {
     mockAdaptor.documentBytes = new byte[] {1, 2, 3};
     handler.handle(ex);
     assertEquals(204, ex.getResponseCode());
-    assertEquals(null, ex.getResponseHeaders().getFirst("X-Robots-Tag"));
     assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     assertArrayEquals(new byte[0], ex.getResponseBytes());
