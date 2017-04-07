@@ -786,7 +786,7 @@ class DocumentHandler implements HttpHandler {
             (requestIsFromFullyTrustedClient(ex)
                 ? HttpURLConnection.HTTP_NO_CONTENT
                 : HttpURLConnection.HTTP_NOT_MODIFIED),
-            "text/plain", (byte[]) null);
+            "text/plain", new byte[0]);
       } else {
         throw new IllegalStateException("unexpected state: " + state);
       }
