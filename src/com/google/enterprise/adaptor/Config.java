@@ -643,20 +643,40 @@ public class Config {
     return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
   }
 
+  public long validateTimeout(String property, String defaultValue,
+      boolean allowNeg, boolean allowEmpty) {
+    String secondsAsString = getValue(property).trim();
+    try {
+      if ((null == secondsAsString) || "0".equals(secondsAsString) ||
+          (("".equals(secondsAsString) && !(allowEmpty))) ||
+          (secondsAsString.startsWith("-") && !(allowNeg))) {
+        log.log(Level.WARNING, "Invalid value for " + property
+                + ", it has been set to default " + defaultValue + " seconds.");
+      } else {
+          return Long.parseLong(secondsAsString) * 1000;
+      }
+    } catch (NumberFormatException e) {
+      log.log(Level.WARNING, "Invalid value for " + property
+              + ", it has been set to default " + defaultValue + " seconds.");
+    }
+    // For invalid value, returning default
+    // We do not reach this line if value is valid
+    return Long.parseLong(defaultValue) * 1000;
+  }
+
   long getAdaptorDocHeaderTimeoutMillis() {
-    return Long.parseLong(getValue("adaptor.docHeaderTimeoutSecs")) * 1000;
+    return validateTimeout("adaptor.docHeaderTimeoutSecs", "30", false, false);
   }
 
   long getAdaptorDocContentTimeoutMillis() {
-    return Long.parseLong(getValue("adaptor.docContentTimeoutSecs")) * 1000;
+    return validateTimeout("adaptor.docContentTimeoutSecs", "180",
+                           false, false);
   }
 
   long getAdaptorHeartbeatTimeoutMillis() {
-    String secondsAsString = getValue("adaptor.heartbeatTimeoutSecs");
-    if ((null == secondsAsString) || "".equals(secondsAsString.trim())) {
-      secondsAsString = getValue("adaptor.docHeaderTimeoutSecs");
-    }
-    return Long.parseLong(secondsAsString) * 1000;
+    return validateTimeout("adaptor.heartbeatTimeoutSecs", Long.toString(
+                           getAdaptorDocHeaderTimeoutMillis() / 1000),
+                           false, false);
   }
 
   /**
