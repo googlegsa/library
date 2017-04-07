@@ -202,9 +202,15 @@ public class SkipDocumentFilter implements MetadataTransform {
             + corpora);
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
+      } else {
+        log.fine("Not skipping document " + docId + ", because we did not find "
+            + "a match in " + corpora);
       }
     } else {
-      if (!found) {
+      if (found) {
+        log.fine("Not skipping document " + docId + ", because we found a match"
+            + " in " + corpora);
+      } else {
         log.info("Skipping document " + docId + ", because we did not find a "
             + "match in " + corpora);
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
