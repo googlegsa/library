@@ -65,11 +65,19 @@ public class CustomFormatter extends Formatter {
     }
   }
 
-  public CustomFormatter(boolean useColor) {
+  private CustomFormatter(boolean useColor) {
     setUseColor(useColor);
   }
 
-  public class NoColor extends CustomFormatter {
+  /** A CustomFormatter that forces the use of colors. */
+  public static class Color extends CustomFormatter {
+    public Color() {
+      super(true);
+    }
+  }
+
+  /** A CustomFormatter that does not use colors. */
+  public static class NoColor extends CustomFormatter {
     public NoColor() {
       super(false);
     }
