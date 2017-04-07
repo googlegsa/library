@@ -330,4 +330,48 @@ public class ConfigTest {
     config.load(configFile);
     assertEquals("\\\t\\\f", config.getValue("slash"));
   }
+
+  @Test
+  public void testPropertiesHeartbeatTimeoutMillis() throws Exception {
+    // docheartbeatTimeoutSecs=0 and docheartbeatTimeoutSecs=-15 are invalid
+    // it should use the default value for adaptor.docHeaderTimeoutSecs
+    // that is 30 seconds.
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.heartbeatTimeoutSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "", "NotValidValue"};
+    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      assertEquals(Long.parseLong("30000"),
+          config.getAdaptorHeartbeatTimeoutMillis());
+    }
+  }
+
+  @Test
+  public void testPropertiesDocHeaderTimeoutMillis() throws Exception {
+    // docHeaderTimeoutSecs=0 and docHeaderTimeoutSecs=-15 are invalid
+    // it should use the default value of 30 seconds.
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.docHeaderTimeoutSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "", "NotValidValue"};
+    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      assertEquals(Long.parseLong("30000"),
+          config.getAdaptorDocHeaderTimeoutMillis());
+    }
+  }
+
+  @Test
+  public void testPropertiesDocContentTimeoutMillis() throws Exception {
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.docContentTimeoutSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "", "NotValidValue"};
+    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      assertEquals(Long.parseLong("180000"),
+          config.getAdaptorDocContentTimeoutMillis());
+    }
+  }
 }
