@@ -40,7 +40,7 @@ public class FilterMimetypesTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("Content-Type", "text/rtf");
     transform.transform(new Metadata(), params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
@@ -76,7 +76,7 @@ public class FilterMimetypesTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("Content-Type", "text/richtext  ;  itsy-bitsy-characters");
     transform.transform(new Metadata(), params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
@@ -85,7 +85,7 @@ public class FilterMimetypesTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("Content-Type", "  text/rtf  ;  param-uno   ; paribo");
     transform.transform(new Metadata(), params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
@@ -94,7 +94,7 @@ public class FilterMimetypesTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("Content-Type", "  TeXt/RtF  ;  param-uno   ; paribo");
     transform.transform(new Metadata(), params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
@@ -103,7 +103,7 @@ public class FilterMimetypesTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("Content-Type", "text/that-is-textual");
     transform.transform(new Metadata(), params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test

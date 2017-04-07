@@ -137,8 +137,6 @@ public class FilterMimetypes implements MetadataTransform {
     if (supportedExplicit.contains(ct)) {
       log.log(Level.FINE, ct + "is explicitly supported");
       insertDecision(ct, TransmissionDecision.AS_IS.toString());
-      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-          TransmissionDecision.AS_IS.toString());
     } else if (unsupportedExplicit.contains(ct)) {
       log.log(Level.FINE, ct + "is explicitly unsupported");
       insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
@@ -151,8 +149,6 @@ public class FilterMimetypes implements MetadataTransform {
           TransmissionDecision.DO_NOT_INDEX.toString());
     } else if (matches(supportedGlobs, ct, "supported by glob")) {
       insertDecision(ct, TransmissionDecision.AS_IS.toString());
-      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-          TransmissionDecision.AS_IS.toString());
     } else if (matches(unsupportedGlobs, ct, "unsupported by glob")) {
       insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
