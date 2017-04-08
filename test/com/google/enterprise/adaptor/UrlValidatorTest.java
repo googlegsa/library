@@ -15,12 +15,6 @@
 package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -36,44 +30,55 @@ public class UrlValidatorTest {
 
   @Test
   public void testNullUrl() throws Exception {
-    thrown.expect(MalformedURLException.class);
+    thrown.expect(InvalidConfigurationException.class);
     urlValidator.validate(null);
   }
 
   @Test
   public void testEmptyUrl() throws Exception {
-    thrown.expect(MalformedURLException.class);
+    thrown.expect(InvalidConfigurationException.class);
     urlValidator.validate("");
   }
 
   @Test
   public void testNoProtocol() throws Exception {
-    thrown.expect(MalformedURLException.class);
+    thrown.expect(InvalidConfigurationException.class);
     urlValidator.validate("//foo/bar");
   }
 
   @Test
   public void testUnknownProtocol() throws Exception {
-    thrown.expect(MalformedURLException.class);
+    thrown.expect(InvalidConfigurationException.class);
     urlValidator.validate("unknown://foo/bar");
   }
 
   @Test
   public void testBadProtocol() throws Exception {
-    thrown.expect(MalformedURLException.class);
+    thrown.expect(InvalidConfigurationException.class);
     urlValidator.validate("https//foo/bar");
   }
 
   @Test
   public void testNoHost() throws Exception {
-    thrown.expect(MalformedURLException.class);
+    thrown.expect(InvalidConfigurationException.class);
     urlValidator.validate("http://");
   }
 
   @Test
-  public void testHost() throws Exception {
-    thrown.expect(MalformedURLException.class);
-   assertEquals(false, urlValidator.validate("http://"));
+  public void testMessageFormatRemnants() throws Exception {
+    thrown.expect(InvalidConfigurationException.class);
+    urlValidator.validate("http://message_format/foo/{0}");
+  }
+
+  @Test
+  public void testNakedIPv6Address() throws Exception {
+    thrown.expect(InvalidConfigurationException.class);
+    urlValidator.validate("http://::1/foo/bar");
+  }
+
+  @Test
+  public void testBracketedIPv6Address() throws Exception {
+    assertEquals(true, urlValidator.validate("http://[::1]/foo/bar"));
   }
 
   @Test
@@ -85,4 +90,5 @@ public class UrlValidatorTest {
   public void testUnreachableHost() throws Exception {
    assertEquals(false, urlValidator.validate("http://unknown_host/foo/bar"));
   }
+
 }

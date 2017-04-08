@@ -17,14 +17,15 @@ package com.google.enterprise.adaptor;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
  * Validates URLs by syntax checking and validating the host is reachable.
- * No attempts to fetch the URL are made, so a mocked up URL with
- * placeholder values in format substitutions may be used.
  */
 public class UrlValidator {
   /** The logger for this class. */
@@ -32,29 +33,40 @@ public class UrlValidator {
       Logger.getLogger(UrlValidator.class.getName());
 
   /** The connect timeout, in milliseconds. */
-  private static final int TIMEOUT = 30 * 1000;
+  private static final int TIMEOUT_MILLIS = (int) TimeUnit.SECONDS.toMillis(30);
 
   /**
    * Attempts to validate the given URL syntax and host reachability.
    * In this case, we're mostly trying to catch typos.
+   * No attempts to fetch the URL are made, so a URL build from start paths or
+   * using placeholder values in format substitutions may be supplied.
+   * This is intended to be called from the adaptor's init() method, where
+   * InvalidConfigurationExceptions are handled gracefully.
    *
    * @param urlString the URL to test
    * @return {@code true} if the URL's host is reachable, {@code false}
    *         if the host is not reachable.
-   * @throws MalformedURLException if the URL can not be parsed
+   * @throws InvalidConfigurationException if the URL syntax is invalid
    */
-  public boolean validate(String urlString) throws MalformedURLException {
-    URL url = new URL(urlString);
-    String host = url.getHost();
-
-    // We won't accept URLs implicitly pointing to localhost.
-    if (host.isEmpty()) {
-      throw new MalformedURLException("no host: " + urlString);
+  public boolean validate(String urlString) throws InvalidConfigurationException {
+    URL url;
+    try {
+      // basic syntax checking, with more understandable error messages
+      url = new URL(urlString);
+      // advanced syntax checking, with more cryptic error messages
+      url = new URI(urlString).toURL();
+    } catch (MalformedURLException e) {
+      throw new InvalidConfigurationException(
+          "Invalid URL format: " + urlString, e);
+    } catch (URISyntaxException e) {
+      throw new InvalidConfigurationException(
+          "Invalid URL format: " + urlString, e);
     }
 
     // Try to determine if the host is reachable at this time.
+    String host = url.getHost();
     try {
-      if (InetAddress.getByName(host).isReachable(TIMEOUT)) {
+      if (InetAddress.getByName(host).isReachable(TIMEOUT_MILLIS)) {
         log.log(Level.CONFIG, "Host {0} from URL {1} is reachable.",
             new Object[] { host, urlString });
         return true;
