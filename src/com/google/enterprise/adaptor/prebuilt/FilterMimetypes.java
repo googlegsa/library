@@ -131,7 +131,9 @@ public class FilterMimetypes implements MetadataTransform {
     ct = ct.trim().toLowerCase();
     String decision = lookupDecision(ct);
     if (null != decision) {
-      params.put("Transmission-Decision", decision);
+      if (!decision.equals(TransmissionDecision.AS_IS.toString())) {
+        params.put("Transmission-Decision", decision);
+      }
       return;
     }
     if (supportedExplicit.contains(ct)) {
