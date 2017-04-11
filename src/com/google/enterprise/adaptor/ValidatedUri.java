@@ -70,12 +70,11 @@ public class ValidatedUri {
       throw new URISyntaxException(uriString, "relative URIs are not allowed");
     }
 
-    if (uri.getHost() == null) {
+    if (Strings.isNullOrEmpty(uri.getHost())) {
       throw new URISyntaxException(uriString, "no host");
     }
 
-    if ((Strings.isNullOrEmpty(uri.getRawPath())
-            || uri.getRawPath().equals("/"))
+    if (Strings.isNullOrEmpty(uri.getRawPath())
         && Strings.isNullOrEmpty(uri.getRawQuery())
         && Strings.isNullOrEmpty(uri.getRawFragment())) {
       throw new URISyntaxException(uriString,

@@ -72,12 +72,6 @@ public class ValidatedUriTest {
   }
 
   @Test
-  public void testRootPath() throws Exception {
-    thrown.expect(URISyntaxException.class);
-    new ValidatedUri("http://foo:80/");
-  }
-
-  @Test
   public void testRelativeUri() throws Exception {
     thrown.expect(URISyntaxException.class);
     new ValidatedUri("foo/bar");
@@ -99,6 +93,12 @@ public class ValidatedUriTest {
   public void testBracketedIPv6Address() throws Exception {
     assertEquals(new URI("http://[::1]/foo/bar"),
         new ValidatedUri("http://[::1]/foo/bar").getUri());
+  }
+
+  @Test
+  public void testRootPath() throws Exception {
+    assertEquals(new URI("http://foo:80/"),
+        new ValidatedUri("http://foo:80/").getUri());
   }
 
   @Test
