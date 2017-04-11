@@ -49,8 +49,8 @@ public class ValidatedUri {
    * @throws URISyntaxException if the URL syntax is invalid
    */
   public ValidatedUri(String uriString) throws URISyntaxException {
-    if (uriString == null) {
-      throw new URISyntaxException("null", "null URI");
+    if (Strings.isNullOrEmpty(uriString)) {
+      throw new URISyntaxException("" + uriString, "null or empty URI");
     }
     try {
       // Basic syntax checking, with more understandable error messages.
@@ -60,7 +60,10 @@ public class ValidatedUri {
       uri = new URI(uriString);
       url = uri.toURL();
     } catch (MalformedURLException e) {
-      throw new URISyntaxException(uriString, e.getMessage());
+      int index = e.getMessage().indexOf(": ");
+      String reason = (index > 0) ? e.getMessage().substring(0, index)
+          : e.getMessage();
+      throw new URISyntaxException(uriString, reason);
     }
 
     if (!uri.isAbsolute()) {
