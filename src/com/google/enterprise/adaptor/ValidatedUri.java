@@ -25,12 +25,12 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
- * Validates URLs by syntax checking and validating the host is reachable.
+ * Validates URIs by syntax checking and validating the host is reachable.
  */
-public class UrlValidator {
+public class ValidatedUri {
   /** The logger for this class. */
   private static final Logger log =
-      Logger.getLogger(UrlValidator.class.getName());
+      Logger.getLogger(ValidatedUri.class.getName());
 
   /** The connect timeout, in milliseconds. */
   private static final int TIMEOUT_MILLIS = (int) TimeUnit.SECONDS.toMillis(30);

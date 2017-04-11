@@ -20,8 +20,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-/** Unit tests for {@link UrlValidator}. */
-public class UrlValidatorTest {
+/** Unit tests for {@link ValidatedUri}. */
+public class ValidatedUriTest {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
