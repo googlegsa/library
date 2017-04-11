@@ -116,11 +116,4 @@ public class ValidatedUriTest {
   public void testUnreachableHost() throws Exception {
     new ValidatedUri("http://unknown-host/foo/bar").testHostIsReachable();
   }
-
-  @Test
-  public void testUncFilePath() throws Exception {
-    TestHelper.assumeOsIsWindows();
-    assertEquals(Paths.get("\\host\share").toUri(),
-        new ValidatedUri("\\host\share").getUri());
-  }
 }
