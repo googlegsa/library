@@ -301,6 +301,8 @@ class DocIdSender extends AbstractDocIdPusher
       log.log(Level.INFO, "About to replace all groups from this data source "
           + "with {0} groups.", defs.size());
     }
+    // TODO (bmj): Track the accumulated feed size and compare to max feed file
+    // size allowed by the GSA?
     final int max = incremental ? config.getFeedMaxUrls() : defs.size();
 
     Iterator<Map.Entry<GroupPrincipal, T>> defsIterator
