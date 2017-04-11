@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.common.base.Strings;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -35,49 +37,74 @@ public class ValidatedUri {
   /** The connect timeout, in milliseconds. */
   private static final int TIMEOUT_MILLIS = (int) TimeUnit.SECONDS.toMillis(30);
 
+  /** The validated URI. */
+  private final URI uri;
+
   /**
-   * Attempts to validate the given URL syntax and host reachability.
-   * In this case, we're mostly trying to catch typos.
-   * No attempts to fetch the URL are made, so a URL build from start paths or
-   * using placeholder values in format substitutions may be supplied.
-   * This is intended to be called from the adaptor's init() method, where
-   * InvalidConfigurationExceptions are handled gracefully.
+   * Attempts to validate the given URI syntax with some more stringent checks
+   * than new URI. In this case, we're mostly trying to catch typos and obvious
+   * configuration issues.
    *
-   * @param urlString the URL to test
-   * @return {@code true} if the URL's host is reachable, {@code false}
-   *         if the host is not reachable.
-   * @throws InvalidConfigurationException if the URL syntax is invalid
+   * @param uriString the URI to test
+   * @throws URISyntaxException if the URL syntax is invalid
    */
-  public boolean validate(String urlString) throws InvalidConfigurationException {
-    URL url;
+  public ValidatedUri(String uriString) throws URISyntaxException {
+    if (uriString == null) {
+      throw new URISyntaxException("null", "null URI");
+    }
     try {
-      // basic syntax checking, with more understandable error messages
-      url = new URL(urlString);
-      // advanced syntax checking, with more cryptic error messages
-      url = new URI(urlString).toURL();
+      // Basic syntax checking, with more understandable error messages.
+      // Also ensures the URI is a URL, not a URN.
+      URL url = new URL(uriString);
+      // Advanced syntax checking, with more cryptic error messages.
+      uri = new URI(uriString);
+      url = uri.toURL();
     } catch (MalformedURLException e) {
-      throw new InvalidConfigurationException(
-          "Invalid URL format: " + urlString, e);
-    } catch (URISyntaxException e) {
-      throw new InvalidConfigurationException(
-          "Invalid URL format: " + urlString, e);
+      throw new URISyntaxException(uriString, e.getMessage());
     }
 
+    if (!uri.isAbsolute()) {
+      throw new URISyntaxException(uriString, "relative URIs are not allowed");
+    }
+
+    if (uri.getHost() == null) {
+      throw new URISyntaxException(uriString, "no host");
+    }
+
+    if ((Strings.isNullOrEmpty(uri.getRawPath())
+            || uri.getRawPath().equals("/"))
+        && Strings.isNullOrEmpty(uri.getRawQuery())
+        && Strings.isNullOrEmpty(uri.getRawFragment())) {
+      throw new URISyntaxException(uriString,
+          "no path, query, or fragment components");
+    }
+  }
+
+  /**
+   * Returns the validated URI.
+   */
+  public URI getUri() {
+    return uri;
+  }
+
+  /**
+   * Checks whether the URI's host is reachable without throwing exceptions.
+   * Logs a warning if the host is not reachable.
+   */
+  public ValidatedUri testHostIsReachable() {
     // Try to determine if the host is reachable at this time.
-    String host = url.getHost();
+    String host = uri.getHost();
     try {
-      if (InetAddress.getByName(host).isReachable(TIMEOUT_MILLIS)) {
-        log.log(Level.CONFIG, "Host {0} from URL {1} is reachable.",
-            new Object[] { host, urlString });
-        return true;
-      } else {
-        log.log(Level.WARNING, "Host {0} from URL {1} is not reachable.",
-            new Object[] { host, urlString });
+      if (!(InetAddress.getByName(host).isReachable(TIMEOUT_MILLIS))) {
+        log.log(Level.WARNING, "Host {0} from URI {1} is not reachable.",
+            new Object[] { host, uri });
       }
     } catch (IOException e) {
-      log.log(Level.WARNING, "Host " + host + " from URL " + urlString
+      log.log(Level.WARNING, "Host " + host + " from URI " + uri
           + " is not reachable.", e);
     }
-    return false;
+    return this;
   }
+
+  // TODO (bmj): Port testHttpHead code from v3 UrlValidator.
 }
