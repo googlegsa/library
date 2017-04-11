@@ -132,7 +132,7 @@ public class FilterMimetypes implements MetadataTransform {
     String decision = lookupDecision(ct);
     if (null != decision) {
       if (!decision.equals(TransmissionDecision.AS_IS.toString())) {
-        params.put("Transmission-Decision", decision);
+        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION, decision);
       }
       return;
     }
