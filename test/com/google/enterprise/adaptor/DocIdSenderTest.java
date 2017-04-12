@@ -362,9 +362,9 @@ public class DocIdSenderTest {
 
     assertEquals(2, fileMaker.i);
     assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new String[] {
-      "0", "1",
-    }), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new Boolean[] {Boolean.TRUE, Boolean.TRUE}),
+        fileSender.incrementals);
+    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
@@ -387,7 +387,8 @@ public class DocIdSenderTest {
 
     assertEquals(2, fileMaker.i);
     assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Boolean.TRUE, fileSender.incremental);
+    assertEquals(Arrays.asList(new Boolean[] {Boolean.TRUE, Boolean.TRUE}),
+        fileSender.incrementals);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
@@ -395,17 +396,36 @@ public class DocIdSenderTest {
 
   @Test
   public void testPushGroupsReplaceAllGroupsAtVersion740() throws Exception {
+    config.setValue("feed.maxUrls", "2");
     config.setValue("gsa.version", "7.4.0-1");
-    config.setValue("feed.maxUrls", "2"); // but this will be ignored
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
     assertNull(
         docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
 
-    assertEquals(1, fileMaker.i); // non-incremental --> just one "batch"
+    assertEquals(2, fileMaker.i);
+    assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
+    assertEquals(Arrays.asList(new Boolean[] {Boolean.FALSE, Boolean.TRUE}),
+        fileSender.incrementals);
+    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
+    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsReplaceAllGroupsSingleFeed() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    assertNull(
+        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+
+    assertEquals(1, fileMaker.i);
     assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Boolean.FALSE, fileSender.incremental);
+    assertEquals(Collections.singletonList(Boolean.FALSE),
+        fileSender.incrementals);
     assertEquals(Collections.singletonList("0"), fileSender.xmlStrings);
     assertEquals(Collections.singletonList("0"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
@@ -604,7 +624,7 @@ public class DocIdSenderTest {
     List<String> datasources = new ArrayList<String>();
     List<String> groupsources = new ArrayList<String>();
     List<String> xmlStrings = new ArrayList<String>();
-    Boolean incremental = null;
+    List<Boolean> incrementals = new ArrayList<Boolean>();
 
     public MockGsaFeedFileSender() {
       super("localhost", /*secure=*/ false, Charset.forName("UTF-8"));
@@ -623,7 +643,7 @@ public class DocIdSenderTest {
         boolean useCompression, boolean incremental) throws IOException {
       groupsources.add(groupsource);
       xmlStrings.add(xmlString);
-      this.incremental = new Boolean(incremental);
+      incrementals.add(new Boolean(incremental));
     }
   }
 

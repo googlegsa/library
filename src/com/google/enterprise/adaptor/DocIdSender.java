@@ -292,19 +292,7 @@ class DocIdSender extends AbstractDocIdPusher
       handler = defaultErrorHandler;
     }
     boolean firstBatch = true;
-    // if we are not doing an incremental groups push (that is, we are replacing
-    // all groups from the given data source), we must do it in a single "batch"
-    // because if done in batches and a later batch fails, we would end up with
-    // an incomplete set of groups (which could end up giving a user access to
-    // search results that they are not supposed to have access to).
-    if (!incremental) {
-      log.log(Level.INFO, "About to replace all groups from this data source "
-          + "with {0} groups.", defs.size());
-    }
-    // TODO (bmj): Track the accumulated feed size and compare to max feed file
-    // size allowed by the GSA?
-    final int max = incremental ? config.getFeedMaxUrls() : defs.size();
-
+    final int max = config.getFeedMaxUrls();
     Iterator<Map.Entry<GroupPrincipal, T>> defsIterator
         = defs.entrySet().iterator();
     List<Map.Entry<GroupPrincipal, T>> batch
