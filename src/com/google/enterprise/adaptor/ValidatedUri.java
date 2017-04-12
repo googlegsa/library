@@ -55,10 +55,10 @@ public class ValidatedUri {
     try {
       // Basic syntax checking, with more understandable error messages.
       // Also ensures the URI is a URL, not a URN.
-      URL url = new URL(uriString);
+      new URL(uriString);
       // Advanced syntax checking, with more cryptic error messages.
       uri = new URI(uriString);
-      url = uri.toURL();
+      uri.toURL();
     } catch (MalformedURLException e) {
       int index = e.getMessage().indexOf(": ");
       String reason = (index > 0) ? e.getMessage().substring(0, index)
