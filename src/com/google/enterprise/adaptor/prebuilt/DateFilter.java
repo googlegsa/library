@@ -61,35 +61,14 @@ public class DateFilter implements MetadataTransform {
   private String key;
 
   /**
-   * The regex pattern to match in the property value (can be null to indicate
-   * that any value is considered a match).
-   */
-  private Pattern pattern;
-
-  /**
-   * If {@code true}, make a transmission decision on a match;
-   * if {@code false}, make a transmission decision on a failed match.
-   */
-  private boolean decideOnMatch = true;
-
-  /**
-   * The {@code TransmissionDecision} to be made.
-   */
-  private TransmissionDecision decision;
-
-  /**
    * If {@code METADATA}, only search the metadata for the specified key;
    * if {@code PARAMS}, only search the params for the specified key;
    * if {@code METADATA_OR_PARAMS}, search both.
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private RegexDecisionFilter(String key, Pattern pattern,
-      boolean decideOnMatch, TransmissionDecision decision, Corpora corpora) {
+  private DateFilter(String key, Corpora corpora) {
     this.key = key;
-    this.pattern = pattern;
-    this.decideOnMatch = decideOnMatch;
-    this.decision = decision;
     this.corpora = corpora;
   }
 
@@ -151,8 +130,7 @@ public class DateFilter implements MetadataTransform {
     if (Strings.isNullOrEmpty(docId)) {
       docId = "with no docId";
     }
-    // Determine the TransmissionDecision.
-    if (decideOnMatch) {
+
       if (found) {
         log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
             + "because we found a match in {2}",
@@ -164,37 +142,19 @@ public class DateFilter implements MetadataTransform {
             + "because we did not find a match in {1}",
             new Object[] { docId, corpora });
       }
-    } else {
-      if (found) {
-        log.log(Level.FINE, "No transmission decision for document {0}, "
-            + "because we found a match in {1}",
-            new Object[] { docId, corpora });
-      } else {
-        log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
-            + "because we did not find a match in {2}",
-            new Object[] { decision, docId, corpora });
-        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            decision.toString());
-      }
     }
   }
 
   @Override
   public String toString() {
-    return new StringBuilder("RegexDecisionFilter(")
+    return new StringBuilder("DateFilter(")
         .append(key).append(", ")
-        .append(pattern == null ? "[null]" : pattern.toString()).append(", ")
-        .append(decideOnMatch).append(", ")
-        .append(decision).append(", ")
         .append(corpora).append(")")
         .toString();
   }
 
-  public static RegexDecisionFilter create(Map<String, String> cfg) {
+  public static DateFilter create(Map<String, String> cfg) {
     String key;
-    Pattern pattern = null;
-    boolean decideOnMatch = true;
-    TransmissionDecision decision;
     Corpora corpora;
 
     key = getTrimmedValue(cfg, "key");
@@ -203,28 +163,10 @@ public class DateFilter implements MetadataTransform {
     }
     log.config("key = " + key);
 
-    String patternString = cfg.get("pattern");
-    if (Strings.isNullOrEmpty(patternString)) {
-      log.config("pattern left null");
-      pattern = Pattern.compile("\\A"); // matches any value
-    } else {
-      pattern = Pattern.compile(patternString);
-      log.config("pattern set to " + patternString);
-    }
-
-    String decideOnMatchString = getTrimmedValue(cfg, "decideOnMatch");
-    if (decideOnMatchString != null) {
-      decideOnMatch = Boolean.parseBoolean(decideOnMatchString);
-    }
-    log.config("decideOnMatch set to " + decideOnMatch);
-
-    decision = TransmissionDecision.from(getTrimmedValue(cfg, "decision"));
-    log.config("decision = " + decision);
-
     corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
 
-    return new RegexDecisionFilter(key, pattern, decideOnMatch, decision,
+    return new DateFilter(key, decideOnMatch, decision,
         corpora);
   }
 
