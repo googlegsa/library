@@ -106,7 +106,7 @@ public class RegexDecisionFilter implements MetadataTransform {
       = Logger.getLogger(RegexDecisionFilter.class.getName());
 
   /** The name of the key (either Metadata key or params key) to match. */
-  private String propertyName;
+  private String key;
 
   /**
    * The regex pattern to match in the property value (can be null to indicate
@@ -118,7 +118,7 @@ public class RegexDecisionFilter implements MetadataTransform {
    * If {@code true}, skip the document on a match;
    * if {@code false}, skip the document on a failed match.
    */
-  private boolean skipOnMatch = true;
+  private boolean decideOnMatch = true;
 
   /**
    * The {@code TransmissionDecision} to be made.
@@ -132,44 +132,44 @@ public class RegexDecisionFilter implements MetadataTransform {
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private RegexDecisionFilter(String propertyName, Pattern pattern,
-      boolean skipOnMatch, Corpora corpora) {
-    this.propertyName = propertyName;
+  private RegexDecisionFilter(String key, Pattern pattern,
+      boolean decideOnMatch, Corpora corpora) {
+    this.key = key;
     this.pattern = pattern;
-    this.skipOnMatch = skipOnMatch;
+    this.decideOnMatch = decideOnMatch;
     this.corpora = corpora;
   }
 
   /**
-   * Search (only) the {@code Metadata} for an instance of the propertyName
+   * Search (only) the {@code Metadata} for an instance of the key
    * containing a value that matches the {@code pattern}.  Returns {@code true}
    * if found, {@code false} if not.
    */
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
-    for (String value : metadata.getAllValues(propertyName)) {
+    for (String value : metadata.getAllValues(key)) {
       if (pattern.matcher(value).find()) {
         found = true;
         break;
       }
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + propertyName + "' in metadata.");
+        + key + "' in metadata.");
     return found;
   }
 
   /**
-   * Search (only) the {@code params} for an instance of the propertyName
+   * Search (only) the {@code params} for an instance of the key
    * containing a value that matches the {@code pattern}.  Returns {@code true}
    * if found, {@code false} if not.
    */
   private boolean foundInParams(Map<String, String> params) {
     boolean found = false;
-    if (params.containsKey(propertyName)) {
-      found = pattern.matcher(params.get(propertyName)).find();
+    if (params.containsKey(key)) {
+      found = pattern.matcher(params.get(key)).find();
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + propertyName + "' in params.");
+        + key + "' in params.");
     return found;
   }
 
@@ -178,7 +178,7 @@ public class RegexDecisionFilter implements MetadataTransform {
    * key {@code Transmission-Decision}, value
    * {@code TransmissionDecision.DO_NOT_INDEX} to indicate that the document is
    * to be skipped.  The decision is based on settings of the
-   * {@code propertyName}, {@code pattern}, {@code skipOnMatch}, and
+   * {@code key}, {@code pattern}, {@code decideOnMatch}, and
    * {@code corpora} configuration variables (as discussed above).
    */
   @Override
@@ -201,7 +201,7 @@ public class RegexDecisionFilter implements MetadataTransform {
       docId = "with no docId";
     }
     // determine the Transmission Decision based on skipMatch
-    if (skipOnMatch) {
+    if (decideOnMatch) {
       if (found) {
         log.info("Skipping document " + docId + ", because we found a match in "
             + corpora);
@@ -228,11 +228,11 @@ public class RegexDecisionFilter implements MetadataTransform {
   public String toString() {
     StringBuilder sb = new StringBuilder();
     sb.append("RegexDecisionFilter(");
-    sb.append(propertyName);
+    sb.append(key);
     sb.append(", ");
     sb.append(pattern == null ? "[null]" : pattern.toString());
     sb.append(", ");
-    sb.append(skipOnMatch);
+    sb.append(decideOnMatch);
     sb.append(", ");
     sb.append(decision);
     sb.append(", ");
@@ -242,17 +242,17 @@ public class RegexDecisionFilter implements MetadataTransform {
   }
 
   public static RegexDecisionFilter create(Map<String, String> cfg) {
-    String propertyName;
+    String key;
     Pattern pattern = null;
-    boolean skipOnMatch = true;
+    boolean decideOnMatch = true;
     TransmissionDecision decision;
     Corpora corpora;
 
-    propertyName = cfg.get("propertyName");
-    if (Strings.isNullOrEmpty(propertyName)) {
-      throw new NullPointerException("propertyName may not be null or empty");
+    key = cfg.get("key");
+    if (Strings.isNullOrEmpty(key)) {
+      throw new NullPointerException("key may not be null or empty");
     }
-    log.config("propertyName = " + propertyName);
+    log.config("key = " + key);
 
     String patternString = cfg.get("pattern");
     if (Strings.isNullOrEmpty(patternString)) {
@@ -263,14 +263,14 @@ public class RegexDecisionFilter implements MetadataTransform {
       log.config("pattern set to " + patternString);
     }
 
-    String skipOnMatchString = cfg.get("skipOnMatch");
-    if (skipOnMatchString != null) {
-      skipOnMatchString = skipOnMatchString.trim();
+    String decideOnMatchString = cfg.get("decideOnMatch");
+    if (decideOnMatchString != null) {
+      decideOnMatchString = decideOnMatchString.trim();
     }
-    if (!Strings.isNullOrEmpty(skipOnMatchString)) {
-      skipOnMatch = Boolean.parseBoolean(skipOnMatchString);
+    if (!Strings.isNullOrEmpty(decideOnMatchString)) {
+      decideOnMatch = Boolean.parseBoolean(decideOnMatchString);
     }
-    log.config("skipOnMatch set to " + skipOnMatch);
+    log.config("decideOnMatch set to " + decideOnMatch);
 
     decision = TransmissionDecision.from(cfg.get("decision"));
     log.config("decision = " + decision);
@@ -278,6 +278,6 @@ public class RegexDecisionFilter implements MetadataTransform {
     corpora = Corpora.from(cfg.get("corpora"));
     log.config("corpora set to " + corpora);
 
-    return new RegexDecisionFilter(propertyName, pattern, skipOnMatch, corpora);
+    return new RegexDecisionFilter(key, pattern, decideOnMatch, corpora);
   }
 }
