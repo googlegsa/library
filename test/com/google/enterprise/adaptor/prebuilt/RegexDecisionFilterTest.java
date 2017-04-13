@@ -34,7 +34,7 @@ public class RegexDecisionFilterTest {
 
   private static RegexDecisionFilter defaultFilter() {
     Map<String, String> config = new HashMap<String, String>();
-    config.put("key", "skipMe");
+    config.put("key", "leaveMe");
     return RegexDecisionFilter.create(config);
   }
 
@@ -465,4 +465,3 @@ public class RegexDecisionFilterTest {
     assertEquals("as-is", params.get("Transmission-Decision"));
   }
 }
-
