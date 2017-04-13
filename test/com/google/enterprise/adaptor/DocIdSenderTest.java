@@ -406,7 +406,7 @@ public class DocIdSenderTest {
 
     assertEquals(2, fileMaker.i);
     assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new Boolean[] {Boolean.FALSE, Boolean.TRUE}),
+    assertEquals(Arrays.asList(new Boolean[] {Boolean.TRUE, Boolean.TRUE}),
         fileSender.incrementals);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
@@ -424,10 +424,39 @@ public class DocIdSenderTest {
 
     assertEquals(1, fileMaker.i);
     assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Collections.singletonList(Boolean.FALSE),
+    assertEquals(Collections.singletonList(Boolean.TRUE),
         fileSender.incrementals);
     assertEquals(Collections.singletonList("0"), fileSender.xmlStrings);
     assertEquals(Collections.singletonList("0"), fileArchiver.feeds);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsReplaceAllGroupsAlternateBuffer() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    assertNull(
+        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertEquals(1, fileMaker.i);
+    assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
+    assertEquals(Collections.singletonList(Boolean.TRUE),
+        fileSender.incrementals);
+
+    assertNull(
+        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertEquals(3, fileMaker.i);
+    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> expectedResult
+        = new ArrayList<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>(3);
+    expectedResult.add(0, UNSPLIT_EXPECTED_RESULT.get(0));
+    expectedResult.add(1, UNSPLIT_EXPECTED_RESULT.get(0));
+    expectedResult.add(2,
+        new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>());
+    assertEquals(expectedResult, fileMaker.groupses);
+    assertEquals(Arrays.asList(
+        new Boolean[] {Boolean.TRUE, Boolean.TRUE, Boolean.FALSE}),
+        fileSender.incrementals);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 

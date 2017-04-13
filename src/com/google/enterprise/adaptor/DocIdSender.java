@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -226,6 +228,52 @@ class DocIdSender extends AbstractDocIdPusher
   }
 
   /*
+   * Issue: Full vs. Incremental Feeds for Groups.
+   *
+   * GSA 7.4.0 added support for full feeds of group definitions. A full
+   * feed replaces, rather than augments or updates, all groups from a
+   * given data source. This is useful because many connectors cannot
+   * detect when a group has been deleted, so repeated incremental updates
+   * would leave deleted groups in the GSA's groups database.
+   *
+   * When pushing a full feed, we must do it in a single "batch", because if
+   * done in batches and a later batch fails (or it simply takes a non-trivial
+   * amount of time to upload all the batches), we would end up with an
+   * incomplete set of groups.
+   *
+   * The problem with supplying all the group definitions in a single full
+   * feed is the GSA limit to the size of a feed file (1GB). Although this
+   * is a large limit, several of our customers would easily exceed that.
+   * One customer has 100,000 groups averaging 10,000 members each. Another
+   * has 400,000 groups.
+   *
+   * A novel solution to this is to double-buffer the group definitions for
+   * each data source. We maintain two pseudo data sources for each actual
+   * data source (*-A and *-B). Each "full" upload alternates between these
+   * two, using batches of incremental feeds. As each batch is processed,
+   * groups defined in that batch are re-assigned from the older data source
+   * to the newer one. Once all batches have been uploaded, the only groups
+   * remaining in the older data source are the ones that were missing from
+   * the newer feeds (in other words, deleted from the repository). We then
+   * "delete" these stale entries by sending an empty, but true full feed
+   * for the older data source. After this, the GSA should only have group
+   * definitions for the newer data source.
+   *
+   * If there is a failure mid-push, the GSA groups database may have entries
+   * for both data sources. Since the adaptors do not maintain persistent
+   * state, on a restart it will not know which is "older" vs. "newer".
+   * This is not fatal however, as the only downside might be some deleted
+   * groups persisting through one or two "full" pushes before they get
+   * cleaned up.
+   */
+  private Map<String, String> groupSources = new HashMap<String, String>();
+
+  private String alternateGroupSource(String source) {
+    return (source + "-A").equals(groupSources.get(source))
+        ? (source + "-B") : (source + "-A");
+  }
+
+  /*
    * Internal version of pushGroupDefinitions() to add the parameterized generic
    * T. We need the parameter to be able to create a List and add Map.Entries to
    * that list.
@@ -291,6 +339,19 @@ class DocIdSender extends AbstractDocIdPusher
     if (null == handler) {
       handler = defaultErrorHandler;
     }
+    if (groupSource == null) {
+      groupSource = config.getFeedName();
+    }
+    log.log(Level.INFO, "Starting {0} push of {0} groups from source {1}",
+        new Object[] { ((incremental) ? "incremental" : "full"),
+                       defs.size(), groupSource });
+    String feedSourceName;
+    if (incremental) {
+      feedSourceName = groupSource;
+    } else {
+      feedSourceName = alternateGroupSource(groupSource);
+      log.log(Level.FINE, "Using alternate group source {0}", feedSourceName);
+    }
     boolean firstBatch = true;
     final int max = config.getFeedMaxUrls();
     Iterator<Map.Entry<GroupPrincipal, T>> defsIterator
@@ -314,7 +375,7 @@ class DocIdSender extends AbstractDocIdPusher
       try {
         // all groups requests except first should be incremental!
         failedId = pushSizedBatchOfGroups(batch, caseSensitive,
-            incremental || !firstBatch, groupSource, handler);
+            /*incremental*/ true, feedSourceName, handler);
         if (failedId == null) {
           // TODO(myk): determine if it makes sense to count the include the
           // counts from a partial batch in our totals (if the batch fails).
@@ -348,6 +409,19 @@ class DocIdSender extends AbstractDocIdPusher
       double mean = ((double) numMembers) / numGroups;
       log.finer("mean size of groups: " + mean);
     }
+
+    // Remember the latest target group source fed. If we just did a
+    // full group feed, delete the previous target group source entries.
+    String oldGroupSource = groupSources.put(groupSource, feedSourceName);
+    if (!incremental && (oldGroupSource != null)) {
+      // Delete any entries from the older group source by pushing an
+      // empty full feed.
+      log.log(Level.FINE, "Deleting entries from previous group source {0}",
+          oldGroupSource);
+      List<Map.Entry<GroupPrincipal, T>> emptyList = Collections.emptyList();
+      pushSizedBatchOfGroups(emptyList, caseSensitive, /*incremental*/ false,
+          oldGroupSource, handler);
+    }
     journal.recordGroupPushSuccessful();
     return null;
   }
@@ -355,10 +429,8 @@ class DocIdSender extends AbstractDocIdPusher
   private <T extends Collection<Principal>> GroupPrincipal
       pushSizedBatchOfGroups(
       List<Map.Entry<GroupPrincipal, T>> defs,
-      boolean caseSensitive, boolean incremental, String groupSource,
+      boolean caseSensitive, boolean incremental, String feedSourceName,
       ExceptionHandler handler) throws InterruptedException {
-    String feedSourceName
-        = (groupSource == null) ? config.getFeedName() : groupSource;
     String groupsDefXml
         = fileMaker.makeGroupDefinitionsXml(defs, caseSensitive);
     boolean keepGoing = true;
