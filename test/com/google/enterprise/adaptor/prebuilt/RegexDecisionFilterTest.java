@@ -27,22 +27,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.PatternSyntaxException;
 
-/** Unit tests for {@link SkipDocumentFilter}. */
-public class SkipDocumentFilterTest {
+/** Unit tests for {@link RegexDecisionFilter}. */
+public class RegexDecisionFilterTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private static SkipDocumentFilter defaultFilter() {
+  private static RegexDecisionFilter defaultFilter() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
-    return SkipDocumentFilter.create(config);
+    return RegexDecisionFilter.create(config);
   }
 
   // tests on create calls (various errors) and toString results
   @Test
   public void testToString_defaultFilter() {
     MetadataTransform transform = defaultFilter();
-    assertEquals("SkipDocumentFilter(skipMe, \\A, true, metadata or params)",
+    assertEquals("RegexDecisionFilter(skipMe, \\A, true, metadata or params)",
         transform.toString());
   }
 
@@ -50,7 +50,7 @@ public class SkipDocumentFilterTest {
   public void testCreate_noPropertyName() {
     thrown.expect(NullPointerException.class);
     Map<String, String> config = new HashMap<String, String>();
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
   @Test
@@ -58,7 +58,7 @@ public class SkipDocumentFilterTest {
     thrown.expect(NullPointerException.class);
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
   @Test
@@ -67,7 +67,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("pattern", "[");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
   @Test
@@ -75,8 +75,8 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("pattern", "");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
-    assertEquals("SkipDocumentFilter(skipMe, \\A, true, metadata or params)",
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(skipMe, \\A, true, metadata or params)",
         transform.toString());
   }
 
@@ -85,8 +85,8 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "false");
-    MetadataTransform transform = SkipDocumentFilter.create(config);
-    assertEquals("SkipDocumentFilter(skipMe, \\A, false, metadata or params)",
+    MetadataTransform transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(skipMe, \\A, false, metadata or params)",
         transform.toString());
   }
 
@@ -95,8 +95,8 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("corpora", "metadata");
-    MetadataTransform transform = SkipDocumentFilter.create(config);
-    assertEquals("SkipDocumentFilter(skipMe, \\A, true, metadata)",
+    MetadataTransform transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(skipMe, \\A, true, metadata)",
         transform.toString());
   }
 
@@ -105,8 +105,8 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("corpora", "params");
-    MetadataTransform transform = SkipDocumentFilter.create(config);
-    assertEquals("SkipDocumentFilter(skipMe, \\A, true, params)",
+    MetadataTransform transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(skipMe, \\A, true, params)",
         transform.toString());
   }
 
@@ -115,8 +115,8 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("corpora", "bogus");
-    MetadataTransform transform = SkipDocumentFilter.create(config);
-    assertEquals("SkipDocumentFilter(skipMe, \\A, true, metadata or params)",
+    MetadataTransform transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(skipMe, \\A, true, metadata or params)",
         transform.toString());
   }
 
@@ -127,7 +127,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "false");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("found", "someValue");
     params.put(MetadataTransform.KEY_DOC_ID, "docId01");
@@ -141,7 +141,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "found");
     config.put("skipOnMatch", "false");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId02");
     Metadata metadata = new Metadata();
@@ -155,7 +155,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "found");
     config.put("skipOnMatch", "false");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId03");
     params.put("found", "someValue");
@@ -169,7 +169,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "found");
     config.put("skipOnMatch", "true");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId04");
     Metadata metadata = new Metadata();
@@ -183,7 +183,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "found");
     config.put("skipOnMatch", "true");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId05");
     params.put("found", "someValue");
@@ -197,7 +197,7 @@ public class SkipDocumentFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "true");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId06");
     Metadata metadata = new Metadata();
@@ -213,7 +213,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
     config.put("skipOnMatch", "false");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId07");
     Metadata metadata = new Metadata();
@@ -228,7 +228,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
     config.put("skipOnMatch", "false");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId08");
     Metadata metadata = new Metadata();
@@ -243,7 +243,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
     config.put("skipOnMatch", "false");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId09");
     params.put("property", "pictures of matchstick men");
@@ -258,7 +258,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
     config.put("skipOnMatch", "true");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId10");
     Metadata metadata = new Metadata();
@@ -273,7 +273,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
     config.put("skipOnMatch", "true");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId11");
     params.put("property", "another match");
@@ -288,7 +288,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
     config.put("skipOnMatch", "true");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId12");
     params.put("property", "find me a find");
@@ -306,7 +306,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "false");
     config.put("corpora", "params");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId13");
     Metadata metadata = new Metadata();
@@ -321,7 +321,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "true");
     config.put("corpora", "params");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId14");
     Metadata metadata = new Metadata();
@@ -338,7 +338,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "false");
     config.put("corpora", "metadata");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId15");
     params.put("skipMe", "this value skipped");
@@ -353,7 +353,7 @@ public class SkipDocumentFilterTest {
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "true");
     config.put("corpora", "metadata");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     // no docId, intentionally
     params.put("skipMe", "this value skipped");
