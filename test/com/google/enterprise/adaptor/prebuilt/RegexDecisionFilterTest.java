@@ -86,29 +86,51 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testCreate_noDecision() {
-    thrown.expect(NullPointerException.class);
+  public void testCreate_noDecisionDefaultsToAsIs() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "foo");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
-  }
-
-  @Test
-  public void testCreate_emptyDecision() {
-    thrown.expect(NullPointerException.class);
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key", "foo");
-    config.put("decision", "");
-    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(foo, \\A, true, as-is, "
+        + "metadata or params)", transform.toString());
   }
 
   @Test
   public void testCreate_invalidDecision() {
-    thrown.expect(NullPointerException.class);
+    thrown.expect(IllegalArgumentException.class);
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "foo");
     config.put("decision", "maybe");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+  }
+
+  @Test
+  public void testCreate_DoNotIndexDecision() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "foo");
+    config.put("decision", "do-not-index");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(foo, \\A, true, do-not-index, "
+        + "metadata or params)", transform.toString());
+  }
+
+  @Test
+  public void testCreate_DoNotIndexContentDecision() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "foo");
+    config.put("decision", "do-not-index-content");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(foo, \\A, true, do-not-index-content, "
+        + "metadata or params)", transform.toString());
+  }
+
+  @Test
+  public void testCreate_AsIsDecision() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "foo");
+    config.put("decision", "as-is");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    assertEquals("RegexDecisionFilter(foo, \\A, true, as-is, "
+        + "metadata or params)", transform.toString());
   }
 
   @Test
