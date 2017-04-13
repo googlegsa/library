@@ -72,7 +72,7 @@ import java.util.regex.Pattern;
    metadata.transform.pipeline.skipDocumentFilter.corpora=metadata
    </code></pre>
  */
-public class SkipDocumentFilter implements MetadataTransform {
+public class RegexDecisionFilter implements MetadataTransform {
   /**
    * Which collections of keys/values to search.  Metadata, params, or both.
    */
@@ -103,7 +103,7 @@ public class SkipDocumentFilter implements MetadataTransform {
   };
 
   private static final Logger log
-      = Logger.getLogger(SkipDocumentFilter.class.getName());
+      = Logger.getLogger(RegexDecisionFilter.class.getName());
 
   /** The name of the key (either Metadata key or params key) to match. */
   private String propertyName;
@@ -121,13 +121,18 @@ public class SkipDocumentFilter implements MetadataTransform {
   private boolean skipOnMatch = true;
 
   /**
+   * The {@code TransmissionDecision} to be made.
+   */
+  private TransmissionDecision decision;
+
+  /**
    * If {@code METADATA}, only search the metadata for the specified key;
    * if {@code PARAMS}, only search the params for the specified key;
    * if {@code METADATA_OR_PARAMS}, search both.
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private SkipDocumentFilter(String propertyName, Pattern pattern,
+  private RegexDecisionFilter(String propertyName, Pattern pattern,
       boolean skipOnMatch, Corpora corpora) {
     this.propertyName = propertyName;
     this.pattern = pattern;
@@ -201,7 +206,7 @@ public class SkipDocumentFilter implements MetadataTransform {
         log.info("Skipping document " + docId + ", because we found a match in "
             + corpora);
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            TransmissionDecision.DO_NOT_INDEX.toString());
+            decision.toString());
       } else {
         log.fine("Not skipping document " + docId + ", because we did not find "
             + "a match in " + corpora);
@@ -214,7 +219,7 @@ public class SkipDocumentFilter implements MetadataTransform {
         log.info("Skipping document " + docId + ", because we did not find a "
             + "match in " + corpora);
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            TransmissionDecision.DO_NOT_INDEX.toString());
+            decision.toString());
       }
     }
   }
@@ -222,22 +227,25 @@ public class SkipDocumentFilter implements MetadataTransform {
   @Override
   public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append("SkipDocumentFilter(");
+    sb.append("RegexDecisionFilter(");
     sb.append(propertyName);
     sb.append(", ");
     sb.append(pattern == null ? "[null]" : pattern.toString());
     sb.append(", ");
     sb.append(skipOnMatch);
     sb.append(", ");
+    sb.append(decision);
+    sb.append(", ");
     sb.append(corpora);
     sb.append(")");
     return "" + sb;
   }
 
-  public static SkipDocumentFilter create(Map<String, String> cfg) {
+  public static RegexDecisionFilter create(Map<String, String> cfg) {
     String propertyName;
     Pattern pattern = null;
     boolean skipOnMatch = true;
+    TransmissionDecision decision;
     Corpora corpora;
 
     propertyName = cfg.get("propertyName");
@@ -264,9 +272,12 @@ public class SkipDocumentFilter implements MetadataTransform {
     }
     log.config("skipOnMatch set to " + skipOnMatch);
 
+    decision = TransmissionDecision.from(cfg.get("decision"));
+    log.config("decision = " + decision);
+
     corpora = Corpora.from(cfg.get("corpora"));
     log.config("corpora set to " + corpora);
 
-    return new SkipDocumentFilter(propertyName, pattern, skipOnMatch, corpora);
+    return new RegexDecisionFilter(propertyName, pattern, skipOnMatch, corpora);
   }
 }
