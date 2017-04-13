@@ -133,10 +133,11 @@ public class RegexDecisionFilter implements MetadataTransform {
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
   private RegexDecisionFilter(String key, Pattern pattern,
-      boolean decideOnMatch, Corpora corpora) {
+      boolean decideOnMatch, TransmissionDecision decision, Corpora corpora) {
     this.key = key;
     this.pattern = pattern;
     this.decideOnMatch = decideOnMatch;
+    this.decision = decision;
     this.corpora = corpora;
   }
 
@@ -278,6 +279,6 @@ public class RegexDecisionFilter implements MetadataTransform {
     corpora = Corpora.from(cfg.get("corpora"));
     log.config("corpora set to " + corpora);
 
-    return new RegexDecisionFilter(key, pattern, decideOnMatch, corpora);
+    return new RegexDecisionFilter(key, pattern, decideOnMatch, decision, corpora);
   }
 }
