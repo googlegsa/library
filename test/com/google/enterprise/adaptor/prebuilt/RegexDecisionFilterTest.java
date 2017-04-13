@@ -47,14 +47,14 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testCreate_noPropertyName() {
+  public void testCreate_noKey() {
     thrown.expect(NullPointerException.class);
     Map<String, String> config = new HashMap<String, String>();
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
   @Test
-  public void testCreate_emptyPropertyName() {
+  public void testCreate_emptyKey() {
     thrown.expect(NullPointerException.class);
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "");
