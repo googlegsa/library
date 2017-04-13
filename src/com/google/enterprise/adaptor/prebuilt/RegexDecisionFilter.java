@@ -227,19 +227,13 @@ public class RegexDecisionFilter implements MetadataTransform {
 
   @Override
   public String toString() {
-    StringBuilder sb = new StringBuilder();
-    sb.append("RegexDecisionFilter(");
-    sb.append(key);
-    sb.append(", ");
-    sb.append(pattern == null ? "[null]" : pattern.toString());
-    sb.append(", ");
-    sb.append(decideOnMatch);
-    sb.append(", ");
-    sb.append(decision);
-    sb.append(", ");
-    sb.append(corpora);
-    sb.append(")");
-    return "" + sb;
+    return new StringBuilder("RegexDecisionFilter(")
+        .append(key).append(", ")
+        .append(pattern == null ? "[null]" : pattern.toString()).append(", ")
+        .append(decideOnMatch).append(", ")
+        .append(decision).append(", ")
+        .append(corpora).append(")")
+        .toString();
   }
 
   public static RegexDecisionFilter create(Map<String, String> cfg) {
