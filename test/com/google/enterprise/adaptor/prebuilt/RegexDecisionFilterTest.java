@@ -35,7 +35,6 @@ public class RegexDecisionFilterTest {
   private static RegexDecisionFilter defaultFilter() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("decision", "do-not-index");
     return RegexDecisionFilter.create(config);
   }
 
@@ -43,7 +42,7 @@ public class RegexDecisionFilterTest {
   @Test
   public void testToString_defaultFilter() {
     MetadataTransform transform = defaultFilter();
-    assertEquals("RegexDecisionFilter(skipMe, \\A, true, do-not-index, "
+    assertEquals("RegexDecisionFilter(skipMe, \\A, true, as-is, "
         + "metadata or params)", transform.toString());
   }
 
@@ -434,4 +433,36 @@ public class RegexDecisionFilterTest {
     transform.transform(metadata, params);
     assertEquals(null, params.get("Transmission-Decision"));
   }
+
+  // tests other decisions
+
+  @Test
+  public void testTransform_DoNotIndexContentDecision() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "property");
+    config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index-content");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
+    metadata.add("property", "someValue");
+    transform.transform(metadata, params);
+    assertEquals("do-not-index-content", params.get("Transmission-Decision"));
+  }
+
+  @Test
+  public void testTransform_AsIsDecision() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "property");
+    config.put("decideOnMatch", "true");
+    config.put("decision", "as-is");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("Transmission-Decision", "do-not-index");
+    Metadata metadata = new Metadata();
+    metadata.add("property", "someValue");
+    transform.transform(metadata, params);
+    assertEquals("as-is", params.get("Transmission-Decision"));
+  }
 }
+
