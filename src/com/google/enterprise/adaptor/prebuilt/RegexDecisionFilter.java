@@ -30,6 +30,7 @@ import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Map;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -198,27 +199,31 @@ public class RegexDecisionFilter implements MetadataTransform {
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
-    if (null == docId || docId.isEmpty()) {
+    if (Strings.isNullOrEmpty(docId)) {
       docId = "with no docId";
     }
-    // determine the Transmission Decision based on skipMatch
+    // determine the Transmission Decision
     if (decideOnMatch) {
       if (found) {
-        log.info("Skipping document " + docId + ", because we found a match in "
-            + corpora);
+        log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
+            + "because we found a match in {2}",
+            new Object[] { decision, docId, corpora });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             decision.toString());
       } else {
-        log.fine("Not skipping document " + docId + ", because we did not find "
-            + "a match in " + corpora);
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we did not find a match in {1}",
+            new Object[] { docId, corpora });
       }
     } else {
       if (found) {
-        log.fine("Not skipping document " + docId + ", because we found a match"
-            + " in " + corpora);
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we found a match in {1}",
+            new Object[] { docId, corpora });
       } else {
-        log.info("Skipping document " + docId + ", because we did not find a "
-            + "match in " + corpora);
+        log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
+            + "because we did not find a match in {2}",
+            new Object[] { decision, docId, corpora });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             decision.toString());
       }
