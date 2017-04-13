@@ -28,6 +28,211 @@ public class DateFilter implements MetadataTransform {
 
   }
 
+  /**
+   * Which collections of keys/values to search.  Metadata, params, or both.
+   */
+  private enum Corpora {
+    METADATA("metadata"),
+    PARAMS("params"),
+    METADATA_OR_PARAMS("metadata or params");
+
+    private final String name;
+
+    private Corpora(String n) {
+      name = n;
+    }
+
+    public static Corpora from(String val) {
+      if ("metadata".equalsIgnoreCase(val)) {
+        return Corpora.METADATA;
+      }
+      if ("params".equalsIgnoreCase(val)) {
+        return Corpora.PARAMS;
+      }
+      return METADATA_OR_PARAMS;
+    }
+
+    public String toString() {
+      return name;
+    }
+  };
+
+  /** The name of the key (either Metadata key or params key) to match. */
+  private String key;
+
+  /**
+   * The regex pattern to match in the property value (can be null to indicate
+   * that any value is considered a match).
+   */
+  private Pattern pattern;
+
+  /**
+   * If {@code true}, make a transmission decision on a match;
+   * if {@code false}, make a transmission decision on a failed match.
+   */
+  private boolean decideOnMatch = true;
+
+  /**
+   * The {@code TransmissionDecision} to be made.
+   */
+  private TransmissionDecision decision;
+
+  /**
+   * If {@code METADATA}, only search the metadata for the specified key;
+   * if {@code PARAMS}, only search the params for the specified key;
+   * if {@code METADATA_OR_PARAMS}, search both.
+   */
+  private Corpora corpora = Corpora.METADATA_OR_PARAMS;
+
+  private RegexDecisionFilter(String key, Pattern pattern,
+      boolean decideOnMatch, TransmissionDecision decision, Corpora corpora) {
+    this.key = key;
+    this.pattern = pattern;
+    this.decideOnMatch = decideOnMatch;
+    this.decision = decision;
+    this.corpora = corpora;
+  }
+
+  /**
+   * Search (only) the {@code Metadata} for an instance of the key
+   * containing a value that matches the {@code pattern}.  Returns {@code true}
+   * if found, {@code false} if not.
+   */
+  private boolean foundInMetadata(Metadata metadata) {
+    boolean found = false;
+    for (String value : metadata.getAllValues(key)) {
+      if (pattern.matcher(value).find()) {
+        found = true;
+        break;
+      }
+    }
+    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
+        + key + "' in metadata.");
+    return found;
+  }
+
+  /**
+   * Search (only) the {@code params} for an instance of the key
+   * containing a value that matches the {@code pattern}.  Returns {@code true}
+   * if found, {@code false} if not.
+   */
+  private boolean foundInParams(Map<String, String> params) {
+    boolean found = false;
+    if (params.containsKey(key)) {
+      found = pattern.matcher(params.get(key)).find();
+    }
+    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
+        + key + "' in params.");
+    return found;
+  }
+
+  /**
+   * Conditionally adds a {@code Transmission-Decision} entry to the
+   * {@code params Map}. The decision is based on settings of the
+   * {@code key}, {@code pattern}, {@code decideOnMatch}, {@code decision},
+   * and {@code corpora} configuration variables (as discussed above).
+   */
+  @Override
+  public void transform(Metadata metadata, Map<String, String> params) {
+    boolean found;
+    switch (corpora) {
+      case METADATA:
+        found = foundInMetadata(metadata);
+        break;
+      case PARAMS:
+        found = foundInParams(params);
+        break;
+      case METADATA_OR_PARAMS:
+      default:
+        found = foundInMetadata(metadata) || foundInParams(params);
+    }
+
+    String docId = params.get(MetadataTransform.KEY_DOC_ID);
+    if (Strings.isNullOrEmpty(docId)) {
+      docId = "with no docId";
+    }
+    // Determine the TransmissionDecision.
+    if (decideOnMatch) {
+      if (found) {
+        log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
+            + "because we found a match in {2}",
+            new Object[] { decision, docId, corpora });
+        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+            decision.toString());
+      } else {
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we did not find a match in {1}",
+            new Object[] { docId, corpora });
+      }
+    } else {
+      if (found) {
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we found a match in {1}",
+            new Object[] { docId, corpora });
+      } else {
+        log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
+            + "because we did not find a match in {2}",
+            new Object[] { decision, docId, corpora });
+        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+            decision.toString());
+      }
+    }
+  }
+
+  @Override
+  public String toString() {
+    return new StringBuilder("RegexDecisionFilter(")
+        .append(key).append(", ")
+        .append(pattern == null ? "[null]" : pattern.toString()).append(", ")
+        .append(decideOnMatch).append(", ")
+        .append(decision).append(", ")
+        .append(corpora).append(")")
+        .toString();
+  }
+
+  public static RegexDecisionFilter create(Map<String, String> cfg) {
+    String key;
+    Pattern pattern = null;
+    boolean decideOnMatch = true;
+    TransmissionDecision decision;
+    Corpora corpora;
+
+    key = getTrimmedValue(cfg, "key");
+    if (key == null) {
+      throw new NullPointerException("key may not be null or empty");
+    }
+    log.config("key = " + key);
+
+    String patternString = cfg.get("pattern");
+    if (Strings.isNullOrEmpty(patternString)) {
+      log.config("pattern left null");
+      pattern = Pattern.compile("\\A"); // matches any value
+    } else {
+      pattern = Pattern.compile(patternString);
+      log.config("pattern set to " + patternString);
+    }
+
+    String decideOnMatchString = getTrimmedValue(cfg, "decideOnMatch");
+    if (decideOnMatchString != null) {
+      decideOnMatch = Boolean.parseBoolean(decideOnMatchString);
+    }
+    log.config("decideOnMatch set to " + decideOnMatch);
+
+    decision = TransmissionDecision.from(getTrimmedValue(cfg, "decision"));
+    log.config("decision = " + decision);
+
+    corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
+    log.config("corpora set to " + corpora);
+
+    return new RegexDecisionFilter(key, pattern, decideOnMatch, decision,
+        corpora);
+  }
+
+  private static String getTrimmedValue(Map<String, String> cfg, String key) {
+    String value = cfg.get(key);
+    return (value == null) ? value : Strings.emptyToNull(value.trim());
+  }
+
   private FileTimeFilter getFileTimeFilter(Config config, String configDaysKey,
        String configDateKey) throws StartupException {
     String configDays = config.getValue(configDaysKey);
