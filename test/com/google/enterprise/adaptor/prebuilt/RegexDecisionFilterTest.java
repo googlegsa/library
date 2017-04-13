@@ -35,6 +35,7 @@ public class RegexDecisionFilterTest {
   private static RegexDecisionFilter defaultFilter() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
+    config.put("decision", "do-not-index");
     return RegexDecisionFilter.create(config);
   }
 
@@ -50,6 +51,7 @@ public class RegexDecisionFilterTest {
   public void testCreate_noKey() {
     thrown.expect(NullPointerException.class);
     Map<String, String> config = new HashMap<String, String>();
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
@@ -58,6 +60,7 @@ public class RegexDecisionFilterTest {
     thrown.expect(NullPointerException.class);
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
@@ -67,6 +70,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("pattern", "[");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
   }
 
@@ -75,6 +79,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("pattern", "");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     assertEquals("RegexDecisionFilter(skipMe, \\A, true, metadata or params)",
         transform.toString());
@@ -85,6 +90,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     MetadataTransform transform = RegexDecisionFilter.create(config);
     assertEquals("RegexDecisionFilter(skipMe, \\A, false, metadata or params)",
         transform.toString());
@@ -105,6 +111,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("corpora", "params");
+    config.put("decision", "do-not-index");
     MetadataTransform transform = RegexDecisionFilter.create(config);
     assertEquals("RegexDecisionFilter(skipMe, \\A, true, params)",
         transform.toString());
@@ -115,6 +122,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("corpora", "bogus");
+    config.put("decision", "do-not-index");
     MetadataTransform transform = RegexDecisionFilter.create(config);
     assertEquals("RegexDecisionFilter(skipMe, \\A, true, metadata or params)",
         transform.toString());
@@ -127,6 +135,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("found", "someValue");
@@ -141,6 +150,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId02");
@@ -155,6 +165,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId03");
@@ -169,6 +180,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
     config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId04");
@@ -183,6 +195,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
     config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId05");
@@ -197,6 +210,7 @@ public class RegexDecisionFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
     config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId06");
@@ -213,6 +227,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "property");
     config.put("pattern", "match.*");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId07");
@@ -228,6 +243,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "property");
     config.put("pattern", "match.*");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId08");
@@ -243,6 +259,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "property");
     config.put("pattern", "match.*");
     config.put("decideOnMatch", "false");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId09");
@@ -258,6 +275,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "property");
     config.put("pattern", "match.*");
     config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId10");
@@ -273,6 +291,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "property");
     config.put("pattern", "match.*");
     config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId11");
@@ -288,6 +307,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "property");
     config.put("pattern", "match.*");
     config.put("decideOnMatch", "true");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId12");
@@ -306,6 +326,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "skipMe");
     config.put("decideOnMatch", "false");
     config.put("corpora", "params");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId13");
@@ -321,6 +342,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "skipMe");
     config.put("decideOnMatch", "true");
     config.put("corpora", "params");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId14");
@@ -338,6 +360,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "skipMe");
     config.put("decideOnMatch", "false");
     config.put("corpora", "metadata");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId15");
@@ -353,6 +376,7 @@ public class RegexDecisionFilterTest {
     config.put("key", "skipMe");
     config.put("decideOnMatch", "true");
     config.put("corpora", "metadata");
+    config.put("decision", "do-not-index");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     // no docId, intentionally
