@@ -249,8 +249,8 @@ public class RegexDecisionFilter implements MetadataTransform {
     TransmissionDecision decision;
     Corpora corpora;
 
-    key = cfg.get("key");
-    if (Strings.isNullOrEmpty(key)) {
+    key = getTrimmedValue(cfg, "key");
+    if (key == null) {
       throw new NullPointerException("key may not be null or empty");
     }
     log.config("key = " + key);
@@ -264,21 +264,24 @@ public class RegexDecisionFilter implements MetadataTransform {
       log.config("pattern set to " + patternString);
     }
 
-    String decideOnMatchString = cfg.get("decideOnMatch");
+    String decideOnMatchString = getTrimmedValue(cfg, "decideOnMatch");
     if (decideOnMatchString != null) {
-      decideOnMatchString = decideOnMatchString.trim();
-    }
-    if (!Strings.isNullOrEmpty(decideOnMatchString)) {
       decideOnMatch = Boolean.parseBoolean(decideOnMatchString);
     }
     log.config("decideOnMatch set to " + decideOnMatch);
 
-    decision = TransmissionDecision.from(cfg.get("decision"));
+    decision = TransmissionDecision.from(getTrimmedValue(cfg, "decision"));
     log.config("decision = " + decision);
 
-    corpora = Corpora.from(cfg.get("corpora"));
+    corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
 
-    return new RegexDecisionFilter(key, pattern, decideOnMatch, decision, corpora);
+    return new RegexDecisionFilter(key, pattern, decideOnMatch, decision,
+        corpora);
+  }
+
+  private static String getTrimmedValue(Map<String, String> cfg, String key) {
+    String value = cfg.get(key);
+    return (value == null) ? value : Strings.emptyToNull(value.trim());
   }
 }
