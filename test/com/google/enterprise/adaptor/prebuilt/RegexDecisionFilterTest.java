@@ -81,10 +81,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testToString_skipOnMatchFalse() {
+  public void testToString_decideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     MetadataTransform transform = RegexDecisionFilter.create(config);
     assertEquals("RegexDecisionFilter(skipMe, \\A, false, metadata or params)",
         transform.toString());
@@ -123,10 +123,10 @@ public class RegexDecisionFilterTest {
   // tests on transform behavior when pattern is blank
 
   @Test
-  public void testTransform_SkipKeyNotFoundWhenSkipOnMatchFalse() {
+  public void testTransform_SkipKeyNotFoundWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("found", "someValue");
@@ -137,10 +137,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_KeyFoundInMetadataWhenSkipOnMatchFalse() {
+  public void testTransform_KeyFoundInMetadataWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId02");
@@ -151,10 +151,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_KeyFoundInParamsWhenSkipOnMatchFalse() {
+  public void testTransform_KeyFoundInParamsWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId03");
@@ -165,10 +165,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_SkipKeyFoundInMetadataWhenSkipOnMatchTrue() {
+  public void testTransform_SkipKeyFoundInMetadataWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId04");
@@ -179,10 +179,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_SkipKeyFoundInParamsWhenSkipOnMatchTrue() {
+  public void testTransform_SkipKeyFoundInParamsWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId05");
@@ -193,10 +193,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_KeyNotFoundWhenSkipOnMatchTrue() {
+  public void testTransform_KeyNotFoundWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId06");
@@ -208,11 +208,11 @@ public class RegexDecisionFilterTest {
   // tests on transform behavior when pattern is a regex
 
   @Test
-  public void testTransform_SkipKeyNotMatchedWhenSkipOnMatchFalse() {
+  public void testTransform_SkipKeyNotMatchedWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
     config.put("pattern", "match.*");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId07");
@@ -223,11 +223,11 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_KeyMatchedInMetadataWhenSkipOnMatchFalse() {
+  public void testTransform_KeyMatchedInMetadataWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
     config.put("pattern", "match.*");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId08");
@@ -238,11 +238,11 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_KeyMatchedInParamsWhenSkipOnMatchFalse() {
+  public void testTransform_KeyMatchedInParamsWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
     config.put("pattern", "match.*");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId09");
@@ -253,11 +253,11 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_SkipKeyMatchedInMetadataWhenSkipOnMatchTrue() {
+  public void testTransform_SkipKeyMatchedInMetadataWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
     config.put("pattern", "match.*");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId10");
@@ -268,11 +268,11 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_SkipKeyMatchedInParamsWhenSkipOnMatchTrue() {
+  public void testTransform_SkipKeyMatchedInParamsWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
     config.put("pattern", "match.*");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId11");
@@ -283,11 +283,11 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_KeyNotMatchedWhenSkipOnMatchTrue() {
+  public void testTransform_KeyNotMatchedWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
     config.put("pattern", "match.*");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put(MetadataTransform.KEY_DOC_ID, "docId12");
@@ -301,10 +301,10 @@ public class RegexDecisionFilterTest {
   // tests on corpora=params (skipping Metadata)
 
   @Test
-  public void testTransform_SkipCorporaParamsWhenSkipOnMatchFalse() {
+  public void testTransform_SkipCorporaParamsWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     config.put("corpora", "params");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
@@ -316,10 +316,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_CorporaParamsWhenSkipOnMatchTrue() {
+  public void testTransform_CorporaParamsWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     config.put("corpora", "params");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
@@ -333,10 +333,10 @@ public class RegexDecisionFilterTest {
   // tests on corpora=Metadata (skipping params)
 
   @Test
-  public void testTransform_SkipCorporaMetadataWhenSkipOnMatchFalse() {
+  public void testTransform_SkipCorporaMetadataWhenDecideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "false");
+    config.put("decideOnMatch", "false");
     config.put("corpora", "metadata");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
@@ -348,10 +348,10 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
-  public void testTransform_CorporaMetadataWhenSkipOnMatchTrue() {
+  public void testTransform_CorporaMetadataWhenDecideOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("skipOnMatch", "true");
+    config.put("decideOnMatch", "true");
     config.put("corpora", "metadata");
     RegexDecisionFilter transform = RegexDecisionFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
