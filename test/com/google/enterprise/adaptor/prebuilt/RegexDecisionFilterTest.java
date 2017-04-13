@@ -86,6 +86,32 @@ public class RegexDecisionFilterTest {
   }
 
   @Test
+  public void testCreate_noDecision() {
+    thrown.expect(NullPointerException.class);
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "foo");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+  }
+
+  @Test
+  public void testCreate_emptyDecision() {
+    thrown.expect(NullPointerException.class);
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "foo");
+    config.put("decision", "");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+  }
+
+  @Test
+  public void testCreate_invalidDecision() {
+    thrown.expect(NullPointerException.class);
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "foo");
+    config.put("decision", "maybe");
+    RegexDecisionFilter transform = RegexDecisionFilter.create(config);
+  }
+
+  @Test
   public void testToString_decideOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
