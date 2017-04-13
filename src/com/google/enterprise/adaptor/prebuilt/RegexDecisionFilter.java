@@ -1,4 +1,4 @@
-// Copyright 2011 Google Inc. All Rights Reserved.
+// Copyright 2017 Google Inc. All Rights Reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,15 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-/**
- * Most of the code here is a modification to the code of SkipDocumentFilter
- * in package com.google.enterprise.connector.util.filter, from the v3 Connector
- * code (Hence the "2011" in the Copyright line).  It has now been ported to
- * the v4 Adaptor Library.  Constructors of a {@code SkipDocumentFilter}
- * instance should take notice that {@code propertyName}, {@code pattern}, and
- * {@code skipOnMatch} are now passed in as keys to a {@code Map}, not as
- * {@code Bean} properties.
- */
 package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
@@ -35,42 +26,52 @@ import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
- * Transform causing exclusion of certain Documents, based on that document's
- * Metadata properties.  The key to determine whether or not to skip the
- * document is passed in to the configuration under the configuration key
- * {@code propertyName} (the name comes from Connectors v3, where Documents had
- * {@code Properties}).  If the config has {@code pattern} that is a regular
- * expression, then whether any value of the {@code propertyName} property
- * matches the regular expression is determined.  If {@code pattern} is not set,
- * then whether any key named {@code propertyName} is present determines the
- * match.  The key {@code skipOnMatch} determines whether to skip the matching
- * documents (if that key is set to {@code true}) or to skip all <i>but</i> the
- * matching documents (if that key is set to {@code false}).  By default, both
- * Document {@code Metadata} and {@code params} are searched for the matching
- * {@code propertyName}; the config key {@code corpora} may be set to
- * {@code metadata} or to {@code params} to restrict the search to only
- * {@code Metadata} or {@code params}, respectively.  Most keys/values of
- * interest will normally be specified in the document's {@code Metadata}, but
- * some key/values of interest (e.g. ContentType, DocId) exist in the document's
- * {@code params}.
+ * Transform that makes a {@link TransmissionDecision}, based on a document's
+ * Metadata properties. The document metadata key used to make the transmission
+ * decision are defined by {@code "key"} configuration entry. If the config has
+ * {@code pattern} that is a regular expression, then whether any values of the
+ * {@code key} metadata property matches the regular expression is determined.
+ * If {@code pattern} is not set, then whether any key named {@code key} is
+ * present determines the match. The key {@code decideOnMatch} determines
+ * whether the {@code decision} is made for matching documents (if that key is
+ * set to {@code true}) or made for non-matching documents (if that key is set
+ * to {@code false}). By default, both Document {@code Metadata} and
+ * {@code params} are searched for the matching {@code key}; the config key
+ * {@code corpora} may be set to {@code metadata} or to {@code params} to
+ * restrict the search to only {@code Metadata} or {@code params}, respectively.
+ * Most keys/values of interest will normally be specified in the document's
+ * {@code Metadata}, but some key/values of interest (e.g. ContentType, DocId)
+ * exist in the document's {@code params}.
  *
  * <p>Example: skip documents that have a {@code NoIndex} metadata key or params
  * key, regardless of value:
  * <pre><code>
-   metadata.transform.pipeline=skipDocumentFilter
-   metadata.transform.pipeline.skipDocumentFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create
-   metadata.transform.pipeline.skipDocumentFilter.propertyName=NoIndex
+   metadata.transform.pipeline=regexDecisionFilter
+   metadata.transform.pipeline.regexDecisionFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create
+   metadata.transform.pipeline.regexDecisionFilter.key=NoIndex
+   metadata.transform.pipeline.regexDecisionFilter.decision=do-not-index
    </code></pre>
  *
- * <p>Example 2: skips documents whose Metadata {@code Classification} property
+ * <p>Example: drop the content of documents that have a {@code ContentLength}
+ * greater than or equal to 100 megabytes:
+ * <pre><code>
+   metadata.transform.pipeline=regexDecisionFilter
+   metadata.transform.pipeline.regexDecisionFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexDecisionFilter.create
+   metadata.transform.pipeline.regexDecisionFilter.key=ContentLength
+   metadata.transform.pipeline.regexDecisionFilter.pattern=0*[1-9][0-9]{8,}
+   metadata.transform.pipeline.regexDecisionFilter.decision=do-not-index-content
+   </code></pre>
+ *
+ * <p>Example: skips documents whose Metadata {@code Classification} property
  * is neither {@code PUBLIC} nor {@code DECLASSIFIED}:
  * <pre><code>
-   metadata.transform.pipeline=skipDocumentFilter
-   metadata.transform.pipeline.skipDocumentFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create
-   metadata.transform.pipeline.skipDocumentFilter.propertyName=Classification
-   metadata.transform.pipeline.skipDocumentFilter.pattern=(PUBLIC)|(DECLASSIFIED)
-   metadata.transform.pipeline.skipDocumentFilter.skipOnMatch=false
-   metadata.transform.pipeline.skipDocumentFilter.corpora=metadata
+   metadata.transform.pipeline=regexDecisionFilter
+   metadata.transform.pipeline.regexDecisionFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexDecisionFilter.create
+   metadata.transform.pipeline.regexDecisionFilter.key=Classification
+   metadata.transform.pipeline.regexDecisionFilter.pattern=(PUBLIC)|(DECLASSIFIED)
+   metadata.transform.pipeline.regexDecisionFilter.decideOnMatch=false
+   metadata.transform.pipeline.regexDecisionFilter.decision=do-not-index
+   metadata.transform.pipeline.regexDecisionFilter.corpora=metadata
    </code></pre>
  */
 public class RegexDecisionFilter implements MetadataTransform {
@@ -116,8 +117,8 @@ public class RegexDecisionFilter implements MetadataTransform {
   private Pattern pattern;
 
   /**
-   * If {@code true}, skip the document on a match;
-   * if {@code false}, skip the document on a failed match.
+   * If {@code true}, make a transmission decision on a match;
+   * if {@code false}, make a transmission decision on a failed match.
    */
   private boolean decideOnMatch = true;
 
@@ -176,12 +177,10 @@ public class RegexDecisionFilter implements MetadataTransform {
   }
 
   /**
-   * Conditionally adds a single {@code Map.Entry} to the {@code params Map}:
-   * key {@code Transmission-Decision}, value
-   * {@code TransmissionDecision.DO_NOT_INDEX} to indicate that the document is
-   * to be skipped.  The decision is based on settings of the
-   * {@code key}, {@code pattern}, {@code decideOnMatch}, and
-   * {@code corpora} configuration variables (as discussed above).
+   * Conditionally adds a {@code Transmission-Decision} entry to the
+   * {@code params Map}. The decision is based on settings of the
+   * {@code key}, {@code pattern}, {@code decideOnMatch}, {@code decision},
+   * and {@code corpora} configuration variables (as discussed above).
    */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
@@ -202,7 +201,7 @@ public class RegexDecisionFilter implements MetadataTransform {
     if (Strings.isNullOrEmpty(docId)) {
       docId = "with no docId";
     }
-    // determine the Transmission Decision
+    // Determine the TransmissionDecision.
     if (decideOnMatch) {
       if (found) {
         log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
