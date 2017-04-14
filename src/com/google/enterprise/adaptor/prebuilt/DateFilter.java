@@ -14,17 +14,26 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public class DateFilter implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(DateFilter.class.getName());
 
-  private static final ThreadLocal<SimpleDateFormat> dateFormatter =
-      new ThreadLocal<SimpleDateFormat>() {
-          @Override
-          protected SimpleDateFormat initialValue() {
-              return new SimpleDateFormat("yyyy-MM-dd");
-          }
-      };
+  private static final String ISO_8601_FORMAT = "yyyy-MM-dd";
 
   /**
    * Which collections of keys/values to search.  Metadata, params, or both.
@@ -218,7 +227,7 @@ public class DateFilter implements MetadataTransform {
   }
 
   private static interface DateValueFilter {
-    public boolean excluded(FileTime fileTime);
+    public boolean excluded(Date date);
   }
 
   private static class AbsoluteDateValueFilter implements DateValueFilter {
