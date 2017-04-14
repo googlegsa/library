@@ -62,8 +62,8 @@ public class DateFilter implements MetadataTransform {
   private final String dateFormatString;
   private final ThreadLocal<SimpleDateFormat> dateFormat;
 
-  /** The active FileTimeFilter */
-  private final FileTimeFilter filter;
+  /** The active DateValueFilter */
+  private final DateValueFilter filter;
 
   /**
    * If {@code METADATA}, only search the metadata for the specified key;
@@ -72,7 +72,7 @@ public class DateFilter implements MetadataTransform {
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private DateFilter(String key, String dateFormatString, FileTimeFilter filter,
+  private DateFilter(String key, String dateFormatString, DateValueFilter filter,
       Corpora corpora) {
     this.key = key;
     this.dateFormatString = dateFormatString;
@@ -174,7 +174,7 @@ public class DateFilter implements MetadataTransform {
   public static DateFilter create(Map<String, String> cfg) {
     String key;
     String format;
-    FileTimeFilter filter;
+    DateValueFilter filter;
     Corpora corpora;
 
     key = getTrimmedValue(cfg, "key");
@@ -198,9 +198,9 @@ public class DateFilter implements MetadataTransform {
       }
       SimpleDateFormat dateFormat = new SimpleDateFormat(format);
       dateFormat.setLenient(true);
-      filter = new AbsoluteFileTimeFilter(dateFormat.parse(dateStr));
+      filter = new AbsoluteDateValueFilter(dateFormat.parse(dateStr));
     } else if (daysStr != null) {
-      filter = new ExpiringFileTimeFilter(Integer.parseInt(daysStr));
+      filter = new ExpiringDateValueFilter(Integer.parseInt(daysStr));
     } else {
       throw new IllegalArgumentException("Either 'date' or 'days' "
           + " configuration must be specified.");
@@ -217,50 +217,39 @@ public class DateFilter implements MetadataTransform {
     return (value == null) ? value : Strings.emptyToNull(value.trim());
   }
 
-  private static interface FileTimeFilter {
+  private static interface DateValueFilter {
     public boolean excluded(FileTime fileTime);
   }
 
-  private static class AlwaysAllowFileTimeFilter implements FileTimeFilter {
-    @Override
-    public boolean excluded(FileTime fileTime) {
-      return false;
-    }
-  }
+  private static class AbsoluteDateValueFilter implements DateValueFilter {
+    private final Date oldestAllowed;
 
-  private static class AbsoluteFileTimeFilter implements FileTimeFilter {
-    private final FileTime oldestAllowed;
-
-    public AbsoluteFileTimeFilter(FileTime oldestAllowed) {
-      Preconditions.checkArgument(oldestAllowed.compareTo(
-          FileTime.fromMillis(System.currentTimeMillis())) < 0,
-          oldestAllowed.toString().substring(0, 10)
-          + " is in the future.");
+    public AbsoluteDateValueFilter(Date oldestAllowed) {
+      Preconditions.checkArgument(oldestAllowed.compareTo(new Date()) < 0,
+          oldestAllowed.toString() + " is in the future.");
       this.oldestAllowed = oldestAllowed;
     }
 
     @Override
-    public boolean excluded(FileTime fileTime) {
-      return fileTime.compareTo(oldestAllowed) < 0;
+    public boolean excluded(Date date) {
+      return date.compareTo(oldestAllowed) < 0;
     }
   }
 
-  private static class ExpiringFileTimeFilter implements FileTimeFilter {
-    private static final long MILLIS_PER_DAY = 24 * 60 * 60 * 1000L;
+  private static class ExpiringDateValueFilter implements DateValueFilter {
     private final long relativeMillis;
 
-    public ExpiringFileTimeFilter(int daysOld) {
+    public ExpiringDateValueFilter(int daysOld) {
       Preconditions.checkArgument(daysOld > 0, "The number of days old for "
           + "expired content must be greater than zero.");
-      this.relativeMillis = daysOld * MILLIS_PER_DAY;
+      this.relativeMillis = TimeUnit.DAYS.toMillis(daysOld);
     }
 
     @Override
-    public boolean excluded(FileTime fileTime) {
-      FileTime oldestAllowed =
-          FileTime.fromMillis(System.currentTimeMillis() - relativeMillis);
-      return fileTime.compareTo(oldestAllowed) < 0;
+    public boolean excluded(Date date) {
+      Date oldestAllowed
+          = new Date(System.currentTimeMillis() - relativeMillis);
+      return date.compareTo(oldestAllowed) < 0;
     }
   }
-
 }
