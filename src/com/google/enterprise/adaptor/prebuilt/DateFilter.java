@@ -29,6 +29,37 @@ import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+/**
+ * Transform causing exclusion of certain Documents, based on a date
+ * in that document's Metadata or Param properties. Documents whose
+ * associated date is before the configured date will not be indexed.
+ * <p>
+ * Configuration properties:
+ * <p>
+ * {@code key} The name of the metadata or param property whose date value
+ * determines whether the document will be skipped or not.
+ * <p>
+ * {@code format} The {@link SimpleDateFormat} used to parse the document's
+ * date values. If no {@code format} is specified, a lenient ISO8601 format
+ * ("yyyy-MM-dd") is used.
+ * <p>
+ * {@code date} The cut-off for the date value. Document's whose date
+ * value is before the configued {@code date} will not be indexed.
+ * The configured {@code date} must be parsable by the configured date
+ * {@code format}. Only one of {@code date} or {@code days} configuration
+ * may be specified.
+ * <p>
+ * {@code days} The cut-off for the date value. Document's whose date
+ * value is more than {@code days} before present will not be indexed.
+ * This can be used to have a rolling window of indexed documents. Those
+ * whose date have expired will be removed from the index.  Only one of
+ * {@code date} or {@code days} configuration may be specified.
+ * <p>
+ * {@code corpora} The location of the date value to consider. oThe
+ * {@code corpora} may be set to {@code metadata} or to {@code params}
+ * to restrict the search to only metadata or params, respectively,
+ * or to {@code metadata or params} to search both.
+ */
 public class DateFilter implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(DateFilter.class.getName());
@@ -187,6 +218,8 @@ public class DateFilter implements MetadataTransform {
   public String toString() {
     return new StringBuilder("DateFilter(")
         .append(key).append(", ")
+        .append(dateFormatString).append(", ")
+        .append(filter.toString()).append(", ")
         .append(corpora).append(")")
         .toString();
   }
@@ -224,12 +257,16 @@ public class DateFilter implements MetadataTransform {
         throw new IllegalArgumentException("date " + dateStr
             + " does not conform to date format " + format, e);
       }
+      log.config("date = " + dateStr);
     } else if (daysStr != null) {
       filter = new ExpiringDateValueFilter(Integer.parseInt(daysStr));
+      log.config("days = " + daysStr);
     } else {
       throw new IllegalArgumentException("Either 'date' or 'days' "
           + " configuration must be specified.");
     }
+    log.log(Level.INFO, "Documents whose {0} date is earlier than {1} will be "
+        + "skipped.",   new Object[] { key, filter.toString() });
 
     corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
@@ -259,14 +296,21 @@ public class DateFilter implements MetadataTransform {
     public boolean excluded(Date date) {
       return date.compareTo(oldestAllowed) < 0;
     }
+
+    @Override
+    public String toString() {
+      return oldestAllowed.toString();
+    }
   }
 
   private static class ExpiringDateValueFilter implements DateValueFilter {
+    private final int daysOld;
     private final long relativeMillis;
 
     public ExpiringDateValueFilter(int daysOld) {
       Preconditions.checkArgument(daysOld > 0, "The number of days old for "
           + "expired content must be greater than zero.");
+      this.daysOld = daysOld;
       this.relativeMillis = TimeUnit.DAYS.toMillis(daysOld);
     }
 
@@ -276,5 +320,10 @@ public class DateFilter implements MetadataTransform {
           = new Date(System.currentTimeMillis() - relativeMillis);
       return date.compareTo(oldestAllowed) < 0;
     }
+
+    @Override
+    public String toString() {
+      return daysOld + " days";
+   }
   }
 }
