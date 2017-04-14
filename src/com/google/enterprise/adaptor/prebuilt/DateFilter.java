@@ -26,8 +26,6 @@ public class DateFilter implements MetadataTransform {
           }
       };
 
-  }
-
   /**
    * Which collections of keys/values to search.  Metadata, params, or both.
    */
@@ -58,7 +56,14 @@ public class DateFilter implements MetadataTransform {
   };
 
   /** The name of the key (either Metadata key or params key) to match. */
-  private String key;
+  private final String key;
+
+  /** The DateFormat used to parse the date values. */
+  private final String dateFormatString;
+  private final ThreadLocal<SimpleDateFormat> dateFormat;
+
+  /** The active FileTimeFilter */
+  private final FileTimeFilter filter;
 
   /**
    * If {@code METADATA}, only search the metadata for the specified key;
@@ -67,9 +72,22 @@ public class DateFilter implements MetadataTransform {
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private DateFilter(String key, Corpora corpora) {
+  private DateFilter(String key, String dateFormatString, FileTimeFilter filter,
+      Corpora corpora) {
     this.key = key;
+    this.dateFormatString = dateFormatString;
+    this.filter = filter;
     this.corpora = corpora;
+
+    // SimpleDateFormat is not thread-safe, so each thread gets its own instance.
+    this.dateFormat = new ThreadLocal<SimpleDateFormat>() {
+      @Override
+      protected SimpleDateFormat initialValue() {
+        SimpleDateFormat format = new SimpleDateFormat(dateFormatString);
+        format.setLenient(true);
+        return format;
+      }
+    };
   }
 
   /**
@@ -142,7 +160,7 @@ public class DateFilter implements MetadataTransform {
             + "because we did not find a match in {1}",
             new Object[] { docId, corpora });
       }
-    }
+
   }
 
   @Override
@@ -155,6 +173,8 @@ public class DateFilter implements MetadataTransform {
 
   public static DateFilter create(Map<String, String> cfg) {
     String key;
+    String format;
+    FileTimeFilter filter;
     Corpora corpora;
 
     key = getTrimmedValue(cfg, "key");
@@ -163,54 +183,38 @@ public class DateFilter implements MetadataTransform {
     }
     log.config("key = " + key);
 
+    format = getTrimmedValue(cfg, "format");
+    if (format == null) {
+      format = ISO_8601_FORMAT;
+    }
+    log.config("format = " + format);
+
+    String dateStr = getTrimmedValue(cfg, "date");
+    String daysStr = getTrimmedValue(cfg, "days");
+    if (dateStr != null) {
+      if (daysStr != null) {
+        throw new IllegalArgumentException("Only one of 'date' or 'days' "
+            + " configuration may be specified.");
+      }
+      SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+      dateFormat.setLenient(true);
+      filter = new AbsoluteFileTimeFilter(dateFormat.parse(dateStr));
+    } else if (daysStr != null) {
+      filter = new ExpiringFileTimeFilter(Integer.parseInt(daysStr));
+    } else {
+      throw new IllegalArgumentException("Either 'date' or 'days' "
+          + " configuration must be specified.");
+    }
+
     corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
 
-    return new DateFilter(key, decideOnMatch, decision,
-        corpora);
+    return new DateFilter(key, format, filter, corpora);
   }
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
     String value = cfg.get(key);
     return (value == null) ? value : Strings.emptyToNull(value.trim());
-  }
-
-  private FileTimeFilter getFileTimeFilter(Config config, String configDaysKey,
-       String configDateKey) throws StartupException {
-    String configDays = config.getValue(configDaysKey);
-    String configDate = config.getValue(configDateKey);
-    if (!configDays.isEmpty() && !configDate.isEmpty()) {
-      throw new InvalidConfigurationException("Please specify only one of "
-          + configDaysKey + " or " + configDateKey + ".");
-    } else if (!configDays.isEmpty()) {
-      log.log(Level.CONFIG, configDaysKey + ": " + configDays);
-      try {
-        return new ExpiringFileTimeFilter(Integer.parseInt(configDays));
-      } catch (NumberFormatException e) {
-        throw new InvalidConfigurationException(configDaysKey
-            + " must be specified as a positive integer number of days.", e);
-      } catch (IllegalArgumentException e) {
-        throw new InvalidConfigurationException(configDaysKey
-            + " must be specified as a positive integer number of days.", e);
-      }
-    } else if (!configDate.isEmpty()) {
-      log.log(Level.CONFIG, configDateKey + ": " + configDate);
-      SimpleDateFormat iso8601DateFormat = new SimpleDateFormat("yyyy-MM-dd");
-      iso8601DateFormat.setCalendar(Calendar.getInstance());
-      iso8601DateFormat.setLenient(true);
-      try {
-        return new AbsoluteFileTimeFilter(FileTime.fromMillis(
-            iso8601DateFormat.parse(configDate).getTime()));
-      } catch (ParseException e) {
-        throw new InvalidConfigurationException(configDateKey
-            + " must be specified in the format \"YYYY-MM-DD\".", e);
-      } catch (IllegalArgumentException e) {
-        throw new InvalidConfigurationException(configDateKey
-            + " must be a date in the past.", e);
-      }
-    } else {
-      return new AlwaysAllowFileTimeFilter();
-    }
   }
 
   private static interface FileTimeFilter {
