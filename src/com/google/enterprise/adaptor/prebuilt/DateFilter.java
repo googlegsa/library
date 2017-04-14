@@ -81,10 +81,10 @@ public class DateFilter implements MetadataTransform {
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private DateFilter(String key, String dateFormatString, DateValueFilter filter,
+  private DateFilter(String key, String dateFormatStr, DateValueFilter filter,
       Corpora corpora) {
     this.key = key;
-    this.dateFormatString = dateFormatString;
+    this.dateFormatString = dateFormatStr;
     this.filter = filter;
     this.corpora = corpora;
 
@@ -101,35 +101,45 @@ public class DateFilter implements MetadataTransform {
 
   /**
    * Search (only) the {@code Metadata} for an instance of the key
-   * containing a value that matches the {@code pattern}.  Returns {@code true}
-   * if found, {@code false} if not.
+   * containing a date value that would trigger this document to be
+   * skipped.
+   * Returns a date value that the filter would exclude, or null
+   * if none match.
    */
-  private boolean foundInMetadata(Metadata metadata) {
-    boolean found = false;
+  private String excludedByDateInMetadata(Metadata metadata) {
     for (String value : metadata.getAllValues(key)) {
-      if (pattern.matcher(value).find()) {
-        found = true;
-        break;
+      try {
+        if (filter.excluded(dateFormat.get().parse(value))) {
+          return value;
+        }
+      } catch (ParseException e) {
+        log.log(Level.WARNING, "Date value " + value + " does not conform to "
+            + "date format " + dateFormatString, e);
       }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in metadata.");
-    return found;
+    return null;
   }
 
   /**
    * Search (only) the {@code params} for an instance of the key
-   * containing a value that matches the {@code pattern}.  Returns {@code true}
-   * if found, {@code false} if not.
+   * containing a date value that would trigger this document to be
+   * skipped.
+   * Returns a date value that the filter would exclude, or null
+   * if none match.
    */
-  private boolean foundInParams(Map<String, String> params) {
-    boolean found = false;
-    if (params.containsKey(key)) {
-      found = pattern.matcher(params.get(key)).find();
+  private String excludedByDateInParams(Map<String, String> params) {
+    String value = params.get(key);
+    if (value != null) {
+      try {
+        if (filter.excluded(dateFormat.get().parse(value))) {
+          return value;
+        }
+      } catch (ParseException e) {
+        log.log(Level.WARNING, "Date value " + value + " does not conform to "
+            + "date format " + dateFormatString, e);
+      }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in params.");
-    return found;
+    return null;
   }
 
   /**
@@ -140,17 +150,21 @@ public class DateFilter implements MetadataTransform {
    */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
-    boolean found;
+    String excludedDate;
+
     switch (corpora) {
       case METADATA:
-        found = foundInMetadata(metadata);
+        excludedDate = excludedByDateInMetadata(metadata);
         break;
       case PARAMS:
-        found = foundInParams(params);
+        excludedDate = excludedByDateInParams(params);
         break;
       case METADATA_OR_PARAMS:
       default:
-        found = foundInMetadata(metadata) || foundInParams(params);
+        excludedDate = excludedByDateInParams(params);
+        if (excludedDate == null) {
+          excludedDate = excludedByDateInMetadata(metadata);
+        }
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
@@ -158,18 +172,15 @@ public class DateFilter implements MetadataTransform {
       docId = "with no docId";
     }
 
-      if (found) {
-        log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
-            + "because we found a match in {2}",
-            new Object[] { decision, docId, corpora });
+    if (excludedDate != null) {
+      log.log(Level.INFO, "Skipping document {0}, because {1}: {2} is too old.",
+          new Object[] { docId, key, excludedDate });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            decision.toString());
-      } else {
-        log.log(Level.FINE, "No transmission decision for document {0}, "
-            + "because we did not find a match in {1}",
-            new Object[] { docId, corpora });
-      }
-
+          TransmissionDecision.DO_NOT_INDEX.toString());
+    } else {
+      log.log(Level.INFO, "Not skipping document {0}, because {1} is in range.",
+          new Object[] { docId, key });
+    }
   }
 
   @Override
@@ -207,7 +218,12 @@ public class DateFilter implements MetadataTransform {
       }
       SimpleDateFormat dateFormat = new SimpleDateFormat(format);
       dateFormat.setLenient(true);
-      filter = new AbsoluteDateValueFilter(dateFormat.parse(dateStr));
+      try {
+        filter = new AbsoluteDateValueFilter(dateFormat.parse(dateStr));
+      } catch (ParseException e) {
+        throw new IllegalArgumentException("date " + dateStr
+            + " does not conform to date format " + format, e);
+      }
     } else if (daysStr != null) {
       filter = new ExpiringDateValueFilter(Integer.parseInt(daysStr));
     } else {
