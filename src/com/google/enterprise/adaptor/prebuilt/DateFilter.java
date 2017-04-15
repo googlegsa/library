@@ -209,7 +209,7 @@ public class DateFilter implements MetadataTransform {
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.DO_NOT_INDEX.toString());
     } else {
-      log.log(Level.INFO, "Not skipping document {0}, because {1} is in range.",
+      log.log(Level.FINE, "Not skipping document {0}, because {1} is in range.",
           new Object[] { docId, key });
     }
   }
@@ -241,6 +241,8 @@ public class DateFilter implements MetadataTransform {
       format = ISO_8601_FORMAT;
     }
     log.config("format = " + format);
+    SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+    dateFormat.setLenient(true);
 
     String dateStr = getTrimmedValue(cfg, "date");
     String daysStr = getTrimmedValue(cfg, "days");
@@ -249,10 +251,9 @@ public class DateFilter implements MetadataTransform {
         throw new IllegalArgumentException("Only one of 'date' or 'days' "
             + " configuration may be specified.");
       }
-      SimpleDateFormat dateFormat = new SimpleDateFormat(format);
-      dateFormat.setLenient(true);
       try {
-        filter = new AbsoluteDateValueFilter(dateFormat.parse(dateStr));
+        filter =
+            new AbsoluteDateValueFilter(dateFormat.parse(dateStr), dateStr);
       } catch (ParseException e) {
         throw new IllegalArgumentException("date " + dateStr
             + " does not conform to date format " + format, e);
@@ -266,7 +267,7 @@ public class DateFilter implements MetadataTransform {
           + " configuration must be specified.");
     }
     log.log(Level.INFO, "Documents whose {0} date is earlier than {1} will be "
-        + "skipped.",   new Object[] { key, filter.toString() });
+        + "skipped.", new Object[] { key, filter.toString() });
 
     corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
@@ -285,11 +286,13 @@ public class DateFilter implements MetadataTransform {
 
   private static class AbsoluteDateValueFilter implements DateValueFilter {
     private final Date oldestAllowed;
+    private final String dateStr;
 
-    public AbsoluteDateValueFilter(Date oldestAllowed) {
+    public AbsoluteDateValueFilter(Date oldestAllowed, String dateStr) {
       Preconditions.checkArgument(oldestAllowed.compareTo(new Date()) < 0,
           oldestAllowed.toString() + " is in the future.");
       this.oldestAllowed = oldestAllowed;
+      this.dateStr = dateStr;
     }
 
     @Override
@@ -299,7 +302,7 @@ public class DateFilter implements MetadataTransform {
 
     @Override
     public String toString() {
-      return oldestAllowed.toString();
+      return dateStr;
     }
   }
 
