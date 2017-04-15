@@ -42,7 +42,7 @@ public class RegexDecisionFilterTest {
   @Test
   public void testToString_defaultFilter() {
     MetadataTransform transform = defaultFilter();
-    assertEquals("RegexDecisionFilter(skipMe, \\A, true, as-is, "
+    assertEquals("RegexDecisionFilter(leaveMe, \\A, true, as-is, "
         + "metadata or params)", transform.toString());
   }
 
