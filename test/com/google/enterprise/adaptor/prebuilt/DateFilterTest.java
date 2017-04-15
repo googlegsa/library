@@ -222,6 +222,7 @@ public class DateFilterTest {
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "1977-06-18");
+    params.put(MetadataTransform.KEY_DOC_ID, "docId01");
     Metadata metadata = new Metadata();
     transform.transform(metadata, params);
     assertEquals("do-not-index", params.get("Transmission-Decision"));
@@ -375,6 +376,21 @@ public class DateFilterTest {
     Map<String, String> params = new HashMap<String, String>();
     Metadata metadata = new Metadata();
     metadata.add("modifiedHistory", dateFormat.format(new Date()));
+    metadata.add("modifiedHistory", "1977-06-18");
+    transform.transform(metadata, params);
+    assertEquals("do-not-index", params.get("Transmission-Decision"));
+  }
+
+  @Test
+  public void testTransform_MultipleDatesInMetadataOneBad() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "modifiedHistory");
+    config.put("days", "365");
+    config.put("corpora", "metadata");
+    DateFilter transform = DateFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    Metadata metadata = new Metadata();
+    metadata.add("modifiedHistory", "07/21/1969");
     metadata.add("modifiedHistory", "1977-06-18");
     transform.transform(metadata, params);
     assertEquals("do-not-index", params.get("Transmission-Decision"));
