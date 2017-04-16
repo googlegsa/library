@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -73,7 +75,7 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive) throws InterruptedException {
-    return pushGroupDefinitions(defs, caseSensitive, true, null, null);
+    return pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null, null);
   }
 
   /**
@@ -85,6 +87,7 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException {
-    return pushGroupDefinitions(defs, caseSensitive, true, null, handler);
+    return pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null,
+        handler);
   }
 }

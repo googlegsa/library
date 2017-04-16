@@ -14,6 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.FULL;
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -216,7 +219,7 @@ class DocIdSender extends AbstractDocIdPusher
   @Override
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, boolean incremental, String groupSource,
+      boolean caseSensitive, FeedType feedType, String groupSource,
       ExceptionHandler handler) throws InterruptedException {
     if (config.markAllDocsAsPublic()) {
       log.finest("Ignoring attempt to send groups to the GSA because "
@@ -224,7 +227,7 @@ class DocIdSender extends AbstractDocIdPusher
       return null;
     }
     return pushGroupDefinitionsInternal(
-        defs, caseSensitive, incremental, groupSource, handler);
+        defs, caseSensitive, feedType, groupSource, handler);
   }
 
   /*
@@ -312,7 +315,7 @@ class DocIdSender extends AbstractDocIdPusher
   private <T extends Collection<Principal>> GroupPrincipal
       pushGroupDefinitionsInternal(
       Map<GroupPrincipal, T> defs,
-      boolean caseSensitive, boolean incremental, String groupSource,
+      boolean caseSensitive, FeedType feedType, String groupSource,
       ExceptionHandler handler) throws InterruptedException {
     int numGroups = 0;
     int numMembers = 0;
@@ -330,11 +333,11 @@ class DocIdSender extends AbstractDocIdPusher
       journal.recordGroupPushFailed();
       return defs.entrySet().iterator().next().getKey();
     }
-    if (!incremental && !gsaVersion.isAtLeast("7.4.0-0")) {
+    if (feedType == FULL && !gsaVersion.isAtLeast("7.4.0-0")) {
       log.log(Level.WARNING,
           "GSA ver {0} does not support per-source replacement of all groups",
           gsaVerString);
-      incremental = true;
+      feedType = INCREMENTAL;
     }
     if (null == handler) {
       handler = defaultErrorHandler;
@@ -343,10 +346,9 @@ class DocIdSender extends AbstractDocIdPusher
       groupSource = config.getFeedName();
     }
     log.log(Level.INFO, "Starting {0} push of {0} groups from source {1}",
-        new Object[] { ((incremental) ? "incremental" : "full"),
-                       defs.size(), groupSource });
+        new Object[] { feedType, defs.size(), groupSource });
     String feedSourceName;
-    if (incremental) {
+    if (feedType == INCREMENTAL) {
       feedSourceName = groupSource;
     } else {
       feedSourceName = alternateGroupSource(groupSource);
@@ -375,7 +377,7 @@ class DocIdSender extends AbstractDocIdPusher
       try {
         // all groups requests except first should be incremental!
         failedId = pushSizedBatchOfGroups(batch, caseSensitive,
-            /*incremental*/ true, feedSourceName, handler);
+            INCREMENTAL, feedSourceName, handler);
         if (failedId == null) {
           // TODO(myk): determine if it makes sense to count the include the
           // counts from a partial batch in our totals (if the batch fails).
@@ -413,14 +415,14 @@ class DocIdSender extends AbstractDocIdPusher
     // Remember the latest target group source fed. If we just did a
     // full group feed, delete the previous target group source entries.
     String oldGroupSource = groupSources.put(groupSource, feedSourceName);
-    if (!incremental && (oldGroupSource != null)) {
+    if (feedType == FULL && (oldGroupSource != null)) {
       // Delete any entries from the older group source by pushing an
       // empty full feed.
       log.log(Level.FINE, "Deleting entries from previous group source {0}",
           oldGroupSource);
       List<Map.Entry<GroupPrincipal, T>> emptyList = Collections.emptyList();
-      pushSizedBatchOfGroups(emptyList, caseSensitive, /*incremental*/ false,
-          oldGroupSource, handler);
+      pushSizedBatchOfGroups(emptyList, caseSensitive, FULL, oldGroupSource,
+          handler);
     }
     journal.recordGroupPushSuccessful();
     return null;
@@ -429,7 +431,7 @@ class DocIdSender extends AbstractDocIdPusher
   private <T extends Collection<Principal>> GroupPrincipal
       pushSizedBatchOfGroups(
       List<Map.Entry<GroupPrincipal, T>> defs,
-      boolean caseSensitive, boolean incremental, String feedSourceName,
+      boolean caseSensitive, FeedType feedType, String feedSourceName,
       ExceptionHandler handler) throws InterruptedException {
     String groupsDefXml
         = fileMaker.makeGroupDefinitionsXml(defs, caseSensitive);
@@ -439,8 +441,8 @@ class DocIdSender extends AbstractDocIdPusher
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("sending groups to GSA host name: " + config.getGsaHostname());
-        fileSender.sendGroups(feedSourceName,
-            groupsDefXml, config.isServerToUseCompression(), incremental);
+        fileSender.sendGroups(feedSourceName, feedType.toString(), groupsDefXml,
+            config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;
       } catch (IOException ex) {

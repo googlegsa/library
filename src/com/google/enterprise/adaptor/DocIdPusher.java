@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Locale.US;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +26,20 @@ import java.util.Map;
  * Interface that allows at-will pushing of {@code DocId}s to the GSA.
  */
 public interface DocIdPusher {
+
+  /** Not as good as an enum for case sensitivity, but backward compatible. */
+  public static final boolean EVERYTHING_CASE_SENSITIVE = true;
+  public static final boolean EVERYTHING_CASE_INSENSITIVE = false;
+
+  /** FeedType used for group definition pushes. */
+  public static enum FeedType {
+    FULL, INCREMENTAL;
+
+    public String toString() {
+      return name().toLowerCase(US);
+    }
+  }
+
   /**
    * Push {@code DocId}s immediately and block until they are successfully
    * provided to the GSA or the error handler gives up. This method can take a
@@ -208,7 +224,7 @@ public interface DocIdPusher {
    *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
-   * @param incremental if {@code true} incremental update is done, otherwise
+   * @param feedType if INCREMENTAL, an incremental update is done; if FULL, a
    *        full replacement is done.
    * @param groupSource
    * @param handler for dealing with errors pushing
@@ -217,7 +233,7 @@ public interface DocIdPusher {
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, boolean incremental, String groupSource,
+      boolean caseSensitive, FeedType feedType, String groupSource,
       ExceptionHandler handler) throws InterruptedException;
 
   /**

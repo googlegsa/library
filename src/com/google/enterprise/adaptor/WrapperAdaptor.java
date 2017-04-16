@@ -435,9 +435,9 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public GroupPrincipal pushGroupDefinitions(
         Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-        boolean caseSensitive, boolean incremental, String sourceName,
+        boolean caseSensitive, FeedType feedType, String sourceName,
         ExceptionHandler exceptionHandler) throws InterruptedException {
-      return pusher.pushGroupDefinitions(defs, caseSensitive, incremental,
+      return pusher.pushGroupDefinitions(defs, caseSensitive, feedType,
           sourceName, exceptionHandler);
     }
   }

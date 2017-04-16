@@ -14,6 +14,9 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.DocIdPusher.EVERYTHING_CASE_SENSITIVE;
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.FULL;
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -362,8 +365,8 @@ public class DocIdSenderTest {
 
     assertEquals(2, fileMaker.i);
     assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new Boolean[] {Boolean.TRUE, Boolean.TRUE}),
-        fileSender.incrementals);
+    assertEquals(Arrays.asList(new String[] {"incremental", "incremental"}),
+        fileSender.feedtypes);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
@@ -382,13 +385,13 @@ public class DocIdSenderTest {
   @Test
   public void testPushGroupsReplaceAllGroupsBeforeVersion74() throws Exception {
     config.setValue("feed.maxUrls", "2");
-    assertNull(
-        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
     assertEquals(2, fileMaker.i);
     assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new Boolean[] {Boolean.TRUE, Boolean.TRUE}),
-        fileSender.incrementals);
+    assertEquals(Arrays.asList(new String[] {"incremental", "incremental"}),
+        fileSender.feedtypes);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
@@ -401,13 +404,13 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(
-        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
     assertEquals(2, fileMaker.i);
     assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new Boolean[] {Boolean.TRUE, Boolean.TRUE}),
-        fileSender.incrementals);
+    assertEquals(Arrays.asList(new String[] {"incremental", "incremental"}),
+        fileSender.feedtypes);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
     assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
@@ -419,13 +422,13 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(
-        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
     assertEquals(1, fileMaker.i);
     assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Collections.singletonList(Boolean.TRUE),
-        fileSender.incrementals);
+    assertEquals(Collections.singletonList("incremental"),
+        fileSender.feedtypes);
     assertEquals(Collections.singletonList("0"), fileSender.xmlStrings);
     assertEquals(Collections.singletonList("0"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
@@ -437,15 +440,17 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(
-        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
+
     assertEquals(1, fileMaker.i);
     assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Collections.singletonList(Boolean.TRUE),
-        fileSender.incrementals);
+    assertEquals(Collections.singletonList("incremental"),
+        fileSender.feedtypes);
 
-    assertNull(
-        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
+
     assertEquals(3, fileMaker.i);
     List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> expectedResult
         = new ArrayList<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>(3);
@@ -454,9 +459,9 @@ public class DocIdSenderTest {
     expectedResult.add(2,
         new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>());
     assertEquals(expectedResult, fileMaker.groupses);
-    assertEquals(Arrays.asList(
-        new Boolean[] {Boolean.TRUE, Boolean.TRUE, Boolean.FALSE}),
-        fileSender.incrementals);
+    assertEquals(
+        Arrays.asList(new String[] {"incremental", "incremental", "full"}),
+        fileSender.feedtypes);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
@@ -466,8 +471,8 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(
-        docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false, null, null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
     assertEquals(Collections.singletonList("default_source"),
         fileSender.groupsources);
@@ -479,8 +484,8 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA, true, false,
-       "group_source", null));
+    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "group_source", null));
 
     assertEquals(Collections.singletonList("group_source"),
         fileSender.groupsources);
@@ -652,8 +657,8 @@ public class DocIdSenderTest {
   private static class MockGsaFeedFileSender extends GsaFeedFileSender {
     List<String> datasources = new ArrayList<String>();
     List<String> groupsources = new ArrayList<String>();
+    List<String> feedtypes = new ArrayList<String>();
     List<String> xmlStrings = new ArrayList<String>();
-    List<Boolean> incrementals = new ArrayList<Boolean>();
 
     public MockGsaFeedFileSender() {
       super("localhost", /*secure=*/ false, Charset.forName("UTF-8"));
@@ -668,11 +673,11 @@ public class DocIdSenderTest {
     }
 
     @Override
-    public void sendGroups(String groupsource, String xmlString,
-        boolean useCompression, boolean incremental) throws IOException {
+    public void sendGroups(String groupsource, String feedtype,
+        String xmlString, boolean useCompression) throws IOException {
       groupsources.add(groupsource);
+      feedtypes.add(feedtype);
       xmlStrings.add(xmlString);
-      incrementals.add(new Boolean(incremental));
     }
   }
 

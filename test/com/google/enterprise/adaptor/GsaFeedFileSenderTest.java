@@ -271,7 +271,7 @@ public class GsaFeedFileSenderTest {
     MockHttpHandler handler
         = new MockHttpHandler(200, "Success".getBytes(charset));
     server.createContext("/xmlgroups", handler);
-    sender.sendGroups(groupsource, payload, false, true);
+    sender.sendGroups(groupsource, "incremental", payload, false);
     assertEquals("POST", handler.getRequestMethod());
     assertEquals(URI.create("/xmlgroups"), handler.getRequestUri());
     assertEquals("multipart/form-data; boundary=<<",
@@ -304,7 +304,7 @@ public class GsaFeedFileSenderTest {
     MockHttpHandler handler
         = new MockHttpHandler(200, "Success".getBytes(charset));
     server.createContext("/xmlgroups", handler);
-    sender.sendGroups(groupsource, payload, false, false);
+    sender.sendGroups(groupsource, "full", payload, false);
     assertEquals("POST", handler.getRequestMethod());
     assertEquals(URI.create("/xmlgroups"), handler.getRequestUri());
     assertEquals("multipart/form-data; boundary=<<",
@@ -316,6 +316,6 @@ public class GsaFeedFileSenderTest {
   @Test
   public void testGroupsInvalidGroupSource() throws Exception {
     thrown.expect(IllegalArgumentException.class);
-    sender.sendGroups("bad#source", "<payload/>", false, false);
+    sender.sendGroups("bad#source", "full", "<payload/>", false);
   }
 }
