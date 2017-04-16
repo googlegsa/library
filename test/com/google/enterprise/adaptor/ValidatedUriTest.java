@@ -18,7 +18,13 @@ import static org.junit.Assert.assertEquals;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.logging.Handler;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
+import java.util.logging.Logger;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -109,11 +115,43 @@ public class ValidatedUriTest {
 
   @Test
   public void testReachableHost() throws Exception {
-    new ValidatedUri("http://127.0.0.1/foo/bar").testHostIsReachable();
+    List<String> messages = new ArrayList<String>();
+    captureLogMessages(ValidatedUri.class, "is not reachable", messages);
+    new ValidatedUri("http://127.0.0.1/foo/bar").logIfHostIsNotReachable();
+    assertEquals(0, messages.size());
   }
 
   @Test
   public void testUnreachableHost() throws Exception {
-    new ValidatedUri("http://unknown-host/foo/bar").testHostIsReachable();
+    List<String> messages = new ArrayList<String>();
+    captureLogMessages(ValidatedUri.class, "is not reachable", messages);
+    new ValidatedUri("http://unknown-host/foo/bar").logIfHostIsNotReachable();
+    assertEquals(1, messages.size());
   }
+
+  /**
+   * Enables logging and captures matching log messages. The messages
+   * will not be localized or formatted.
+   *
+   * @param clazz the class to enable logging for
+   * @param substring capture log messages containing this substring
+   * @param output captured messages will be added to this collection
+   */
+  public static void captureLogMessages(Class<?> clazz,
+      final String substring, final Collection<? super String> output) {
+    Logger logger = Logger.getLogger(clazz.getName());
+    logger.setLevel(Level.ALL);
+
+    logger.addHandler(new Handler() {
+        @Override public void close() {}
+        @Override public void flush() {}
+
+        @Override public void publish(LogRecord record) {
+          if (record.getMessage().contains(substring)) {
+            output.add(record.getMessage());
+          }
+        }
+      });
+  }
+
 }

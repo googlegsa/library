@@ -15,7 +15,6 @@
 package com.google.enterprise.adaptor;
 
 import com.google.common.base.Strings;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -61,8 +60,12 @@ public class ValidatedUri {
       uri.toURL();
     } catch (MalformedURLException e) {
       int index = e.getMessage().indexOf(": ");
-      String reason = (index > 0) ? e.getMessage().substring(0, index)
-          : e.getMessage();
+      String reason;
+      if (index > 0 && index == e.getMessage().lastIndexOf(": " + uriString)) {
+        reason = e.getMessage().substring(0, index);
+      } else {
+        reason = e.getMessage();
+      }
       throw new URISyntaxException(uriString, reason);
     }
 
@@ -93,7 +96,7 @@ public class ValidatedUri {
    * Checks whether the URI's host is reachable without throwing exceptions.
    * Logs a warning if the host is not reachable.
    */
-  public ValidatedUri testHostIsReachable() {
+  public ValidatedUri logIfHostIsNotReachable() {
     // Try to determine if the host is reachable at this time.
     String host = uri.getHost();
     try {
