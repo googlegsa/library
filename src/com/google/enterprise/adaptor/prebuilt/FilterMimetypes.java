@@ -129,16 +129,19 @@ public class FilterMimetypes implements MetadataTransform {
       ct = ct.substring(0, semicolonIndex);
     }
     ct = ct.trim().toLowerCase();
+    // First look in the cache to see if we have encounted this mimetype before.
     String decision = lookupDecision(ct);
     if (null != decision) {
-      params.put("Transmission-Decision", decision);
+      if (!decision.equals(TransmissionDecision.AS_IS.toString())) {
+        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION, decision);
+      }
       return;
     }
     if (supportedExplicit.contains(ct)) {
       log.log(Level.FINE, ct + "is explicitly supported");
+      // Even though we do not explicitly set the decision, still cache
+      // the result for future encounters of this same mime-type.
       insertDecision(ct, TransmissionDecision.AS_IS.toString());
-      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-          TransmissionDecision.AS_IS.toString());
     } else if (unsupportedExplicit.contains(ct)) {
       log.log(Level.FINE, ct + "is explicitly unsupported");
       insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
@@ -151,8 +154,6 @@ public class FilterMimetypes implements MetadataTransform {
           TransmissionDecision.DO_NOT_INDEX.toString());
     } else if (matches(supportedGlobs, ct, "supported by glob")) {
       insertDecision(ct, TransmissionDecision.AS_IS.toString());
-      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-          TransmissionDecision.AS_IS.toString());
     } else if (matches(unsupportedGlobs, ct, "unsupported by glob")) {
       insertDecision(ct, TransmissionDecision.DO_NOT_INDEX_CONTENT.toString());
       params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
