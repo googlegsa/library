@@ -169,9 +169,8 @@ public class SkipDocumentFilter implements MetadataTransform {
   }
 
   /**
-   * Adds a single {@code Map.Entry} to the {@code params Map}: key
-   * {@code Transmission-Decision}, value {@code TransmissionDecision.AS_IS} to
-   * indicate that the document is to be retained, or value
+   * Conditionally adds a single {@code Map.Entry} to the {@code params Map}:
+   * key {@code Transmission-Decision}, value
    * {@code TransmissionDecision.DO_NOT_INDEX} to indicate that the document is
    * to be skipped.  The decision is based on settings of the
    * {@code propertyName}, {@code pattern}, {@code skipOnMatch}, and
@@ -204,17 +203,13 @@ public class SkipDocumentFilter implements MetadataTransform {
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
       } else {
-        log.info("Not skipping document " + docId + ", because we did not find "
+        log.fine("Not skipping document " + docId + ", because we did not find "
             + "a match in " + corpora);
-        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            TransmissionDecision.AS_IS.toString());
       }
     } else {
       if (found) {
-        log.info("Not skipping document " + docId + ", because we found a match"
+        log.fine("Not skipping document " + docId + ", because we found a match"
             + " in " + corpora);
-        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            TransmissionDecision.AS_IS.toString());
       } else {
         log.info("Skipping document " + docId + ", because we did not find a "
             + "match in " + corpora);

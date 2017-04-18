@@ -137,7 +137,7 @@ public class SkipDocumentFilterTest {
   }
 
   @Test
-  public void testTransform_AsIsKeyFoundInMetadataWhenSkipOnMatchFalse() {
+  public void testTransform_KeyFoundInMetadataWhenSkipOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "found");
     config.put("skipOnMatch", "false");
@@ -147,11 +147,11 @@ public class SkipDocumentFilterTest {
     Metadata metadata = new Metadata();
     metadata.add("found", "someValue");
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
-  public void testTransform_AsIsKeyFoundInParamsWhenSkipOnMatchFalse() {
+  public void testTransform_KeyFoundInParamsWhenSkipOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "found");
     config.put("skipOnMatch", "false");
@@ -161,7 +161,7 @@ public class SkipDocumentFilterTest {
     params.put("found", "someValue");
     Metadata metadata = new Metadata();
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
@@ -193,7 +193,7 @@ public class SkipDocumentFilterTest {
   }
 
   @Test
-  public void testTransform_AsIsKeyNotFoundWhenSkipOnMatchTrue() {
+  public void testTransform_KeyNotFoundWhenSkipOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "true");
@@ -202,7 +202,7 @@ public class SkipDocumentFilterTest {
     params.put(MetadataTransform.KEY_DOC_ID, "docId06");
     Metadata metadata = new Metadata();
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   // tests on transform behavior when pattern is a regex
@@ -223,7 +223,7 @@ public class SkipDocumentFilterTest {
   }
 
   @Test
-  public void testTransform_AsIsKeyMatchedInMetadataWhenSkipOnMatchFalse() {
+  public void testTransform_KeyMatchedInMetadataWhenSkipOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
@@ -234,11 +234,11 @@ public class SkipDocumentFilterTest {
     Metadata metadata = new Metadata();
     metadata.add("property", "matchbox 20");
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
-  public void testTransform_AsIsKeyMatchedInParamsWhenSkipOnMatchFalse() {
+  public void testTransform_KeyMatchedInParamsWhenSkipOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
@@ -249,7 +249,7 @@ public class SkipDocumentFilterTest {
     params.put("property", "pictures of matchstick men");
     Metadata metadata = new Metadata();
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   @Test
@@ -283,7 +283,7 @@ public class SkipDocumentFilterTest {
   }
 
   @Test
-  public void testTransform_AsIsKeyNotMatchedWhenSkipOnMatchTrue() {
+  public void testTransform_KeyNotMatchedWhenSkipOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "property");
     config.put("pattern", "match.*");
@@ -295,7 +295,7 @@ public class SkipDocumentFilterTest {
     Metadata metadata = new Metadata();
     metadata.add("property", "catch me a catch");
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   // tests on corpora=params (skipping Metadata)
@@ -316,7 +316,7 @@ public class SkipDocumentFilterTest {
   }
 
   @Test
-  public void testTransform_AsIsCorporaParamsWhenSkipOnMatchTrue() {
+  public void testTransform_CorporaParamsWhenSkipOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "true");
@@ -327,7 +327,7 @@ public class SkipDocumentFilterTest {
     Metadata metadata = new Metadata();
     metadata.add("skipMe", "this value skipped");
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 
   // tests on corpora=Metadata (skipping params)
@@ -348,7 +348,7 @@ public class SkipDocumentFilterTest {
   }
 
   @Test
-  public void testTransform_AsIsCorporaMetadataWhenSkipOnMatchTrue() {
+  public void testTransform_CorporaMetadataWhenSkipOnMatchTrue() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");
     config.put("skipOnMatch", "true");
@@ -359,6 +359,6 @@ public class SkipDocumentFilterTest {
     params.put("skipMe", "this value skipped");
     Metadata metadata = new Metadata();
     transform.transform(metadata, params);
-    assertEquals("as-is", params.get("Transmission-Decision"));
+    assertEquals(null, params.get("Transmission-Decision"));
   }
 }
