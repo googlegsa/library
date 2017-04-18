@@ -129,6 +129,7 @@ public class FilterMimetypes implements MetadataTransform {
       ct = ct.substring(0, semicolonIndex);
     }
     ct = ct.trim().toLowerCase();
+    // First look in the cache to see if we have encounted this mimetype before.
     String decision = lookupDecision(ct);
     if (null != decision) {
       if (!decision.equals(TransmissionDecision.AS_IS.toString())) {
@@ -138,6 +139,8 @@ public class FilterMimetypes implements MetadataTransform {
     }
     if (supportedExplicit.contains(ct)) {
       log.log(Level.FINE, ct + "is explicitly supported");
+      // Even though we do not explicitly set the decision, still cache
+      // the result for future encounters of this same mime-type.
       insertDecision(ct, TransmissionDecision.AS_IS.toString());
     } else if (unsupportedExplicit.contains(ct)) {
       log.log(Level.FINE, ct + "is explicitly unsupported");
