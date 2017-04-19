@@ -639,24 +639,41 @@ public class Config {
     return getValue("adaptor.fullListingSchedule");
   }
 
+  public long validateTimeout(String property) {
+    String secondsAsString = getValue(property).trim();
+    if ("0".equals(secondsAsString) || "".equals(secondsAsString) ||
+        secondsAsString.startsWith("-") ) {
+      throw new InvalidConfigurationException("Invalid value for " + property
+          + ". Zero, empty and negative values are not accepted.");
+    } else {
+      try {
+        return Long.parseLong(secondsAsString) * 1000;
+      } catch (NumberFormatException nfe) {
+        throw new InvalidConfigurationException("Invalid value for "
+            + property + ". Only a positive integer value is accepted.");
+      }
+    }
+  }
+
   long getAdaptorIncrementalPollPeriodMillis() {
-    return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
+    return validateTimeout("adaptor.incrementalPollPeriodSecs");
   }
 
   long getAdaptorDocHeaderTimeoutMillis() {
-    return Long.parseLong(getValue("adaptor.docHeaderTimeoutSecs")) * 1000;
+    return validateTimeout("adaptor.docHeaderTimeoutSecs");
   }
 
   long getAdaptorDocContentTimeoutMillis() {
-    return Long.parseLong(getValue("adaptor.docContentTimeoutSecs")) * 1000;
+    return validateTimeout("adaptor.docContentTimeoutSecs");
   }
 
   long getAdaptorHeartbeatTimeoutMillis() {
-    String secondsAsString = getValue("adaptor.heartbeatTimeoutSecs");
-    if ((null == secondsAsString) || "".equals(secondsAsString.trim())) {
-      secondsAsString = getValue("adaptor.docHeaderTimeoutSecs");
+    if (getValue("adaptor.heartbeatTimeoutSecs").trim().length() == 0) {
+      // if heartbeatTimeoutSecs is empty, default value is docHeaderTimeoutSecs
+      return getAdaptorDocHeaderTimeoutMillis();
+    } else {
+      return validateTimeout("adaptor.heartbeatTimeoutSecs");
     }
-    return Long.parseLong(secondsAsString) * 1000;
   }
 
   /**

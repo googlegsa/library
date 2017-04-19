@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Test cases for {@link Config}.
@@ -329,5 +331,120 @@ public class ConfigTest {
         + "slash=  \\\\\\\t\\\\\\\f");
     config.load(configFile);
     assertEquals("\\\t\\\f", config.getValue("slash"));
+  }
+
+  @Test
+  public void testValidValuesForTimeouts() throws Exception {
+    configFile.setFileContents("gsa.hostname=not_used\n"
+                               + "adaptor.incrementalPollPeriodSecs=1700\n"
+                               + "adaptor.docHeaderTimeoutSecs=50\n"
+                               + "adaptor.docContentTimeoutSecs=190\n"
+                               + "adaptor.heartbeatTimeoutSecs=90\n");
+    config.load(configFile);
+    assertEquals(TimeUnit.SECONDS.toMillis(1700),
+        config.getAdaptorIncrementalPollPeriodMillis());
+    assertEquals(TimeUnit.SECONDS.toMillis(50),
+        config.getAdaptorDocHeaderTimeoutMillis());
+    assertEquals(TimeUnit.SECONDS.toMillis(190),
+        config.getAdaptorDocContentTimeoutMillis());
+    assertEquals(TimeUnit.SECONDS.toMillis(90),
+        config.getAdaptorHeartbeatTimeoutMillis());
+  }
+  
+  @Test
+  public void testNoHeartbeatTimeoutDefaultsToHeaderTimeout() throws Exception {
+    configFile.setFileContents("gsa.hostname=not_used\n"
+                               + "adaptor.docHeaderTimeoutSecs=51\n"
+                               + "adaptor.heartbeatTimeoutSecs=\n");
+    config.load(configFile);
+    assertEquals(TimeUnit.SECONDS.toMillis(51),
+        config.getAdaptorDocHeaderTimeoutMillis());
+    assertEquals(TimeUnit.SECONDS.toMillis(51),
+        config.getAdaptorHeartbeatTimeoutMillis());
+  }
+
+  @Test
+  public void testPropertiesIncrementalPollPeriodSecs() throws Exception {
+    // incrementalPollPeriodSecs=0 and incrementalPollPeriodSecs=-15 are invalid
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.incrementalPollPeriodSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      try {
+        config.getAdaptorIncrementalPollPeriodMillis();
+      } catch (InvalidConfigurationException ice) {
+        assertTrue(ice.getMessage().contains("Invalid value for"));
+        y++;
+      }
+    }
+    assertEquals(invalidValuesToVerify.length, y);
+  }
+
+  @Test
+  public void testPropertiesHeartbeatTimeoutMillis() throws Exception {
+    // docheartbeatTimeoutSecs=0 and docheartbeatTimeoutSecs=-15 are invalid
+    // Empty accepted, defaults to same value as adaptor.docHeaderTimeoutSecs.
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.heartbeatTimeoutSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "NotValidValue",
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      try {
+        config.getAdaptorHeartbeatTimeoutMillis();
+      } catch (InvalidConfigurationException ice) {
+        assertTrue(ice.getMessage().contains("Invalid value for"));
+        y++;
+      }
+    }
+    assertEquals(invalidValuesToVerify.length, y);
+  }
+
+  @Test
+  public void testPropertiesDocHeaderTimeoutMillis() throws Exception {
+    // docHeaderTimeoutSecs=0 and docHeaderTimeoutSecs=-15 are invalid
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.docHeaderTimeoutSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      try {
+        config.getAdaptorDocHeaderTimeoutMillis();
+      } catch (InvalidConfigurationException ice) {
+        assertTrue(ice.getMessage().contains("Invalid value for"));
+        y++;
+      }
+    }
+    assertEquals(invalidValuesToVerify.length, y);
+  }
+
+  @Test
+  public void testPropertiesDocContentTimeoutMillis() throws Exception {
+    // docContentTimeoutSecs=0 and docContentTimeoutSecs=-15 are invalid
+    String putInConfig = " gsa.hostname=not_used\n"
+                         + "adaptor.docContentTimeoutSecs=";
+    String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
+      configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
+      config.load(configFile);
+      try {
+        config.getAdaptorDocContentTimeoutMillis();
+      } catch (InvalidConfigurationException ice) {
+        assertTrue(ice.getMessage().contains("Invalid value for"));
+        y++;
+      }
+    }
+    assertEquals(invalidValuesToVerify.length, y);
   }
 }
