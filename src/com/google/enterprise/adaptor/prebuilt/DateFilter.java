@@ -55,7 +55,7 @@ import java.util.logging.Logger;
  * whose date have expired will be removed from the index.  Only one of
  * {@code date} or {@code days} configuration may be specified.
  * <p>
- * {@code corpora} The location of the date value to consider. oThe
+ * {@code corpora} The location of the date value to consider. The
  * {@code corpora} may be set to {@code metadata} or to {@code params}
  * to restrict the search to only metadata or params, respectively,
  * or to {@code metadata or params} to search both.
@@ -206,7 +206,7 @@ public class DateFilter implements MetadataTransform {
     if (excludedDate != null) {
       log.log(Level.INFO, "Skipping document {0}, because {1}: {2} is too old.",
           new Object[] { docId, key, excludedDate });
-        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
+      params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
           TransmissionDecision.DO_NOT_INDEX.toString());
     } else {
       log.log(Level.FINE, "Not skipping document {0}, because {1} is in range.",
