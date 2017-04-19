@@ -650,7 +650,7 @@ public class Config {
         return Long.parseLong(secondsAsString) * 1000;
       } catch (NumberFormatException nfe) {
         throw new InvalidConfigurationException("Invalid value for "
-            + property + ". Only a numeric value is accepted.");
+            + property + ". Only a positive integer value is accepted.");
       }
     }
   }
