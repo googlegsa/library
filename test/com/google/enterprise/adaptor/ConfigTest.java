@@ -339,7 +339,7 @@ public class ConfigTest {
                                + "adaptor.incrementalPollPeriodSecs=1700\n"
                                + "adaptor.docHeaderTimeoutSecs=50\n"
                                + "adaptor.docContentTimeoutSecs=190\n"
-                               + "adaptor.heartbeatTimeoutSecs=\n");
+                               + "adaptor.heartbeatTimeoutSecs=90\n");
     config.load(configFile);
     assertEquals(TimeUnit.SECONDS.toMillis(1700),
         config.getAdaptorIncrementalPollPeriodMillis());
@@ -347,7 +347,19 @@ public class ConfigTest {
         config.getAdaptorDocHeaderTimeoutMillis());
     assertEquals(TimeUnit.SECONDS.toMillis(190),
         config.getAdaptorDocContentTimeoutMillis());
-    assertEquals(TimeUnit.SECONDS.toMillis(50),
+    assertEquals(TimeUnit.SECONDS.toMillis(90),
+        config.getAdaptorHeartbeatTimeoutMillis());
+  }
+  
+  @Test
+  public void testNoHeartbeatTimeoutDefaultsToHeaderTimeout() throws Exception {
+    configFile.setFileContents("gsa.hostname=not_used\n"
+                               + "adaptor.docHeaderTimeoutSecs=51\n"
+                               + "adaptor.heartbeatTimeoutSecs=\n");
+    config.load(configFile);
+    assertEquals(TimeUnit.SECONDS.toMillis(51),
+        config.getAdaptorDocHeaderTimeoutMillis());
+    assertEquals(TimeUnit.SECONDS.toMillis(51),
         config.getAdaptorHeartbeatTimeoutMillis());
   }
 
@@ -357,9 +369,9 @@ public class ConfigTest {
     String putInConfig = " gsa.hostname=not_used\n"
                          + "adaptor.incrementalPollPeriodSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
-                                      Long.toString(Long.MAX_VALUE + 1)};
-    int y=0;
-    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
@@ -369,7 +381,7 @@ public class ConfigTest {
         y++;
       }
     }
-    assertEquals(y, invalidValuesToVerify.length);
+    assertEquals(invalidValuesToVerify.length, y);
   }
 
   @Test
@@ -379,9 +391,9 @@ public class ConfigTest {
     String putInConfig = " gsa.hostname=not_used\n"
                          + "adaptor.heartbeatTimeoutSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue",
-                                      Long.toString(Long.MAX_VALUE + 1)};
-    int y=0;
-    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
@@ -391,7 +403,7 @@ public class ConfigTest {
         y++;
       }
     }
-    assertEquals(y, invalidValuesToVerify.length);
+    assertEquals(invalidValuesToVerify.length, y);
   }
 
   @Test
@@ -400,9 +412,9 @@ public class ConfigTest {
     String putInConfig = " gsa.hostname=not_used\n"
                          + "adaptor.docHeaderTimeoutSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
-                                      Long.toString(Long.MAX_VALUE + 1)};
-    int y=0;
-    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
@@ -412,7 +424,7 @@ public class ConfigTest {
         y++;
       }
     }
-    assertEquals(y, invalidValuesToVerify.length);
+    assertEquals(invalidValuesToVerify.length, y);
   }
 
   @Test
@@ -421,9 +433,9 @@ public class ConfigTest {
     String putInConfig = " gsa.hostname=not_used\n"
                          + "adaptor.docContentTimeoutSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
-                                      Long.toString(Long.MAX_VALUE + 1)};
-    int y=0;
-    for (int  i = 0; i < invalidValuesToVerify.length; i++) {
+        Long.toString((Long.MAX_VALUE / 1000) + 1)};
+    int y = 0;
+    for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
@@ -433,6 +445,6 @@ public class ConfigTest {
         y++;
       }
     }
-    assertEquals(y, invalidValuesToVerify.length);
+    assertEquals(invalidValuesToVerify.length, y);
   }
 }
