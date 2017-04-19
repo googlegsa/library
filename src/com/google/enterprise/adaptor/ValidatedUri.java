@@ -76,13 +76,6 @@ public class ValidatedUri {
     if (Strings.isNullOrEmpty(uri.getHost())) {
       throw new URISyntaxException(uriString, "no host");
     }
-
-    if (Strings.isNullOrEmpty(uri.getRawPath())
-        && Strings.isNullOrEmpty(uri.getRawQuery())
-        && Strings.isNullOrEmpty(uri.getRawFragment())) {
-      throw new URISyntaxException(uriString,
-          "no path, query, or fragment components");
-    }
   }
 
   /**

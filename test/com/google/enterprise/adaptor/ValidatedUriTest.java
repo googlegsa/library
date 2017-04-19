@@ -72,12 +72,6 @@ public class ValidatedUriTest {
   }
 
   @Test
-  public void testNoPath() throws Exception {
-    thrown.expect(URISyntaxException.class);
-    new ValidatedUri("http://foo:80");
-  }
-
-  @Test
   public void testRelativeUri() throws Exception {
     thrown.expect(URISyntaxException.class);
     new ValidatedUri("foo/bar");
@@ -87,6 +81,12 @@ public class ValidatedUriTest {
   public void testMessageFormatRemnants() throws Exception {
     thrown.expect(URISyntaxException.class);
     new ValidatedUri("http://message_format/foo/{0}");
+  }
+
+  @Test
+  public void testMessageFormatRemnantsInQuery() throws Exception {
+    thrown.expect(URISyntaxException.class);
+    new ValidatedUri("http://message_format/foo?q={0}");
   }
 
   @Test
