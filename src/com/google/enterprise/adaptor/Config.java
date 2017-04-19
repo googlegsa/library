@@ -639,44 +639,42 @@ public class Config {
     return getValue("adaptor.fullListingSchedule");
   }
 
-  long getAdaptorIncrementalPollPeriodMillis() {
-    return Long.parseLong(getValue("adaptor.incrementalPollPeriodSecs")) * 1000;
+  public long validateTimeout(String property) {
+    String secondsAsString = getValue(property).trim();
+    if ("adaptor.heartbeatTimeoutSecs".equalsIgnoreCase(property) &&
+        "".equals(secondsAsString)) {
+      // if heartbeatTimeoutSecs is empty, default value is docHeaderTimeoutSecs value
+      return getAdaptorDocHeaderTimeoutMillis();
+    } else {
+      if ("0".equals(secondsAsString) || "".equals(secondsAsString) ||
+          secondsAsString.startsWith("-") ) {
+        throw new InvalidConfigurationException("Invalid value for " + property +
+            ". Zero, empty and negative values are not accepted.");
+      } else {
+        try {
+          return Long.parseLong(secondsAsString) * 1000;
+        } catch (NumberFormatException nfe) {
+          throw new InvalidConfigurationException("Invalid value for " + property +
+              ". Only a numeric value is accepted.");
+        }
+      }
+    }
   }
 
-  public long validateTimeout(String property, String defaultValue,
-      boolean allowNeg, boolean allowEmpty) {
-    String secondsAsString = getValue(property).trim();
-    try {
-      if ((null == secondsAsString) || "0".equals(secondsAsString) ||
-          (("".equals(secondsAsString) && !(allowEmpty))) ||
-          (secondsAsString.startsWith("-") && !(allowNeg))) {
-        log.log(Level.WARNING, "Invalid value for " + property
-                + ", it has been set to default " + defaultValue + " seconds.");
-      } else {
-          return Long.parseLong(secondsAsString) * 1000;
-      }
-    } catch (NumberFormatException e) {
-      log.log(Level.WARNING, "Invalid value for " + property
-              + ", it has been set to default " + defaultValue + " seconds.");
-    }
-    // For invalid value, returning default
-    // We do not reach this line if value is valid
-    return Long.parseLong(defaultValue) * 1000;
+  long getAdaptorIncrementalPollPeriodMillis() {
+    return validateTimeout("adaptor.incrementalPollPeriodSecs");
   }
 
   long getAdaptorDocHeaderTimeoutMillis() {
-    return validateTimeout("adaptor.docHeaderTimeoutSecs", "30", false, false);
+    return validateTimeout("adaptor.docHeaderTimeoutSecs");
   }
 
   long getAdaptorDocContentTimeoutMillis() {
-    return validateTimeout("adaptor.docContentTimeoutSecs", "180",
-                           false, false);
+    return validateTimeout("adaptor.docContentTimeoutSecs");
   }
 
   long getAdaptorHeartbeatTimeoutMillis() {
-    return validateTimeout("adaptor.heartbeatTimeoutSecs", Long.toString(
-                           getAdaptorDocHeaderTimeoutMillis() / 1000),
-                           false, false);
+    return validateTimeout("adaptor.heartbeatTimeoutSecs");
   }
 
   /**
