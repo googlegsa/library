@@ -643,19 +643,19 @@ public class Config {
     String secondsAsString = getValue(property).trim();
     if ("adaptor.heartbeatTimeoutSecs".equalsIgnoreCase(property) &&
         "".equals(secondsAsString)) {
-      // if heartbeatTimeoutSecs is empty, default value is docHeaderTimeoutSecs value
+      // if heartbeatTimeoutSecs is empty, default value is docHeaderTimeoutSecs
       return getAdaptorDocHeaderTimeoutMillis();
     } else {
       if ("0".equals(secondsAsString) || "".equals(secondsAsString) ||
           secondsAsString.startsWith("-") ) {
-        throw new InvalidConfigurationException("Invalid value for " + property +
-            ". Zero, empty and negative values are not accepted.");
+        throw new InvalidConfigurationException("Invalid value for " + property
+            + ". Zero, empty and negative values are not accepted.");
       } else {
         try {
           return Long.parseLong(secondsAsString) * 1000;
         } catch (NumberFormatException nfe) {
-          throw new InvalidConfigurationException("Invalid value for " + property +
-              ". Only a numeric value is accepted.");
+          throw new InvalidConfigurationException("Invalid value for "
+              + property + ". Only a numeric value is accepted.");
         }
       }
     }
