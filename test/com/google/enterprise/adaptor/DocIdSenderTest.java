@@ -21,6 +21,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.enterprise.adaptor.Journal.CompletionStatus;
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -52,15 +54,6 @@ public class DocIdSenderTest {
       fileArchiver, journal, config, adaptor);
   private ExceptionHandler runtimeExceptionHandler
       = new RuntimeExceptionExceptionHandler();
-
-  private static final Map<GroupPrincipal, Collection<Principal>> SAMPLE_DATA
-      = groupsSample();
-  private static final
-      List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>
-          UNSPLIT_EXPECTED_RESULT = unsplitExpectedResult();
-  private static final
-      List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>
-          SPLIT_EXPECTED_RESULT = splitPer2GroupsExpectedResult();
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -359,23 +352,24 @@ public class DocIdSenderTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsNormal() throws Exception {
     config.setValue("feed.maxUrls", "2");
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA, false, null));
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(), false, null));
 
     assertEquals(2, fileMaker.i);
-    assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new String[] {"incremental", "incremental"}),
+    assertEquals(expectedResult(2, sampleGroups()), fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "incremental"),
         fileSender.feedtypes);
-    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
-    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
+    assertEquals(ImmutableList.of("0", "1"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0", "1"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
   public void testPushGroupsAllDocsPublic() throws Exception {
     config.setValue("adaptor.markAllDocsAsPublic", "true");
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA, false, null));
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(), false, null));
 
     assertEquals(0, fileMaker.i);
     assertTrue(fileMaker.groupses.isEmpty());
@@ -383,84 +377,86 @@ public class DocIdSenderTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsReplaceAllGroupsBeforeVersion74() throws Exception {
     config.setValue("feed.maxUrls", "2");
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
         EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
     assertEquals(2, fileMaker.i);
-    assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new String[] {"incremental", "incremental"}),
+    assertEquals(expectedResult(2, sampleGroups()), fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "incremental"),
         fileSender.feedtypes);
-    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
-    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
+    assertEquals(ImmutableList.of("0", "1"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0", "1"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsReplaceAllGroupsAtVersion740() throws Exception {
     config.setValue("feed.maxUrls", "2");
     config.setValue("gsa.version", "7.4.0-1");
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
         EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
-    assertEquals(2, fileMaker.i);
-    assertEquals(SPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Arrays.asList(new String[] {"incremental", "incremental"}),
+    assertEquals(3, fileMaker.i);
+    assertEquals(expectedResult(2, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "incremental", "full"),
         fileSender.feedtypes);
-    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileSender.xmlStrings);
-    assertEquals(Arrays.asList(new String[] {"0", "1"}), fileArchiver.feeds);
+    assertEquals(ImmutableList.of("0", "1", "2"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0", "1", "2"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsReplaceAllGroupsSingleFeed() throws Exception {
     config.setValue("gsa.version", "7.4.0-1");
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
         EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
-    assertEquals(1, fileMaker.i);
-    assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Collections.singletonList("incremental"),
-        fileSender.feedtypes);
-    assertEquals(Collections.singletonList("0"), fileSender.xmlStrings);
-    assertEquals(Collections.singletonList("0"), fileArchiver.feeds);
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("0", "1"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0", "1"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
   @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsReplaceAllGroupsAlternateBuffer() throws Exception {
     config.setValue("gsa.version", "7.4.0-1");
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
         EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
-    assertEquals(1, fileMaker.i);
-    assertEquals(UNSPLIT_EXPECTED_RESULT, fileMaker.groupses);
-    assertEquals(Collections.singletonList("incremental"),
-        fileSender.feedtypes);
-
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
-        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
-
-    assertEquals(3, fileMaker.i);
-    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> expectedResult
-        = new ArrayList<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>(3);
-    expectedResult.add(0, UNSPLIT_EXPECTED_RESULT.get(0));
-    expectedResult.add(1, UNSPLIT_EXPECTED_RESULT.get(0));
-    expectedResult.add(2,
-        new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>());
-    assertEquals(expectedResult, fileMaker.groupses);
+    assertEquals(2, fileMaker.i);
     assertEquals(
-        Arrays.asList(new String[] {"incremental", "incremental", "full"}),
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, null, null));
+
+    assertEquals(4, fileMaker.i);
+    assertEquals(expectedResult(Integer.MAX_VALUE,
+        sampleGroups(), emptyGroups(), sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full", "incremental", "full"),
         fileSender.feedtypes);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
@@ -471,7 +467,7 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
         EVERYTHING_CASE_SENSITIVE, FULL, null, null));
 
     assertEquals(Collections.singletonList("default_source"),
@@ -484,7 +480,7 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    assertNull(docIdSender.pushGroupDefinitions(SAMPLE_DATA,
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
         EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "group_source", null));
 
     assertEquals(Collections.singletonList("group_source"),
@@ -568,54 +564,46 @@ public class DocIdSenderTest {
     assertEquals(golden, "" + new DocIdSender.AclItem(id, acl));
   }
 
-
-  private static Map<GroupPrincipal, Collection<Principal>> groupsSample() {
-    // Order of iteration matters
-    Map<GroupPrincipal, Collection<Principal>> groups
-        = new TreeMap<GroupPrincipal, Collection<Principal>>();
-    groups.put(new GroupPrincipal("g1"),
-        Arrays.asList(new UserPrincipal("u1"), new GroupPrincipal("g2")));
-    groups.put(new GroupPrincipal("g2"),
-        Arrays.asList(new UserPrincipal("u2"), new GroupPrincipal("g3")));
-    groups.put(new GroupPrincipal("g3"),
-        Arrays.asList(new UserPrincipal("u3"), new GroupPrincipal("g4")));
-    return Collections.unmodifiableMap(groups);
+  private static Map<GroupPrincipal, Collection<Principal>> sampleGroups() {
+    return ImmutableMap.<GroupPrincipal, Collection<Principal>>of(
+        new GroupPrincipal("g1"), ImmutableList.<Principal>of(
+            new UserPrincipal("u1"), new GroupPrincipal("g2")),
+        new GroupPrincipal("g2"), ImmutableList.<Principal>of(
+            new UserPrincipal("u2"), new GroupPrincipal("g3")),
+        new GroupPrincipal("g3"), ImmutableList.<Principal>of(
+            new UserPrincipal("u3"), new GroupPrincipal("g4")));
   }
 
-  private static List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>
-      unsplitExpectedResult() {
-    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> goldenGroups
-        = new ArrayList<List<Map.Entry<GroupPrincipal,
-          Collection<Principal>>>>();
-    List<Map.Entry<GroupPrincipal, Collection<Principal>>> tmp
-        = new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>();
-    tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
-        new GroupPrincipal("g1"), SAMPLE_DATA.get(new GroupPrincipal("g1"))));
-    tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
-        new GroupPrincipal("g2"), SAMPLE_DATA.get(new GroupPrincipal("g2"))));
-    tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
-        new GroupPrincipal("g3"), SAMPLE_DATA.get(new GroupPrincipal("g3"))));
-    goldenGroups.add(tmp);
-    return goldenGroups;
+  private static Map<GroupPrincipal, Collection<Principal>> emptyGroups() {
+    return ImmutableMap.<GroupPrincipal, Collection<Principal>>of();
   }
 
+  // TODO(bmj): Uncomment @SafeVarargs when moving to Java 7 and remove the
+  // @SuppressWarnings("unchecked") usages above.
+  // @SafeVarargs
   private static List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>
-      splitPer2GroupsExpectedResult() {
-    List<List<Map.Entry<GroupPrincipal, Collection<Principal>>>> goldenGroups
-        = new ArrayList<List<Map.Entry<GroupPrincipal,
-          Collection<Principal>>>>();
-    List<Map.Entry<GroupPrincipal, Collection<Principal>>> tmp
-        = new ArrayList<Map.Entry<GroupPrincipal, Collection<Principal>>>();
-    tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
-        new GroupPrincipal("g1"), SAMPLE_DATA.get(new GroupPrincipal("g1"))));
-    tmp.add(new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
-        new GroupPrincipal("g2"), SAMPLE_DATA.get(new GroupPrincipal("g2"))));
-    goldenGroups.add(tmp);
-    goldenGroups.add(Collections.
-        <Map.Entry<GroupPrincipal, Collection<Principal>>>singletonList(
-        new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
-        new GroupPrincipal("g3"), SAMPLE_DATA.get(new GroupPrincipal("g3")))));
-    return goldenGroups;
+      expectedResult(int batchSize,
+          Map<GroupPrincipal, Collection<Principal>>... groupMaps) {
+    ImmutableList.Builder<List<Map.Entry<GroupPrincipal, Collection<Principal>>>>
+        result = ImmutableList.builder();
+    for (Map<GroupPrincipal, Collection<Principal>> groups : groupMaps) {
+      ImmutableList.Builder<Map.Entry<GroupPrincipal, Collection<Principal>>>
+          batch = ImmutableList.builder();
+      int i = 0;
+      for (Map.Entry<GroupPrincipal, Collection<Principal>> entry
+               : groups.entrySet()) {
+        if (++i > batchSize) {
+          result.add(batch.build());
+          batch = ImmutableList.builder();
+          i = 1;
+        }
+        batch.add(
+            new SimpleImmutableEntry<GroupPrincipal, Collection<Principal>>(
+                entry));
+      }
+      result.add(batch.build());
+    }
+    return result.build();
   }
 
   private static class MockGsaFeedFileMaker extends GsaFeedFileMaker {

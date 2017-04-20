@@ -271,6 +271,20 @@ class DocIdSender extends AbstractDocIdPusher
    */
   private Map<String, String> groupSources = new HashMap<String, String>();
 
+  /**
+   * Returns the previous group source pushed to. If there was no previous
+   * group source, returns the supplied source. If a connector only ever does
+   * INCREMENTAL feeds, then that group source will always be used. This is
+   * also backward compatible. If a connector is upgraded to a new version that
+   * supports FULL feeds, then the older incremental group source will
+   * eventually get deleted from the GSA.
+   */
+  private String previousGroupSource(String source) {
+    String prevSource = groupSources.get(source);
+    return (prevSource == null) ? source : prevSource;
+  }
+
+  /** Returns the alternate to the previous group source. */
   private String alternateGroupSource(String source) {
     return (source + "-A").equals(groupSources.get(source))
         ? (source + "-B") : (source + "-A");
@@ -349,7 +363,7 @@ class DocIdSender extends AbstractDocIdPusher
         new Object[] { feedType, defs.size(), groupSource });
     String feedSourceName;
     if (feedType == INCREMENTAL) {
-      feedSourceName = groupSource;
+      feedSourceName = previousGroupSource(groupSource);
     } else {
       feedSourceName = alternateGroupSource(groupSource);
       log.log(Level.FINE, "Using alternate group source {0}", feedSourceName);
@@ -375,7 +389,6 @@ class DocIdSender extends AbstractDocIdPusher
       log.log(Level.INFO, "Pushing batch of {0} groups", batch.size());
       GroupPrincipal failedId;
       try {
-        // all groups requests except first should be incremental!
         failedId = pushSizedBatchOfGroups(batch, caseSensitive,
             INCREMENTAL, feedSourceName, handler);
         if (failedId == null) {
@@ -414,8 +427,12 @@ class DocIdSender extends AbstractDocIdPusher
 
     // Remember the latest target group source fed. If we just did a
     // full group feed, delete the previous target group source entries.
-    String oldGroupSource = groupSources.put(groupSource, feedSourceName);
-    if (feedType == FULL && (oldGroupSource != null)) {
+    String oldGroupSource;
+    synchronized(groupSources) {
+      oldGroupSource = previousGroupSource(groupSource);
+      groupSources.put(groupSource, feedSourceName);
+    }
+    if (feedType == FULL) {
       // Delete any entries from the older group source by pushing an
       // empty full feed.
       log.log(Level.FINE, "Deleting entries from previous group source {0}",
