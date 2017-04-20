@@ -47,7 +47,7 @@ import java.util.logging.Logger;
  * date values. If no {@code format} is specified, a lenient ISO8601 format
  * ("yyyy-MM-dd") is used. If format is "millis", then the dates
  * are parsed as if they were milliseconds since the epoch
- * (January 1, 1970, 00:00:00 GMT). Otherwise, the format must parsable
+ * (January 1, 1970, 00:00:00 GMT). Otherwise, the format must be parsable
  * by {@link SimpleDateFormat}.
  * <p>
  * {@code date} The cut-off for the date value. Document's whose date
@@ -306,7 +306,7 @@ public class DateFilter implements MetadataTransform {
     @Override
     public Date parse(String source, ParsePosition pos) {
       try {
-        Long millis = Long.parseLong(source);
+        long millis = Long.parseLong(source);
         pos.setIndex(source.length());
         return new Date(millis);
       } catch (NumberFormatException e) {
