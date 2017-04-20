@@ -18,6 +18,7 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -33,6 +34,15 @@ public class DateFilterTest {
   public ExpectedException thrown = ExpectedException.none();
 
   private SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+
+  @Test
+  public void testMillisecondDateFormat() throws Exception {
+    DateFormat msDateFormat = new DateFilter.MillisecondDateFormat();
+    Date now = new Date();
+    Date msDate = msDateFormat.parse(Long.toString(now.getTime()));
+    assertEquals(now, msDate);
+    assertEquals(Long.toString(now.getTime()), msDateFormat.format(now));
+  }
 
   // tests on create calls (various errors) and toString results
   @Test
@@ -80,6 +90,17 @@ public class DateFilterTest {
     config.put("days", "365");
     DateFilter transform = DateFilter.create(config);
     assertEquals("DateFilter(lastModified, yyyy-MM-dd, 365 days, "
+        + "metadata or params)", transform.toString());
+  }
+
+  @Test
+  public void testMillisecondFormat() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "lastModified");
+    config.put("format", "millis");
+    config.put("date", "2000-01-01");
+    DateFilter transform = DateFilter.create(config);
+    assertEquals("DateFilter(lastModified, millis, 2000-01-01, "
         + "metadata or params)", transform.toString());
   }
 
@@ -320,6 +341,25 @@ public class DateFilterTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "07/21/1969");
     Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals("do-not-index", params.get("Transmission-Decision"));
+  }
+
+  @Test
+  public void testTransform_MillisecondDateParsing() throws Exception {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "lastModified");
+    config.put("format", "millis");
+    config.put("days", "365");
+    config.put("corpora", "params");
+    DateFilter transform = DateFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("lastModified", Long.toString(new Date().getTime()));
+    Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals(null, params.get("Transmission-Decision"));
+    params.put("lastModified",
+               Long.toString(dateFormat.parse("1977-06-17").getTime()));
     transform.transform(metadata, params);
     assertEquals("do-not-index", params.get("Transmission-Decision"));
   }

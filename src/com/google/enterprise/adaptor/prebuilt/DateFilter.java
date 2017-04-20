@@ -16,12 +16,16 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
+import java.text.DateFormat;
+import java.text.FieldPosition;
 import java.text.ParseException;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Map;
@@ -39,15 +43,19 @@ import java.util.logging.Logger;
  * {@code key} The name of the metadata or param property whose date value
  * determines whether the document will be skipped or not.
  * <p>
- * {@code format} The {@link SimpleDateFormat} used to parse the document's
+ * {@code format} The {@link DateFormat} used to parse the document's
  * date values. If no {@code format} is specified, a lenient ISO8601 format
- * ("yyyy-MM-dd") is used.
+ * ("yyyy-MM-dd") is used. If format is "millis", then the dates
+ * are parsed as if they were milliseconds since the epoch
+ * (January 1, 1970, 00:00:00 GMT). Otherwise, the format must parsable
+ * by {@link SimpleDateFormat}.
  * <p>
  * {@code date} The cut-off for the date value. Document's whose date
  * value is before the configued {@code date} will not be indexed.
  * The configured {@code date} must be parsable by the configured date
- * {@code format}. Only one of {@code date} or {@code days} configuration
- * may be specified.
+ * {@code format}, unless {@code format} is "millis", in which
+ * case the date must be specified in ISO8601 format. Only one of
+ * {@code date} or {@code days} configuration may be specified.
  * <p>
  * {@code days} The cut-off for the date value. Document's whose date
  * value is more than {@code days} before present will not be indexed.
@@ -100,7 +108,7 @@ public class DateFilter implements MetadataTransform {
 
   /** The DateFormat used to parse the date values. */
   private final String dateFormatString;
-  private final ThreadLocal<SimpleDateFormat> dateFormat;
+  private final ThreadLocal<DateFormat> dateFormat;
 
   /** The active DateValueFilter */
   private final DateValueFilter filter;
@@ -119,12 +127,17 @@ public class DateFilter implements MetadataTransform {
     this.filter = filter;
     this.corpora = corpora;
 
-    // SimpleDateFormat is not thread-safe, so each thread gets its own instance.
-    this.dateFormat = new ThreadLocal<SimpleDateFormat>() {
+    // DateFormat is not thread-safe, so each thread gets its own instance.
+    this.dateFormat = new ThreadLocal<DateFormat>() {
       @Override
-      protected SimpleDateFormat initialValue() {
-        SimpleDateFormat format = new SimpleDateFormat(dateFormatString);
-        format.setLenient(true);
+      protected DateFormat initialValue() {
+        DateFormat format;
+        if ("millis".equalsIgnoreCase(dateFormatString)) {
+          format = new MillisecondDateFormat();
+        } else {
+          format = new SimpleDateFormat(dateFormatString);
+          format.setLenient(true);
+        }
         return format;
       }
     };
@@ -241,7 +254,8 @@ public class DateFilter implements MetadataTransform {
       format = ISO_8601_FORMAT;
     }
     log.config("format = " + format);
-    SimpleDateFormat dateFormat = new SimpleDateFormat(format);
+    SimpleDateFormat dateFormat = new SimpleDateFormat(
+        "millis".equalsIgnoreCase(format) ? ISO_8601_FORMAT : format);
     dateFormat.setLenient(true);
 
     String dateStr = getTrimmedValue(cfg, "date");
@@ -278,6 +292,28 @@ public class DateFilter implements MetadataTransform {
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
     String value = cfg.get(key);
     return (value == null) ? value : Strings.emptyToNull(value.trim());
+  }
+
+  /** A DateFormat that parses text of milliseconds since the epoch. */
+  @VisibleForTesting
+  static class MillisecondDateFormat extends DateFormat {
+    @Override
+    public StringBuffer format(Date date, StringBuffer buf, FieldPosition pos) {
+      buf.append(Long.toString(date.getTime()));
+      return buf;
+    }
+
+    @Override
+    public Date parse(String source, ParsePosition pos) {
+      try {
+        Long millis = Long.parseLong(source);
+        pos.setIndex(source.length());
+        return new Date(millis);
+      } catch (NumberFormatException e) {
+        pos.setErrorIndex(pos.getIndex());
+        return null;
+      }
+    }
   }
 
   private static interface DateValueFilter {
