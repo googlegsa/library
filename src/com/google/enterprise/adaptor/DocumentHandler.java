@@ -1238,7 +1238,7 @@ class DocumentHandler implements HttpHandler {
         }
       } catch (NumberFormatException e) {
         log.log(Level.WARNING,
-            "Failed changing last-modified date {0}",
+            "Failed changing last-modified date {0}",
             params.get(KEY_LAST_MODIFIED_MILLIS_UTC));
       }
       try {
