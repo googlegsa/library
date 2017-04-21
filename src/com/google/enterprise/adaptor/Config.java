@@ -647,7 +647,13 @@ public class Config {
           + ". Zero, empty and negative values are not accepted.");
     } else {
       try {
-        return Long.parseLong(secondsAsString) * 1000;
+        long seconds = Long.parseLong(secondsAsString);
+        if (seconds > (Long.MAX_VALUE / 1000)) {
+          throw new InvalidConfigurationException("Invalid value for "
+              + property + ". The value may not exceed "
+              + (Long.MAX_VALUE / 1000));
+        }
+        return seconds * 1000;
       } catch (NumberFormatException nfe) {
         throw new InvalidConfigurationException("Invalid value for "
             + property + ". Only a positive integer value is accepted.");
