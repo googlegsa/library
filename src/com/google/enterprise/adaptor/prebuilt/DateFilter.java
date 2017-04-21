@@ -44,11 +44,11 @@ import java.util.logging.Logger;
  * determines whether the document will be skipped or not.
  * <p>
  * {@code format} The {@link DateFormat} used to parse the document's
- * date values. If no {@code format} is specified, a lenient ISO8601 format
+ * date values. If no {@code format} is specified, a ISO8601 format
  * ("yyyy-MM-dd") is used. If format is "millis", then the dates
  * are parsed as if they were milliseconds since the epoch
- * (January 1, 1970, 00:00:00 GMT). Otherwise, the format must be parsable
- * by {@link SimpleDateFormat}.
+ * (January 1, 1970, 00:00:00 GMT). Otherwise, a lenient
+ * {@link SimpleDateFormat} with the format pattern will be used.
  * <p>
  * {@code date} The cut-off for the date value. Document's whose date
  * value is before the configued {@code date} will not be indexed.
@@ -67,6 +67,33 @@ import java.util.logging.Logger;
  * {@code corpora} may be set to {@code metadata} or to {@code params}
  * to restrict the search to only metadata or params, respectively,
  * or to {@code metadata or params} to search both.
+ * <p>
+ * Example 1: skip documents that have not been accessed for more than 3 years:
+ * <pre><code>
+   metadata.transform.pipeline=dateFilter
+   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+   metadata.transform.pipeline.dateFilter.key=Last_Access_Date
+   metadata.transform.pipeline.dateFilter.days=1095
+   </code></pre>
+ * <p>
+ * Example 2: skip pre-Y2K client records that used old-style US date formats:
+ * <pre><code>
+   metadata.transform.pipeline=dateFilter
+   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+   metadata.transform.pipeline.dateFilter.key=Last_Visit_Date
+   metadata.transform.pipeline.dateFilter.format=MM/dd/YY
+   metadata.transform.pipeline.dateFilter.date=01/01/00
+   </code></pre>
+ * <p>
+ * Example 3: skip documents that have not been modified since 2010:
+ * <pre><code>
+   metadata.transform.pipeline=dateFilter
+   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+   metadata.transform.pipeline.dateFilter.corpora=params
+   metadata.transform.pipeline.dateFilter.key=Last-Modified-Millis-UTC
+   metadata.transform.pipeline.dateFilter.format=millis
+   metadata.transform.pipeline.dateFilter.date=2010-01-01
+   </code></pre>
  */
 public class DateFilter implements MetadataTransform {
   private static final Logger log
@@ -254,6 +281,8 @@ public class DateFilter implements MetadataTransform {
       format = ISO_8601_FORMAT;
     }
     log.config("format = " + format);
+    // If using MillisecondDateFormat, the cutoff date is specified as ISO8601,
+    // otherwise the cutoff date is in the configured format.
     SimpleDateFormat dateFormat = new SimpleDateFormat(
         "millis".equalsIgnoreCase(format) ? ISO_8601_FORMAT : format);
     dateFormat.setLenient(true);
