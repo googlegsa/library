@@ -18,6 +18,7 @@ import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecisi
 import static java.util.Arrays.asList;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
@@ -119,6 +120,19 @@ public class FilterMimetypes implements MetadataTransform {
 
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
+    String docId = params.get(MetadataTransform.KEY_DOC_ID);
+    if (null == docId || docId.isEmpty()) {
+      docId = "with no docId";
+    }
+
+    String forced
+        = params.get(MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION);
+    if (!Strings.isNullOrEmpty(forced)) {
+      log.log(Level.FINE, "Not evaluating document {0}  because transmission "
+          + "decision {1} is forced.", new Object[] { docId, forced });
+      return;
+    }
+
     String ct = params.get(MetadataTransform.KEY_CONTENT_TYPE);
     if (ct == null) {
       return;

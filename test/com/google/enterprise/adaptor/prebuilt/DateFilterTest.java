@@ -208,6 +208,21 @@ public class DateFilterTest {
   // tests on transform behavior
 
   @Test
+  public void testTransform_ForcedTransmissionDecision() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "lastModified");
+    config.put("days", "365");
+    config.put("corpora", "params");
+    DateFilter transform = DateFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("lastModified", "1977-06-18");
+    params.put(MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION, "as-is");
+    Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals(null, params.get("Transmission-Decision"));
+  }
+
+  @Test
   public void testTransform_DoNotSkipUndatedDocument() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");

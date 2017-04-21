@@ -221,8 +221,20 @@ public class DateFilter implements MetadataTransform {
    */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
-    String excludedDate;
+    String docId = params.get(MetadataTransform.KEY_DOC_ID);
+    if (null == docId || docId.isEmpty()) {
+      docId = "with no docId";
+    }
 
+    String forced
+        = params.get(MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION);
+    if (!Strings.isNullOrEmpty(forced)) {
+      log.log(Level.FINE, "Not evaluating document {0}  because transmission "
+          + "decision {1} is forced.", new Object[] { docId, forced });
+      return;
+    }
+
+    String excludedDate;
     switch (corpora) {
       case METADATA:
         excludedDate = excludedByDateInMetadata(metadata);
@@ -236,11 +248,6 @@ public class DateFilter implements MetadataTransform {
         if (excludedDate == null) {
           excludedDate = excludedByDateInMetadata(metadata);
         }
-    }
-
-    String docId = params.get(MetadataTransform.KEY_DOC_ID);
-    if (Strings.isNullOrEmpty(docId)) {
-      docId = "with no docId";
     }
 
     if (excludedDate != null) {

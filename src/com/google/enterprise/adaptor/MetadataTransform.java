@@ -34,6 +34,8 @@ public interface MetadataTransform {
       = "Last-Modified-Millis-UTC";
   public static final String KEY_TRANSMISSION_DECISION 
       = "Transmission-Decision";
+  public static final String KEY_FORCED_TRANSMISSION_DECISION
+      = "Forced-Transmission-Decision";
 
   /** Transforms can cancel sending doc, or cancel sending its contents. */
   public enum TransmissionDecision {

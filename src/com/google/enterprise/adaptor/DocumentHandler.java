@@ -18,6 +18,7 @@ import static com.google.enterprise.adaptor.MetadataTransform.KEY_CONTENT_TYPE;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_CRAWL_ONCE;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_DISPLAY_URL;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_DOC_ID;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_LAST_MODIFIED_MILLIS_UTC;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_LOCK;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_TRANSMISSION_DECISION;
@@ -1253,7 +1254,12 @@ class DocumentHandler implements HttpHandler {
       crawlOnce = Boolean.parseBoolean(params.get(KEY_CRAWL_ONCE));
       lock = Boolean.parseBoolean(params.get(KEY_LOCK));
       // TODO: make constants for this growing set of valid keys
-      considerNotSending(params.get(KEY_TRANSMISSION_DECISION), docId);
+      String transmissionDecision
+          = params.get(KEY_FORCED_TRANSMISSION_DECISION);
+      if (Strings.isNullOrEmpty(transmissionDecision)) {
+        transmissionDecision = params.get(KEY_TRANSMISSION_DECISION);
+      }
+      considerNotSending(transmissionDecision, docId);
     }
 
     private void considerNotSending(String secondOpinion, DocId docId) {
