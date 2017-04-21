@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -370,18 +371,17 @@ public class ConfigTest {
                          + "adaptor.incrementalPollPeriodSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
         Long.toString((Long.MAX_VALUE / 1000) + 1)};
-    int y = 0;
     for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
         config.getAdaptorIncrementalPollPeriodMillis();
+        fail("Expected InvalidConfigurationException for value "
+             + invalidValuesToVerify[i]);
       } catch (InvalidConfigurationException ice) {
         assertTrue(ice.getMessage().contains("Invalid value for"));
-        y++;
       }
     }
-    assertEquals(invalidValuesToVerify.length, y);
   }
 
   @Test
@@ -392,18 +392,17 @@ public class ConfigTest {
                          + "adaptor.heartbeatTimeoutSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue",
         Long.toString((Long.MAX_VALUE / 1000) + 1)};
-    int y = 0;
     for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
         config.getAdaptorHeartbeatTimeoutMillis();
+        fail("Expected InvalidConfigurationException for value "
+             + invalidValuesToVerify[i]);
       } catch (InvalidConfigurationException ice) {
         assertTrue(ice.getMessage().contains("Invalid value for"));
-        y++;
       }
     }
-    assertEquals(invalidValuesToVerify.length, y);
   }
 
   @Test
@@ -413,18 +412,17 @@ public class ConfigTest {
                          + "adaptor.docHeaderTimeoutSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
         Long.toString((Long.MAX_VALUE / 1000) + 1)};
-    int y = 0;
     for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
         config.getAdaptorDocHeaderTimeoutMillis();
+        fail("Expected InvalidConfigurationException for value "
+             + invalidValuesToVerify[i]);
       } catch (InvalidConfigurationException ice) {
         assertTrue(ice.getMessage().contains("Invalid value for"));
-        y++;
       }
     }
-    assertEquals(invalidValuesToVerify.length, y);
   }
 
   @Test
@@ -434,17 +432,16 @@ public class ConfigTest {
                          + "adaptor.docContentTimeoutSecs=";
     String invalidValuesToVerify[] = {"0", "-15", "NotValidValue", "",
         Long.toString((Long.MAX_VALUE / 1000) + 1)};
-    int y = 0;
     for (int i = 0; i < invalidValuesToVerify.length; i++) {
       configFile.setFileContents(putInConfig + invalidValuesToVerify[i]);
       config.load(configFile);
       try {
         config.getAdaptorDocContentTimeoutMillis();
+        fail("Expected InvalidConfigurationException for value "
+             + invalidValuesToVerify[i]);
       } catch (InvalidConfigurationException ice) {
         assertTrue(ice.getMessage().contains("Invalid value for"));
-        y++;
       }
     }
-    assertEquals(invalidValuesToVerify.length, y);
   }
 }
