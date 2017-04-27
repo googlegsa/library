@@ -215,6 +215,14 @@
     </exec>
     <!-- Set version if git describe failed. -->
     <property name="adaptorlib.version" value="unknown-${DSTAMP}"/>
+
+    <!-- Use the version without the "v" prefix for file names. -->
+    <loadresource property="adaptorlib.suffix">
+      <propertyresource name="adaptorlib.version"/>
+      <filterchain>
+          <replaceregex pattern="^(v(\d))?" replace="-\2"/>
+      </filterchain>
+    </loadresource>
   </target>
 
   <target name="dist" description="Generate distribution binaries"
@@ -238,7 +246,7 @@
     <copy file="THIRDPARTYLICENSE.txt" todir="${dist.staging.dir}"/>
 
     <!-- adaptor.jar -->
-    <jar destfile="${dist.staging.dir}/adaptor-${adaptorlib.version}.jar"
+    <jar destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"
       basedir="${build-src.dir}" excludes="${adaptor.pkg.dir}/examples/**">
       <manifest>
         <section name="com/google/enterprise/adaptor/">
@@ -252,7 +260,7 @@
     </jar>
 
     <!-- adaptor-src.jar -->
-    <jar destfile="${dist.staging.dir}/adaptor-${adaptorlib.version}-src.jar"
+    <jar destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}-src.jar"
       basedir="${src.dir}" excludes="${adaptor.pkg.dir}/examples/**">
       <fileset dir="${resource.dir}"/>
     </jar>
@@ -276,13 +284,12 @@
       <!-- Provide an empty manifest to encourage mergewithoutmain to function.
            See https://issues.apache.org/bugzilla/show_bug.cgi?id=54171 . -->
       <manifest/>
-      <zipfileset src="${dist.staging.dir}/adaptor-${adaptorlib.version}.jar"/>
+      <zipfileset src="${dist.staging.dir}/adaptor${adaptorlib.suffix}.jar"/>
       <zipgroupfileset dir="${dist.staging.dir}/lib"/>
     </jar>
     <!-- Re-save JAR without signing keys, since keeping them in the JAR causes
          security exceptions. -->
-    <zip
-      destfile="${dist.staging.dir}/adaptor-${adaptorlib.version}-withlib.jar">
+    <zip destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}-withlib.jar">
       <zipfileset excludes="META-INF/**/*.DSA,META-INF/**/*.SF"
         src="${build.dir}/dist/adaptor-withlib.tmp.jar"/>
     </zip>
@@ -292,7 +299,7 @@
       property="tmp.examples.zipgroup">
       <map from="${lib.dir}/" to=""/>
     </pathconvert>
-    <jar destfile="${dist.staging.dir}/examples/adaptor-${adaptorlib.version}-examples.jar"
+    <jar destfile="${dist.staging.dir}/examples/adaptor${adaptorlib.suffix}-examples.jar"
       basedir="${build-src.dir}" includes="${adaptor.pkg.dir}/examples/**">
       <manifest>
         <section name="com/google/enterprise/adaptor/examples/">
@@ -313,13 +320,13 @@
     </copy>
 
     <!-- adaptor-docs.zip -->
-    <zip destfile="${dist.staging.dir}/adaptor-${adaptorlib.version}-docs.zip"
+    <zip destfile="${dist.staging.dir}/adaptor${adaptorlib.suffix}-docs.zip"
       basedir="${javadoc.dir}"/>
 
     <!-- Produce final distribution files -->
 
     <!-- adaptor-src.zip -->
-    <zip destfile="${dist.dir}/adaptor-${adaptorlib.version}-src.zip"
+    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-src.zip"
       basedir="${basedir}">
       <exclude name="**/.*/**"/>
 
@@ -344,15 +351,15 @@
 
     <!-- adaptor-bin.zip -->
     <move file="${dist.staging.dir}"
-      tofile="${build.dir}/dist/adaptor-${adaptorlib.version}"/>
-    <zip destfile="${dist.dir}/adaptor-${adaptorlib.version}-bin.zip"
-      basedir="${build.dir}/dist/adaptor-${adaptorlib.version}"/>
+      tofile="${build.dir}/dist/adaptor${adaptorlib.suffix}"/>
+    <zip destfile="${dist.dir}/adaptor${adaptorlib.suffix}-bin.zip"
+      basedir="${build.dir}/dist/adaptor${adaptorlib.suffix}"/>
   </target>
 
   <!-- Build stand-alone AdaptorTemplate.jar for testing purposes. -->
   <target name="adaptor-template" description="AdaptorTemplate jar"
     depends="package">
-    <jar destfile="${build.dir}/dist/adaptor-${adaptorlib.version}/AdaptorTemplate.jar"
+    <jar destfile="${build.dir}/dist/adaptor${adaptorlib.suffix}/AdaptorTemplate.jar"
       basedir="${build-src.dir}"
       includes="${adaptor.pkg.dir}/**/AdaptorTemplate.class">
       <manifest>
@@ -363,7 +370,7 @@
         <attribute name="Main-Class"
           value="com.google.enterprise.adaptor.examples.AdaptorTemplate" />
         <attribute name="Class-Path"
-          value="adaptor-${adaptorlib.version}-withlib.jar" />
+          value="adaptor${adaptorlib.suffix}-withlib.jar" />
       </manifest>
     </jar>
   </target>
