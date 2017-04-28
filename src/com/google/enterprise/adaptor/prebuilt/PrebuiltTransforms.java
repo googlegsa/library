@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
@@ -27,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -41,32 +44,80 @@ public class PrebuiltTransforms {
   private static final Logger log
       = Logger.getLogger(PrebuiltTransforms.class.getName());
 
+  /**
+   * Which collections of keys/values to use.  Metadata, params, or both.
+   */
+  private static enum Corpora {
+    METADATA("metadata"),
+    PARAMS("params"),
+    METADATA_OR_PARAMS("metadata or params");
+
+    private final String name;
+
+    private Corpora(String n) {
+      name = n;
+    }
+
+    // Note: Different defaults for backward compatibility.
+    public static Corpora from(String val) {
+      if ("metadata or params".equalsIgnoreCase(val)) {
+        return METADATA_OR_PARAMS;
+      }
+      if ("params".equalsIgnoreCase(val)) {
+        return PARAMS;
+      }
+      return METADATA;
+    }
+
+    public String toString() {
+      return name;
+    }
+  };
+
   // Prevent instantiation.
   private PrebuiltTransforms() {}
 
+  private static String getTrimmedValue(Map<String, String> cfg, String key) {
+    String value = cfg.get(key);
+    return (value == null) ? value : Strings.emptyToNull(value.trim());
+  }
+
   /**
-   * Returns a transform that copies metadata values from one key to another.
-   * The {@code "overwrite"} key can be set to {@code "true"} to cause the
-   * destination to be replaced; otherwise the destination key is supplemented.
+   * Returns a transform that copies metadata or param values from one key to
+   * another. The {@code "overwrite"} key can be set to {@code "true"} to cause
+   * the destination to be replaced. Otherwise if the destination is a metadata
+   * key, its values is are supplemented. If the destination is a param key,
+   * {@code "overwrite"} is ignored and its value is always replaced.
    *
    * <p>Copies are defined by pairs of {@code "X.from"} and {@code "X.to"}
    * configuration entries (where {@code X} is an integer). The value for each
-   * is a metadata key. Copies are applied in the increasing order of the
-   * integers.
+   * is a metadata or param  key. Copies are applied in the increasing order of
+   * the integers. The config keys {@code "X.from.corpora"} and
+   * {@code "X.to.corpora"} may be set to {@code metadata} or to {@code params}
+   * to restrict the source and destination to only {@code Metadata} or
+   * {@code params}, respectively.  Most keys/values of interest will normally
+   * be specified in the document's {@code Metadata}, but some key/values of
+   * interest (e.g. ContentType, DocId) exist in the document's {@code params}.
    *
    * <p>Example configuration:
-   * <pre><code>overwrite=false
-   *3.from=colour
-   *3.to=color
-   *5.from=author
-   *5.to=contributors</code></pre>
+   * <pre><code>
+     overwrite=false
+     1.from=colour
+     1.to=color
+     2.from=author
+     2.to=contributors
+     </code></pre>
    *
    * @param config transform configuration
    * @return transform
    */
+  public static MetadataTransform copy(Map<String, String> config) {
+    return copyMetadata(config);
+  }
   public static MetadataTransform copyMetadata(
       Map<String, String> config) {
-    boolean overwrite = Boolean.parseBoolean(config.get("overwrite"));
+    boolean overwrite
+        = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
       log.warning("No entries listed to be copied");
@@ -75,17 +126,21 @@ public class PrebuiltTransforms {
   }
 
   /**
-   * Returns a transform that moves metadata values from one key to another.
-   * This method returns a transform that behaves identically to {@link
-   * #copyMetadata}, except that the source keys are removed. If the source key
-   * has no metadata values then the destination is left as-is.
+   * Returns a transform that moves metadata or param values from one key to
+   * another. This method returns a transform that behaves identically to
+   * {@link #copy}, except that the source keys are removed. If the source key
+   * has no values then the destination is left as-is.
    *
    * @param config transform configuration
    * @return transform
    */
+  public static MetadataTransform move(Map<String, String> config) {
+    return moveMetadata(config);
+  }
   public static MetadataTransform moveMetadata(
       Map<String, String> config) {
-    boolean overwrite = Boolean.parseBoolean(config.get("overwrite"));
+    boolean overwrite
+        = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
       log.warning("No entries listed to be moved");
@@ -94,7 +149,8 @@ public class PrebuiltTransforms {
   }
 
   /**
-   * Pairs of keys, with a src-key-name and destination-key-name.
+   * Pairs of {@code Keys}, with a src-key-name and destination-key-name
+   * and their cooresponding Corpora.
    * The sequence is in order the copies/moves should happen.
    */
   private static List<KeyPairing> parseCopies(Map<String, String> config) {
@@ -102,8 +158,8 @@ public class PrebuiltTransforms {
     List<KeyPairing> copies = new ArrayList<KeyPairing>(allSubs.size());
     for (Map.Entry<Integer, Map<String, String>> instruction
         : allSubs.entrySet()) {
-      String from = instruction.getValue().get("from");
-      String to = instruction.getValue().get("to");
+      String from = getTrimmedValue(instruction.getValue(), "from");
+      String to = getTrimmedValue(instruction.getValue(), "to");
       if (from == null || to == null) {
         log.log(Level.FINE, "Ignoring int {0}. Missing .from or .to",
             instruction.getKey());
@@ -113,8 +169,12 @@ public class PrebuiltTransforms {
         log.log(Level.WARNING, "removing no-op: {0}", from);
         continue;
       }
-      KeyPairing kp = new KeyPairing(from, to);
-      copies.add(kp);
+      copies.add(new KeyPairing(
+          new Key(from,
+                  getTrimmedValue(instruction.getValue(), "from.corpus")),
+          new Key(to,
+                  getTrimmedValue(instruction.getValue(), "to.corpus"))));
+
       log.log(Level.FINE, "Found config to rename {0} to {1}",
           new Object[] {from, to});
     }
@@ -174,24 +234,65 @@ public class PrebuiltTransforms {
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
       for (KeyPairing kp : copies) {
-        Set<String> values = metadata.getAllValues(kp.src);
+        Set<String> values = new TreeSet<String>();
+        switch (kp.src.corpora) {
+          case METADATA:
+            values.addAll(metadata.getAllValues(kp.src.key));
+            break;
+          case PARAMS:
+            if (params.get(kp.src.key) != null) {
+              values.add(params.get(kp.src.key));
+            }
+            break;
+          case METADATA_OR_PARAMS:
+            values.addAll(metadata.getAllValues(kp.src.key));
+            if (params.get(kp.src.key) != null) {
+              values.add(params.get(kp.src.key));
+            }
+            break;
+        }
         if (values.isEmpty()) {
           log.log(Level.FINE, "No values for {0}. Skipping", kp.src);
           continue;
         }
+        Corpora destCorpora = kp.dest.corpora;
+        if (destCorpora == Corpora.METADATA_OR_PARAMS) {
+          destCorpora = params.containsKey(kp.dest.key)
+              ? Corpora.PARAMS : Corpora.METADATA;
+          kp = new KeyPairing(kp.src, new Key(kp.dest.key, destCorpora));
+        }
         log.log(Level.FINE, "Copying values from {0} to {1}: {2}",
             new Object[] {kp.src, kp.dest, values});
-        Set<String> destValues = metadata.getAllValues(kp.dest);
-        if (!overwrite && !destValues.isEmpty()) {
-          values = new HashSet<String>(values);
-          log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
-              new Object[] {kp.dest, destValues});
-          values.addAll(destValues);
+        if (destCorpora == Corpora.METADATA) {
+          Set<String> destValues = metadata.getAllValues(kp.dest.key);
+          if (!overwrite && !destValues.isEmpty()) {
+            log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
+                new Object[] {kp.dest, destValues});
+            values.addAll(destValues);
+          }
+          metadata.set(kp.dest.key, values);
         }
-        metadata.set(kp.dest, values);
+        if (destCorpora == Corpora.PARAMS) {
+          String value = values.iterator().next();
+          if (values.size() > 1) {
+            log.log(Level.FINER,
+                "Multiple values for {0}. Using first value of {1} for {2}",
+                 new Object[] { kp.src, value, kp.dest });
+          }
+          params.put(kp.dest.key, value);
+        }
         if (move) {
           log.log(Level.FINER, "Deleting source {0}", kp.src);
-          metadata.set(kp.src, Collections.<String>emptySet());
+          switch (kp.src.corpora) {
+            case METADATA:
+            case METADATA_OR_PARAMS:
+              metadata.set(kp.src.key, Collections.<String>emptySet());
+          }
+          switch (kp.src.corpora) {
+            case PARAMS:
+            case METADATA_OR_PARAMS:
+              params.remove(kp.src.key);
+          }
         }
       }
     }
@@ -205,10 +306,10 @@ public class PrebuiltTransforms {
 
   /** Contains source and destination metadata key. */
   private static class KeyPairing {
-    private final String src;
-    private final String dest;
+    private final Key src;
+    private final Key dest;
 
-    KeyPairing(String from, String to) {
+    KeyPairing(Key from, Key to) {
       if (null == from || null == to) {
         throw new NullPointerException();
       } 
@@ -217,14 +318,38 @@ public class PrebuiltTransforms {
     }
 
     public String toString() {
-      return "KeyPairing(from=" + src + ",to=" + dest + ")";
+      return "(from=" + src + ",to=" + dest + ")";
+    }
+  }
+
+  /** Contains a key in corpora. */
+  private static class Key {
+    private final String key;
+    private final Corpora corpora;
+
+    Key(String key, String corpora) {
+      this(key, Corpora.from(corpora));
+    }
+
+    Key(String key, Corpora corpora) {
+      if (key == null) {
+        throw new NullPointerException();
+      }
+      this.key = key;
+      this.corpora = corpora;
+    }
+
+    public String toString() {
+      return "(key=" + key + ",corpora=" + corpora + ")";
     }
   }
 
   /**
-   * Returns a transform that deletes metadata keys. The keys to be deleted are
-   * defined by {@code "keyX"} configuration entries (where {@code X} is an
-   * integer).
+   * Returns a transform that deletes metadata or param keys. The keys to be
+   * deleted are defined by {@code "keyX"} configuration entries (where
+   * {@code X} is an integer). The config keys {@code "corporaX"} may be set
+   * to {@code metadata} or to {@code params} to restrict the {@code keyX}
+   * to only {@code Metadata} or {@code params}, respectively.
    *
    * <p>Example configuration:
    * <pre><code>key2=sensitive
@@ -233,18 +358,20 @@ public class PrebuiltTransforms {
    * @param config transform configuration
    * @return transform
    */
-  public static MetadataTransform deleteMetadata(
-      Map<String, String> config) {
-    Set<String> keys = new HashSet<String>(parseList(config, "key"));
+  public static MetadataTransform delete(Map<String, String> config) {
+    return deleteMetadata(config);
+  }
+  public static MetadataTransform deleteMetadata(Map<String, String> config) {
+    List<Key> keys = keyList(config);
     if (keys.isEmpty()) {
       log.warning("No entries listed to delete");
     }
     return new DeleteTransform(keys);
   }
 
-  private static List<String> parseList(Map<String, String> config,
-      String prefix) {
-    List<String> keys = new LinkedList<String>();
+  private static List<Key> keyList(Map<String, String> config) {
+    String prefix = "key";
+    List<Key> keys = new LinkedList<Key>();
     for (Map.Entry<String, String> me : config.entrySet()) {
       if (!me.getKey().startsWith(prefix)) {
         continue;
@@ -255,22 +382,36 @@ public class PrebuiltTransforms {
             new Object[] {me.getKey(), prefix});
         continue;
       }
-      keys.add(me.getValue());
+      if (me.getValue().trim().length() == 0) {
+        log.log(Level.FINE, "Ignoring {0}. No key name specified", me);
+        continue;
+      }
+      keys.add(new Key(me.getValue().trim(),
+                       getTrimmedValue(config, "corpora" + number)));
     }
-    return keys;
+    return Collections.unmodifiableList(keys);
   }
 
   private static class DeleteTransform implements MetadataTransform {
-    private final List<String> keys;
+    private final List<Key> keys;
 
-    public DeleteTransform(Collection<String> keys) {
-      this.keys = Collections.unmodifiableList(new ArrayList<String>(keys));
+    public DeleteTransform(List<Key> keys) {
+      this.keys = keys;
     }
 
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
-      for (String key : keys) {
-        metadata.set(key, Collections.<String>emptySet());
+      for (Key key : keys) {
+        switch (key.corpora) {
+          case METADATA:
+          case METADATA_OR_PARAMS:
+            metadata.set(key.key, Collections.<String>emptySet());
+        }
+        switch (key.corpora) {
+          case PARAMS:
+          case METADATA_OR_PARAMS:
+            params.remove(key.key);
+        }
       }
     }
 
@@ -335,7 +476,7 @@ public class PrebuiltTransforms {
           "Neither string or pattern is defined");
     }
 
-    Set<String> keys = new HashSet<String>(parseList(config, "key"));
+    List<Key> keys = keyList(config);
     if (keys.isEmpty()) {
       log.warning("No entries listed to replace");
     }
@@ -343,14 +484,14 @@ public class PrebuiltTransforms {
   }
 
   private static class ReplaceTransform implements MetadataTransform {
-    private final List<String> keys;
+    private final List<Key> keys;
     private final Pattern toMatch;
     private final String replacement;
     private final boolean overwrite;
 
-    public ReplaceTransform(Collection<String> keys, Pattern toMatch,
+    public ReplaceTransform(List<Key> keys, Pattern toMatch,
         String replacement, boolean overwrite) {
-      this.keys = Collections.unmodifiableList(new ArrayList<String>(keys));
+      this.keys = keys;
       this.toMatch = toMatch;
       this.replacement = replacement;
       this.overwrite = overwrite;
@@ -358,25 +499,57 @@ public class PrebuiltTransforms {
 
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
-      for (String key : keys) {
-        Set<String> original = metadata.getAllValues(key);
-        if (original.isEmpty()) {
-          log.log(Level.FINE, "No values for {0}. Skipping", key);
-          continue;
+      for (Key key : keys) {
+        switch (key.corpora) {
+          case METADATA:
+            replaceInMetadata(key.key, metadata);
+            break;
+          case PARAMS:
+            replaceInParams(key.key, params);
+            break;
+          case METADATA_OR_PARAMS:
+            replaceInMetadata(key.key, metadata);
+            replaceInParams(key.key, params);
+            break;
         }
-        log.log(Level.FINE, "Replacing values that match {0} with {1}: {2}",
-            new Object[] {toMatch, replacement, original});
-        Set<String> values = new HashSet<String>(original);
-        for (String value : original) {
-          String newValue = toMatch.matcher(value).replaceAll(replacement);
-          if (overwrite) {
-            values.remove(value);
-          }
-          values.add(newValue);
-        }
-        log.log(Level.FINE, "After replacing: {0}", values);
-        metadata.set(key, values);
       }
+    }
+
+    private void replaceInMetadata(String key, Metadata metadata) {
+      Set<String> original = metadata.getAllValues(key);
+      if (original.isEmpty()) {
+        log.log(Level.FINE, "No metadata values for {0}. Skipping", key);
+        return;
+      }
+      log.log(Level.FINE,
+          "Replacing metadata values of {0} that match {1} with {2}: {3}",
+          new Object[] {key, toMatch, replacement, original});
+      Set<String> values = new HashSet<String>(original);
+      for (String value : original) {
+        String newValue = toMatch.matcher(value).replaceAll(replacement);
+        if (overwrite) {
+          values.remove(value);
+        }
+        values.add(newValue);
+      }
+      metadata.set(key, values);
+      log.log(Level.FINE, "After replacing metadata values for {0}: {1}",
+          new Object [] {key, values});
+    }
+
+    private void replaceInParams(String key, Map<String, String> params) {
+      String original = getTrimmedValue(params, key);
+      if (original == null) {
+        log.log(Level.FINE, "No param value for {0}. Skipping", key);
+        return;
+      }
+      log.log(Level.FINE,
+          "Replacing param value of {0} that match {1} with {2}: {3}",
+          new Object[] {key, toMatch, replacement, original});
+      String newValue = toMatch.matcher(original).replaceAll(replacement);
+      params.put(key, newValue);
+      log.log(Level.FINE, "After replacing param value for {0}: {1}",
+          new Object [] {key, newValue});
     }
 
     @Override
