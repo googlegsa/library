@@ -59,13 +59,9 @@ public class ValidatedUri {
       uri = new URI(uriString);
       uri.toURL();
     } catch (MalformedURLException e) {
-      int index = e.getMessage().indexOf(": ");
-      String reason;
-      if (index > 0 && index == e.getMessage().lastIndexOf(": " + uriString)) {
-        reason = e.getMessage().substring(0, index);
-      } else {
-        reason = e.getMessage();
-      }
+      int index = e.getMessage().lastIndexOf(": " + uriString);
+      String reason = (index < 0)
+          ? e.getMessage() : e.getMessage().substring(0, index);
       throw new URISyntaxException(uriString, reason);
     }
 
@@ -89,7 +85,7 @@ public class ValidatedUri {
    * Checks whether the URI's host is reachable without throwing exceptions.
    * Logs a warning if the host is not reachable.
    */
-  public ValidatedUri logIfHostIsNotReachable() {
+  public ValidatedUri logUnreachableHost() {
     // Try to determine if the host is reachable at this time.
     String host = uri.getHost();
     try {

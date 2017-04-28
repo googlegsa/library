@@ -117,16 +117,16 @@ public class ValidatedUriTest {
   public void testReachableHost() throws Exception {
     List<String> messages = new ArrayList<String>();
     captureLogMessages(ValidatedUri.class, "is not reachable", messages);
-    new ValidatedUri("http://127.0.0.1/foo/bar").logIfHostIsNotReachable();
-    assertEquals(0, messages.size());
+    new ValidatedUri("http://127.0.0.1/foo/bar").logUnreachableHost();
+    assertEquals(messages.toString(), 0, messages.size());
   }
 
   @Test
   public void testUnreachableHost() throws Exception {
     List<String> messages = new ArrayList<String>();
     captureLogMessages(ValidatedUri.class, "is not reachable", messages);
-    new ValidatedUri("http://unknown-host/foo/bar").logIfHostIsNotReachable();
-    assertEquals(1, messages.size());
+    new ValidatedUri("http://unknown-host/foo/bar").logUnreachableHost();
+    assertEquals(messages.toString(), 1, messages.size());
   }
 
   /**
@@ -153,5 +153,4 @@ public class ValidatedUriTest {
         }
       });
   }
-
 }
