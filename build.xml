@@ -122,15 +122,9 @@
     </uptodate>
   </target>
 
-  <path id="junit.build.classpath">
+  <path id="junit.classpath">
     <fileset dir="${lib.dir}">
       <include name="junit-4.11.jar"/>
-    </fileset>
-  </path>
-
-  <path id="junit.run.classpath">
-    <path refid="junit.build.classpath"/>
-    <fileset dir="${lib.dir}">
       <include name="hamcrest-core-1.3.jar"/>
     </fileset>
   </path>
@@ -172,7 +166,7 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="junit.build.classpath"/>
+      <classpath refid="junit.classpath"/>
       <include name="JUnitLogFixFormatter.java"/>
     </javac>
 
@@ -184,7 +178,7 @@
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="junit.build.classpath"/>
+      <classpath refid="junit.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
       <exclude name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
@@ -197,7 +191,7 @@
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="examples.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="junit.build.classpath"/>
+      <classpath refid="junit.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
 
@@ -221,7 +215,7 @@
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="junit.build.classpath"/>
+      <classpath refid="junit.classpath"/>
       <include name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
   </target>
@@ -500,7 +494,7 @@
       <classpath refid="adaptorlib.run.classpath"/>
       <classpath refid="examples.run.classpath"/>
       <classpath refid="cobertura.classpath"/>
-      <classpath refid="junit.run.classpath"/>
+      <classpath refid="junit.classpath"/>
       <classpath location="${build-instrument.dir}"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
@@ -521,7 +515,7 @@
   <target name="sim-test" depends="build">
     <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true"
       dir="${basedir}" maxmemory="512m">
-      <classpath refid="junit.run.classpath"/>
+      <classpath refid="junit.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath refid="adaptorlib.run.classpath"/>
       <classpath location="${build-test.dir}"/>
