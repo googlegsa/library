@@ -46,35 +46,35 @@ import java.util.regex.Pattern;
  * <p>Example: skip documents that have a {@code NoIndex} metadata key or params
  * key, regardless of value:
  * <pre><code>
-   metadata.transform.pipeline=regexDecisionFilter
-   metadata.transform.pipeline.regexDecisionFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.SkipDocumentFilter.create
-   metadata.transform.pipeline.regexDecisionFilter.key=NoIndex
-   metadata.transform.pipeline.regexDecisionFilter.decision=do-not-index
+   metadata.transform.pipeline=regexFilter
+   metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
+   metadata.transform.pipeline.regexFilter.key=NoIndex
+   metadata.transform.pipeline.regexFilter.decision=do-not-index
    </code></pre>
  *
  * <p>Example: drop the content of documents that have a {@code ContentLength}
  * greater than or equal to 100 megabytes:
  * <pre><code>
-   metadata.transform.pipeline=regexDecisionFilter
-   metadata.transform.pipeline.regexDecisionFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexDecisionFilter.create
-   metadata.transform.pipeline.regexDecisionFilter.key=ContentLength
-   metadata.transform.pipeline.regexDecisionFilter.pattern=0*[1-9][0-9]{8,}
-   metadata.transform.pipeline.regexDecisionFilter.decision=do-not-index-content
+   metadata.transform.pipeline=regexFilter
+   metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
+   metadata.transform.pipeline.regexFilter.key=ContentLength
+   metadata.transform.pipeline.regexFilter.pattern=0*[1-9][0-9]{8,}
+   metadata.transform.pipeline.regexFilter.decision=do-not-index-content
    </code></pre>
  *
  * <p>Example: skips documents whose Metadata {@code Classification} property
  * is neither {@code PUBLIC} nor {@code DECLASSIFIED}:
  * <pre><code>
-   metadata.transform.pipeline=regexDecisionFilter
-   metadata.transform.pipeline.regexDecisionFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexDecisionFilter.create
-   metadata.transform.pipeline.regexDecisionFilter.key=Classification
-   metadata.transform.pipeline.regexDecisionFilter.pattern=(PUBLIC)|(DECLASSIFIED)
-   metadata.transform.pipeline.regexDecisionFilter.decideOnMatch=false
-   metadata.transform.pipeline.regexDecisionFilter.decision=do-not-index
-   metadata.transform.pipeline.regexDecisionFilter.corpora=metadata
+   metadata.transform.pipeline=regexFilter
+   metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
+   metadata.transform.pipeline.regexFilter.key=Classification
+   metadata.transform.pipeline.regexFilter.pattern=(PUBLIC)|(DECLASSIFIED)
+   metadata.transform.pipeline.regexFilter.decideOnMatch=false
+   metadata.transform.pipeline.regexFilter.decision=do-not-index
+   metadata.transform.pipeline.regexFilter.corpora=metadata
    </code></pre>
  */
-public class RegexDecisionFilter implements MetadataTransform {
+public class RegexFilter implements MetadataTransform {
   /**
    * Which collections of keys/values to search.  Metadata, params, or both.
    */
@@ -105,7 +105,7 @@ public class RegexDecisionFilter implements MetadataTransform {
   };
 
   private static final Logger log
-      = Logger.getLogger(RegexDecisionFilter.class.getName());
+      = Logger.getLogger(RegexFilter.class.getName());
 
   /** The name of the key (either Metadata key or params key) to match. */
   private String key;
@@ -134,7 +134,7 @@ public class RegexDecisionFilter implements MetadataTransform {
    */
   private Corpora corpora = Corpora.METADATA_OR_PARAMS;
 
-  private RegexDecisionFilter(String key, Pattern pattern,
+  private RegexFilter(String key, Pattern pattern,
       boolean decideOnMatch, TransmissionDecision decision, Corpora corpora) {
     this.key = key;
     this.pattern = pattern;
@@ -231,7 +231,7 @@ public class RegexDecisionFilter implements MetadataTransform {
 
   @Override
   public String toString() {
-    return new StringBuilder("RegexDecisionFilter(")
+    return new StringBuilder("RegexFilter(")
         .append(key).append(", ")
         .append(pattern == null ? "[null]" : pattern.toString()).append(", ")
         .append(decideOnMatch).append(", ")
@@ -240,7 +240,7 @@ public class RegexDecisionFilter implements MetadataTransform {
         .toString();
   }
 
-  public static RegexDecisionFilter create(Map<String, String> cfg) {
+  public static RegexFilter create(Map<String, String> cfg) {
     String key;
     Pattern pattern = null;
     boolean decideOnMatch = true;
@@ -274,7 +274,7 @@ public class RegexDecisionFilter implements MetadataTransform {
     corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
 
-    return new RegexDecisionFilter(key, pattern, decideOnMatch, decision,
+    return new RegexFilter(key, pattern, decideOnMatch, decision,
         corpora);
   }
 
