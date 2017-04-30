@@ -69,6 +69,7 @@ public class PrebuiltTransforms {
       return METADATA;
     }
 
+    @Override
     public String toString() {
       return name;
     }
@@ -112,10 +113,6 @@ public class PrebuiltTransforms {
    * @return transform
    */
   public static MetadataTransform copy(Map<String, String> config) {
-    return copyMetadata(config);
-  }
-  public static MetadataTransform copyMetadata(
-      Map<String, String> config) {
     boolean overwrite
         = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
@@ -123,6 +120,11 @@ public class PrebuiltTransforms {
       log.warning("No entries listed to be copied");
     }
     return new CopyTransform(copies, overwrite, false);
+  }
+
+  @Deprecated
+  public static MetadataTransform copyMetadata(Map<String, String> config) {
+    return copy(config);
   }
 
   /**
@@ -135,10 +137,6 @@ public class PrebuiltTransforms {
    * @return transform
    */
   public static MetadataTransform move(Map<String, String> config) {
-    return moveMetadata(config);
-  }
-  public static MetadataTransform moveMetadata(
-      Map<String, String> config) {
     boolean overwrite
         = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
@@ -146,6 +144,11 @@ public class PrebuiltTransforms {
       log.warning("No entries listed to be moved");
     }
     return new CopyTransform(copies, overwrite, true);
+  }
+
+  @Deprecated
+  public static MetadataTransform moveMetadata(Map<String, String> config) {
+    return move(config);
   }
 
   /**
@@ -165,18 +168,18 @@ public class PrebuiltTransforms {
             instruction.getKey());
         continue;
       }
-      if (from.equals(to)) {
-        log.log(Level.WARNING, "removing no-op: {0}", from);
+      Key fromKey = new Key(from,
+          getTrimmedValue(instruction.getValue(), "from.corpora"));
+      Key toKey = new Key(to,
+          getTrimmedValue(instruction.getValue(), "to.corpora"));
+      KeyPairing keyPairing = new KeyPairing(fromKey, toKey);
+      if (fromKey.equals(toKey)) {
+        log.log(Level.WARNING, "removing no-op: {0}", keyPairing);
         continue;
       }
-      copies.add(new KeyPairing(
-          new Key(from,
-                  getTrimmedValue(instruction.getValue(), "from.corpus")),
-          new Key(to,
-                  getTrimmedValue(instruction.getValue(), "to.corpus"))));
-
-      log.log(Level.FINE, "Found config to rename {0} to {1}",
-          new Object[] {from, to});
+      copies.add(keyPairing);
+      log.log(Level.FINE, "Found config to copy {0} to {1}",
+          new Object[] {fromKey, toKey});
     }
     return copies;
   }
@@ -255,6 +258,8 @@ public class PrebuiltTransforms {
           log.log(Level.FINE, "No values for {0}. Skipping", kp.src);
           continue;
         }
+        // TODO (bmj): Questionable decision on how to handle METADATA_OR_PARAMS
+        // destination.
         Corpora destCorpora = kp.dest.corpora;
         if (destCorpora == Corpora.METADATA_OR_PARAMS) {
           destCorpora = params.containsKey(kp.dest.key)
@@ -317,6 +322,7 @@ public class PrebuiltTransforms {
       dest = to;
     }
 
+    @Override
     public String toString() {
       return "(from=" + src + ",to=" + dest + ")";
     }
@@ -339,6 +345,16 @@ public class PrebuiltTransforms {
       this.corpora = corpora;
     }
 
+    @Override
+    public boolean equals(Object o) {
+      if (null == o || !getClass().equals(o.getClass())) {
+        return false;
+      }
+      Key k = (Key) o;
+      return this.key.equals(k.key) && this.corpora == k.corpora;
+    }
+
+    @Override
     public String toString() {
       return "(key=" + key + ",corpora=" + corpora + ")";
     }
@@ -359,14 +375,16 @@ public class PrebuiltTransforms {
    * @return transform
    */
   public static MetadataTransform delete(Map<String, String> config) {
-    return deleteMetadata(config);
-  }
-  public static MetadataTransform deleteMetadata(Map<String, String> config) {
     List<Key> keys = keyList(config);
     if (keys.isEmpty()) {
       log.warning("No entries listed to delete");
     }
     return new DeleteTransform(keys);
+  }
+
+  @Deprecated
+  public static MetadataTransform deleteMetadata(Map<String, String> config) {
+    return delete(config);
   }
 
   private static List<Key> keyList(Map<String, String> config) {
@@ -446,10 +464,9 @@ public class PrebuiltTransforms {
    * @param config transform configuration
    * @return transform
    */
-  public static MetadataTransform replaceMetadata(
-      Map<String, String> config) {
+  public static MetadataTransform replace(Map<String, String> config) {
     boolean overwrite = true;
-    String overwriteString = config.get("overwrite");
+    String overwriteString = getTrimmedValue(config, "overwrite");
     if (overwriteString != null) {
       overwrite = Boolean.parseBoolean(overwriteString);
     }
@@ -483,6 +500,11 @@ public class PrebuiltTransforms {
     return new ReplaceTransform(keys, toMatch, replacementPattern, overwrite);
   }
 
+  @Deprecated
+  public static MetadataTransform replaceMetadata(Map<String, String> config) {
+    return replace(config);
+  }
+  
   private static class ReplaceTransform implements MetadataTransform {
     private final List<Key> keys;
     private final Pattern toMatch;
