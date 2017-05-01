@@ -338,7 +338,7 @@ public class PrebuiltTransforms {
     }
 
     Key(String key, Corpora corpora) {
-      if (key == null) {
+      if (key == null || corpora == null) {
         throw new NullPointerException();
       }
       this.key = key;
@@ -562,15 +562,15 @@ public class PrebuiltTransforms {
     private void replaceInParams(String key, Map<String, String> params) {
       String original = getTrimmedValue(params, key);
       if (original == null) {
-        log.log(Level.FINE, "No param value for {0}. Skipping", key);
+        log.log(Level.INFO, "No param value for {0}. Skipping", key);
         return;
       }
-      log.log(Level.FINE,
+      log.log(Level.INFO,
           "Replacing param value of {0} that match {1} with {2}: {3}",
           new Object[] {key, toMatch, replacement, original});
       String newValue = toMatch.matcher(original).replaceAll(replacement);
       params.put(key, newValue);
-      log.log(Level.FINE, "After replacing param value for {0}: {1}",
+      log.log(Level.INFO, "After replacing param value for {0}: {1}",
           new Object [] {key, newValue});
     }
 
