@@ -32,10 +32,10 @@ import java.util.regex.Pattern;
  * {@code pattern} that is a regular expression, then whether any values of the
  * {@code key} metadata property matches the regular expression is determined.
  * If {@code pattern} is not set, then whether any key named {@code key} is
- * present determines the match. The key {@code decideOnMatch} determines
+ * present determines the match. The key {@code when} determines
  * whether the {@code decision} is made for matching documents (if that key is
- * set to {@code true}) or made for non-matching documents (if that key is set
- * to {@code false}). By default, both Document {@code Metadata} and
+ * set to {@code found}) or made for non-matching documents (if that key is set
+ * to {@code not-found}). By default, both Document {@code Metadata} and
  * {@code params} are searched for the matching {@code key}; the config key
  * {@code corpora} may be set to {@code metadata} or to {@code params} to
  * restrict the search to only {@code Metadata} or {@code params}, respectively.
@@ -69,12 +69,39 @@ import java.util.regex.Pattern;
    metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
    metadata.transform.pipeline.regexFilter.key=Classification
    metadata.transform.pipeline.regexFilter.pattern=(PUBLIC)|(DECLASSIFIED)
-   metadata.transform.pipeline.regexFilter.decideOnMatch=false
+   metadata.transform.pipeline.regexFilter.when=not-found
    metadata.transform.pipeline.regexFilter.decision=do-not-index
    metadata.transform.pipeline.regexFilter.corpora=metadata
    </code></pre>
  */
 public class RegexFilter implements MetadataTransform {
+  /**
+   * Make decision based upon whether the regular expression matches or not.
+   */
+  private static enum When {
+    FOUND("found"),
+    NOT_FOUND("not-found");
+
+    private final String name;
+
+    private When(String name) {
+      this.name = name;
+    }
+
+    public static When from(String val) {
+      if ("not-found".equalsIgnoreCase(val)) {
+        return When.NOT_FOUND;
+      } else {
+        return When.FOUND;
+      }
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
+  };
+
   /**
    * Which collections of keys/values to search.  Metadata, params, or both.
    */
@@ -99,6 +126,7 @@ public class RegexFilter implements MetadataTransform {
       return METADATA_OR_PARAMS;
     }
 
+    @Override
     public String toString() {
       return name;
     }
@@ -117,10 +145,10 @@ public class RegexFilter implements MetadataTransform {
   private Pattern pattern;
 
   /**
-   * If {@code true}, make a transmission decision on a match;
-   * if {@code false}, make a transmission decision on a failed match.
+   * If {@code found}, make a transmission decision on a match;
+   * if {@code not-found}, make a transmission decision on a failed match.
    */
-  private boolean decideOnMatch = true;
+  private When when = When.FOUND;
 
   /**
    * The {@code TransmissionDecision} to be made.
@@ -132,13 +160,13 @@ public class RegexFilter implements MetadataTransform {
    * if {@code PARAMS}, only search the params for the specified key;
    * if {@code METADATA_OR_PARAMS}, search both.
    */
-  private Corpora corpora = Corpora.METADATA_OR_PARAMS;
+  private Corpora corpora = Corpora.METADATA;
 
   private RegexFilter(String key, Pattern pattern,
-      boolean decideOnMatch, TransmissionDecision decision, Corpora corpora) {
+      When when, TransmissionDecision decision, Corpora corpora) {
     this.key = key;
     this.pattern = pattern;
-    this.decideOnMatch = decideOnMatch;
+    this.when = when;
     this.decision = decision;
     this.corpora = corpora;
   }
@@ -202,7 +230,7 @@ public class RegexFilter implements MetadataTransform {
       docId = "with no docId";
     }
     // Determine the TransmissionDecision.
-    if (decideOnMatch) {
+    if (when == When.FOUND) {
       if (found) {
         log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
             + "because we found a match in {2}",
@@ -234,7 +262,7 @@ public class RegexFilter implements MetadataTransform {
     return new StringBuilder("RegexFilter(")
         .append(key).append(", ")
         .append(pattern == null ? "[null]" : pattern.toString()).append(", ")
-        .append(decideOnMatch).append(", ")
+        .append(when).append(", ")
         .append(decision).append(", ")
         .append(corpora).append(")")
         .toString();
@@ -243,7 +271,7 @@ public class RegexFilter implements MetadataTransform {
   public static RegexFilter create(Map<String, String> cfg) {
     String key;
     Pattern pattern = null;
-    boolean decideOnMatch = true;
+    When when;
     TransmissionDecision decision;
     Corpora corpora;
 
@@ -262,11 +290,8 @@ public class RegexFilter implements MetadataTransform {
       log.config("pattern set to " + patternString);
     }
 
-    String decideOnMatchString = getTrimmedValue(cfg, "decideOnMatch");
-    if (decideOnMatchString != null) {
-      decideOnMatch = Boolean.parseBoolean(decideOnMatchString);
-    }
-    log.config("decideOnMatch set to " + decideOnMatch);
+    when = When.from(getTrimmedValue(cfg, "when"));
+    log.config("when set to " + when);
 
     decision = TransmissionDecision.from(getTrimmedValue(cfg, "decision"));
     log.config("decision = " + decision);
@@ -274,8 +299,7 @@ public class RegexFilter implements MetadataTransform {
     corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
     log.config("corpora set to " + corpora);
 
-    return new RegexFilter(key, pattern, decideOnMatch, decision,
-        corpora);
+    return new RegexFilter(key, pattern, when, decision, corpora);
   }
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
