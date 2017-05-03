@@ -230,19 +230,8 @@ class DocIdSender extends AbstractDocIdPusher
         defs, caseSensitive, feedType, groupSource, handler);
   }
 
-  /*
+  /**
    * Issue: Full vs. Incremental Feeds for Groups.
-   *
-   * GSA 7.4.0 added support for full feeds of group definitions. A full
-   * feed replaces, rather than augments or updates, all groups from a
-   * given data source. This is useful because many connectors cannot
-   * detect when a group has been deleted, so repeated incremental updates
-   * would leave deleted groups in the GSA's groups database.
-   *
-   * When pushing a full feed, we must do it in a single "batch", because if
-   * done in batches and a later batch fails (or it simply takes a non-trivial
-   * amount of time to upload all the batches), we would end up with an
-   * incomplete set of groups.
    *
    * The problem with supplying all the group definitions in a single full
    * feed is the GSA limit to the size of a feed file (1GB). Although this
@@ -252,8 +241,8 @@ class DocIdSender extends AbstractDocIdPusher
    *
    * A novel solution to this is to double-buffer the group definitions for
    * each data source. We maintain two pseudo data sources for each actual
-   * data source (*-A and *-B). Each "full" upload alternates between these
-   * two, using batches of incremental feeds. As each batch is processed,
+   * data source (*-FULL1 and *-FULL2). Each "full" upload alternates between
+   * these two, using batches of incremental feeds. As each batch is processed,
    * groups defined in that batch are re-assigned from the older data source
    * to the newer one. Once all batches have been uploaded, the only groups
    * remaining in the older data source are the ones that were missing from
@@ -268,6 +257,9 @@ class DocIdSender extends AbstractDocIdPusher
    * This is not fatal however, as the only downside might be some deleted
    * groups persisting through one or two "full" pushes before they get
    * cleaned up.
+   *
+   * This maps the connector-supplied to the last used pseudonym, e.g.
+   * {@code foo -> foo-FULL1}.
    */
   private Map<String, String> groupSources = new HashMap<String, String>();
 
@@ -286,8 +278,8 @@ class DocIdSender extends AbstractDocIdPusher
 
   /** Returns the alternate to the previous group source. */
   private String alternateGroupSource(String source) {
-    return (source + "-A").equals(groupSources.get(source))
-        ? (source + "-B") : (source + "-A");
+    return (source + "-FULL1").equals(groupSources.get(source))
+        ? (source + "-FULL2") : (source + "-FULL1");
   }
 
   /*
@@ -366,7 +358,8 @@ class DocIdSender extends AbstractDocIdPusher
       feedSourceName = previousGroupSource(groupSource);
     } else {
       feedSourceName = alternateGroupSource(groupSource);
-      log.log(Level.FINE, "Using alternate group source {0}", feedSourceName);
+      log.log(Level.FINE, "Writing to alternate group source {0}",
+          feedSourceName);
     }
     boolean firstBatch = true;
     final int max = config.getFeedMaxUrls();
@@ -425,15 +418,14 @@ class DocIdSender extends AbstractDocIdPusher
       log.finer("mean size of groups: " + mean);
     }
 
-    // Remember the latest target group source fed. If we just did a
-    // full group feed, delete the previous target group source entries.
-    String oldGroupSource;
-    synchronized(groupSources) {
-      oldGroupSource = previousGroupSource(groupSource);
-      groupSources.put(groupSource, feedSourceName);
-    }
     if (feedType == FULL) {
-      // Delete any entries from the older group source by pushing an
+      String oldGroupSource;
+      synchronized (groupSources) {
+        // Remember the latest target group source fed.
+        oldGroupSource = previousGroupSource(groupSource);
+        groupSources.put(groupSource, feedSourceName);
+      }
+      // Delete any entries from the previous group source by pushing an
       // empty full feed.
       log.log(Level.FINE, "Deleting entries from previous group source {0}",
           oldGroupSource);
@@ -458,8 +450,8 @@ class DocIdSender extends AbstractDocIdPusher
     for (int ntries = 1; keepGoing; ntries++) {
       try {
         log.info("sending groups to GSA host name: " + config.getGsaHostname());
-        fileSender.sendGroups(feedSourceName, feedType.toString(), groupsDefXml,
-            config.isServerToUseCompression());
+        fileSender.sendGroups(feedSourceName, feedType.toString(),
+            groupsDefXml, config.isServerToUseCompression());
         keepGoing = false;  // Sent.
         success = true;
       } catch (IOException ex) {

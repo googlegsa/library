@@ -31,7 +31,18 @@ public interface DocIdPusher {
   public static final boolean EVERYTHING_CASE_SENSITIVE = true;
   public static final boolean EVERYTHING_CASE_INSENSITIVE = false;
 
-  /** FeedType used for group definition pushes. */
+  /**
+   * FeedType used for group definition pushes.
+   *
+   * GSA 7.4.0 added support for full feeds of group definitions. A {@code FULL}
+   * feed replaces all groups from a given data source. An {@code INCREMENTAL}
+   * feed augments or updates existing group definitions for a given data source.
+   * When feeding GSAs earlier than 7.4.0, {@code INCREMENTAL} feeds are always
+   * used. {@code INCREMENTAL} is the default FeedType for the overloaded
+   * {@code pushGroupDefinitions} methods that do specify a FeedType.
+   *
+   * @since 4.1.4
+   */
   public static enum FeedType {
     FULL, INCREMENTAL;
 
@@ -215,8 +226,9 @@ public interface DocIdPusher {
    * will wholly replace all existing definitions for the groupSource on the
    * GSA.
    *
-   * <p>A groupSource identifies the source of the group definitions. If
-   * provided, it must be a string of the form {@code [a-zA-Z_][a-zA-Z0-9_-]*}.
+   * <p>A groupSource identifies the source of the group definitions.
+   * If provided, it must be a string of the form
+   * <code>[a-zA-Z_][a-zA-Z0-9_-]{0,250}</code>.
    * If groupSource is {@code null}, then the {@code feed.name} configuration
    * property is used.
    *
