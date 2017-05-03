@@ -242,6 +242,8 @@ public interface DocIdPusher {
    * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
+   *
+   * @since 4.1.4
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,

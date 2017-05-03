@@ -69,7 +69,8 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
   }
 
   /**
-   * Calls {@code pushGroupDefinitions(defs, caseSensitive, true, null, null)}.
+   * Calls
+   * {@code pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null, null)}.
    */
   @Override
   public GroupPrincipal pushGroupDefinitions(
@@ -79,8 +80,8 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
   }
 
   /**
-   * Calls
-   * {@code pushGroupDefinitions(defs, caseSensitive, true, null, handler)}.
+   * Calls {@code pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null,
+   * handler)}.
    */
   @Override
   public GroupPrincipal pushGroupDefinitions(

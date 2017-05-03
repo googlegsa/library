@@ -452,6 +452,54 @@ public class DocIdSenderTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testExpectedResultMultipleBatchs() {
+    assertEquals(
+        ImmutableList.<List>of(
+            ImmutableList.<Map.Entry>of(
+                mapEntry("g1", "u1"),
+                mapEntry("g2", "u2")),
+            ImmmutableList.<Map.Entry>of(
+                mapEntry("g3", "u3"))),
+        expectedResult(2,
+            ImmutableMap.<GroupPrincipal, Collection<Principal>>of(
+                new GroupPrincipal("g1"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u1")),
+                new GroupPrincipal("g2"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u2")),
+                new GroupPrincipal("g3"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u3")))));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testExpectedResultMultipleGroupMaps() {
+    assertEquals(
+        ImmutableList.<List>of(
+            ImmutableList.<Map.Entry>of(
+                mapEntry("g1", "u1"),
+                mapEntry("g2", "u2")),
+            ImmmutableList.<Map.Entry>of(
+                mapEntry("g3", "u3")),
+            ImmutableList.<Map.Entry>of(
+                mapEntry("g4", "u4"),
+                mapEntry("g5", "u5"))),
+        expectedResult(2,
+            ImmutableMap.<GroupPrincipal, Collection<Principal>>of(
+                new GroupPrincipal("g1"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u1")),
+                new GroupPrincipal("g2"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u2")),
+                new GroupPrincipal("g3"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u3"))),
+            ImmutableMap.<GroupPrincipal, Collection<Principal>>of(
+                new GroupPrincipal("g4"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u4")),
+                new GroupPrincipal("g5"), ImmutableList.<Principal>of(
+                    new UserPrincipal("u5"))));
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsNormal() throws Exception {
     config.setValue("feed.maxUrls", "2");
     config.setValue("feed.name", "foo");
