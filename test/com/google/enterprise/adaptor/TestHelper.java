@@ -96,4 +96,25 @@ public class TestHelper {
     }
     return baos.toByteArray();
   }
+
+  public static void initSSLKeystores() {
+    /*
+     * test-keys.jks created with: keytool -genkeypair -alias adaptor -keystore
+     * test/test-keys.jks -keyalg RSA -validity 1000000 -storepass changeit
+     * -dname "CN=localhost, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown,
+     * C=Unknown" -keypass changeit"
+     */
+    System.setProperty("javax.net.ssl.keyStore",
+        TestHelper.class.getResource("/test-keys.jks").getPath());
+    System.setProperty("javax.net.ssl.keyStorePassword", "changeit");
+    /*
+     * test-cacerts.jks created with: keytool -exportcert -alias adaptor
+     * -keystore test/test-keys.jks -rfc -file tmp.crt -storepass changeit
+     * keytool -importcert -keystore test/test-cacerts.jks -file tmp.crt
+     * -storepass changeit -noprompt -alias adaptor rm tmp.crt
+     */
+    System.setProperty("javax.net.ssl.trustStore",
+        TestHelper.class.getResource("/test-cacerts.jks").getPath());
+    System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+  }
 }
