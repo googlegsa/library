@@ -215,14 +215,6 @@
     </exec>
     <!-- Set version if git describe failed. -->
     <property name="adaptorlib.version" value="unknown-${DSTAMP}"/>
-
-    <!-- Use the version without the "v" prefix for file names. -->
-    <loadresource property="adaptorlib.suffix">
-      <propertyresource name="adaptorlib.version"/>
-      <filterchain>
-          <replaceregex pattern="^(v(\d))?" replace="-\2"/>
-      </filterchain>
-    </loadresource>
   </target>
 
   <target name="dist" description="Generate distribution binaries"
@@ -239,6 +231,15 @@
     <mkdir dir="${build.dir}/dist/staging"/>
     <mkdir dir="${build.dir}/dist/staging/examples"/>
     <mkdir dir="${dist.dir}"/>
+
+    <!-- Set the file name suffix from the version. Add a leading dash,
+         and strip a leading "v" prefix if it is followed by a digit. -->
+    <loadresource property="adaptorlib.suffix">
+      <propertyresource name="adaptorlib.version"/>
+      <filterchain>
+          <replaceregex pattern="^(v(?=\d))?" replace="-"/>
+      </filterchain>
+    </loadresource>
 
     <!-- Produce intermediate distribution files -->
 
