@@ -44,36 +44,26 @@ public class PrebuiltTransforms {
   private static final Logger log
       = Logger.getLogger(PrebuiltTransforms.class.getName());
 
-  /**
-   * Which collections of keys/values to use.  Metadata, params, or both.
-   */
-  private static enum Corpora {
+  // TODO (bmj): remove this and use the one in MetadataTransforms.
+  public enum Keyset {
     METADATA("metadata"),
-    PARAMS("params"),
-    METADATA_OR_PARAMS("metadata or params");
+    PARAMS("params");
 
     private final String name;
 
-    private Corpora(String n) {
-      name = n;
+    private Keyset(String name) {
+      this.name = name;
     }
 
-    // Note: Different defaults for backward compatibility.
-    public static Corpora from(String val) {
-      if ("metadata or params".equalsIgnoreCase(val)) {
-        return METADATA_OR_PARAMS;
-      }
-      if ("params".equalsIgnoreCase(val)) {
-        return PARAMS;
-      }
-      return METADATA;
+    public static Keyset from(String val) {
+      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
     }
 
     @Override
     public String toString() {
       return name;
     }
-  };
+  }
 
   // Prevent instantiation.
   private PrebuiltTransforms() {}
@@ -93,8 +83,8 @@ public class PrebuiltTransforms {
    * <p>Copies are defined by pairs of {@code "X.from"} and {@code "X.to"}
    * configuration entries (where {@code X} is an integer). The value for each
    * is a metadata or param  key. Copies are applied in the increasing order of
-   * the integers. The config keys {@code "X.from.corpora"} and
-   * {@code "X.to.corpora"} may be set to {@code metadata} or to {@code params}
+   * the integers. The config keys {@code "X.from.keyset"} and
+   * {@code "X.to.keyset"} may be set to {@code metadata} or to {@code params}
    * to restrict the source and destination to only {@code Metadata} or
    * {@code params}, respectively.  Most keys/values of interest will normally
    * be specified in the document's {@code Metadata}, but some key/values of
@@ -153,7 +143,7 @@ public class PrebuiltTransforms {
 
   /**
    * Pairs of {@code Keys}, with a src-key-name and destination-key-name
-   * and their cooresponding Corpora.
+   * and their cooresponding Keyset.
    * The sequence is in order the copies/moves should happen.
    */
   private static List<KeyPairing> parseCopies(Map<String, String> config) {
@@ -169,9 +159,9 @@ public class PrebuiltTransforms {
         continue;
       }
       Key fromKey = new Key(from,
-          getTrimmedValue(instruction.getValue(), "from.corpora"));
+          getTrimmedValue(instruction.getValue(), "from.keyset"));
       Key toKey = new Key(to,
-          getTrimmedValue(instruction.getValue(), "to.corpora"));
+          getTrimmedValue(instruction.getValue(), "to.keyset"));
       KeyPairing keyPairing = new KeyPairing(fromKey, toKey);
       if (fromKey.equals(toKey)) {
         log.log(Level.WARNING, "removing no-op: {0}", keyPairing);
@@ -238,17 +228,11 @@ public class PrebuiltTransforms {
     public void transform(Metadata metadata, Map<String, String> params) {
       for (KeyPairing kp : copies) {
         Set<String> values = new TreeSet<String>();
-        switch (kp.src.corpora) {
+        switch (kp.src.keyset) {
           case METADATA:
             values.addAll(metadata.getAllValues(kp.src.key));
             break;
           case PARAMS:
-            if (params.get(kp.src.key) != null) {
-              values.add(params.get(kp.src.key));
-            }
-            break;
-          case METADATA_OR_PARAMS:
-            values.addAll(metadata.getAllValues(kp.src.key));
             if (params.get(kp.src.key) != null) {
               values.add(params.get(kp.src.key));
             }
@@ -258,45 +242,37 @@ public class PrebuiltTransforms {
           log.log(Level.FINE, "No values for {0}. Skipping", kp.src);
           continue;
         }
-        // TODO (bmj): Questionable decision on how to handle METADATA_OR_PARAMS
-        // destination.
-        Corpora destCorpora = kp.dest.corpora;
-        if (destCorpora == Corpora.METADATA_OR_PARAMS) {
-          destCorpora = params.containsKey(kp.dest.key)
-              ? Corpora.PARAMS : Corpora.METADATA;
-          kp = new KeyPairing(kp.src, new Key(kp.dest.key, destCorpora));
-        }
         log.log(Level.FINE, "Copying values from {0} to {1}: {2}",
             new Object[] {kp.src, kp.dest, values});
-        if (destCorpora == Corpora.METADATA) {
-          Set<String> destValues = metadata.getAllValues(kp.dest.key);
-          if (!overwrite && !destValues.isEmpty()) {
-            log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
-                new Object[] {kp.dest, destValues});
+        switch (kp.dest.keyset) {
+          case METADATA:
+            Set<String> destValues = metadata.getAllValues(kp.dest.key);
+            if (!overwrite && !destValues.isEmpty()) {
+              log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
+                  new Object[] {kp.dest, destValues});
             values.addAll(destValues);
-          }
-          metadata.set(kp.dest.key, values);
-        }
-        if (destCorpora == Corpora.PARAMS) {
-          String value = values.iterator().next();
-          if (values.size() > 1) {
-            log.log(Level.FINER,
-                "Multiple values for {0}. Using first value of {1} for {2}",
-                 new Object[] { kp.src, value, kp.dest });
-          }
-          params.put(kp.dest.key, value);
+            }
+            metadata.set(kp.dest.key, values);
+            break;
+          case PARAMS:
+            String value = values.iterator().next();
+            if (values.size() > 1) {
+              log.log(Level.FINER,
+                  "Multiple values for {0}. Using first value of {1} for {2}",
+                  new Object[] { kp.src, value, kp.dest });
+            }
+            params.put(kp.dest.key, value);
+            break;
         }
         if (move) {
           log.log(Level.FINER, "Deleting source {0}", kp.src);
-          switch (kp.src.corpora) {
+          switch (kp.src.keyset) {
             case METADATA:
-            case METADATA_OR_PARAMS:
               metadata.set(kp.src.key, Collections.<String>emptySet());
-          }
-          switch (kp.src.corpora) {
+              break;
             case PARAMS:
-            case METADATA_OR_PARAMS:
               params.remove(kp.src.key);
+              break;
           }
         }
       }
@@ -328,21 +304,21 @@ public class PrebuiltTransforms {
     }
   }
 
-  /** Contains a key in corpora. */
+  /** Contains a key in keyset. */
   private static class Key {
     private final String key;
-    private final Corpora corpora;
+    private final Keyset keyset;
 
-    Key(String key, String corpora) {
-      this(key, Corpora.from(corpora));
+    Key(String key, String keyset) {
+      this(key, Keyset.from(keyset));
     }
 
-    Key(String key, Corpora corpora) {
-      if (key == null || corpora == null) {
+    Key(String key, Keyset keyset) {
+      if (key == null || keyset == null) {
         throw new NullPointerException();
       }
       this.key = key;
-      this.corpora = corpora;
+      this.keyset = keyset;
     }
 
     @Override
@@ -351,19 +327,19 @@ public class PrebuiltTransforms {
         return false;
       }
       Key k = (Key) o;
-      return this.key.equals(k.key) && this.corpora == k.corpora;
+      return this.key.equals(k.key) && this.keyset == k.keyset;
     }
 
     @Override
     public String toString() {
-      return "(key=" + key + ",corpora=" + corpora + ")";
+      return "(key=" + key + ",keyset=" + keyset + ")";
     }
   }
 
   /**
    * Returns a transform that deletes metadata or param keys. The keys to be
    * deleted are defined by {@code "keyX"} configuration entries (where
-   * {@code X} is an integer). The config keys {@code "corporaX"} may be set
+   * {@code X} is an integer). The config keys {@code "keysetX"} may be set
    * to {@code metadata} or to {@code params} to restrict the {@code keyX}
    * to only {@code Metadata} or {@code params}, respectively.
    *
@@ -405,7 +381,7 @@ public class PrebuiltTransforms {
         continue;
       }
       keys.add(new Key(me.getValue().trim(),
-                       getTrimmedValue(config, "corpora" + number)));
+                       getTrimmedValue(config, "keyset" + number)));
     }
     return Collections.unmodifiableList(keys);
   }
@@ -420,15 +396,13 @@ public class PrebuiltTransforms {
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
       for (Key key : keys) {
-        switch (key.corpora) {
+        switch (key.keyset) {
           case METADATA:
-          case METADATA_OR_PARAMS:
             metadata.set(key.key, Collections.<String>emptySet());
-        }
-        switch (key.corpora) {
+            break;
           case PARAMS:
-          case METADATA_OR_PARAMS:
             params.remove(key.key);
+            break;
         }
       }
     }
@@ -522,15 +496,11 @@ public class PrebuiltTransforms {
     @Override
     public void transform(Metadata metadata, Map<String, String> params) {
       for (Key key : keys) {
-        switch (key.corpora) {
+        switch (key.keyset) {
           case METADATA:
             replaceInMetadata(key.key, metadata);
             break;
           case PARAMS:
-            replaceInParams(key.key, params);
-            break;
-          case METADATA_OR_PARAMS:
-            replaceInMetadata(key.key, metadata);
             replaceInParams(key.key, params);
             break;
         }

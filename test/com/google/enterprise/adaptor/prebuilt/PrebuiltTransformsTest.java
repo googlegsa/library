@@ -101,9 +101,9 @@ public class PrebuiltTransformsTest {
   public void testCopyParamToParam() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.copy(config);
@@ -126,9 +126,9 @@ public class PrebuiltTransformsTest {
   public void testCopyParamToExistingParam() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.copy(config);
@@ -152,7 +152,7 @@ public class PrebuiltTransformsTest {
   public void testCopyParamToMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
@@ -176,7 +176,7 @@ public class PrebuiltTransformsTest {
   public void testCopyParamToMultivalueMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("2.from", "author");
-    config.put("2.from.corpora", "params");
+    config.put("2.from.keyset", "params");
     config.put("2.to", "contributors");
     config = Collections.unmodifiableMap(config);
 
@@ -204,7 +204,7 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.copy(config);
@@ -228,7 +228,7 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.copy(config);
@@ -252,7 +252,7 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.copy(config);
@@ -272,149 +272,6 @@ public class PrebuiltTransformsTest {
   }
 
   @Test
-  public void testCopyParamAndMetadataToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("2.from", "author");
-    config.put("2.from.corpora", "metadata or params");
-    config.put("2.to", "contributors");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("author", "George");
-      golden.add("contributors", "Mary");
-      golden.add("contributors", "George");
-      golden.add("contributors", "Fred");
-      metadataGolden = golden.unmodifiableView();
-    }
-    Metadata metadata = new Metadata();
-    metadata.add("author", "George");
-    metadata.add("contributors", "Mary");
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("author", "Fred");
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-  }
-
-  @Test
-  public void testCopyMetadataOrParamToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("2.from", "author");
-    config.put("2.from.corpora", "metadata or params");
-    config.put("2.to", "contributors");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("author", "George");
-      golden.add("contributors", "Mary");
-      golden.add("contributors", "George");
-      metadataGolden = golden.unmodifiableView();
-    }
-    Metadata metadata = new Metadata();
-    metadata.add("author", "George");
-    metadata.add("contributors", "Mary");
-    Map<String, String> params = new HashMap<String, String>();
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-  }
-
-  @Test
-  public void testCopyParamOrMetadataToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("2.from", "author");
-    config.put("2.from.corpora", "metadata or params");
-    config.put("2.to", "contributors");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("contributors", "Mary");
-      golden.add("contributors", "Fred");
-      metadataGolden = golden.unmodifiableView();
-    }
-    Metadata metadata = new Metadata();
-    metadata.add("contributors", "Mary");
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("author", "Fred");
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-  }
-
-  @Test
-  public void testCopyMetadataToMetadataOrParam() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("2.from", "author");
-    config.put("2.to", "contributors");
-    config.put("2.to.corpora", "metadata or params");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("author", "George");
-      golden.add("contributors", "Mary");
-      golden.add("contributors", "George");
-      metadataGolden = golden.unmodifiableView();
-    }
-    final Map<String, String> paramsGolden
-        = Collections.<String, String>emptyMap();
-
-    Metadata metadata = new Metadata();
-    metadata.add("author", "George");
-    metadata.add("contributors", "Mary");
-    Map<String, String> params = new HashMap<String, String>();
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-    assertEquals(paramsGolden, params);
-  }
-
-  @Test
-  public void testCopyMetadataToParamOrMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("2.from", "author");
-    config.put("2.to", "contributors");
-    config.put("2.to.corpora", "metadata or params");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("author", "Fred");
-      golden.add("contributors", "Mary");
-      metadataGolden = golden.unmodifiableView();
-    }
-    final Map<String, String> paramsGolden;
-    {
-      Map<String, String> golden = new HashMap<String, String>();
-      golden.put("contributors", "Fred");
-      paramsGolden = Collections.unmodifiableMap(golden);
-    }
-
-    Metadata metadata = new Metadata();
-    metadata.add("author", "Fred");
-    metadata.add("contributors", "Mary");
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("contributors", "George");
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-    assertEquals(paramsGolden, params);
-  }
-
-  @Test
   public void testCopyToString() {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
@@ -426,12 +283,12 @@ public class PrebuiltTransformsTest {
   }
 
   @Test
-  public void testCopyToStringWithKeysAndCorporaAndOverwrite() {
+  public void testCopyToStringWithKeysAndKeysetAndOverwrite() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "metadata");
+    config.put("1.to.keyset", "metadata");
     config.put("2.from", "author");
     config.put("2.to", "contributors");
     config.put("overwrite", "true");
@@ -439,10 +296,10 @@ public class PrebuiltTransformsTest {
 
     MetadataTransform transform = PrebuiltTransforms.copy(config);
     assertEquals("CopyTransform(copies=["
-        + "(from=(key=colour,corpora=params),"
-        + "to=(key=color,corpora=metadata)), "
-        + "(from=(key=author,corpora=metadata),"
-        + "to=(key=contributors,corpora=metadata))],"
+        + "(from=(key=colour,keyset=params),"
+        + "to=(key=color,keyset=metadata)), "
+        + "(from=(key=author,keyset=metadata),"
+        + "to=(key=contributors,keyset=metadata))],"
         + "overwrite=true,move=false)",
         transform.toString());
   }
@@ -485,7 +342,7 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
@@ -513,7 +370,7 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
@@ -543,7 +400,7 @@ public class PrebuiltTransformsTest {
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.move(config);
@@ -570,7 +427,7 @@ public class PrebuiltTransformsTest {
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.move(config);
@@ -597,9 +454,9 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "params");
+    config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.move(config);
@@ -632,12 +489,12 @@ public class PrebuiltTransformsTest {
   }
 
   @Test
-  public void testMoveToStringWithKeysAndCorporaAndOverwrite() {
+  public void testMoveToStringWithKeysAndKeysetAndOverwrite() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("1.from", "colour");
-    config.put("1.from.corpora", "params");
+    config.put("1.from.keyset", "params");
     config.put("1.to", "color");
-    config.put("1.to.corpora", "metadata");
+    config.put("1.to.keyset", "metadata");
     config.put("2.from", "author");
     config.put("2.to", "contributors");
     config.put("overwrite", "true");
@@ -645,10 +502,10 @@ public class PrebuiltTransformsTest {
 
     MetadataTransform transform = PrebuiltTransforms.move(config);
     assertEquals("CopyTransform(copies=["
-        + "(from=(key=colour,corpora=params),"
-        + "to=(key=color,corpora=metadata)), "
-        + "(from=(key=author,corpora=metadata),"
-        + "to=(key=contributors,corpora=metadata))],"
+        + "(from=(key=colour,keyset=params),"
+        + "to=(key=color,keyset=metadata)), "
+        + "(from=(key=author,keyset=metadata),"
+        + "to=(key=contributors,keyset=metadata))],"
         + "overwrite=true,move=true)",
         transform.toString());
   }
@@ -684,11 +541,11 @@ public class PrebuiltTransformsTest {
   public void testDeleteParams() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key1", "missing");
-    config.put("corpora1", "params");
+    config.put("keyset1", "params");
     config.put("key2", "colour");
-    config.put("corpora2", "params");
+    config.put("keyset2", "params");
     config.put("key3", "author");
-    config.put("corpora3", "params");
+    config.put("keyset3", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.delete(config);
@@ -699,31 +556,6 @@ public class PrebuiltTransformsTest {
       golden.add("colour", "black");
       metadataGolden = golden.unmodifiableView();
     }
-    final Map<String, String> paramsGolden
-        = Collections.<String, String>emptyMap();
-
-    Metadata metadata = new Metadata();
-    metadata.add("colour", "black");
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("author", "Fred");
-    params.put("colour", "red");
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-    assertEquals(paramsGolden, params);
-  }
-
-  @Test
-  public void testDeleteMetadataOrParams() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key2", "colour");
-    config.put("corpora2", "metadata or params");
-    config.put("key3", "author");
-    config.put("corpora3", "metadata or params");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.delete(config);
-
-    final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden
         = Collections.<String, String>emptyMap();
 
@@ -752,12 +584,12 @@ public class PrebuiltTransformsTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key2", "colour");
     config.put("key3", "author");
-    config.put("corpora3", "params");
+    config.put("keyset3", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.delete(config);
-    assertEquals("DeleteTransform(keys=[(key=colour,corpora=metadata), "
-        + "(key=author,corpora=params)])", transform.toString());
+    assertEquals("DeleteTransform(keys=[(key=colour,keyset=metadata), "
+        + "(key=author,keyset=params)])", transform.toString());
   }
 
   @Test
@@ -838,9 +670,9 @@ public class PrebuiltTransformsTest {
   public void testReplacePatternInParams() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key1", "colour");
-    config.put("corpora1", "params");
+    config.put("keyset1", "params");
     config.put("key2", "missing");
-    config.put("corpora2", "params");
+    config.put("keyset2", "params");
     config.put("pattern", "[aeiou]");
     config.put("replacement", "$0$0");
     config = Collections.unmodifiableMap(config);
@@ -877,9 +709,9 @@ public class PrebuiltTransformsTest {
   public void testReplaceStringInParams() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key1", "colour");
-    config.put("corpora1", "params");
+    config.put("keyset1", "params");
     config.put("key2", "missing");
-    config.put("corpora2", "params");
+    config.put("keyset2", "params");
     config.put("string", "[test]");
     config.put("replacement", "herring");
     config = Collections.unmodifiableMap(config);
@@ -890,84 +722,6 @@ public class PrebuiltTransformsTest {
     {
       Metadata golden = new Metadata();
       golden.add("colour", "black [test]");
-      golden.add("author", "Fred [test]");
-      metadataGolden = golden.unmodifiableView();
-    }
-    final Map<String, String> paramsGolden;
-    {
-      Map<String, String> golden = new HashMap<String, String>();
-      golden.put("colour", "red herring");
-      golden.put("author", "Fred [test]");
-      paramsGolden = Collections.unmodifiableMap(golden);
-    }
-
-    Metadata metadata = new Metadata();
-    metadata.add("colour", "black [test]");
-    metadata.add("author", "Fred [test]");
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("colour", "red [test]");
-    params.put("author", "Fred [test]");
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-    assertEquals(paramsGolden, params);
-  }
-
-  @Test
-  public void testReplacePatternInMetadataOrParams() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key1", "colour");
-    config.put("corpora1", "metadata or params");
-    config.put("key2", "missing");
-    config.put("corpora2", "metadata or params");
-    config.put("pattern", "[aeiou]");
-    config.put("replacement", "$0$0");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("colour", "blaack");
-      golden.add("author", "Fred");
-      metadataGolden = golden.unmodifiableView();
-    }
-    final Map<String, String> paramsGolden;
-    {
-      Map<String, String> golden = new HashMap<String, String>();
-      golden.put("colour", "reed");
-      golden.put("author", "Fred");
-      paramsGolden = Collections.unmodifiableMap(golden);
-    }
-
-    Metadata metadata = new Metadata();
-    metadata.add("colour", "black");
-    metadata.add("author", "Fred");
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("colour", "red");
-    params.put("author", "Fred");
-    transform.transform(metadata, params);
-    assertEquals(metadataGolden, metadata);
-    assertEquals(paramsGolden, params);
-  }
-
-  @Test
-  public void testReplaceStringInMetadataOrParams() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key1", "colour");
-    config.put("corpora1", "metadata or params");
-    config.put("key2", "missing");
-    config.put("corpora2", "metadata or params");
-    config.put("string", "[test]");
-    config.put("replacement", "herring");
-    config = Collections.unmodifiableMap(config);
-
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
-
-    final Metadata metadataGolden;
-    {
-      Metadata golden = new Metadata();
-      golden.add("colour", "black herring");
       golden.add("author", "Fred [test]");
       metadataGolden = golden.unmodifiableView();
     }
