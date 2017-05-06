@@ -35,10 +35,10 @@ import java.util.regex.Pattern;
  * present determines the match. The key {@code when} determines
  * whether the {@code decision} is made for matching documents (if that key is
  * set to {@code found}) or made for non-matching documents (if that key is set
- * to {@code not-found}). By default, both Document {@code Metadata} and
- * {@code params} are searched for the matching {@code key}; the config key
- * {@code keyset} may be set to {@code metadata} or to {@code params} to
- * restrict the search to only {@code Metadata} or {@code params}, respectively.
+ * to {@code not-found}). The config key {@code keyset} may be set to
+ * {@code metadata} or to {@code params} to restrict the search to
+ * {@code Metadata} or {@code params}, respectively. If {@code keyset} is not
+ * specified, it defaults to {@code metadata}.
  * Most keys/values of interest will normally be specified in the document's
  * {@code Metadata}, but some key/values of interest (e.g. ContentType, DocId)
  * exist in the document's {@code params}.
@@ -58,6 +58,7 @@ import java.util.regex.Pattern;
    metadata.transform.pipeline=regexFilter
    metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
    metadata.transform.pipeline.regexFilter.key=ContentLength
+   metadata.transform.pipeline.regexFilter.keyset=params
    metadata.transform.pipeline.regexFilter.pattern=0*[1-9][0-9]{8,}
    metadata.transform.pipeline.regexFilter.decision=do-not-index-content
    </code></pre>
@@ -68,10 +69,10 @@ import java.util.regex.Pattern;
    metadata.transform.pipeline=regexFilter
    metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
    metadata.transform.pipeline.regexFilter.key=Classification
+   metadata.transform.pipeline.regexFilter.keyset=metadata
    metadata.transform.pipeline.regexFilter.pattern=(PUBLIC)|(DECLASSIFIED)
    metadata.transform.pipeline.regexFilter.when=not-found
    metadata.transform.pipeline.regexFilter.decision=do-not-index
-   metadata.transform.pipeline.regexFilter.keyset=metadata
    </code></pre>
  */
 public class RegexFilter implements MetadataTransform {
