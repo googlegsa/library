@@ -25,6 +25,7 @@ import java.util.Map;
  */
 public interface MetadataTransform {
 
+  /** Keys for data stored in the {@code Map} of {@code params}. */
   public static final String KEY_DOC_ID = "DocId";
   public static final String KEY_DISPLAY_URL = "Display-URL";
   public static final String KEY_CONTENT_TYPE = "Content-Type";
@@ -34,6 +35,41 @@ public interface MetadataTransform {
       = "Last-Modified-Millis-UTC";
   public static final String KEY_TRANSMISSION_DECISION 
       = "Transmission-Decision";
+
+  /**
+   * Identifies the location a configured key/value pair resides,
+   * either in the {@link Metadata}, or the map of {@code params}.
+   * <p>
+   * Suppose a transform wishes examine or modify the display URL, which is
+   * stored in the {@code params}. The transform's configuration might look
+   * like:
+   * <pre><code>
+     key=Display-URL
+     keyset=params
+     </code></pre>
+   * If unspecified, the default value is {@code metadata}.
+   *
+   * @since 4.1.4
+   */
+  public enum Keyset {
+    METADATA("metadata"),
+    PARAMS("params");
+
+    private final String name;
+
+    private Keyset(String name) {
+      this.name = name;
+    }
+
+    public static Keyset from(String val) {
+      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
+    }
+
+    @Override
+    public String toString() {
+      return name;
+    }
+  }
 
   /** Transforms can cancel sending doc, or cancel sending its contents. */
   public enum TransmissionDecision {
@@ -54,6 +90,7 @@ public interface MetadataTransform {
       return TransmissionDecision.valueOf(val.replace('-', '_').toUpperCase());
     }
 
+    @Override
     public String toString() {
       return name;
     }
