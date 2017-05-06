@@ -42,8 +42,8 @@ public class RegexFilterTest {
   @Test
   public void testToString_defaultFilter() {
     MetadataTransform transform = defaultFilter();
-    assertEquals("RegexFilter(leaveMe, \\A, found, as-is, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(leaveMe, metadata, \\A, found, as-is)",
+        transform.toString());
   }
 
   @Test
@@ -80,8 +80,8 @@ public class RegexFilterTest {
     config.put("pattern", "");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(skipMe, \\A, found, do-not-index, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(skipMe, metadata, \\A, found, do-not-index)",
+         transform.toString());
   }
 
   @Test
@@ -89,8 +89,8 @@ public class RegexFilterTest {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "foo");
     RegexFilter transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(foo, \\A, found, as-is, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(foo, metadata, \\A, found, as-is)",
+        transform.toString());
   }
 
   @Test
@@ -108,8 +108,8 @@ public class RegexFilterTest {
     config.put("key", "foo");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(foo, \\A, found, do-not-index, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(foo, metadata, \\A, found, do-not-index)",
+        transform.toString());
   }
 
   @Test
@@ -118,8 +118,8 @@ public class RegexFilterTest {
     config.put("key", "foo");
     config.put("decision", "do-not-index-content");
     RegexFilter transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(foo, \\A, found, do-not-index-content, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(foo, metadata, \\A, found, do-not-index-content)",
+        transform.toString());
   }
 
   @Test
@@ -128,8 +128,8 @@ public class RegexFilterTest {
     config.put("key", "foo");
     config.put("decision", "as-is");
     RegexFilter transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(foo, \\A, found, as-is, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(foo, metadata, \\A, found, as-is)",
+        transform.toString());
   }
 
   @Test
@@ -139,41 +139,40 @@ public class RegexFilterTest {
     config.put("when", "not-found");
     config.put("decision", "do-not-index");
     MetadataTransform transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(skipMe, \\A, not-found, do-not-index, "
-        + "metadata or params)", transform.toString());
-  }
-
-  @Test
-  public void testToString_CorporaMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key", "skipMe");
-    config.put("corpora", "metadata");
-    config.put("decision", "do-not-index");
-    MetadataTransform transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(skipMe, \\A, found, do-not-index, "
-        + "metadata)", transform.toString());
-  }
-
-  @Test
-  public void testToString_CorporaParams() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key", "skipMe");
-    config.put("corpora", "params");
-    config.put("decision", "do-not-index");
-    MetadataTransform transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(skipMe, \\A, found, do-not-index, params)",
+    assertEquals("RegexFilter(skipMe, metadata, \\A, not-found, do-not-index)",
         transform.toString());
   }
 
   @Test
-  public void testCreate_CorporaBogus() {
+  public void testToString_KeysetMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
-    config.put("corpora", "bogus");
+    config.put("keyset", "metadata");
     config.put("decision", "do-not-index");
     MetadataTransform transform = RegexFilter.create(config);
-    assertEquals("RegexFilter(skipMe, \\A, found, do-not-index, "
-        + "metadata or params)", transform.toString());
+    assertEquals("RegexFilter(skipMe, metadata, \\A, found, do-not-index)",
+        transform.toString());
+  }
+
+  @Test
+  public void testToString_KeysetParams() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "skipMe");
+    config.put("keyset", "params");
+    config.put("decision", "do-not-index");
+    MetadataTransform transform = RegexFilter.create(config);
+    assertEquals("RegexFilter(skipMe, params, \\A, found, do-not-index)",
+        transform.toString());
+  }
+
+  @Test
+  public void testCreate_KeysetBogus() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "skipMe");
+    config.put("keyset", "bogus");
+    config.put("decision", "do-not-index");
+    thrown.expect(IllegalArgumentException.class);
+    MetadataTransform transform = RegexFilter.create(config);
   }
 
   // tests on transform behavior when pattern is blank
@@ -212,6 +211,7 @@ public class RegexFilterTest {
   public void testTransform_KeyFoundInParamsWhenNotFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
+    config.put("keyset", "params");
     config.put("when", "not-found");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
@@ -242,6 +242,7 @@ public class RegexFilterTest {
   public void testTransform_SkipKeyFoundInParamsWhenFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "found");
+    config.put("keyset", "params");
     config.put("when", "found");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
@@ -305,6 +306,7 @@ public class RegexFilterTest {
   public void testTransform_KeyMatchedInParamsWhenNotFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
+    config.put("keyset", "params");
     config.put("pattern", "match.*");
     config.put("when", "not-found");
     config.put("decision", "do-not-index");
@@ -337,6 +339,7 @@ public class RegexFilterTest {
   public void testTransform_SkipKeyMatchedInParamsWhenFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "property");
+    config.put("keyset", "params");
     config.put("pattern", "match.*");
     config.put("when", "found");
     config.put("decision", "do-not-index");
@@ -366,14 +369,14 @@ public class RegexFilterTest {
     assertEquals(null, params.get("Transmission-Decision"));
   }
 
-  // tests on corpora=params (skipping Metadata)
+  // tests on keyset=params (skipping Metadata)
 
   @Test
-  public void testTransform_SkipCorporaParamsWhenNotFound() {
+  public void testTransform_SkipKeysetParamsWhenNotFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
+    config.put("keyset", "params");
     config.put("when", "not-found");
-    config.put("corpora", "params");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
@@ -385,11 +388,11 @@ public class RegexFilterTest {
   }
 
   @Test
-  public void testTransform_CorporaParamsWhenFound() {
+  public void testTransform_KeysetParamsWhenFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
+    config.put("keyset", "params");
     config.put("when", "found");
-    config.put("corpora", "params");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
@@ -400,14 +403,14 @@ public class RegexFilterTest {
     assertEquals(null, params.get("Transmission-Decision"));
   }
 
-  // tests on corpora=Metadata (skipping params)
+  // tests on keyset=Metadata (skipping params)
 
   @Test
-  public void testTransform_SkipCorporaMetadataWhenNotFound() {
+  public void testTransform_SkipKeysetMetadataWhenNotFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
+    config.put("keyset", "metadata");
     config.put("when", "not-found");
-    config.put("corpora", "metadata");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
@@ -419,11 +422,11 @@ public class RegexFilterTest {
   }
 
   @Test
-  public void testTransform_CorporaMetadataWhenFound() {
+  public void testTransform_KeysetMetadataWhenFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");
+    config.put("keyset", "metadata");
     config.put("when", "found");
-    config.put("corpora", "metadata");
     config.put("decision", "do-not-index");
     RegexFilter transform = RegexFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();

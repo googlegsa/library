@@ -37,7 +37,7 @@ import java.util.regex.Pattern;
  * set to {@code found}) or made for non-matching documents (if that key is set
  * to {@code not-found}). By default, both Document {@code Metadata} and
  * {@code params} are searched for the matching {@code key}; the config key
- * {@code corpora} may be set to {@code metadata} or to {@code params} to
+ * {@code keyset} may be set to {@code metadata} or to {@code params} to
  * restrict the search to only {@code Metadata} or {@code params}, respectively.
  * Most keys/values of interest will normally be specified in the document's
  * {@code Metadata}, but some key/values of interest (e.g. ContentType, DocId)
@@ -71,7 +71,7 @@ import java.util.regex.Pattern;
    metadata.transform.pipeline.regexFilter.pattern=(PUBLIC)|(DECLASSIFIED)
    metadata.transform.pipeline.regexFilter.when=not-found
    metadata.transform.pipeline.regexFilter.decision=do-not-index
-   metadata.transform.pipeline.regexFilter.corpora=metadata
+   metadata.transform.pipeline.regexFilter.keyset=metadata
    </code></pre>
  */
 public class RegexFilter implements MetadataTransform {
@@ -102,28 +102,19 @@ public class RegexFilter implements MetadataTransform {
     }
   };
 
-  /**
-   * Which collections of keys/values to search.  Metadata, params, or both.
-   */
-  private enum Corpora {
+  // TODO (bmj): remove this and use the one in MetadataTransforms.
+  public enum Keyset {
     METADATA("metadata"),
-    PARAMS("params"),
-    METADATA_OR_PARAMS("metadata or params");
+    PARAMS("params");
 
     private final String name;
 
-    private Corpora(String n) {
-      name = n;
+    private Keyset(String name) {
+      this.name = name;
     }
 
-    public static Corpora from(String val) {
-      if ("metadata".equalsIgnoreCase(val)) {
-        return Corpora.METADATA;
-      }
-      if ("params".equalsIgnoreCase(val)) {
-        return Corpora.PARAMS;
-      }
-      return METADATA_OR_PARAMS;
+    public static Keyset from(String val) {
+      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
     }
 
     @Override
@@ -137,6 +128,12 @@ public class RegexFilter implements MetadataTransform {
 
   /** The name of the key (either Metadata key or params key) to match. */
   private String key;
+
+  /**
+   * If {@code METADATA}, search the metadata for the specified key;
+   * if {@code PARAMS}, search the params for the specified key;
+   */
+  private Keyset keyset = Keyset.METADATA;
 
   /**
    * The regex pattern to match in the property value (can be null to indicate
@@ -155,20 +152,13 @@ public class RegexFilter implements MetadataTransform {
    */
   private TransmissionDecision decision;
 
-  /**
-   * If {@code METADATA}, only search the metadata for the specified key;
-   * if {@code PARAMS}, only search the params for the specified key;
-   * if {@code METADATA_OR_PARAMS}, search both.
-   */
-  private Corpora corpora = Corpora.METADATA;
-
-  private RegexFilter(String key, Pattern pattern,
-      When when, TransmissionDecision decision, Corpora corpora) {
+  private RegexFilter(String key, Keyset keyset, Pattern pattern,
+      When when, TransmissionDecision decision) {
     this.key = key;
+    this.keyset = keyset;
     this.pattern = pattern;
     this.when = when;
     this.decision = decision;
-    this.corpora = corpora;
   }
 
   /**
@@ -208,21 +198,20 @@ public class RegexFilter implements MetadataTransform {
    * Conditionally adds a {@code Transmission-Decision} entry to the
    * {@code params Map}. The decision is based on settings of the
    * {@code key}, {@code pattern}, {@code decideOnMatch}, {@code decision},
-   * and {@code corpora} configuration variables (as discussed above).
+   * and {@code keyset} configuration variables (as discussed above).
    */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
     boolean found;
-    switch (corpora) {
+    switch (keyset) {
       case METADATA:
         found = foundInMetadata(metadata);
         break;
       case PARAMS:
         found = foundInParams(params);
         break;
-      case METADATA_OR_PARAMS:
       default:
-        found = foundInMetadata(metadata) || foundInParams(params);
+        found = false;	// can't happen
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
@@ -234,23 +223,23 @@ public class RegexFilter implements MetadataTransform {
       if (found) {
         log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
             + "because we found a match in {2}",
-            new Object[] { decision, docId, corpora });
+            new Object[] { decision, docId, keyset });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             decision.toString());
       } else {
         log.log(Level.FINE, "No transmission decision for document {0}, "
             + "because we did not find a match in {1}",
-            new Object[] { docId, corpora });
+            new Object[] { docId, keyset });
       }
     } else {
       if (found) {
         log.log(Level.FINE, "No transmission decision for document {0}, "
             + "because we found a match in {1}",
-            new Object[] { docId, corpora });
+            new Object[] { docId, keyset });
       } else {
         log.log(Level.INFO, "Transmission decision of {0} for document {1}, "
             + "because we did not find a match in {2}",
-            new Object[] { decision, docId, corpora });
+            new Object[] { decision, docId, keyset });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             decision.toString());
       }
@@ -261,25 +250,28 @@ public class RegexFilter implements MetadataTransform {
   public String toString() {
     return new StringBuilder("RegexFilter(")
         .append(key).append(", ")
-        .append(pattern == null ? "[null]" : pattern.toString()).append(", ")
+        .append(keyset).append(", ")
+        .append(pattern.toString()).append(", ")
         .append(when).append(", ")
-        .append(decision).append(", ")
-        .append(corpora).append(")")
+        .append(decision).append(")")
         .toString();
   }
 
   public static RegexFilter create(Map<String, String> cfg) {
     String key;
+    Keyset keyset;
     Pattern pattern = null;
     When when;
     TransmissionDecision decision;
-    Corpora corpora;
 
     key = getTrimmedValue(cfg, "key");
     if (key == null) {
       throw new NullPointerException("key may not be null or empty");
     }
     log.config("key = " + key);
+
+    keyset = Keyset.from(getTrimmedValue(cfg, "keyset"));
+    log.config("keyset = " + keyset);
 
     String patternString = cfg.get("pattern");
     if (Strings.isNullOrEmpty(patternString)) {
@@ -291,15 +283,12 @@ public class RegexFilter implements MetadataTransform {
     }
 
     when = When.from(getTrimmedValue(cfg, "when"));
-    log.config("when set to " + when);
+    log.config("when = " + when);
 
     decision = TransmissionDecision.from(getTrimmedValue(cfg, "decision"));
     log.config("decision = " + decision);
 
-    corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
-    log.config("corpora set to " + corpora);
-
-    return new RegexFilter(key, pattern, when, decision, corpora);
+    return new RegexFilter(key, keyset, pattern, when, decision);
   }
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
