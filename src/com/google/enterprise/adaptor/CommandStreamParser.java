@@ -493,6 +493,10 @@ public class CommandStreamParser {
           response.addMetadata(metaName, command.getArgument());
           break;
         case PARAM_NAME:
+          if (!(response instanceof Response2)) {
+            throw new IOException(
+                "param-name is not supported by " + response.getClass());
+          }
           String paramName = command.getArgument();
           command = readCommand();
           if (command == null || command.getOperation() != Operation.PARAM_VALUE) {
@@ -501,7 +505,7 @@ public class CommandStreamParser {
           log.log(Level.FINEST, "Retriever: {0} has parameter {1}={2}",
               new Object[] {docId.getUniqueId(), paramName,
                 command.getArgument()});
-          response.addParam(paramName, command.getArgument());
+          ((Response2) response).addParam(paramName, command.getArgument());
           break;
         case UP_TO_DATE:
           log.log(Level.FINEST, "Retriever: {0} is up to date.", docId.getUniqueId());

@@ -46,7 +46,8 @@ public interface Adaptor {
    * IOException} or {@link RuntimeException}. In the case of an error, the GSA
    * will determine if and when to retry.
    * @param request info about document being sought
-   * @param response place to put document data
+   * @param response place to put document data; this argument will always
+   *     implement {@link Response2}
    * @throws IOException if getting data fails
    * @throws InterruptedException if an IO operation throws it
    */
