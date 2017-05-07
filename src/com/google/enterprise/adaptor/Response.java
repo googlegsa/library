@@ -14,13 +14,15 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.testing.UnsupportedResponse;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
 import java.util.Date;
 
 /**
- * Interface provided to {@link Adaptor#getDocContent
+ * Base interface provided to {@link Adaptor#getDocContent
  * Adaptor.getDocContent(Request, Response)} for performing the actions needed
  * to satisfy a request.
  *
@@ -33,6 +35,11 @@ import java.util.Date;
  * {@link Request#hasChangedSinceLastAccess} and call {@link
  * #respondNotModified} when it is {@code true}. This prevents the Adaptor from
  * ever needing to retrieve the document contents and metadata.
+ *
+ * <p>This interface should not be implemented directly for unit testing.
+ * Instead, use a mocking framework, such as Mockito, a
+ * {@code java.lang.reflect.Proxy}, or extend the {@link UnsupportedResponse}
+ * class.
  */
 public interface Response {
   /**
@@ -213,18 +220,4 @@ public interface Response {
    *     to unlocked documents
    */
   public void setLock(boolean lock);
-
-  /**
-   * Adds a parameter to a Map for use by {@link MetadataTransforms} when making
-   * transforms or decisions. Params are data associated with the document,
-   * but might not be indexed and searchable. The {@code params} include the
-   * documents {@link DocId}, and values from {@link setLock},
-   * {@link setCrawlOnce}, {@code setDisplayUrl}, {@code setContentType},
-   * and {@code setLastModified}.
-   *
-   * @param key a key for a Map entry
-   * @param value the value for the Map entry for key
-   */
-  // TODO (bmj): Supply Params to ContentTransforms.
-  public void addParam(String key, String value);
 }

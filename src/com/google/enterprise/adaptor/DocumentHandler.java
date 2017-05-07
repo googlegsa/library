@@ -706,7 +706,7 @@ class DocumentHandler implements HttpHandler {
    * <p>{@link #getOutputStream} and {@link #complete} are the main methods that
    * need to be very aware of all the different possibilities.
    */
-  private class DocumentResponse implements Response {
+  private class DocumentResponse implements Response2 {
     private Thread workingThread;
     private State state = State.SETUP;
     private HttpExchange ex;

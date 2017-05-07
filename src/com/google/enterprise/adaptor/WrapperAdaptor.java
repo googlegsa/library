@@ -100,9 +100,14 @@ abstract class WrapperAdaptor implements Adaptor {
   /**
    * Passes through all operations to wrapped {@code Response}.
    */
-  public static class WrapperResponse implements Response {
+  public static class WrapperResponse implements Response2 {
     private Response response;
 
+    /**
+     * If {@code response} is a {@code Response2}, then the {@code addParam}
+     * method is supported on this instance. Otherwise, {@code addParam}
+     * will throw an exception.
+     */
     public WrapperResponse(Response response) {
       this.response = response;
     }
@@ -192,9 +197,18 @@ abstract class WrapperAdaptor implements Adaptor {
       response.setLock(lock);
     }
 
+    /**
+     * @throws UnsupportedOperationException if the wrapped {@code Response}
+     *     is not a {@code Response2}
+     */
     @Override
     public void addParam(String key, String value) {
-      response.addParam(key, value);
+      if (response instanceof Response2) {
+        ((Response2) response).addParam(key, value);
+      } else {
+        throw new UnsupportedOperationException(
+            "addParam is not supported by " + response.getClass());
+      }
     }
   }
 
@@ -219,8 +233,6 @@ abstract class WrapperAdaptor implements Adaptor {
     public boolean canRespondWithNoContent(Date lastModified) {
       return false;
     }
-    
-    
 
     @Override
     public Date getLastAccessTime() {
@@ -238,7 +250,7 @@ abstract class WrapperAdaptor implements Adaptor {
    * {@link Adaptor}. It does not support {@link #respondNotModified}. Be sure
    * to check {@link #isNotFound()}.
    */
-  public static class GetContentsResponse implements Response {
+  public static class GetContentsResponse implements Response2 {
     private OutputStream os;
     private String contentType;
     private Date lastModified;

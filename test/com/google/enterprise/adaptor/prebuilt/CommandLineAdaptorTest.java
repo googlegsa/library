@@ -26,7 +26,7 @@ import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Response;
+import com.google.enterprise.adaptor.Response2;
 import com.google.enterprise.adaptor.UserPrincipal;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.InputSource;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.OutputSink;
@@ -276,7 +276,7 @@ public class CommandLineAdaptorTest {
     }
   }
 
-  private static class ContentsResponseTestMock implements Response {
+  private static class ContentsResponseTestMock implements Response2 {
     private OutputStream os;
     private String contentType;
     private Date lastModified;
