@@ -31,15 +31,20 @@ import java.util.Map;
 
 /**
  * A fake implementation of {@link Response} that simply records the
- * values it receives.
+ * values it receives, and implements the interface semantics of the
+ * methods that must be called last.
  */
 public class RecordingResponse implements Response {
   // TODO(jlacey): Implement Response2.
 
+  /**
+   * Response states based on calls to the {@code respondXXX} and
+   * {@code getOutputStream} methods.
+   */
+  public enum State { SETUP, NOT_MODIFIED, NOT_FOUND, NO_CONTENT, SEND_BODY };
+
   private final OutputStream os;
-  private boolean notModified;
-  private boolean notFound;
-  private boolean noContent;
+  private State state = State.SETUP;
   private String contentType;
   private Date lastModified;
   private Metadata metadata = new Metadata();
@@ -71,99 +76,150 @@ public class RecordingResponse implements Response {
 
   @Override
   public void respondNotModified() throws IOException {
-    notModified = true;
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
+    state = State.NOT_MODIFIED;
   }
 
   @Override
   public void respondNotFound() throws IOException {
-    notFound = true;
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
+    state = State.NOT_FOUND;
   }
 
   @Override
   public void respondNoContent() throws IOException {
-    noContent = true;
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
+    state = State.NO_CONTENT;
   }
 
   @Override
   public OutputStream getOutputStream() {
-    return os;
+    switch (state) {
+      case SETUP:
+        state = State.SEND_BODY;
+        return os;
+      case SEND_BODY:
+        return os;
+      default:
+        throw new IllegalStateException("Already responded " + state);
+    }
   }
 
   @Override
   public void setContentType(String contentType) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.contentType = contentType;
   }
 
   @Override
   public void setLastModified(Date lastModified) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.lastModified = lastModified;
   }
 
   @Override
   public void addMetadata(String key, String value) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     metadata.add(key, value);
   }
 
   @Override
   public void setAcl(Acl acl) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.acl = acl;
   }
 
   @Override
   public void putNamedResource(String fragment, Acl acl) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     namedResources.put(fragment, acl);
   }
 
   @Override
   public void setSecure(boolean secure) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.secure = secure;
   }
 
   @Override
   public void addAnchor(URI uri, String text) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
+    if (uri == null) {
+      throw new NullPointerException();
+    }
     anchors.add(new SimpleEntry<String, URI>(text, uri));
   }
 
   @Override
   public void setNoIndex(boolean noIndex) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.noIndex = noIndex;
   }
 
   @Override
   public void setNoFollow(boolean noFollow) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.noFollow = noFollow;
   }
 
   @Override
   public void setNoArchive(boolean noArchive) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.noArchive = noArchive;
   }
 
   @Override
   public void setDisplayUrl(URI displayUrl) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.displayUrl = displayUrl;
   }
 
   @Override
   public void setCrawlOnce(boolean crawlOnce) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.crawlOnce = crawlOnce;
   }
 
   @Override
   public void setLock(boolean lock) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
     this.lock = lock;
   }
 
-  public boolean isNotModified() {
-    return notModified;
-  }
-
-  public boolean isNotFound() {
-    return notFound;
-  }
-
-  public boolean isNoContent() {
-    return noContent;
+  public State getState() {
+    return state;
   }
 
   public String getContentType() {

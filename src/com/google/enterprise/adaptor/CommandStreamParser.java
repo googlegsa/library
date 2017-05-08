@@ -467,6 +467,19 @@ public class CommandStreamParser {
     command = readCommand();
     while (command != null) {
       switch (command.getOperation()) {
+        case CONTENT:
+        case UP_TO_DATE:
+        case NOT_FOUND:
+          // Finish by putting accumulated ACL into response.
+          if (sendAclWithDocument) {
+            aclBuilder.setPermits(permits);
+            aclBuilder.setDenies(denies);
+            response.setAcl(aclBuilder.build());
+          }
+          break;
+        default:
+      }
+      switch (command.getOperation()) {
         case ID:
           throw new IOException("Only one document ID can be specified in a retriever message");
         case CONTENT:
@@ -575,12 +588,6 @@ public class CommandStreamParser {
               + "'");
       }
       command = readCommand();
-    }
-    // Finish by putting accumulated ACL into response.
-    if (sendAclWithDocument) {
-      aclBuilder.setPermits(permits);
-      aclBuilder.setDenies(denies);
-      response.setAcl(aclBuilder.build());
     }
   }
 
