@@ -16,6 +16,8 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assume.assumeTrue;
 
+import com.google.enterprise.adaptor.testing.MockResponse;
+
 import java.io.ByteArrayOutputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -88,8 +90,7 @@ public class TestHelper {
   public static byte[] getDocContent(Adaptor adaptor, DocId docId)
       throws IOException, InterruptedException {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse resp
-        = new WrapperAdaptor.GetContentsResponse(baos);
+    MockResponse resp = new MockResponse(baos);
     adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId), resp);
     if (resp.isNotFound()) {
       throw new FileNotFoundException("Could not find " + docId);

@@ -17,6 +17,9 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static java.util.Collections.singletonList;
+
+import com.google.enterprise.adaptor.testing.MockResponse;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +30,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -179,8 +183,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -192,8 +195,9 @@ public class CommandStreamParserTest {
     assertEquals(1, metadata.getKeys().size());
     assertEquals(new Date(15 * 1000), response.getLastModified());
     assertEquals(true, response.isSecure());
-    assertEquals(Arrays.asList(URI.create("http://example.com/doc")), response.getAnchorUris());
-    assertEquals(Arrays.asList("It is an example"), response.getAnchorTexts());
+    assertEquals(singletonList(new SimpleEntry<String, URI>(
+            "It is an example", URI.create("http://example.com/doc"))),
+        response.getAnchors());
     assertEquals(true, response.isNoIndex());
     assertEquals(true, response.isNoFollow());
     assertEquals(true, response.isNoArchive());
@@ -211,8 +215,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -230,8 +233,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -276,8 +278,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -302,8 +303,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -325,8 +325,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -348,8 +347,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -370,8 +368,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -404,8 +401,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -430,8 +426,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -457,8 +452,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    MockResponse response = new MockResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
     parser.readFromRetriever(new DocId("5"), response);
@@ -483,8 +477,7 @@ public class CommandStreamParserTest {
 
      InputStream inputStream = new ByteArrayInputStream(source);
      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-     WrapperAdaptor.GetContentsResponse response
-         = new WrapperAdaptor.GetContentsResponse(outputStream);
+     MockResponse response = new MockResponse(outputStream);
      CommandStreamParser parser = new CommandStreamParser(inputStream);
 
      parser.readFromRetriever(new DocId("5"), response);
