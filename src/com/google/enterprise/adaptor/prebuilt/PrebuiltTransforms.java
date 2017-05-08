@@ -14,8 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
@@ -70,7 +68,13 @@ public class PrebuiltTransforms {
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
     String value = cfg.get(key);
-    return (value == null) ? value : Strings.emptyToNull(value.trim());
+    if (value != null) {
+      value = value.trim();
+      if (value.length() > 0) {
+        return value;
+      }
+    }
+    return null;
   }
 
   /**
@@ -88,7 +92,7 @@ public class PrebuiltTransforms {
    * to restrict the source and destination to only {@code Metadata} or
    * {@code params}, respectively.  Most keys/values of interest will normally
    * be specified in the document's {@code Metadata}, but some key/values of
-   * interest (e.g. ContentType, DocId) exist in the document's {@code params}.
+   * interest (e.g. Content-Type, DocId) exist in the document's {@code params}.
    *
    * <p>Example configuration:
    * <pre><code>
@@ -304,7 +308,7 @@ public class PrebuiltTransforms {
     }
   }
 
-  /** Contains a key in keyset. */
+  /** Describes a key in a keyset. */
   private static class Key {
     private final String key;
     private final Keyset keyset;
@@ -328,6 +332,11 @@ public class PrebuiltTransforms {
       }
       Key k = (Key) o;
       return this.key.equals(k.key) && this.keyset == k.keyset;
+    }
+
+    @Override
+    public int hashCode() {
+      return toString().hashCode();
     }
 
     @Override
@@ -514,7 +523,7 @@ public class PrebuiltTransforms {
         return;
       }
       log.log(Level.FINE,
-          "Replacing metadata values of {0} that match {1} with {2}: {3}",
+         "Replacing {1} with {2} in metadata values of {0}: {3}",
           new Object[] {key, toMatch, replacement, original});
       Set<String> values = new HashSet<String>(original);
       for (String value : original) {
@@ -536,7 +545,7 @@ public class PrebuiltTransforms {
         return;
       }
       log.log(Level.FINE,
-          "Replacing param value of {0} that match {1} with {2}: {3}",
+          "Replacing {1} with {2} in param value of {0}: {3}",
           new Object[] {key, toMatch, replacement, original});
       String newValue = toMatch.matcher(original).replaceAll(replacement);
       params.put(key, newValue);
