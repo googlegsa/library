@@ -102,6 +102,13 @@ public class PrebuiltTransforms {
      2.from=author
      2.to=contributors
      </code></pre>
+   * <p>Example configuration:
+   * <pre><code>
+     1.from=Content-Type
+     1.from.keyset=params
+     1.to=Original-Content-Type
+     1.to.keyset=params
+     </code></pre>
    *
    * @param config transform configuration
    * @return transform
