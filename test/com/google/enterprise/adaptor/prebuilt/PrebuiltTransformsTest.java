@@ -781,7 +781,7 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    MetadataTransform transform
+    MetadataTransform transform 
         = PrebuiltTransforms.replaceMetadata(config);
   }
 
@@ -792,7 +792,7 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    MetadataTransform transform
+    MetadataTransform transform  
         = PrebuiltTransforms.replaceMetadata(config);
   }
 
@@ -802,10 +802,8 @@ public class PrebuiltTransformsTest {
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
-
     MetadataTransform transform
-        = PrebuiltTransforms.moveMetadata(config);
-
+         = PrebuiltTransforms.moveMetadata(config);
     final Metadata metadataGolden;
     {
       Metadata golden = new Metadata();
@@ -832,10 +830,8 @@ public class PrebuiltTransformsTest {
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
-
     MetadataTransform transform
         = PrebuiltTransforms.copyMetadata(config);
-
     final Metadata metadataGolden;
     {
       Metadata golden = new Metadata();
