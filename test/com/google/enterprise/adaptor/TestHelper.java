@@ -16,11 +16,9 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assume.assumeTrue;
 
-import com.google.enterprise.adaptor.testing.RecordingResponse;
-
-import java.io.ByteArrayOutputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -87,17 +85,6 @@ public class TestHelper {
     return getDocIds(adaptor, Collections.<String, String>emptyMap());
   }
 
-  public static byte[] getDocContent(Adaptor adaptor, DocId docId)
-      throws IOException, InterruptedException {
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    RecordingResponse resp = new RecordingResponse(baos);
-    adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId), resp);
-    if (resp.getState() == RecordingResponse.State.NOT_FOUND) {
-      throw new FileNotFoundException("Could not find " + docId);
-    }
-    return baos.toByteArray();
-  }
-
   public static void initSSLKeystores() {
     /*
      * test-keys.jks created with: keytool -genkeypair -alias adaptor -keystore
@@ -117,5 +104,18 @@ public class TestHelper {
     System.setProperty("javax.net.ssl.trustStore",
         TestHelper.class.getResource("/test-cacerts.jks").getPath());
     System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
+  }
+
+  /** Gets a proxy for the given class where every method is a no-op. */
+  public static <T> T doNothingProxy(Class<T> clazz) {
+    return clazz.cast(
+        Proxy.newProxyInstance(clazz.getClassLoader(),
+            new Class<?>[] { clazz },
+            new InvocationHandler() {
+              public Object invoke(Object proxy, Method method, Object[] args) {
+                // This does not work with primitive return types.
+                return null;
+              }
+            }));
   }
 }
