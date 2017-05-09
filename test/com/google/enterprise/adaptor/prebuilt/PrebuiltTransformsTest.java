@@ -49,7 +49,8 @@ public class PrebuiltTransformsTest {
     config.put("6.to", "colour");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.copyMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -80,7 +81,7 @@ public class PrebuiltTransformsTest {
     config.put("2.to", "contributors");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -106,7 +107,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Map<String, String> paramsGolden;
     {
@@ -131,7 +132,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Map<String, String> paramsGolden;
     {
@@ -156,7 +157,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -180,7 +181,7 @@ public class PrebuiltTransformsTest {
     config.put("2.to", "contributors");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -207,7 +208,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Map<String, String> paramsGolden;
     {
@@ -231,7 +232,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Map<String, String> paramsGolden;
     {
@@ -255,7 +256,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
     final Map<String, String> paramsGolden;
     {
@@ -275,7 +276,6 @@ public class PrebuiltTransformsTest {
   public void testCopyToString() {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
-    @SuppressWarnings("deprecation")
     MetadataTransform transform
         = PrebuiltTransforms.copyMetadata(config);
     assertEquals("CopyTransform(copies=[],overwrite=false,move=false)",
@@ -294,7 +294,7 @@ public class PrebuiltTransformsTest {
     config.put("overwrite", "true");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
     assertEquals("CopyTransform(copies=["
         + "(from=(key=colour,keyset=params),"
         + "to=(key=color,keyset=metadata)), "
@@ -318,7 +318,8 @@ public class PrebuiltTransformsTest {
     config.put("4.to", "favorite");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -346,7 +347,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -374,7 +375,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -403,7 +404,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
@@ -430,7 +431,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
@@ -459,7 +460,7 @@ public class PrebuiltTransformsTest {
     config.put("1.to.keyset", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
@@ -481,7 +482,7 @@ public class PrebuiltTransformsTest {
   public void testMoveToString() {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
-    @SuppressWarnings("deprecation")
+
     MetadataTransform transform
         = PrebuiltTransforms.moveMetadata(config);
     assertEquals("CopyTransform(copies=[],overwrite=false,move=true)",
@@ -500,7 +501,7 @@ public class PrebuiltTransformsTest {
     config.put("overwrite", "true");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform = PrebuiltTransforms.moveMetadata(config);
     assertEquals("CopyTransform(copies=["
         + "(from=(key=colour,keyset=params),"
         + "to=(key=color,keyset=metadata)), "
@@ -518,7 +519,8 @@ public class PrebuiltTransformsTest {
     config.put("keyy", "contributors");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.delete(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.deleteMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -548,7 +550,7 @@ public class PrebuiltTransformsTest {
     config.put("keyset3", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.delete(config);
+    MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -573,7 +575,7 @@ public class PrebuiltTransformsTest {
   public void testDeleteToString() {
     Map<String, String> config = new HashMap<String, String>();
     config = Collections.unmodifiableMap(config);
-    @SuppressWarnings("deprecation")
+
     MetadataTransform transform
         = PrebuiltTransforms.deleteMetadata(config);
     assertEquals("DeleteTransform(keys=[])", transform.toString());
@@ -587,7 +589,7 @@ public class PrebuiltTransformsTest {
     config.put("keyset3", "params");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.delete(config);
+    MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
     assertEquals("DeleteTransform(keys=[(key=colour,keyset=metadata), "
         + "(key=author,keyset=params)])", transform.toString());
   }
@@ -599,7 +601,7 @@ public class PrebuiltTransformsTest {
     config.put("keyy", "author");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.delete(config);
+    MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
     assertEquals("DeleteTransform(keys=[])", transform.toString());
   }
 
@@ -613,7 +615,8 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "$0$0");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -644,7 +647,8 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "$0");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -677,7 +681,7 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "$0$0");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform = PrebuiltTransforms.replaceMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -716,7 +720,7 @@ public class PrebuiltTransformsTest {
     config.put("replacement", "herring");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform = PrebuiltTransforms.replaceMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -750,7 +754,7 @@ public class PrebuiltTransformsTest {
     config.put("string", "tofind");
     config.put("replacement", "replace$0");
     config = Collections.unmodifiableMap(config);
-    @SuppressWarnings("deprecation")
+
     MetadataTransform transform
         = PrebuiltTransforms.replaceMetadata(config);
     assertEquals("ReplaceTransform(keys=[],toMatch=\\Qtofind\\E,"
@@ -764,7 +768,8 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
   }
 
   @Test
@@ -776,7 +781,8 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
   }
 
   @Test
@@ -786,7 +792,8 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     thrown.expect(IllegalArgumentException.class);
-    MetadataTransform transform = PrebuiltTransforms.replace(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.replaceMetadata(config);
   }
 
   @Test
@@ -796,7 +803,8 @@ public class PrebuiltTransformsTest {
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.move(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.moveMetadata(config);
 
     final Metadata metadataGolden;
     {
@@ -825,7 +833,8 @@ public class PrebuiltTransformsTest {
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
 
-    MetadataTransform transform = PrebuiltTransforms.copy(config);
+    MetadataTransform transform
+        = PrebuiltTransforms.copyMetadata(config);
 
     final Metadata metadataGolden;
     {

@@ -113,7 +113,7 @@ public class PrebuiltTransforms {
    * @param config transform configuration
    * @return transform
    */
-  public static MetadataTransform copy(Map<String, String> config) {
+  public static MetadataTransform copyMetadata(Map<String, String> config) {
     boolean overwrite
         = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
@@ -123,21 +123,16 @@ public class PrebuiltTransforms {
     return new CopyTransform(copies, overwrite, false);
   }
 
-  @Deprecated
-  public static MetadataTransform copyMetadata(Map<String, String> config) {
-    return copy(config);
-  }
-
   /**
    * Returns a transform that moves metadata or param values from one key to
    * another. This method returns a transform that behaves identically to
-   * {@link #copy}, except that the source keys are removed. If the source key
-   * has no values then the destination is left as-is.
+   * {@link #copyMetadata}, except that the source keys are removed.
+   * If the source key has no values then the destination is left as-is.
    *
    * @param config transform configuration
    * @return transform
    */
-  public static MetadataTransform move(Map<String, String> config) {
+  public static MetadataTransform moveMetadata(Map<String, String> config) {
     boolean overwrite
         = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
@@ -145,11 +140,6 @@ public class PrebuiltTransforms {
       log.warning("No entries listed to be moved");
     }
     return new CopyTransform(copies, overwrite, true);
-  }
-
-  @Deprecated
-  public static MetadataTransform moveMetadata(Map<String, String> config) {
-    return move(config);
   }
 
   /**
@@ -366,17 +356,12 @@ public class PrebuiltTransforms {
    * @param config transform configuration
    * @return transform
    */
-  public static MetadataTransform delete(Map<String, String> config) {
+  public static MetadataTransform deleteMetadata(Map<String, String> config) {
     List<Key> keys = keyList(config);
     if (keys.isEmpty()) {
       log.warning("No entries listed to delete");
     }
     return new DeleteTransform(keys);
-  }
-
-  @Deprecated
-  public static MetadataTransform deleteMetadata(Map<String, String> config) {
-    return delete(config);
   }
 
   private static List<Key> keyList(Map<String, String> config) {
@@ -454,7 +439,7 @@ public class PrebuiltTransforms {
    * @param config transform configuration
    * @return transform
    */
-  public static MetadataTransform replace(Map<String, String> config) {
+  public static MetadataTransform replaceMetadata(Map<String, String> config) {
     boolean overwrite = true;
     String overwriteString = getTrimmedValue(config, "overwrite");
     if (overwriteString != null) {
@@ -490,11 +475,6 @@ public class PrebuiltTransforms {
     return new ReplaceTransform(keys, toMatch, replacementPattern, overwrite);
   }
 
-  @Deprecated
-  public static MetadataTransform replaceMetadata(Map<String, String> config) {
-    return replace(config);
-  }
-  
   private static class ReplaceTransform implements MetadataTransform {
     private final List<Key> keys;
     private final Pattern toMatch;
