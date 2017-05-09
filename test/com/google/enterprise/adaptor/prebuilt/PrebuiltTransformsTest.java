@@ -328,7 +328,6 @@ public class PrebuiltTransformsTest {
       golden.add("contributors", "Fred");
       metadataGolden = golden.unmodifiableView();
     }
-
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("author", "Fred");
@@ -802,7 +801,7 @@ public class PrebuiltTransformsTest {
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
-    MetadataTransform transform
+    MetadataTransform transform 
          = PrebuiltTransforms.moveMetadata(config);
     final Metadata metadataGolden;
     {
@@ -830,7 +829,7 @@ public class PrebuiltTransformsTest {
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
-    MetadataTransform transform
+    MetadataTransform transform 
         = PrebuiltTransforms.copyMetadata(config);
     final Metadata metadataGolden;
     {
