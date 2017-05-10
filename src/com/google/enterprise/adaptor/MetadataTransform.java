@@ -43,13 +43,15 @@ public interface MetadataTransform {
   /** The key for the document's lock flag supplied in the {@code params}. */
   public static final String KEY_LOCK = "Lock";
 
-  /** The key for the document's last modified timestamp supplied in the
+  /**
+   * The key for the document's last modified timestamp supplied in the
    * {@code params}.
    */
   public static final String KEY_LAST_MODIFIED_MILLIS_UTC
       = "Last-Modified-Millis-UTC";
 
-  /** The key for a {@link TransmissionDecision} that may be added to the
+  /**
+   * The key for a {@link TransmissionDecision} that may be added to the
    * {@code params}.
    */
   public static final String KEY_TRANSMISSION_DECISION 
@@ -112,16 +114,19 @@ public interface MetadataTransform {
    * of {@code AS_IS} is used.
    */
   public enum TransmissionDecision {
-    /** The document's metadata and content are to remain intact.
-     *  This value's name is {code as-is}.
+    /**
+     * The document's metadata and content are to remain intact.
+     * This value's name is {@code as-is}.
      */
     AS_IS("as-is"),
-    /** The document's metadata and content are discarded.
-     *  This value's name is {code do-not-index}.
+    /**
+     * The document's metadata and content are discarded.
+     * This value's name is {@code do-not-index}.
      */
     DO_NOT_INDEX("do-not-index"),
-    /** The document's content is discarded, but its metadata remains intact.
-     *  This value's name is {code do-not-index-content}.
+    /**
+     * The document's content is discarded, but its metadata remains intact.
+     * This value's name is {@code do-not-index-content}.
      */
     DO_NOT_INDEX_CONTENT("do-not-index-content");
 
