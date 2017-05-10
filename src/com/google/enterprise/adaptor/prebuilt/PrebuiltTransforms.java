@@ -96,19 +96,19 @@ public class PrebuiltTransforms {
    *
    * <p>Example configuration:
    * <pre><code>
-     overwrite=false
-     1.from=colour
-     1.to=color
-     2.from=author
-     2.to=contributors
-     </code></pre>
+   * overwrite=false
+   * 1.from=colour
+   * 1.to=color
+   * 2.from=author
+   * 2.to=contributors
+   * </code></pre>
    * <p>Example configuration:
    * <pre><code>
-     1.from=Content-Type
-     1.from.keyset=params
-     1.to=Original-Content-Type
-     1.to.keyset=params
-     </code></pre>
+   * 1.from=Content-Type
+   * 1.from.keyset=params
+   * 1.to=Original-Content-Type
+   * 1.to.keyset=params
+   * </code></pre>
    *
    * @param config transform configuration
    * @return transform
@@ -251,7 +251,7 @@ public class PrebuiltTransforms {
             if (!overwrite && !destValues.isEmpty()) {
               log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
                   new Object[] {kp.dest, destValues});
-            values.addAll(destValues);
+              values.addAll(destValues);
             }
             metadata.set(kp.dest.key, values);
             break;

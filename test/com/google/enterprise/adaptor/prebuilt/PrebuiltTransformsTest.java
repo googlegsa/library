@@ -109,6 +109,7 @@ public class PrebuiltTransformsTest {
 
     MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
+    final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
       Map<String, String> golden = new HashMap<String, String>();
@@ -120,6 +121,7 @@ public class PrebuiltTransformsTest {
     Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
+    assertEquals(metadataGolden, metadata);
     assertEquals(paramsGolden, params);
   }
 
@@ -134,6 +136,7 @@ public class PrebuiltTransformsTest {
 
     MetadataTransform transform = PrebuiltTransforms.copyMetadata(config);
 
+    final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
       Map<String, String> golden = new HashMap<String, String>();
@@ -146,6 +149,7 @@ public class PrebuiltTransformsTest {
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
+    assertEquals(metadataGolden, metadata);
     assertEquals(paramsGolden, params);
   }
 
@@ -340,7 +344,6 @@ public class PrebuiltTransformsTest {
   @Test
   public void testMoveFromParamsToMetadata() {
     Map<String, String> config = new HashMap<String, String>();
-    config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -397,7 +400,6 @@ public class PrebuiltTransformsTest {
   @Test
   public void testMoveFromMetadataToParam() {
     Map<String, String> config = new HashMap<String, String>();
-    config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -424,7 +426,6 @@ public class PrebuiltTransformsTest {
   @Test
   public void testMoveFromMetadataToExistingParam() {
     Map<String, String> config = new HashMap<String, String>();
-    config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -452,7 +453,6 @@ public class PrebuiltTransformsTest {
   @Test
   public void testMoveFromParamToParam() {
     Map<String, String> config = new HashMap<String, String>();
-    config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
