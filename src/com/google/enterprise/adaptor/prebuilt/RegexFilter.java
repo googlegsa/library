@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+import static java.util.Locale.US;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
@@ -79,7 +80,15 @@ public class RegexFilter implements MetadataTransform {
    * Make decision based upon whether the regular expression matches or not.
    */
   private static enum When {
+    /**
+     * The decision is set if a match to the regular expression is found.
+     * The name of this value is {@code found}.
+     */
     FOUND("found"),
+    /**
+     * The decision is set if a match to the regular expression is not found.
+     * The name of this value is {@code not-found}.
+     */
     NOT_FOUND("not-found");
 
     private final String name;
@@ -88,14 +97,21 @@ public class RegexFilter implements MetadataTransform {
       this.name = name;
     }
 
-    public static When from(String val) {
-      if ("not-found".equalsIgnoreCase(val)) {
-        return When.NOT_FOUND;
-      } else {
-        return When.FOUND;
+    /**
+     * Returns a {@code When} value with the given {@code name}, or the
+     * default value of {@code FOUND} if name is {@code null}.
+     * @param name the name of the When value
+     * @throws IllegalArgumentException if there is no When value with
+     *         {@code name}.
+     */
+    public static When from(String name) {
+      if (null == name) {
+        return FOUND;
       }
+      return When.valueOf(name.replace('-', '_').toUpperCase(US));
     }
 
+    /** Returns the name of this {@code When} value. */
     @Override
     public String toString() {
       return name;
@@ -127,30 +143,30 @@ public class RegexFilter implements MetadataTransform {
       = Logger.getLogger(RegexFilter.class.getName());
 
   /** The name of the key (either Metadata key or params key) to match. */
-  private String key;
+  private final String key;
 
   /**
    * If {@code METADATA}, search the metadata for the specified key;
    * if {@code PARAMS}, search the params for the specified key;
    */
-  private Keyset keyset = Keyset.METADATA;
+  private final Keyset keyset;
 
   /**
    * The regex pattern to match in the property value (can be null to indicate
    * that any value is considered a match).
    */
-  private Pattern pattern;
+  private final Pattern pattern;
 
   /**
    * If {@code found}, make a transmission decision on a match;
    * if {@code not-found}, make a transmission decision on a failed match.
    */
-  private When when = When.FOUND;
+  private final When when;
 
   /**
    * The {@code TransmissionDecision} to be made.
    */
-  private TransmissionDecision decision;
+  private final TransmissionDecision decision;
 
   private RegexFilter(String key, Keyset keyset, Pattern pattern,
       When when, TransmissionDecision decision) {
@@ -211,7 +227,7 @@ public class RegexFilter implements MetadataTransform {
         found = foundInParams(params);
         break;
       default:
-        found = false;	// can't happen
+        found = false; // can't happen
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
@@ -260,7 +276,7 @@ public class RegexFilter implements MetadataTransform {
   public static RegexFilter create(Map<String, String> cfg) {
     String key;
     Keyset keyset;
-    Pattern pattern = null;
+    Pattern pattern;
     When when;
     TransmissionDecision decision;
 
