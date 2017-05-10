@@ -16,9 +16,6 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
@@ -226,7 +223,7 @@ public class DateFilter implements MetadataTransform {
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
-    if (Strings.isNullOrEmpty(docId)) {
+    if (null == docId || docId.isEmpty()) {
       docId = "with no docId";
     }
 
@@ -307,11 +304,17 @@ public class DateFilter implements MetadataTransform {
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
     String value = cfg.get(key);
-    return (value == null) ? value : Strings.emptyToNull(value.trim());
+    if (value != null) {
+      value = value.trim();
+      if (value.length() > 0) {
+        return value;
+      }
+    }
+    return null;
   }
 
   /** A DateFormat that parses text of milliseconds since the epoch. */
-  @VisibleForTesting
+  // @VisibleForTesting
   static class MillisecondDateFormat extends DateFormat {
     @Override
     public StringBuffer format(Date date, StringBuffer buf, FieldPosition pos) {
@@ -341,8 +344,10 @@ public class DateFilter implements MetadataTransform {
     private final String dateStr;
 
     public AbsoluteDateValueFilter(Date oldestAllowed, String dateStr) {
-      Preconditions.checkArgument(oldestAllowed.compareTo(new Date()) < 0,
+      if (oldestAllowed.compareTo(new Date()) > 0) {
+        throw new IllegalArgumentException(
           oldestAllowed.toString() + " is in the future.");
+      }
       this.oldestAllowed = oldestAllowed;
       this.dateStr = dateStr;
     }
@@ -363,8 +368,10 @@ public class DateFilter implements MetadataTransform {
     private final long relativeMillis;
 
     public ExpiringDateValueFilter(int daysOld) {
-      Preconditions.checkArgument(daysOld > 0, "The number of days old for "
-          + "expired content must be greater than zero.");
+      if (daysOld <= 0) {
+        throw new IllegalArgumentException("The number of days old for "
+            + "expired content must be greater than zero.");
+      }
       this.daysOld = daysOld;
       this.relativeMillis = TimeUnit.DAYS.toMillis(daysOld);
     }
