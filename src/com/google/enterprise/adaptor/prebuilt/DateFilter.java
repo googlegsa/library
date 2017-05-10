@@ -67,30 +67,30 @@ import java.util.logging.Logger;
  * <p>
  * Example 1: skip documents that have not been accessed for more than 3 years:
  * <pre><code>
-   metadata.transform.pipeline=dateFilter
-   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
-   metadata.transform.pipeline.dateFilter.key=Last_Access_Date
-   metadata.transform.pipeline.dateFilter.days=1095
-   </code></pre>
+ * metadata.transform.pipeline=dateFilter
+ * metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+ * metadata.transform.pipeline.dateFilter.key=Last_Access_Date
+ * metadata.transform.pipeline.dateFilter.days=1095
+ * </code></pre>
  * <p>
  * Example 2: skip pre-Y2K client records that used old-style US date formats:
  * <pre><code>
-   metadata.transform.pipeline=dateFilter
-   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
-   metadata.transform.pipeline.dateFilter.key=Last_Visit_Date
-   metadata.transform.pipeline.dateFilter.format=MM/dd/YY
-   metadata.transform.pipeline.dateFilter.date=01/01/00
-   </code></pre>
+ * metadata.transform.pipeline=dateFilter
+ * metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+ * metadata.transform.pipeline.dateFilter.key=Last_Visit_Date
+ * metadata.transform.pipeline.dateFilter.format=MM/dd/YY
+ * metadata.transform.pipeline.dateFilter.date=01/01/00
+ * </code></pre>
  * <p>
  * Example 3: skip documents that have not been modified since 2010:
  * <pre><code>
-   metadata.transform.pipeline=dateFilter
-   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
-   metadata.transform.pipeline.dateFilter.keyset=params
-   metadata.transform.pipeline.dateFilter.key=Last-Modified-Millis-UTC
-   metadata.transform.pipeline.dateFilter.format=millis
-   metadata.transform.pipeline.dateFilter.date=2010-01-01
-   </code></pre>
+ * metadata.transform.pipeline=dateFilter
+ * metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+ * metadata.transform.pipeline.dateFilter.keyset=params
+ * metadata.transform.pipeline.dateFilter.key=Last-Modified-Millis-UTC
+ * metadata.transform.pipeline.dateFilter.format=millis
+ * metadata.transform.pipeline.dateFilter.date=2010-01-01
+ * </code></pre>
  */
 public class DateFilter implements MetadataTransform {
   private static final Logger log
