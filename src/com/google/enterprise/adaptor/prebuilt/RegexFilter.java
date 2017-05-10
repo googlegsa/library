@@ -16,7 +16,6 @@ package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
-import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
@@ -46,34 +45,34 @@ import java.util.regex.Pattern;
  * <p>Example: skip documents that have a {@code NoIndex} metadata key or params
  * key, regardless of value:
  * <pre><code>
-   metadata.transform.pipeline=regexFilter
-   metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
-   metadata.transform.pipeline.regexFilter.key=NoIndex
-   metadata.transform.pipeline.regexFilter.decision=do-not-index
-   </code></pre>
+ * metadata.transform.pipeline=regexFilter
+ * metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
+ * metadata.transform.pipeline.regexFilter.key=NoIndex
+ * metadata.transform.pipeline.regexFilter.decision=do-not-index
+ * </code></pre>
  *
  * <p>Example: drop the content of documents that have a {@code ContentLength}
  * greater than or equal to 100 megabytes:
  * <pre><code>
-   metadata.transform.pipeline=regexFilter
-   metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
-   metadata.transform.pipeline.regexFilter.key=ContentLength
-   metadata.transform.pipeline.regexFilter.keyset=params
-   metadata.transform.pipeline.regexFilter.pattern=0*[1-9][0-9]{8,}
-   metadata.transform.pipeline.regexFilter.decision=do-not-index-content
-   </code></pre>
+ * metadata.transform.pipeline=regexFilter
+ * metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
+ * metadata.transform.pipeline.regexFilter.key=ContentLength
+ * metadata.transform.pipeline.regexFilter.keyset=params
+ * metadata.transform.pipeline.regexFilter.pattern=0*[1-9][0-9]{8,}
+ * metadata.transform.pipeline.regexFilter.decision=do-not-index-content
+ * </code></pre>
  *
  * <p>Example: skips documents whose Metadata {@code Classification} property
  * is neither {@code PUBLIC} nor {@code DECLASSIFIED}:
  * <pre><code>
-   metadata.transform.pipeline=regexFilter
-   metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
-   metadata.transform.pipeline.regexFilter.key=Classification
-   metadata.transform.pipeline.regexFilter.keyset=metadata
-   metadata.transform.pipeline.regexFilter.pattern=(PUBLIC)|(DECLASSIFIED)
-   metadata.transform.pipeline.regexFilter.when=not-found
-   metadata.transform.pipeline.regexFilter.decision=do-not-index
-   </code></pre>
+ * metadata.transform.pipeline=regexFilter
+ * metadata.transform.pipeline.regexFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.RegexFilter.create
+ * metadata.transform.pipeline.regexFilter.key=Classification
+ * metadata.transform.pipeline.regexFilter.keyset=metadata
+ * metadata.transform.pipeline.regexFilter.pattern=(PUBLIC)|(DECLASSIFIED)
+ * metadata.transform.pipeline.regexFilter.when=not-found
+ * metadata.transform.pipeline.regexFilter.decision=do-not-index
+ * </code></pre>
  */
 public class RegexFilter implements MetadataTransform {
   /**
@@ -216,7 +215,7 @@ public class RegexFilter implements MetadataTransform {
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
-    if (Strings.isNullOrEmpty(docId)) {
+    if (null == docId || docId.isEmpty()) {
       docId = "with no docId";
     }
     // Determine the TransmissionDecision.
@@ -275,7 +274,7 @@ public class RegexFilter implements MetadataTransform {
     log.config("keyset = " + keyset);
 
     String patternString = cfg.get("pattern");
-    if (Strings.isNullOrEmpty(patternString)) {
+    if (patternString == null || patternString.isEmpty()) {
       log.config("pattern left null");
       pattern = Pattern.compile("\\A"); // matches any value
     } else {
@@ -294,6 +293,12 @@ public class RegexFilter implements MetadataTransform {
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
     String value = cfg.get(key);
-    return (value == null) ? value : Strings.emptyToNull(value.trim());
+    if (value != null) {
+      value = value.trim();
+      if (value.length() > 0) {
+        return value;
+      }
+    }
+    return null;
   }
 }
