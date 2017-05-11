@@ -193,8 +193,8 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void addParam(String key, String value) {
-      response.addParam(key, value);
+    public void setParam(String key, String value) {
+      response.setParam(key, value);
     }
   }
 
@@ -350,7 +350,7 @@ abstract class WrapperAdaptor implements Adaptor {
     }
 
     @Override
-    public void addParam(String key, String value) {
+    public void setParam(String key, String value) {
       params.put(key, value);
     }
 

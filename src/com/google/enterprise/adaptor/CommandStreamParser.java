@@ -501,7 +501,7 @@ public class CommandStreamParser {
           log.log(Level.FINEST, "Retriever: {0} has parameter {1}={2}",
               new Object[] {docId.getUniqueId(), paramName,
                 command.getArgument()});
-          response.addParam(paramName, command.getArgument());
+          response.setParam(paramName, command.getArgument());
           break;
         case UP_TO_DATE:
           log.log(Level.FINEST, "Retriever: {0} is up to date.", docId.getUniqueId());

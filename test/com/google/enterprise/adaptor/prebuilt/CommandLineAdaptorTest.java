@@ -389,7 +389,7 @@ public class CommandLineAdaptorTest {
     }
 
     @Override
-    public void addParam(String key, String value) {
+    public void setParam(String key, String value) {
       params.put(key, value);
     }
 

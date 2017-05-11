@@ -217,14 +217,22 @@ public interface Response {
   /**
    * Adds a parameter to a Map for use by {@link MetadataTransforms} when making
    * transforms or decisions. Params are data associated with the document,
-   * but might not be indexed and searchable. The {@code params} include the
-   * documents {@link DocId}, and values from {@link setLock},
-   * {@link setCrawlOnce}, {@code setDisplayUrl}, {@code setContentType},
-   * and {@code setLastModified}.
+   * but might not be indexed and searchable. Before the metadata transforms are
+   * called, the {@code params} are seeded with the document's {@link DocId},
+   * and values from {@link setLock}, {@link setCrawlOnce},
+   * {@code setDisplayUrl}, {@code setContentType}, and {@code setLastModified}.
+   * If the connector is setting a custom parameter (i.e. one not defined in
+   * {@link MetadataTransform}), the key must must start with {@code X-}
+   * to avoid possible name conflicts.
+   * <p>
+   * Example:
+   * <code><pre>
+   * response.setParam("X-LastAccessDate", ISO8601.format(lastAccessDate));
+   * </pre></code>
    *
    * @param key a key for a Map entry
    * @param value the value for the Map entry for key
    */
   // TODO (bmj): Supply Params to ContentTransforms.
-  public void addParam(String key, String value);
+  public void setParam(String key, String value);
 }

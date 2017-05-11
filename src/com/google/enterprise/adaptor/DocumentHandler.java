@@ -991,13 +991,16 @@ class DocumentHandler implements HttpHandler {
         throw new IllegalStateException("Already responded");
       }
       this.lock = lock;
-
     }
 
     @Override
-    public void addParam(String key, String value) {
+    public void setParam(String key, String value) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
+      }
+      if (!key.startsWith("X-")) {
+        throw new IllegalArgumentException(
+            "The param key must start with 'X-'");
       }
       params.put(key, value);
     }
@@ -1251,7 +1254,7 @@ class DocumentHandler implements HttpHandler {
       }
       try {
         final String du = params.get(KEY_DISPLAY_URL);
-        if (!Strings.isNullOrEmpty(du)) {
+        if (!Strings.isNullOrEmpty(du) && !du.equals(origDisplayUrlStr)) {
           displayUrl = new URI(du);
         }
       } catch (URISyntaxException e) {
