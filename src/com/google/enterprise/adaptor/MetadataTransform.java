@@ -36,7 +36,8 @@ public interface MetadataTransform {
   /** The key for the document's content type supplied in the {@code params}. */
   public static final String KEY_CONTENT_TYPE = "Content-Type";
 
-  /** The key for the document's crawl once flag supplied in the {@code params}.
+  /**
+   * The key for the document's crawl once flag supplied in the {@code params}.
    */
   public static final String KEY_CRAWL_ONCE = "Crawl-Once";
 
@@ -65,20 +66,23 @@ public interface MetadataTransform {
    * Suppose a transform wishes to examine or modify the display URL, which is
    * stored in the {@code params}. The transform's configuration might include:
    * <pre><code>
-     key=Display-URL
-     keyset=params
-     </code></pre>
+   * key=Display-URL
+   * keyset=params
+   * </code></pre>
    * If unspecified, the default value is {@code METADATA}.
    *
    * @since 4.1.4
    */
+  // @since TODO(bmj)
   public enum Keyset {
-    /** The key/value(s) reside in the {@link Metadata}.
-     *  This value's name is {@code metadata}.
+    /**
+     * The key/value(s) reside in the {@link Metadata}.
+     * This value's name is {@code metadata}.
      */
     METADATA("metadata"),
-    /** The key/value pair resides in the {@code Map} of {@code params}.
-     *  This value's name is {@code params}.
+    /**
+     * The key/value pair resides in the {@code Map} of {@code params}.
+     * This value's name is {@code params}.
      */
     PARAMS("params");
 
