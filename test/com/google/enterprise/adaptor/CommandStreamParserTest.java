@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static java.util.Collections.singletonList;
 
-import com.google.enterprise.adaptor.testing.MockResponse;
+import com.google.enterprise.adaptor.testing.RecordingResponse;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -183,7 +183,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -215,7 +215,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -233,7 +233,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -278,7 +278,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -303,7 +303,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -325,7 +325,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -347,7 +347,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -368,7 +368,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -401,7 +401,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -426,7 +426,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -452,7 +452,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
     parser.readFromRetriever(new DocId("5"), response);
@@ -477,7 +477,7 @@ public class CommandStreamParserTest {
 
      InputStream inputStream = new ByteArrayInputStream(source);
      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-     MockResponse response = new MockResponse(outputStream);
+     RecordingResponse response = new RecordingResponse(outputStream);
      CommandStreamParser parser = new CommandStreamParser(inputStream);
 
      parser.readFromRetriever(new DocId("5"), response);

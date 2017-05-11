@@ -30,11 +30,11 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * A mock implementation of {@link Response} that simply caches the
+ * A fake implementation of {@link Response} that simply records the
  * values it receives.
  */
 /* TODO(jlacey): Implement Response2. */
-public class MockResponse implements Response {
+public class RecordingResponse implements Response {
   private final OutputStream os;
   private boolean notModified;
   private boolean notFound;
@@ -57,14 +57,14 @@ public class MockResponse implements Response {
   /**
    * Constructs a mock {@code Response} with a {@code ByteArrayOutputStream}.
    */
-  public MockResponse() {
+  public RecordingResponse() {
     this(new ByteArrayOutputStream());
   }
 
   /**
    * Constructs a mock {@code Response} with the given {@code OutputStream}.
    */
-  public MockResponse(OutputStream os) {
+  public RecordingResponse(OutputStream os) {
     this.os = os;
   }
 
