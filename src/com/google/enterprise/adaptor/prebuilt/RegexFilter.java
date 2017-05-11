@@ -75,6 +75,7 @@ import java.util.regex.Pattern;
  * metadata.transform.pipeline.regexFilter.decision=do-not-index
  * </code></pre>
  */
+// @since TODO(bmj)
 public class RegexFilter implements MetadataTransform {
   /**
    * Make decision based upon whether the regular expression matches or not.
@@ -119,7 +120,7 @@ public class RegexFilter implements MetadataTransform {
   };
 
   // TODO (bmj): remove this and use the one in MetadataTransforms.
-  public enum Keyset {
+  private enum Keyset {
     METADATA("metadata"),
     PARAMS("params");
 
@@ -227,7 +228,7 @@ public class RegexFilter implements MetadataTransform {
         found = foundInParams(params);
         break;
       default:
-        found = false; // can't happen
+        throw new AssertionError("Invalid keyset");
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
@@ -267,7 +268,7 @@ public class RegexFilter implements MetadataTransform {
     return new StringBuilder("RegexFilter(")
         .append(key).append(", ")
         .append(keyset).append(", ")
-        .append(pattern.toString()).append(", ")
+        .append(pattern).append(", ")
         .append(when).append(", ")
         .append(decision).append(")")
         .toString();
