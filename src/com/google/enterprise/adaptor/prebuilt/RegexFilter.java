@@ -228,7 +228,7 @@ public class RegexFilter implements MetadataTransform {
         found = foundInParams(params);
         break;
       default:
-        throw new AssertionError("Invalid keyset");
+        throw new AssertionError("Invalid keyset: " + keyset);
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
