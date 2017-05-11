@@ -99,7 +99,7 @@ public class DateFilter implements MetadataTransform {
   private static final String ISO_8601_FORMAT = "yyyy-MM-dd";
 
   // TODO (bmj): remove this and use the one in MetadataTransforms.
-  public enum Keyset {
+  private enum Keyset {
     METADATA("metadata"),
     PARAMS("params");
 
