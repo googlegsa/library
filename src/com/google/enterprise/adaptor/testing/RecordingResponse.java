@@ -173,9 +173,9 @@ public class RecordingResponse implements Response {
     return lastModified;
   }
 
-  /** Returns a reference to modifiable, accumulated metadata. */
+  /** Returns a reference to unmodifiable, accumulated metadata. */
   public Metadata getMetadata() {
-    return metadata;
+    return metadata.unmodifiableView();
   }
 
   public Acl getAcl() {

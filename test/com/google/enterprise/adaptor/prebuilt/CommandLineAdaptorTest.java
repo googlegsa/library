@@ -30,6 +30,7 @@ import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.InputSource;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.OutputSink;
+import com.google.enterprise.adaptor.testing.RecordingResponse;
 
 import org.junit.Test;
 
@@ -257,174 +258,8 @@ public class CommandLineAdaptorTest {
     }
   }
 
-  private static class ContentsResponseTestMock implements Response {
-    private OutputStream os;
-    private String contentType;
-    private Date lastModified;
-    private Metadata metadata = new Metadata();
-    private Acl acl;
-    private boolean secure;
-    private List<URI> anchorUris = new ArrayList<URI>();
-    private List<String> anchorTexts = new ArrayList<String>();
-    private boolean notModified;
-    private boolean notFound;
-    private boolean noIndex;
-    private boolean noFollow;
-    private boolean noArchive;
-    private URI displayUrl;
-    private boolean crawlOnce;
-    private boolean lock;
-    private boolean noContent;
-    private Map<String, Acl> fragments = new TreeMap<String, Acl>();
-
-    public ContentsResponseTestMock(OutputStream os) {
-      this.os = os;
-      notModified = false;
-    }
-
-    @Override
-    public void respondNotModified() {
-      notModified = true;
-    }
-
-    @Override
-    public void respondNotFound() {
-      notFound = true;
-    }
-   
-    @Override
-    public void respondNoContent() throws IOException {
-      noContent = true;
-    }
-
-    @Override
-    public OutputStream getOutputStream() {
-      return os;
-    }
-
-    @Override
-    public void setContentType(String contentType) {
-      this.contentType = contentType;
-    }
-
-    @Override
-    public void setLastModified(Date lastModified) {
-      this.lastModified = lastModified;
-    }
-
-    @Override
-    public void addMetadata(String key, String value) {
-      this.metadata.add(key, value);
-    }
-
-    @Override
-    public void setAcl(Acl acl) {
-      this.acl = acl;
-    }
-
-    @Override
-    public void putNamedResource(String fname, Acl facl) {
-      this.fragments.put(fname, facl);
-    }
-
-    @Override
-    public void setSecure(boolean secure) {
-      this.secure = secure;
-    }
-
-    @Override
-    public void addAnchor(URI uri, String text) {
-      anchorUris.add(uri);
-      anchorTexts.add(text);
-    }
-
-    @Override
-    public void setNoIndex(boolean noIndex) {
-      this.noIndex = noIndex;
-    }
-
-    @Override
-    public void setNoFollow(boolean noFollow) {
-      this.noFollow = noFollow;
-    }
-
-    @Override
-    public void setNoArchive(boolean noArchive) {
-      this.noArchive = noArchive;
-    }
-
-    @Override
-    public void setDisplayUrl(URI displayUrl) {
-      this.displayUrl = displayUrl;
-    }
-
-    @Override
-    public void setCrawlOnce(boolean crawlOnce) {
-      this.crawlOnce = crawlOnce;
-    }
-
-    @Override
-    public void setLock(boolean lock) {
-      this.lock = lock;
-    }
-
-    public String getContentType() {
-      return contentType;
-    }
-
-    public Date getLastModified() {
-      return lastModified;
-    }
-
-    /** Returns unmodifibale view of metadata. */
-    Metadata getMetadata() {
-      return metadata.unmodifiableView();
-    }
-
-    public Acl getAcl() {
-      return acl;
-    }
-
-    public boolean getNotModified() {
-      return notModified;
-    }
-
-    public boolean getNotFound() {
-      return notFound;
-    }
-    
-    public boolean getNoContent() {
-      return noContent;
-    }
-
-    public boolean isNoIndex() {
-      return noIndex;
-    }
-
-    public boolean isNoFollow() {
-      return noFollow;
-    }
-
-    public boolean isNoArchive() {
-      return noArchive;
-    }
-
-    public URI getDisplayUrl() {
-      return displayUrl;
-    }
-
-    public boolean isCrawlOnce() {
-      return crawlOnce;
-    }
-
-    public boolean isLock() {
-      return lock;
-    }
-  }
-
   @Test
   public void testListerAndRetriever() throws Exception {
-
     CommandLineAdaptor adaptor = new CommandLineAdaptorTestMock();
 
     Map<String, String> config = new HashMap<String, String>();
@@ -477,14 +312,14 @@ public class CommandLineAdaptorTest {
 
       ContentsRequestTestMock request = new ContentsRequestTestMock(docId);
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
-      ContentsResponseTestMock response = new ContentsResponseTestMock(baos);
+      RecordingResponse response = new RecordingResponse(baos);
 
       adaptor.getDocContent(request, response);
 
       boolean notModified = !CommandLineAdaptorTestMock.ID_TO_LAST_MODIFIED.get(docId.getUniqueId())
           .after(CommandLineAdaptorTestMock.ID_TO_LAST_CRAWLED.get(docId.getUniqueId()));
 
-      assertEquals(notModified, response.getNotModified());
+      assertEquals(notModified, response.isNotModified());
 
       if (!notModified) {
         assertEquals(CommandLineAdaptorTestMock.ID_TO_MIME_TYPE.get(docId.getUniqueId()),
