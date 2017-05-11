@@ -33,8 +33,9 @@ import java.util.Map;
  * A fake implementation of {@link Response} that simply records the
  * values it receives.
  */
-/* TODO(jlacey): Implement Response2. */
 public class RecordingResponse implements Response {
+  // TODO(jlacey): Implement Response2.
+
   private final OutputStream os;
   private boolean notModified;
   private boolean notFound;

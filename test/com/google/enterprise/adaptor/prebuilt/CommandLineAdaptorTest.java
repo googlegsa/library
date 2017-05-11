@@ -19,14 +19,12 @@ import static java.util.Map.Entry;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
-import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.InputSource;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.OutputSink;
@@ -37,11 +35,8 @@ import org.junit.Test;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
-import java.net.URI;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
@@ -49,7 +44,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.TreeSet;
 
 /**
