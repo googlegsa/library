@@ -458,7 +458,7 @@ public class DocIdSenderTest {
             ImmutableList.<Map.Entry>of(
                 mapEntry("g1", "u1"),
                 mapEntry("g2", "u2")),
-            ImmmutableList.<Map.Entry>of(
+            ImmutableList.<Map.Entry>of(
                 mapEntry("g3", "u3"))),
         expectedResult(2,
             ImmutableMap.<GroupPrincipal, Collection<Principal>>of(
@@ -478,7 +478,7 @@ public class DocIdSenderTest {
             ImmutableList.<Map.Entry>of(
                 mapEntry("g1", "u1"),
                 mapEntry("g2", "u2")),
-            ImmmutableList.<Map.Entry>of(
+            ImmutableList.<Map.Entry>of(
                 mapEntry("g3", "u3")),
             ImmutableList.<Map.Entry>of(
                 mapEntry("g4", "u4"),
@@ -495,7 +495,7 @@ public class DocIdSenderTest {
                 new GroupPrincipal("g4"), ImmutableList.<Principal>of(
                     new UserPrincipal("u4")),
                 new GroupPrincipal("g5"), ImmutableList.<Principal>of(
-                    new UserPrincipal("u5"))));
+                    new UserPrincipal("u5")))));
   }
 
   @Test

@@ -43,6 +43,7 @@ public interface DocIdPusher {
    *
    * @since 4.1.4
    */
+  // @since TODO(bmj)
   public static enum FeedType {
     FULL, INCREMENTAL;
 
@@ -245,6 +246,7 @@ public interface DocIdPusher {
    *
    * @since 4.1.4
    */
+  // @since TODO(bmj)
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, FeedType feedType, String groupSource,
