@@ -110,8 +110,8 @@ public class TestHelper {
     System.setProperty("javax.net.ssl.trustStorePassword", "changeit");
   }
 
-  /** Gets a proxy for the given class that does nothing. */
-  public static <T> T newProxyInstance(Class<T> clazz) {
+  /** Gets a proxy for the given class where every method is a no-op. */
+  public static <T> T doNothingProxy(Class<T> clazz) {
     return clazz.cast(
         Proxy.newProxyInstance(clazz.getClassLoader(),
             new Class<?>[] { clazz },

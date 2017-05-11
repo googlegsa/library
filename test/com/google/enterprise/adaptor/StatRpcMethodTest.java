@@ -29,7 +29,7 @@ import java.util.Map;
  * Tests for {@link StatRpcMethod}.
  */
 public class StatRpcMethodTest {
-  private Adaptor mockAdaptor = TestHelper.newProxyInstance(Adaptor.class);
+  private Adaptor mockAdaptor = TestHelper.doNothingProxy(Adaptor.class);
   private RpcHandler.RpcMethod method = new StatRpcMethod(
       new SnapshotMockJournal(), mockAdaptor, true, false, null);
 
