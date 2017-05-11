@@ -92,7 +92,7 @@ public class TestHelper {
     ByteArrayOutputStream baos = new ByteArrayOutputStream();
     RecordingResponse resp = new RecordingResponse(baos);
     adaptor.getDocContent(new WrapperAdaptor.GetContentsRequest(docId), resp);
-    if (resp.getState() == MockResponse.State.NOT_FOUND) {
+    if (resp.getState() == RecordingResponse.State.NOT_FOUND) {
       throw new FileNotFoundException("Could not find " + docId);
     }
     return baos.toByteArray();

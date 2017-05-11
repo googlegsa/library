@@ -214,13 +214,13 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
 
     parser.readFromRetriever(new DocId("123"), response);
-    assertEquals(MockResponse.State.NOT_MODIFIED, response.getState());
+    assertEquals(RecordingResponse.State.NOT_MODIFIED, response.getState());
     assertEquals(new Date(15 * 1000), response.getLastModified());
   }
 
@@ -409,7 +409,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -427,7 +427,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    MockResponse response = new MockResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -458,7 +458,7 @@ public class CommandStreamParserTest {
     int version = parser.getVersionNumber();
     assertEquals(1, version);
     parser.readFromRetriever(new DocId("123\n\0"), response);
-    assertEquals(MockResponse.State.NOT_MODIFIED, response.getState());
+    assertEquals(RecordingResponse.State.NOT_MODIFIED, response.getState());
   }
 
   @Test
