@@ -199,8 +199,8 @@ public class DateFilterTest {
   public void testCreate_KeysetBogus() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
-    config.put("days", "365");
     config.put("keyset", "bogus");
+    config.put("days", "365");
     thrown.expect(IllegalArgumentException.class);
     MetadataTransform transform = DateFilter.create(config);
   }
