@@ -16,14 +16,10 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assume.assumeTrue;
 
-import com.google.enterprise.adaptor.testing.RecordingResponse;
-
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.io.IOException;
 import java.util.Collections;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
