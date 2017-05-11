@@ -47,14 +47,14 @@ import java.util.logging.Logger;
  * (January 1, 1970, 00:00:00 GMT). Otherwise, a lenient
  * {@link SimpleDateFormat} with the format pattern will be used.
  * <p>
- * {@code date} The cut-off for the date value. Document's whose date
+ * {@code date} The cut-off for the date value. Documents whose date
  * value is before the configued {@code date} will not be indexed.
  * The configured {@code date} must be parsable by the configured date
  * {@code format}, unless {@code format} is "millis", in which
  * case the date must be specified in ISO8601 format. Only one of
  * {@code date} or {@code days} configuration may be specified.
  * <p>
- * {@code days} The cut-off for the date value. Document's whose date
+ * {@code days} The cut-off for the date value. Documents whose date
  * value is more than {@code days} before present will not be indexed.
  * This can be used to have a rolling window of indexed documents. Those
  * whose date have expired will be removed from the index.  Only one of
@@ -126,7 +126,7 @@ public class DateFilter implements MetadataTransform {
    * If {@code METADATA}, search the metadata for the specified key;
    * if {@code PARAMS},  search the params for the specified key;
    */
-  private Keyset keyset = Keyset.METADATA;
+  private final Keyset keyset;
 
   /** The DateFormat used to parse the date values. */
   private final String dateFormatString;
