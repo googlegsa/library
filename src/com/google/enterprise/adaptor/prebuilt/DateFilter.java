@@ -125,7 +125,7 @@ public class DateFilter implements MetadataTransform {
 
   /**
    * If {@code METADATA}, search the metadata for the specified key;
-   * if {@code PARAMS},  search the params for the specified key;
+   * if {@code PARAMS}, search the params for the specified key;
    */
   private final Keyset keyset;
 
