@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.testing.UnsupportedAdaptorContext;
+
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -21,6 +23,11 @@ import com.sun.net.httpserver.HttpHandler;
 /**
  * Methods for an Adaptor to communicate with the adaptor library.
  * Implementations of this class must be thread-safe.
+ *
+ * <p>This interface should not be implemented directly for unit testing.
+ * Instead, use a mocking framework, such as Mockito, a
+ * {@code java.lang.reflect.Proxy}, or extend the
+ * {@link UnsupportedAdaptorContext} class.
  */
 public interface AdaptorContext {
   /**

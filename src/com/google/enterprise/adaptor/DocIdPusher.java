@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.testing.UnsupportedDocIdPusher;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -22,6 +24,11 @@ import java.util.Map;
 
 /**
  * Interface that allows at-will pushing of {@code DocId}s to the GSA.
+ *
+ * <p>This interface should not be implemented directly for unit testing.
+ * Instead, use a mocking framework, such as Mockito, a
+ * {@code java.lang.reflect.Proxy}, or extend the {@link UnsupportedDocIdPusher}
+ * class.
  */
 public interface DocIdPusher {
   /**

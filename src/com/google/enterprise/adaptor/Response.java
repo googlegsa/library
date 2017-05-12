@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.testing.UnsupportedResponse;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -33,6 +35,11 @@ import java.util.Date;
  * {@link Request#hasChangedSinceLastAccess} and call {@link
  * #respondNotModified} when it is {@code true}. This prevents the Adaptor from
  * ever needing to retrieve the document contents and metadata.
+ *
+ * <p>This interface should not be implemented directly for unit testing.
+ * Instead, use a mocking framework, such as Mockito, a
+ * {@code java.lang.reflect.Proxy}, or extend the {@link UnsupportedResponse}
+ * class.
  */
 public interface Response {
   /**
