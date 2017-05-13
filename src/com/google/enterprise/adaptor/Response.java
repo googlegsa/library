@@ -215,15 +215,17 @@ public interface Response {
   public void setLock(boolean lock);
 
   /**
-   * Adds a parameter to a Map for use by {@link MetadataTransforms} when making
+   * Adds a parameter to a Map for use by
+   * {@link MetadataTransform MetadataTransforms} when making
    * transforms or decisions. Params are data associated with the document,
    * but might not be indexed and searchable. Before the metadata transforms are
    * called, the {@code params} are seeded with the document's {@link DocId},
    * and values from {@link setLock}, {@link setCrawlOnce},
    * {@code setDisplayUrl}, {@code setContentType}, and {@code setLastModified}.
-   * If the connector is setting a custom parameter (i.e. one not defined in
-   * {@link MetadataTransform}), the key must must start with {@code X-}
-   * to avoid possible name conflicts.
+   * <p>
+   * To avoid possible name conflicts with parameter entries supplied by the
+   * library, the key of a connector-supplied parameter must start with
+   * {@code X-}.
    * <p>
    * Example:
    * <code><pre>
@@ -232,6 +234,9 @@ public interface Response {
    *
    * @param key a key for a Map entry
    * @param value the value for the Map entry for key
+   * @throws IllegalArgumentException if key is not prefixed with {@code X-}
+   * @throws IllegalStateException if the response has been sent
+   * @throws NullPointerException if key is {@code null}
    */
   // TODO (bmj): Supply Params to ContentTransforms.
   public void setParam(String key, String value);
