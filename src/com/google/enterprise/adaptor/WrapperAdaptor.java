@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -191,6 +193,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setLock(boolean lock) {
       response.setLock(lock);
     }
+
+    @Override
+    public void setForcedTransmissionDecision(TransmissionDecision decision) {
+      response.setForcedTransmissionDecision(decision);
+    }
   }
 
   /**
@@ -251,6 +258,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private TransmissionDecision forcedTransmissionDecision;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
     public GetContentsResponse(OutputStream os) {
@@ -343,6 +351,11 @@ abstract class WrapperAdaptor implements Adaptor {
       this.lock = lock;
     }
 
+    @Override
+    public void setForcedTransmissionDecision(TransmissionDecision decision) {
+      this.forcedTransmissionDecision = decision;
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -406,6 +419,10 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public boolean isLock() {
       return lock;
+    }
+
+    public TransmissionDecision getForcedTransmissionDecision() {
+      return forcedTransmissionDecision;
     }
   }
 

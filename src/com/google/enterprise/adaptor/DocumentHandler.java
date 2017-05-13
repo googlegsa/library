@@ -734,6 +734,7 @@ class DocumentHandler implements HttpHandler {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private TransmissionDecision forcedTransmissionDecision;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
     public DocumentResponse(HttpExchange ex, DocId docId, Thread thread) {
@@ -994,6 +995,15 @@ class DocumentHandler implements HttpHandler {
       this.lock = lock;
     }
 
+    @Override
+    public void setForcedTransmissionDecision(
+        TransmissionDecision transmissionDecision) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.forcedTransmissionDecision = transmissionDecision;
+    }
+
     private long getWrittenContentSize() {
       return countingOs == null ? 0 : countingOs.getBytesWritten();
     }
@@ -1227,6 +1237,10 @@ class DocumentHandler implements HttpHandler {
       }
       params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
       params.put(KEY_LOCK, "" + lock);
+      if (forcedTransmissionDecision != null) {
+        params.put(KEY_FORCED_TRANSMISSION_DECISION,
+                   forcedTransmissionDecision.toString());
+      }
       metadataTransform.transform(metadata, params);
       finalContentType = params.get(KEY_CONTENT_TYPE);
       try {

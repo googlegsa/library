@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
 import static java.util.Map.Entry;
 import static org.junit.Assert.assertArrayEquals;
@@ -274,6 +275,7 @@ public class CommandLineAdaptorTest {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private TransmissionDecision forcedTransmissionDecision;
     private boolean noContent;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
 
@@ -368,6 +370,11 @@ public class CommandLineAdaptorTest {
       this.lock = lock;
     }
 
+    @Override
+    public void setForcedTransmissionDecision(TransmissionDecision decision) {
+      this.forcedTransmissionDecision = decision;
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -419,6 +426,10 @@ public class CommandLineAdaptorTest {
 
     public boolean isLock() {
       return lock;
+    }
+
+    public TransmissionDecision getForcedTransmissionDecision() {
+      return forcedTransmissionDecision;
     }
   }
 

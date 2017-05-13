@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -213,4 +215,19 @@ public interface Response {
    *     to unlocked documents
    */
   public void setLock(boolean lock);
+
+  /**
+   * Set a forced {@link TransmissionDecision} that can override transmission
+   * decisions made by {@link MetadataTransform MetadataTransforms}.
+   * <p>
+   * Some connectors send content that must be preserved in order for the
+   * connector to function properly, and transforms that decide to drop that
+   * content essentially break the connector. For instance, dropping folders
+   * disrupts graph traverser type connectors.
+   *
+   * @param transmissionDecision a
+   *     {@link MetadataTransform.TransmissionDecision TransmissionDecision}
+   */
+  public void setForcedTransmissionDecision(
+      TransmissionDecision transmissionDecision);
 }
