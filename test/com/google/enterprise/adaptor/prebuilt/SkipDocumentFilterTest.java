@@ -123,20 +123,6 @@ public class SkipDocumentFilterTest {
   // tests on transform behavior when pattern is blank
 
   @Test
-  public void testTransform_ForcedTransmissionDecision() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("propertyName", "skipMe");
-    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("skipMe", "someValue");
-    params.put(MetadataTransform.KEY_DOC_ID, "docId01");
-    params.put(MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION, "as-is");
-    Metadata metadata = new Metadata();
-    transform.transform(metadata, params);
-    assertEquals(null, params.get("Transmission-Decision"));
-  }
-
-  @Test
   public void testTransform_SkipKeyNotFoundWhenSkipOnMatchFalse() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("propertyName", "skipMe");

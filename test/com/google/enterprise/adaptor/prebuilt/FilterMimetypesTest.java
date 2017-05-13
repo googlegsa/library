@@ -35,16 +35,6 @@ public class FilterMimetypesTest {
   }
 
   @Test
-  public void testForcedTransmissionDecsion() {
-    MetadataTransform transform = defaultFilter();
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("Content-Type", "application/pgp-signature");
-    params.put(MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION, "as-is");
-    transform.transform(new Metadata(), params);
-    assertEquals(null, params.get("Transmission-Decision"));
-  }
-
-  @Test
   public void testLeaveAsIs() {
     MetadataTransform transform = defaultFilter();
     Map<String, String> params = new HashMap<String, String>();

@@ -178,19 +178,6 @@ public class SkipDocumentFilter implements MetadataTransform {
    */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
-    String docId = params.get(MetadataTransform.KEY_DOC_ID);
-    if (null == docId || docId.isEmpty()) {
-      docId = "with no docId";
-    }
-
-    String forced
-        = params.get(MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION);
-    if (!Strings.isNullOrEmpty(forced)) {
-      log.fine("Not evaluating document " + docId + " because transmission "
-          + "decision " + forced + " is forced.");
-      return;
-    }
-
     boolean found;
     switch (corpora) {
       case METADATA:
@@ -204,6 +191,10 @@ public class SkipDocumentFilter implements MetadataTransform {
         found = foundInMetadata(metadata) || foundInParams(params);
     }
 
+    String docId = params.get(MetadataTransform.KEY_DOC_ID);
+    if (null == docId || docId.isEmpty()) {
+      docId = "with no docId";
+    }
     // determine the Transmission Decision based on skipMatch
     if (skipOnMatch) {
       if (found) {

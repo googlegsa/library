@@ -1256,7 +1256,7 @@ class DocumentHandler implements HttpHandler {
       // TODO: make constants for this growing set of valid keys
       String transmissionDecision
           = params.get(KEY_FORCED_TRANSMISSION_DECISION);
-      if (Strings.isNullOrEmpty(transmissionDecision)) {
+      if (transmissionDecision == null) {
         transmissionDecision = params.get(KEY_TRANSMISSION_DECISION);
       }
       considerNotSending(transmissionDecision, docId);

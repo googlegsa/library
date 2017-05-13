@@ -708,8 +708,8 @@ public class DocumentHandlerTest {
         metadata.set("docid", params.get("DocId"));
       }
     });
-    MetadataTransformPipeline transform = new MetadataTransformPipeline(transforms,
-        Arrays.asList("t1"));
+    MetadataTransformPipeline transform
+        = new MetadataTransformPipeline(transforms, Arrays.asList("t1"));
     mockAdaptor = new MockAdaptor() {
       @Override
       public void getDocContent(Request request, Response response)
