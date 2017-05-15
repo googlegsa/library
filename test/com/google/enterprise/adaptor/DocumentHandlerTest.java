@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -703,7 +704,6 @@ public class DocumentHandlerTest {
     transforms.add(new MetadataTransform() {
       @Override
       public void transform(Metadata metadata, Map<String, String> params) {
-        params.put("Forced-Transmission-Decision", "as-is");
         params.put("Transmission-Decision", "do-not-index");
         metadata.set("docid", params.get("DocId"));
       }
@@ -714,6 +714,7 @@ public class DocumentHandlerTest {
       @Override
       public void getDocContent(Request request, Response response)
           throws IOException, InterruptedException {
+        response.setForcedTransmissionDecision(TransmissionDecision.AS_IS);
         response.addMetadata("test key", "TESTING VALUE");
         super.getDocContent(request, response);
       }
