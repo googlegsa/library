@@ -66,11 +66,25 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
     return pushNamedResources(resources, null);
   }
 
-  /** Calls {@code pushGroupDefinitions(defs, caseSensitive, null)}. */
+  /**
+   * Calls {@code pushGroupDefinitions(defs, caseSensitive, true, null, null)}.
+   */
   @Override
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive) throws InterruptedException {
-    return pushGroupDefinitions(defs, caseSensitive, null);
+    return pushGroupDefinitions(defs, caseSensitive, true, null, null);
+  }
+
+  /**
+   * Calls
+   * {@code pushGroupDefinitions(defs, caseSensitive, true, null, handler)}.
+   */
+  @Override
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, ExceptionHandler handler)
+      throws InterruptedException {
+    return pushGroupDefinitions(defs, caseSensitive, true, null, handler);
   }
 }

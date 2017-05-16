@@ -60,8 +60,8 @@ class AccumulatingDocIdPusher extends AbstractDocIdPusher {
   @Override
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, ExceptionHandler handler)
-      throws InterruptedException {
+      boolean caseSensitive, boolean incremental, String sourceName,
+      ExceptionHandler exceptionHandler) throws InterruptedException {
     groups.putAll(defs); 
     return null;
   }

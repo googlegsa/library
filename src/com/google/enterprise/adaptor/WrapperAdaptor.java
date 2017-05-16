@@ -191,6 +191,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setLock(boolean lock) {
       response.setLock(lock);
     }
+
+    @Override
+    public void addParam(String key, String value) {
+      response.addParam(key, value);
+    }
   }
 
   /**
@@ -252,6 +257,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private boolean crawlOnce;
     private boolean lock;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
+    private Map<String, String> params = new TreeMap<String, String>();
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -343,6 +349,11 @@ abstract class WrapperAdaptor implements Adaptor {
       this.lock = lock;
     }
 
+    @Override
+    public void addParam(String key, String value) {
+      params.put(key, value);
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -407,6 +418,10 @@ abstract class WrapperAdaptor implements Adaptor {
     public boolean isLock() {
       return lock;
     }
+
+    public Map<String, String> getParams() {
+      return params;
+    }
   }
 
   /**
@@ -435,9 +450,10 @@ abstract class WrapperAdaptor implements Adaptor {
     @Override
     public GroupPrincipal pushGroupDefinitions(
         Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-        boolean caseSensitive, ExceptionHandler exceptionHandler)
-        throws InterruptedException {
-      return pusher.pushGroupDefinitions(defs, caseSensitive, exceptionHandler);
+        boolean caseSensitive, boolean incremental, String sourceName,
+        ExceptionHandler exceptionHandler) throws InterruptedException {
+      return pusher.pushGroupDefinitions(defs, caseSensitive, incremental,
+          sourceName, exceptionHandler);
     }
   }
 

@@ -184,6 +184,43 @@ public interface DocIdPusher {
       throws InterruptedException;
 
   /**
+   * Blocking call to push group definitions to GSA ends in success or
+   * when provided error handler gives up.  Can take significant time
+   * if errors arise.
+   *
+   * <p>A group definition consists of a group being defined
+   * and members, which is a list of users and groups.
+   *
+   * <p>If you plan on using the return code, then the provided map should have
+   * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>An incremental push augments or updates any existing group definitions
+   * for the groupSource on the GSA. Otherwise, the supplied group definitions
+   * will wholly replace all existing definitions for the groupSource on the
+   * GSA.
+   *
+   * <p>A groupSource identifies the source of the group definitions. If
+   * provided, it must be a string of the form {@code [a-zA-Z_][a-zA-Z0-9_-]*}.
+   * If groupSource is {@code null}, then the {@code feed.name} configuration
+   * property is used.
+   *
+   * <p>If handler is {@code null}, then a default error handler is used.
+   *
+   * @param defs map of group definitions
+   * @param caseSensitive when comparing Principals
+   * @param incremental if {@code true} incremental update is done, otherwise
+   *        full replacement is done.
+   * @param groupSource
+   * @param handler for dealing with errors pushing
+   * @return {@code null} on success, otherwise the first GroupPrincipal to fail
+   * @throws InterruptedException if interrupted and no definitions were sent
+   */
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, boolean incremental, String groupSource,
+      ExceptionHandler handler) throws InterruptedException;
+
+  /**
    * Immutable feed attributes for a document identified by its {@code DocId}.
    */
   public static final class Record implements DocIdSender.Item {
