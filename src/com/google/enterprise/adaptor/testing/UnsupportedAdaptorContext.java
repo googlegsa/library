@@ -42,90 +42,105 @@ public class UnsupportedAdaptorContext implements AdaptorContext {
   /** @throws UnsupportedOperationException always */
   @Override
   public Config getConfig() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public DocIdPusher getDocIdPusher() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public AsyncDocIdPusher getAsyncDocIdPusher() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public DocIdEncoder getDocIdEncoder() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public void addStatusSource(StatusSource source) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public void setGetDocIdsFullErrorHandler(ExceptionHandler handler) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public ExceptionHandler getGetDocIdsFullErrorHandler() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public void setGetDocIdsIncrementalErrorHandler(ExceptionHandler handler) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public ExceptionHandler getGetDocIdsIncrementalErrorHandler() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public SensitiveValueDecoder getSensitiveValueDecoder() {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public HttpContext createHttpContext(String path, HttpHandler handler) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public Session getUserSession(HttpExchange ex, boolean create) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public void setPollingIncrementalLister(PollingIncrementalLister lister) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public void setAuthnAuthority(AuthnAuthority authnAuthority) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 
   /** @throws UnsupportedOperationException always */
   @Override
   public void setAuthzAuthority(AuthzAuthority authzAuthority) {
-    throw new UnsupportedOperationException("UnsupportedResponse was called");
+    throw new UnsupportedOperationException(
+        "UnsupportedAdaptorContext was called");
   }
 }

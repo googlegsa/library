@@ -35,8 +35,7 @@ import java.util.Map;
 public class UnsupportedDocIdPusher implements DocIdPusher {
   /** @throws UnsupportedOperationException always */
   @Override
-  public DocId pushDocIds(Iterable<DocId> docIds)
-      throws InterruptedException {
+  public DocId pushDocIds(Iterable<DocId> docIds) throws InterruptedException {
     throw new UnsupportedOperationException(
         "UnsupportedDocIdPusher was called");
   }
@@ -76,8 +75,7 @@ public class UnsupportedDocIdPusher implements DocIdPusher {
   /** @throws UnsupportedOperationException always */
   @Override
   public DocId pushNamedResources(Map<DocId, Acl> resources,
-                                  ExceptionHandler handler)
-      throws InterruptedException {
+      ExceptionHandler handler) throws InterruptedException {
     throw new UnsupportedOperationException(
         "UnsupportedDocIdPusher was called");
   }
