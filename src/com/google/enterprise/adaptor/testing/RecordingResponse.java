@@ -34,9 +34,8 @@ import java.util.Map;
  * values it receives.
  */
 public class RecordingResponse implements Response {
-  // TODO(jlacey): Implement Response2.
-
   private final OutputStream os;
+
   private boolean notModified;
   private boolean notFound;
   private boolean noContent;
