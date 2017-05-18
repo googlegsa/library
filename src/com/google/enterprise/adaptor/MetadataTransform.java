@@ -61,7 +61,8 @@ public interface MetadataTransform {
   /**
    * Identifies the location a configured key/value pair resides,
    * either in the {@link Metadata}, or the map of {@code params}
-   * supplied to the {@link #transform} method of a {@code MetadataTransform}.
+   * supplied to the {@link #transform transform} method of a
+   * {@code MetadataTransform}.
    * <p>
    * Suppose a transform wishes to examine or modify the display URL, which is
    * stored in the {@code params}. The transform's configuration might include:
@@ -96,6 +97,7 @@ public interface MetadataTransform {
      * Returns a {@code Keyset} value with the given {@code name}, or the
      * default value of {@code METADATA} if name is {@code null}.
      * @param name the name of the Keyset value
+     * @return a {@code Keyset} corresponding to {@code name}
      * @throws IllegalArgumentException if there is no Keyset value with
      *         {@code name}.
      */
@@ -113,7 +115,8 @@ public interface MetadataTransform {
   /**
    * Transforms can cancel sending a document, or cancel sending its contents by
    * adding a {@code Transmission-Decision} to the {@code Map} of {@code params}
-   * supplied to the {@code transform} method of the {@code MetadataTransform}.
+   * supplied to the {@link #transform transform} method of the
+   * {@code MetadataTransform}.
    * If no {@code Transmission-Decision} is set in the params, the default value
    * of {@code AS_IS} is used.
    */
@@ -144,6 +147,7 @@ public interface MetadataTransform {
      * Returns a {@code TransmissionDecision} value with the given {@code name},
      * or the default value of {@code AS_IS} if name is {@code null}.
      * @param name the name of the TransmissionDecision value
+     * @return a {@code TransmissionDecision} corresponding to {@code name}
      * @throws IllegalArgumentException if there is no TransmissionDecision
      *         value with {@code name}.
      */
