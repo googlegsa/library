@@ -21,6 +21,7 @@ import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -185,7 +186,15 @@ public class RegexFilter implements MetadataTransform {
    */
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
-    for (String value : metadata.getAllValues(key)) {
+    Set<String> values = metadata.getAllValues(key);
+    if (values.isEmpty()) {
+      if (metadata.getKeys().contains(key)) {
+        log.finest("No values for key `" + key + "' in metadata.");
+      } else {
+        log.finest("No key `" + key + "' in metadata.");
+      }
+    }
+    for (String value : values) {
       if (pattern.matcher(value).find()) {
         found = true;
         break;
@@ -205,6 +214,8 @@ public class RegexFilter implements MetadataTransform {
     boolean found = false;
     if (params.containsKey(key)) {
       found = pattern.matcher(params.get(key)).find();
+    } else {
+      log.finest("No key `" + key + "' in params.");
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + key + "' in params.");

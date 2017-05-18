@@ -30,6 +30,7 @@ import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -142,7 +143,15 @@ public class SkipDocumentFilter implements MetadataTransform {
    */
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
-    for (String value : metadata.getAllValues(propertyName)) {
+    Set<String> values = metadata.getAllValues(propertyName);
+    if (values.isEmpty()) {
+      if (metadata.getKeys().contains(propertyName)) {
+        log.fine("No values for key `" + propertyName + "' in metadata.");
+      } else {
+        log.fine("No key `" + propertyName + "' in metadata.");
+      }
+    }
+    for (String value : values) {
       if (pattern.matcher(value).find()) {
         found = true;
         break;
@@ -162,6 +171,8 @@ public class SkipDocumentFilter implements MetadataTransform {
     boolean found = false;
     if (params.containsKey(propertyName)) {
       found = pattern.matcher(params.get(propertyName)).find();
+    } else {
+      log.fine("No key `" + propertyName + "' in params.");
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + propertyName + "' in params.");
@@ -203,13 +214,13 @@ public class SkipDocumentFilter implements MetadataTransform {
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
       } else {
-        log.fine("Not skipping document " + docId + ", because we did not find "
-            + "a match in " + corpora);
+        log.fine("No transmission decision for document " + docId
+             + ", because we did not find a match in " + corpora);
       }
     } else {
       if (found) {
-        log.fine("Not skipping document " + docId + ", because we found a match"
-            + " in " + corpora);
+        log.fine("No transmission decision for document " + docId
+             + ", because we found a match in " + corpora);
       } else {
         log.info("Skipping document " + docId + ", because we did not find a "
             + "match in " + corpora);
