@@ -14,7 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.io.IOException;
 import java.io.OutputStream;

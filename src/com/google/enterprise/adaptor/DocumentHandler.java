@@ -22,11 +22,11 @@ import static com.google.enterprise.adaptor.MetadataTransform.KEY_FORCED_TRANSMI
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_LAST_MODIFIED_MILLIS_UTC;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_LOCK;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_TRANSMISSION_DECISION;
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -1267,7 +1267,6 @@ class DocumentHandler implements HttpHandler {
       }
       crawlOnce = Boolean.parseBoolean(params.get(KEY_CRAWL_ONCE));
       lock = Boolean.parseBoolean(params.get(KEY_LOCK));
-      // TODO: make constants for this growing set of valid keys
       String transmissionDecision
           = params.get(KEY_FORCED_TRANSMISSION_DECISION);
       if (transmissionDecision == null) {

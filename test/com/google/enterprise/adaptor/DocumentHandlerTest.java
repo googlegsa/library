@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -24,6 +23,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

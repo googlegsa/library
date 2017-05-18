@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
 import static java.util.Map.Entry;
 import static org.junit.Assert.assertArrayEquals;
@@ -26,6 +25,7 @@ import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.Response;
 import com.google.enterprise.adaptor.UserPrincipal;
