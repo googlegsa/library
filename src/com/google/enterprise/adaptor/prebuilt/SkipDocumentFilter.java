@@ -146,9 +146,9 @@ public class SkipDocumentFilter implements MetadataTransform {
     Set<String> values = metadata.getAllValues(propertyName);
     if (values.isEmpty()) {
       if (metadata.getKeys().contains(propertyName)) {
-        log.fine("No values for key `" + propertyName + "' in metadata.");
+        log.finest("No values for key `" + propertyName + "' in metadata.");
       } else {
-        log.fine("No key `" + propertyName + "' in metadata.");
+        log.finest("No key `" + propertyName + "' in metadata.");
       }
     }
     for (String value : values) {
@@ -172,7 +172,7 @@ public class SkipDocumentFilter implements MetadataTransform {
     if (params.containsKey(propertyName)) {
       found = pattern.matcher(params.get(propertyName)).find();
     } else {
-      log.fine("No key `" + propertyName + "' in params.");
+      log.finest("No key `" + propertyName + "' in params.");
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + propertyName + "' in params.");
