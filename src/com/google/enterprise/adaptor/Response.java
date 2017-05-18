@@ -227,6 +227,8 @@ public interface Response {
    *
    * @param transmissionDecision a
    *     {@link MetadataTransform.TransmissionDecision TransmissionDecision}
+   *
+   * @since 4.1.4
    */
   public void setForcedTransmissionDecision(
       TransmissionDecision transmissionDecision);
