@@ -206,10 +206,9 @@ public class RegexFilter implements MetadataTransform {
     if (params.containsKey(key)) {
       String value = params.get(key);
       if (value == null) {
-        found = "\\A".equals(pattern.toString());
-      } else {
-        found = pattern.matcher(value).find();
+        value = "";
       }
+      found = pattern.matcher(value).find();
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + key + "' in params.");

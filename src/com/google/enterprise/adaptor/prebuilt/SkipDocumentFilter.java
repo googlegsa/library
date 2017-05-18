@@ -162,10 +162,9 @@ public class SkipDocumentFilter implements MetadataTransform {
     if (params.containsKey(propertyName)) {
       String value = params.get(propertyName);
       if (value == null) {
-        found = "\\A".equals(pattern.toString());
-      } else {
-        found = pattern.matcher(value).find();
+        value = "";
       }
+      found = pattern.matcher(value).find();
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + propertyName + "' in params.");
