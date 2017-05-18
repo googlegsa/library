@@ -14,11 +14,11 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Locale.US;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
 import java.util.logging.Level;
