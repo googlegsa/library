@@ -466,11 +466,12 @@ public class CommandStreamParser {
 
     command = readCommand();
     while (command != null) {
+      // Look at the current command to see if we must send the
+      // accumulated ACL now, before the response is sent.
       switch (command.getOperation()) {
         case CONTENT:
         case UP_TO_DATE:
         case NOT_FOUND:
-          // Finish by putting accumulated ACL into response.
           if (sendAclWithDocument) {
             aclBuilder.setPermits(permits);
             aclBuilder.setDenies(denies);
