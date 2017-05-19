@@ -14,6 +14,9 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
+import static java.lang.Boolean.FALSE;
+import static java.lang.Boolean.TRUE;
+
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
 
@@ -76,12 +79,17 @@ public class PrebuiltTransforms {
     return null;
   }
 
+  // Returns overwrite config as a Boolean, or null if overwrite is unspecified.
+  private static Boolean getOverwrite(Map<String, String> cfg) {
+    String overwrite = getTrimmedValue(cfg, "overwrite");
+    return (overwrite == null) ? null : new Boolean(overwrite);
+  }
+
   /**
    * Returns a transform that copies metadata or param values from one key to
    * another. The {@code "overwrite"} key can be set to {@code "true"} to cause
    * the destination to be replaced. Otherwise if the destination is a metadata
-   * key, its values is are supplemented. If the destination is a param key,
-   * {@code "overwrite"} is ignored and its value is always replaced.
+   * key, its values is are supplemented.
    *
    * <p>Copies are defined by pairs of {@code "X.from"} and {@code "X.to"}
    * configuration entries (where {@code X} is an integer). The value for each
@@ -113,13 +121,11 @@ public class PrebuiltTransforms {
    * @return transform
    */
   public static MetadataTransform copyMetadata(Map<String, String> config) {
-    boolean overwrite
-        = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
       log.warning("No entries listed to be copied");
     }
-    return new CopyTransform(copies, overwrite, false);
+    return new CopyTransform(copies, getOverwrite(config), false);
   }
 
   /**
@@ -132,13 +138,11 @@ public class PrebuiltTransforms {
    * @return transform
    */
   public static MetadataTransform moveMetadata(Map<String, String> config) {
-    boolean overwrite
-        = Boolean.parseBoolean(getTrimmedValue(config, "overwrite"));
     List<KeyPairing> copies = parseCopies(config);
     if (copies.isEmpty()) {
       log.warning("No entries listed to be moved");
     }
-    return new CopyTransform(copies, overwrite, true);
+    return new CopyTransform(copies, getOverwrite(config), true);
   }
 
   /**
@@ -213,10 +217,10 @@ public class PrebuiltTransforms {
 
   private static class CopyTransform implements MetadataTransform {
     private final List<KeyPairing> copies;
-    private final boolean overwrite;
+    private final Boolean overwrite;
     private final boolean move;
 
-    private CopyTransform(List<KeyPairing> copies, boolean overwrite,
+    private CopyTransform(List<KeyPairing> copies, Boolean overwrite,
         boolean move) {
       this.copies = Collections.unmodifiableList(
           new ArrayList<KeyPairing>(copies));
@@ -247,7 +251,7 @@ public class PrebuiltTransforms {
         switch (kp.dest.keyset) {
           case METADATA:
             Set<String> destValues = metadata.getAllValues(kp.dest.key);
-            if (!overwrite && !destValues.isEmpty()) {
+            if (!TRUE.equals(overwrite) && !destValues.isEmpty()) {
               log.log(Level.FINER, "Preexisting values for {0}. Combining: {1}",
                   new Object[] {kp.dest, destValues});
               values.addAll(destValues);
@@ -261,7 +265,9 @@ public class PrebuiltTransforms {
                   "Multiple values for {0}. Using first value of {1} for {2}",
                   new Object[] { kp.src, value, kp.dest });
             }
-            params.put(kp.dest.key, value);
+            if (!FALSE.equals(overwrite) || params.get(kp.dest.key) == null) {
+              params.put(kp.dest.key, value);
+            }
             break;
         }
         if (move) {
@@ -439,10 +445,9 @@ public class PrebuiltTransforms {
    * @return transform
    */
   public static MetadataTransform replaceMetadata(Map<String, String> config) {
-    boolean overwrite = true;
-    String overwriteString = getTrimmedValue(config, "overwrite");
-    if (overwriteString != null) {
-      overwrite = Boolean.parseBoolean(overwriteString);
+    Boolean overwrite = getOverwrite(config);
+    if (overwrite == null) {
+      overwrite = TRUE;
     }
     String string = config.get("string");
     String pattern = config.get("pattern");
@@ -478,10 +483,10 @@ public class PrebuiltTransforms {
     private final List<Key> keys;
     private final Pattern toMatch;
     private final String replacement;
-    private final boolean overwrite;
+    private final Boolean overwrite;
 
     public ReplaceTransform(List<Key> keys, Pattern toMatch,
-        String replacement, boolean overwrite) {
+        String replacement, Boolean overwrite) {
       this.keys = keys;
       this.toMatch = toMatch;
       this.replacement = replacement;
@@ -530,13 +535,19 @@ public class PrebuiltTransforms {
         log.log(Level.FINE, "No param value for {0}. Skipping", key);
         return;
       }
-      log.log(Level.FINE,
-          "Replacing {1} with {2} in param value of {0}: {3}",
-          new Object[] {key, toMatch, replacement, original});
-      String newValue = toMatch.matcher(original).replaceAll(replacement);
-      params.put(key, newValue);
+      if (overwrite || params.get(key) == null) {
+        log.log(Level.FINE,
+            "Replacing {1} with {2} in param value of {0}: {3}",
+            new Object[] {key, toMatch, replacement, original});
+        String newValue = toMatch.matcher(original).replaceAll(replacement);
+        params.put(key, newValue);
+      } else {
+        log.log(Level.FINE, "Not replacing {1} with {2} in param value of {0}:"
+            + " overwrite is false",
+            new Object[] {key, toMatch, replacement});
+      }
       log.log(Level.FINE, "After replacing param value for {0}: {1}",
-          new Object [] {key, newValue});
+          new Object [] {key, params.get(key)});
     }
 
     @Override
