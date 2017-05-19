@@ -14,11 +14,11 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Locale.US;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
 import java.util.logging.Level;
@@ -204,7 +204,11 @@ public class RegexFilter implements MetadataTransform {
   private boolean foundInParams(Map<String, String> params) {
     boolean found = false;
     if (params.containsKey(key)) {
-      found = pattern.matcher(params.get(key)).find();
+      String value = params.get(key);
+      if (value == null) {
+        value = "";
+      }
+      found = pattern.matcher(value).find();
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + key + "' in params.");

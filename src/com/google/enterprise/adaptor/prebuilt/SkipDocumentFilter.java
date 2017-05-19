@@ -23,11 +23,10 @@
  */
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
-
 import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
 import java.util.logging.Logger;
@@ -161,7 +160,11 @@ public class SkipDocumentFilter implements MetadataTransform {
   private boolean foundInParams(Map<String, String> params) {
     boolean found = false;
     if (params.containsKey(propertyName)) {
-      found = pattern.matcher(params.get(propertyName)).find();
+      String value = params.get(propertyName);
+      if (value == null) {
+        value = "";
+      }
+      found = pattern.matcher(value).find();
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
         + propertyName + "' in params.");
