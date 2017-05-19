@@ -147,9 +147,10 @@ public class SkipDocumentFilter implements MetadataTransform {
     Set<String> values = metadata.getAllValues(propertyName);
     if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
       if (metadata.getKeys().contains(propertyName)) {
-        log.finest("No values for key `" + propertyName + "' in metadata.");
+        log.log(Level.FINEST, "No values for key {0} in metadata.",
+            propertyName);
       } else {
-        log.finest("No key `" + propertyName + "' in metadata.");
+        log.log(Level.FINEST, "No key {0} in metadata.", propertyName);
       }
     }
     for (String value : values) {
@@ -158,8 +159,8 @@ public class SkipDocumentFilter implements MetadataTransform {
         break;
       }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + propertyName + "' in metadata.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in metadata.",
+        new Object[] { (found ? "Did" : "Did not"), propertyName });
     return found;
   }
 
@@ -172,11 +173,11 @@ public class SkipDocumentFilter implements MetadataTransform {
     boolean found = false;
     if (params.containsKey(propertyName)) {
       found = pattern.matcher(params.get(propertyName)).find();
-    } else if (log.isLoggable(Level.FINEST)) {
-      log.finest("No key `" + propertyName + "' in params.");
+    } else {
+      log.log(Level.FINEST, "No key {0} in params.", propertyName);
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + propertyName + "' in params.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in params.",
+        new Object[] { (found ? "Did" : "Did not"), propertyName });
     return found;
   }
 
@@ -210,21 +211,25 @@ public class SkipDocumentFilter implements MetadataTransform {
     // determine the Transmission Decision based on skipMatch
     if (skipOnMatch) {
       if (found) {
-        log.info("Skipping document " + docId + ", because we found a match in "
-            + corpora);
+        log.log(Level.INFO,
+            "Skipping document {0}, because we found a match in {1}.",
+            new Object[] { docId, corpora });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
       } else {
-        log.fine("No transmission decision for document " + docId
-             + ", because we did not find a match in " + corpora);
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we did not find a match in {1}.",
+            new Object[] { docId, corpora });
       }
     } else {
       if (found) {
-        log.fine("No transmission decision for document " + docId
-             + ", because we found a match in " + corpora);
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we found a match in {1}.",
+            new Object[] { docId, corpora });
       } else {
-        log.info("Skipping document " + docId + ", because we did not find a "
-            + "match in " + corpora);
+        log.log(Level.INFO,
+            "Skipping document {0}, because we did not find a match in {1}.",
+            new Object[] { docId, corpora });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
       }

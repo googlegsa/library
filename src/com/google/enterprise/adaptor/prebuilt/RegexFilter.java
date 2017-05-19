@@ -189,9 +189,9 @@ public class RegexFilter implements MetadataTransform {
     Set<String> values = metadata.getAllValues(key);
     if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
       if (metadata.getKeys().contains(key)) {
-        log.finest("No values for key `" + key + "' in metadata.");
+        log.log(Level.FINEST, "No values for key {0} in metadata.", key);
       } else {
-        log.finest("No key `" + key + "' in metadata.");
+        log.log(Level.FINEST, "No key {0} in metadata.", key);
       }
     }
     for (String value : values) {
@@ -200,8 +200,8 @@ public class RegexFilter implements MetadataTransform {
         break;
       }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in metadata.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in metadata.",
+        new Object[] { (found ? "Did" : "Did not"), key });
     return found;
   }
 
@@ -215,10 +215,10 @@ public class RegexFilter implements MetadataTransform {
     if (params.containsKey(key)) {
       found = pattern.matcher(params.get(key)).find();
     } else if (log.isLoggable(Level.FINEST)) {
-      log.finest("No key `" + key + "' in params.");
+      log.log(Level.FINEST, "No key {0} in params.", key);
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in params.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in params.",
+        new Object[] { (found ? "Did" : "Did not"), key });
     return found;
   }
 
