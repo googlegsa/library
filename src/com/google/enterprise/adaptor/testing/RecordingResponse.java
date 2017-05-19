@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.testing;
 
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import com.google.enterprise.adaptor.Response;
 
 import java.io.ByteArrayOutputStream;
@@ -25,9 +26,9 @@ import java.net.URI;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * A fake implementation of {@link Response} that simply records the
@@ -43,7 +44,7 @@ public class RecordingResponse implements Response {
   private Date lastModified;
   private Metadata metadata = new Metadata();
   private Acl acl;
-  private Map<String, Acl> namedResources = new HashMap<String, Acl>();
+  private Map<String, Acl> namedResources = new TreeMap<String, Acl>();
   private boolean secure;
   private List<Map.Entry<String, URI>> anchors =
       new ArrayList<Map.Entry<String, URI>>();
@@ -53,6 +54,8 @@ public class RecordingResponse implements Response {
   private URI displayUrl;
   private boolean crawlOnce;
   private boolean lock;
+  private TransmissionDecision forcedTransmissionDecision;
+  private Map<String, String> params = new TreeMap<String, String>();
 
   /**
    * Constructs a mock {@code Response} with a {@code ByteArrayOutputStream}.
@@ -153,6 +156,16 @@ public class RecordingResponse implements Response {
     this.lock = lock;
   }
 
+  // TODO(bmj): @Override
+  public void setForcedTransmissionDecision(TransmissionDecision decision) {
+    this.forcedTransmissionDecision = decision;
+  }
+
+  @Override
+  public void setParam(String key, String value) {
+    params.put(key, value);
+  }
+
   public boolean isNotModified() {
     return notModified;
   }
@@ -217,5 +230,13 @@ public class RecordingResponse implements Response {
 
   public boolean isLock() {
     return lock;
+  }
+
+  public TransmissionDecision getForcedTransmissionDecision() {
+    return forcedTransmissionDecision;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
   }
 }
