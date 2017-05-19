@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.testing;
 
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Metadata;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import com.google.enterprise.adaptor.Response;
 
 import java.io.ByteArrayOutputStream;
@@ -25,9 +26,9 @@ import java.net.URI;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * A fake implementation of {@link Response} that simply records the
@@ -35,8 +36,6 @@ import java.util.Map;
  * methods that must be called last.
  */
 public class RecordingResponse implements Response {
-  // TODO(jlacey): Implement Response2.
-
   /**
    * Response states based on calls to the {@code respondXXX} and
    * {@code getOutputStream} methods.
@@ -44,12 +43,13 @@ public class RecordingResponse implements Response {
   public enum State { SETUP, NOT_MODIFIED, NOT_FOUND, NO_CONTENT, SEND_BODY };
 
   private final OutputStream os;
+
   private State state = State.SETUP;
   private String contentType;
   private Date lastModified;
   private Metadata metadata = new Metadata();
   private Acl acl;
-  private Map<String, Acl> namedResources = new HashMap<String, Acl>();
+  private Map<String, Acl> namedResources = new TreeMap<String, Acl>();
   private boolean secure;
   private List<Map.Entry<String, URI>> anchors =
       new ArrayList<Map.Entry<String, URI>>();
@@ -59,6 +59,8 @@ public class RecordingResponse implements Response {
   private URI displayUrl;
   private boolean crawlOnce;
   private boolean lock;
+  private TransmissionDecision forcedTransmissionDecision;
+  private Map<String, String> params = new TreeMap<String, String>();
 
   /**
    * Constructs a mock {@code Response} with a {@code ByteArrayOutputStream}.
@@ -218,6 +220,22 @@ public class RecordingResponse implements Response {
     this.lock = lock;
   }
 
+  // TODO(bmj): @Override
+  public void setForcedTransmissionDecision(TransmissionDecision decision) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
+    this.forcedTransmissionDecision = decision;
+  }
+
+  @Override
+  public void setParam(String key, String value) {
+    if (state != State.SETUP) {
+      throw new IllegalStateException("Already responded " + state);
+    }
+    params.put(key, value);
+  }
+
   public State getState() {
     return state;
   }
@@ -274,5 +292,13 @@ public class RecordingResponse implements Response {
 
   public boolean isLock() {
     return lock;
+  }
+
+  public TransmissionDecision getForcedTransmissionDecision() {
+    return forcedTransmissionDecision;
+  }
+
+  public Map<String, String> getParams() {
+    return params;
   }
 }

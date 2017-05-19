@@ -3,9 +3,9 @@
 
   <path id="eclipse.build.classpath">
     <path refid="adaptorlib.build.classpath"/>
+    <path refid="junit.classpath"/>
     <path refid="opensaml.run.classpath"/>
     <fileset dir="${lib.dir}">
-      <include name="junit-4.8.2.jar" />
       <include name="commons-fileupload-1.3.jar" />
     </fileset>
     <fileset dir="${java.home}/..">
