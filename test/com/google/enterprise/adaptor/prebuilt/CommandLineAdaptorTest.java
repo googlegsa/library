@@ -93,6 +93,7 @@ public class CommandLineAdaptorTest {
     private static final Map<String, Date> ID_TO_LAST_MODIFIED;
     private static final Map<String, Date> ID_TO_LAST_CRAWLED;
     private static final Map<String, Metadata> ID_TO_METADATA;
+    private static final Map<String, Map<String, String>> ID_TO_PARAMS;
 
     static {
       Map<String, String> idToContent = new HashMap<String, String>();
@@ -129,6 +130,17 @@ public class CommandLineAdaptorTest {
       idToMetadata.put("1003", id1003Metadata.unmodifiableView());
 
       ID_TO_METADATA = Collections.unmodifiableMap(idToMetadata);
+
+      Map<String, Map<String, String>> idToParams
+          = new HashMap<String, Map<String, String>>();
+      Map<String, String> params = new HashMap<String, String>();
+      params.put("DoNotSkipDocument", "true");
+      params.put("LastAccessDate", "2000-10-08T14:56:00Z");
+      idToParams.put("1002", Collections.unmodifiableMap(params));
+      idToParams.put("1003",
+          Collections.unmodifiableMap(new HashMap<String, String>()));
+
+      ID_TO_PARAMS = Collections.unmodifiableMap(idToParams);
     }
 
     @Override
@@ -144,6 +156,7 @@ public class CommandLineAdaptorTest {
       Date lastModified = ID_TO_LAST_MODIFIED.get(docId);
       Date lastCrawled = ID_TO_LAST_CRAWLED.get(docId);
       String mimeType = ID_TO_MIME_TYPE.get(docId);
+      Map<String, String> params = ID_TO_PARAMS.get(docId);
 
       final StringBuffer result = new StringBuffer();
       result.append("GSA Adaptor Data Version 1 [\n]\n");
@@ -158,6 +171,12 @@ public class CommandLineAdaptorTest {
         for (Map.Entry<String, String> item : metadata) {
           result.append("meta-name=").append(item.getKey()).append("\n");
           result.append("meta-value=").append(item.getValue()).append("\n");
+        }
+      }
+      if (params != null) {
+        for (Map.Entry<String, String> item : params.entrySet()) {
+          result.append("param-name=").append(item.getKey()).append("\n");
+          result.append("param-value=").append(item.getValue()).append("\n");
         }
       }
       if (content != null) {
@@ -321,6 +340,9 @@ public class CommandLineAdaptorTest {
 
         assertEquals(CommandLineAdaptorTestMock.ID_TO_METADATA.get(docId.getUniqueId()),
             response.getMetadata());
+
+        assertEquals(CommandLineAdaptorTestMock.ID_TO_PARAMS.get(docId.getUniqueId()),
+            response.getParams());
 
         byte[] expected = CommandLineAdaptorTestMock.ID_TO_CONTENT.get(
             docId.getUniqueId()).getBytes();

@@ -641,8 +641,8 @@ public class Config {
 
   public long validateTimeout(String property) {
     String secondsAsString = getValue(property).trim();
-    if ("0".equals(secondsAsString) || "".equals(secondsAsString) ||
-        secondsAsString.startsWith("-") ) {
+    if ("0".equals(secondsAsString) || "".equals(secondsAsString)
+        || secondsAsString.startsWith("-")) {
       throw new InvalidConfigurationException("Invalid value for " + property
           + ". Zero, empty and negative values are not accepted.");
     } else {

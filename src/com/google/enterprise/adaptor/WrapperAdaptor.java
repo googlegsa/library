@@ -188,6 +188,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setLock(boolean lock) {
       response.setLock(lock);
     }
+
+    @Override
+    public void setParam(String key, String value) {
+      response.setParam(key, value);
+    }
   }
 
   /**
