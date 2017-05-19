@@ -74,7 +74,6 @@ public interface MetadataTransform {
    *
    * @since 4.1.4
    */
-  // @since TODO(bmj)
   public enum Keyset {
     /**
      * The key/value(s) reside in the {@link Metadata}.
