@@ -21,6 +21,7 @@ import com.google.enterprise.adaptor.MetadataTransform;
 import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -185,14 +186,22 @@ public class RegexFilter implements MetadataTransform {
    */
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
-    for (String value : metadata.getAllValues(key)) {
+    Set<String> values = metadata.getAllValues(key);
+    if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
+      if (metadata.getKeys().contains(key)) {
+        log.log(Level.FINEST, "No values for key {0} in metadata.", key);
+      } else {
+        log.log(Level.FINEST, "No key {0} in metadata.", key);
+      }
+    }
+    for (String value : values) {
       if (pattern.matcher(value).find()) {
         found = true;
         break;
       }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in metadata.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in metadata.",
+        new Object[] { (found ? "Did" : "Did not"), key });
     return found;
   }
 
@@ -209,9 +218,11 @@ public class RegexFilter implements MetadataTransform {
         value = "";
       }
       found = pattern.matcher(value).find();
+    } else {
+      log.log(Level.FINEST, "No key {0} in params.", key);
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in params.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in params.",
+        new Object[] { (found ? "Did" : "Did not"), key });
     return found;
   }
 
