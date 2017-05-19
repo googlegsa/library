@@ -255,6 +255,39 @@ public class RegexFilterTest {
   }
 
   @Test
+  public void testTransform_KeyFoundInParamsWithNullValue() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "found");
+    config.put("keyset", "params");
+    config.put("when", "found");
+    config.put("decision", "do-not-index");
+    RegexFilter transform = RegexFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put(MetadataTransform.KEY_DOC_ID, "docId05");
+    params.put("found", null);
+    Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals("do-not-index", params.get("Transmission-Decision"));
+  }
+
+  @Test
+  public void testTransform_KeyFoundInParamsWithPatternAndNullValue() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("key", "found");
+    config.put("keyset", "params");
+    config.put("pattern", "foo");
+    config.put("when", "found");
+    config.put("decision", "do-not-index");
+    RegexFilter transform = RegexFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put(MetadataTransform.KEY_DOC_ID, "docId05");
+    params.put("found", null);
+    Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals(null, params.get("Transmission-Decision"));
+  }
+
+  @Test
   public void testTransform_KeyNotFoundWhenFound() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "skipMe");

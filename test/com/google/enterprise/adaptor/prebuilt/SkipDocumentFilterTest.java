@@ -330,6 +330,37 @@ public class SkipDocumentFilterTest {
     assertEquals(null, params.get("Transmission-Decision"));
   }
 
+  @Test
+  public void testTransform_KeyFoundInParamsWithNullValue() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("propertyName", "skipMe");
+    config.put("skipOnMatch", "true");
+    config.put("corpora", "params");
+    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put(MetadataTransform.KEY_DOC_ID, "docId05");
+    params.put("skipMe", null);
+    Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals("do-not-index", params.get("Transmission-Decision"));
+  }
+
+  @Test
+  public void testTransform_KeyFoundInParamsWithPatternAndNullValue() {
+    Map<String, String> config = new HashMap<String, String>();
+    config.put("propertyName", "skipMe");
+    config.put("pattern", "foo");
+    config.put("skipOnMatch", "true");
+    config.put("corpora", "params");
+    SkipDocumentFilter transform = SkipDocumentFilter.create(config);
+    Map<String, String> params = new HashMap<String, String>();
+    params.put(MetadataTransform.KEY_DOC_ID, "docId05");
+    params.put("found", null);
+    Metadata metadata = new Metadata();
+    transform.transform(metadata, params);
+    assertEquals(null, params.get("Transmission-Decision"));
+  }
+
   // tests on corpora=Metadata (skipping params)
 
   @Test

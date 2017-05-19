@@ -191,6 +191,11 @@ abstract class WrapperAdaptor implements Adaptor {
     public void setLock(boolean lock) {
       response.setLock(lock);
     }
+
+    @Override
+    public void setParam(String key, String value) {
+      response.setParam(key, value);
+    }
   }
 
   /**
@@ -252,6 +257,7 @@ abstract class WrapperAdaptor implements Adaptor {
     private boolean crawlOnce;
     private boolean lock;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
+    private Map<String, String> params = new TreeMap<String, String>();
 
     public GetContentsResponse(OutputStream os) {
       this.os = os;
@@ -343,6 +349,11 @@ abstract class WrapperAdaptor implements Adaptor {
       this.lock = lock;
     }
 
+    @Override
+    public void setParam(String key, String value) {
+      params.put(key, value);
+    }
+
     public String getContentType() {
       return contentType;
     }
@@ -406,6 +417,10 @@ abstract class WrapperAdaptor implements Adaptor {
 
     public boolean isLock() {
       return lock;
+    }
+
+    public Map<String, String> getParams() {
+      return params;
     }
   }
 
