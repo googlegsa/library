@@ -258,8 +258,8 @@ class DocIdSender extends AbstractDocIdPusher
    * groups persisting through one or two "full" pushes before they get
    * cleaned up.
    *
-   * This maps the connector-supplied to the last used pseudonym, e.g.
-   * {@code foo -> foo-FULL1}.
+   * This maps the connector-supplied group source to the last used pseudonym,
+   * e.g. {@code foo -> foo-FULL1}.
    */
   private Map<String, String> groupSources = new HashMap<String, String>();
 

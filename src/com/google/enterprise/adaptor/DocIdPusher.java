@@ -228,7 +228,7 @@ public interface DocIdPusher {
    *
    * <p>A groupSource identifies the source of the group definitions.
    * If provided, it must be a string of the form
-   * <code>[a-zA-Z_][a-zA-Z0-9_-]{0,250}</code>.
+   * <code>[a-zA-Z_][a-zA-Z0-9_-]*</code> with at most 250 characters.
    * If groupSource is {@code null}, then the {@code feed.name} configuration
    * property is used.
    *
