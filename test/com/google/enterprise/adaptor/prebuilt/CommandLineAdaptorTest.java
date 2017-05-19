@@ -332,7 +332,8 @@ public class CommandLineAdaptorTest {
       boolean notModified = !CommandLineAdaptorTestMock.ID_TO_LAST_MODIFIED.get(docId.getUniqueId())
           .after(CommandLineAdaptorTestMock.ID_TO_LAST_CRAWLED.get(docId.getUniqueId()));
 
-      assertEquals(notModified, response.isNotModified());
+      assertEquals(notModified,
+          response.getState() == RecordingResponse.State.NOT_MODIFIED);
 
       if (!notModified) {
         assertEquals(CommandLineAdaptorTestMock.ID_TO_MIME_TYPE.get(docId.getUniqueId()),

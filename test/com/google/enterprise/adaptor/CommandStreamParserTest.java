@@ -167,7 +167,6 @@ public class CommandStreamParserTest {
   public void testRetriever() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n"
         + "id=123\n"
-        + "up-to-date\n"
         + "UNKNOWN_COMMAND=abcdefghi\n"
         + "meta-name=project\nmeta-value=plexi\n"
         + "last-modified=15\n"
@@ -189,7 +188,6 @@ public class CommandStreamParserTest {
     assertEquals(1, version);
 
     parser.readFromRetriever(new DocId("123"), response);
-    assertTrue(response.isNotModified());
     assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
     Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
@@ -205,6 +203,25 @@ public class CommandStreamParserTest {
     assertEquals(true, response.isCrawlOnce());
     assertEquals(true, response.isLock());
     assertEquals("plexi", metadata.getOneValue("project"));
+  }
+
+  @Test
+  public void testRetrieverNotModified() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "last-modified=15\n"
+        + "up-to-date";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    RecordingResponse response = new RecordingResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    parser.readFromRetriever(new DocId("123"), response);
+    assertEquals(RecordingResponse.State.NOT_MODIFIED, response.getState());
+    assertEquals(new Date(15 * 1000), response.getLastModified());
   }
 
   @Test
@@ -361,7 +378,6 @@ public class CommandStreamParserTest {
   public void testRetrieverMultipleMetadataValuesSameKey() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n"
         + "id=123\n"
-        + "up-to-date\n"
         + "UNKNOWN_COMMAND=abcdefghi\n"
         + "meta-name=project\nmeta-value=plexi\n"
         + "meta-name=project\nmeta-value=klexa\ncontent\n2468";
@@ -374,7 +390,6 @@ public class CommandStreamParserTest {
     assertEquals(1, version);
 
     parser.readFromRetriever(new DocId("123"), response);
-    assertTrue(response.isNotModified());
     assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
     Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
@@ -382,6 +397,43 @@ public class CommandStreamParserTest {
     projectNames.add("plexi");
     projectNames.add("klexa");
     assertEquals(projectNames, metadata.getAllValues("project"));
+  }
+
+  @Test
+  public void testRetrieverInvalidDuplicateCommands() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "up-to-date\n"
+        + "meta-name=project\nmeta-value=klexa\n"
+        + "content\n2468";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    RecordingResponse response = new RecordingResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    thrown.expect(IllegalStateException.class);
+    parser.readFromRetriever(new DocId("123"), response);
+  }
+
+  @Test
+  public void testRetrieverInvalidCommandOrder() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "up-to-date\n"
+        + "last-modified=15";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    RecordingResponse response = new RecordingResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    thrown.expect(IllegalStateException.class);
+    parser.readFromRetriever(new DocId("123"), response);
   }
 
   @Test
@@ -406,7 +458,7 @@ public class CommandStreamParserTest {
     int version = parser.getVersionNumber();
     assertEquals(1, version);
     parser.readFromRetriever(new DocId("123\n\0"), response);
-    assertTrue(response.isNotModified());
+    assertEquals(RecordingResponse.State.NOT_MODIFIED, response.getState());
   }
 
   @Test

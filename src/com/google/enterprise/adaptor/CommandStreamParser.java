@@ -475,6 +475,20 @@ public class CommandStreamParser {
 
     command = readCommand();
     while (command != null) {
+      // Look at the current command to see if we must send the
+      // accumulated ACL now, before the response is sent.
+      switch (command.getOperation()) {
+        case CONTENT:
+        case UP_TO_DATE:
+        case NOT_FOUND:
+          if (sendAclWithDocument) {
+            aclBuilder.setPermits(permits);
+            aclBuilder.setDenies(denies);
+            response.setAcl(aclBuilder.build());
+          }
+          break;
+        default:
+      }
       switch (command.getOperation()) {
         case ID:
           throw new IOException("Only one document ID can be specified in a retriever message");
@@ -595,12 +609,6 @@ public class CommandStreamParser {
               + "'");
       }
       command = readCommand();
-    }
-    // Finish by putting accumulated ACL into response.
-    if (sendAclWithDocument) {
-      aclBuilder.setPermits(permits);
-      aclBuilder.setDenies(denies);
-      response.setAcl(aclBuilder.build());
     }
   }
 
