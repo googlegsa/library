@@ -31,6 +31,7 @@ import com.google.enterprise.adaptor.MetadataTransform;
 
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -144,7 +145,7 @@ public class SkipDocumentFilter implements MetadataTransform {
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
     Set<String> values = metadata.getAllValues(propertyName);
-    if (values.isEmpty()) {
+    if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
       if (metadata.getKeys().contains(propertyName)) {
         log.finest("No values for key `" + propertyName + "' in metadata.");
       } else {
@@ -171,7 +172,7 @@ public class SkipDocumentFilter implements MetadataTransform {
     boolean found = false;
     if (params.containsKey(propertyName)) {
       found = pattern.matcher(params.get(propertyName)).find();
-    } else {
+    } else if (log.isLoggable(Level.FINEST)) {
       log.finest("No key `" + propertyName + "' in params.");
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"

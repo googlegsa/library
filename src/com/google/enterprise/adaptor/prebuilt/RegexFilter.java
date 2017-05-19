@@ -187,7 +187,7 @@ public class RegexFilter implements MetadataTransform {
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
     Set<String> values = metadata.getAllValues(key);
-    if (values.isEmpty()) {
+    if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
       if (metadata.getKeys().contains(key)) {
         log.finest("No values for key `" + key + "' in metadata.");
       } else {
@@ -214,7 +214,7 @@ public class RegexFilter implements MetadataTransform {
     boolean found = false;
     if (params.containsKey(key)) {
       found = pattern.matcher(params.get(key)).find();
-    } else {
+    } else if (log.isLoggable(Level.FINEST)) {
       log.finest("No key `" + key + "' in params.");
     }
     log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
