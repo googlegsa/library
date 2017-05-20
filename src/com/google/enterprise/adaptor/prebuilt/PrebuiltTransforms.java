@@ -89,7 +89,9 @@ public class PrebuiltTransforms {
    * Returns a transform that copies metadata or param values from one key to
    * another. The {@code "overwrite"} key can be set to {@code "true"} to cause
    * the destination to be replaced. Otherwise if the destination is a metadata
-   * key, its values is are supplemented.
+   * key, its values is are supplemented. If unspecified, the default value for
+   * {@code "overwrite"} is {@code "false"} for metadata and {@code "true"} for
+   * params.
    *
    * <p>Copies are defined by pairs of {@code "X.from"} and {@code "X.to"}
    * configuration entries (where {@code X} is an integer). The value for each
@@ -425,7 +427,8 @@ public class PrebuiltTransforms {
    * {@code "keyX"} configuration entries (where {@code X} is an
    * integer). The {@code "overwrite"} configuration key can be set to {@code
    * "false"} to cause the original string to be left intact; otherwise the
-   * original string is replaced.
+   * original string is replaced. If unspecified, the default value of
+   * {@code "overwrite"} is {@code "true"} for both metadata and parames.
    *
    * <p>The needle to be found is configured via a {@code "string"} or {@code
    * "pattern"} configuration key. {@code string}'s value is treated as a
