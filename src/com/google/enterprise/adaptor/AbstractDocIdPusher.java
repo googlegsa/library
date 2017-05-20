@@ -22,7 +22,7 @@ import java.util.Map;
 /**
  * Abstract class providing most methods required for a {@code DocIdPusher}.
  */
-abstract class AbstractDocIdPusher implements DocIdPusher {
+public abstract class AbstractDocIdPusher implements DocIdPusher {
   /**
    * Calls {@code pushDocIds(docIds, null)}.
    */

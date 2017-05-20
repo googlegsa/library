@@ -16,6 +16,8 @@ package com.google.enterprise.adaptor;
 
 import static org.junit.Assume.assumeTrue;
 
+import com.google.enterprise.adaptor.testing.RecordingDocIdPusher;
+
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -56,7 +58,7 @@ public class TestHelper {
 
   public static List<DocId> getDocIds(Adaptor adaptor,
       Map<String, String> configEntries) throws Exception {
-    final AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    final RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     final Config config = new Config();
     adaptor.initConfig(config);
     for (Map.Entry<String, String> entry : configEntries.entrySet()) {
