@@ -30,6 +30,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -69,7 +70,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
       Collection<Principal> members = defs.get(key);
       if (members instanceof List) {
         groups.put(key, unmodifiableList(new ArrayList<Principal>(members)));
-      } else if (members instanceof java.util.Set) {
+      } else if (members instanceof Set) {
         groups.put(key, unmodifiableSet(new LinkedHashSet<Principal>(members)));
       } else {
         groups.put(key, members);
