@@ -136,7 +136,7 @@ import java.util.regex.Pattern;
  * immediately preceding metadata-name<p>
  *
  * "param-name=" -- specifies a parameter key, to be followed by a parameter-value.
- * Parameters are supplied to {@link MetadataTransforms} for use when making
+ * Parameters are supplied to {@link MetadataTransform MetadataTransforms} for use when making
  * transforms or decisions.<p>
  *
  * "param-value=" -- specifies a parameter value associated with

@@ -33,7 +33,8 @@ import java.util.TreeMap;
 /**
  * A fake implementation of {@link Response} that simply records the
  * values it receives, and implements the interface semantics of the
- * methods that must be called last.
+ * methods that must be called last. This implementation is not
+ * thread-safe.
  */
 public class RecordingResponse implements Response {
   /**
@@ -71,6 +72,9 @@ public class RecordingResponse implements Response {
 
   /**
    * Constructs a mock {@code Response} with the given {@code OutputStream}.
+   *
+   * @param os the output stream that will be returned from
+   *     {@link #getOutputStream}
    */
   public RecordingResponse(OutputStream os) {
     this.os = os;
@@ -248,7 +252,11 @@ public class RecordingResponse implements Response {
     return lastModified;
   }
 
-  /** Returns a reference to unmodifiable, accumulated metadata. */
+  /**
+   * Gets an unmodifiable view of the accumulated {@code Metadata}.
+   *
+   * @return an unmodifiable view of the accumulated {@code Metadata}
+   */
   public Metadata getMetadata() {
     return metadata.unmodifiableView();
   }
@@ -265,7 +273,11 @@ public class RecordingResponse implements Response {
     return secure;
   }
 
-  /** Returns a reference to modifiable, accumulated anchors. */
+  /**
+   * Gets a modifiable list of the accumulated anchors.
+   *
+   * @return a modifiable list of the accumulated anchors
+   */
   public List<Map.Entry<String, URI>> getAnchors() {
     return anchors;
   }
@@ -298,6 +310,11 @@ public class RecordingResponse implements Response {
     return forcedTransmissionDecision;
   }
 
+  /**
+   * Gets a modifiable map of the accumulated params.
+   *
+   * @return a modifiable map of the accumulated params
+   */
   public Map<String, String> getParams() {
     return params;
   }

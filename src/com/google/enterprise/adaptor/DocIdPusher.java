@@ -30,8 +30,9 @@ public interface DocIdPusher {
    * while in error conditions, but is not something that generally needs to be
    * avoided.
    *
-   * <p>Equivalent to {@code pushDocIds(docIds, null)} and {@link
-   * #pushRecords(Iterable)} with default values for each {@code Record}.
+   * <p>Equivalent to {@link #pushDocIds(Iterable, ExceptionHandler)
+   * pushDocIds(docIds, null)}, and to {@link #pushRecords(Iterable)}
+   * with default values for each {@code Record}.
    *
    * @param docIds are document ids to be pushed
    * @return {@code null} on success, otherwise the first DocId to fail
@@ -66,7 +67,8 @@ public interface DocIdPusher {
    * while in error conditions, but is not something that generally needs to be
    * avoided.
    *
-   * <p>Equivalent to {@code pushRecords(records, null)}.
+   * <p>Equivalent to {@link #pushRecords(Iterable, ExceptionHandler)
+   * pushRecords(records, null)}.
    *
    * @param records are document ids to be pushed
    * @return {@code null} on success, otherwise the first Record to fail
@@ -105,7 +107,8 @@ public interface DocIdPusher {
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
    *
-   * <p>Equivalent to {@code pushNamedResources(resources, null)}.
+   * <p>Equivalent to {@link #pushNamedResources(Map, ExceptionHandler)
+   * pushNamedResources(resources, null)}.
    *
    * @param resources are labeled access control lists
    * @return {@code null} on success, otherwise the first DocId to fail
@@ -145,10 +148,14 @@ public interface DocIdPusher {
    * if errors arise.
    * 
    * <p>A group definition consists of a group being defined
-   * and members, which is a list of users and groups.
+   * and members, which is a collection of users and groups.
    *
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>Equivalent to
+   * {@link #pushGroupDefinitions(Map, boolean, ExceptionHandler)
+   * pushGroupDefinitions(defs, caseSensitive, null)}.
    *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
@@ -165,7 +172,7 @@ public interface DocIdPusher {
    * if errors arise.
    * 
    * <p>A group definition consists of a group being defined
-   * and members, which is a list of users and groups.
+   * and members, which is a collection of users and groups.
    *
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.

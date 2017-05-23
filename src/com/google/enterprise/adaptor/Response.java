@@ -228,9 +228,9 @@ public interface Response {
    * {@code X-}.
    * <p>
    * Example:
-   * <code><pre>
+   * <pre>
    * response.setParam("X-LastAccessDate", ISO8601.format(lastAccessDate));
-   * </pre></code>
+   * </pre>
    *
    * @param key a key for a Map entry
    * @param value the value for the Map entry for key
