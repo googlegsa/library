@@ -19,6 +19,7 @@ import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import com.google.enterprise.adaptor.testing.RecordingDocIdPusher;
 import com.google.enterprise.adaptor.testing.RecordingResponse;
 
 import org.junit.Rule;
@@ -55,7 +56,7 @@ public class CommandStreamParserTest {
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     parser.readFromLister(pusher, null);
     assertEquals("123", pusher.getDocIds().get(0).getUniqueId());
     assertEquals("456", pusher.getDocIds().get(1).getUniqueId());
@@ -72,7 +73,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
@@ -86,7 +87,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
@@ -100,7 +101,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
@@ -111,7 +112,7 @@ public class CommandStreamParserTest {
     String source = "GSA Adaptor Data Version 1 [" + delimiter + "]" + delimiter + "id=123";
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     boolean catched = false;
     try {
@@ -589,7 +590,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     parser.readFromLister(pusher, null);
     assertEquals(0, pusher.getDocIds().size());
  }
@@ -601,7 +602,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
  }
@@ -616,7 +617,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     DocIdPusher.Record expected = new DocIdPusher.Record.Builder(new DocId("001"))
         .setCrawlImmediately(true)
         .setCrawlOnce(true)
@@ -655,7 +656,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     parser.readFromLister(pusher, null);
     assertEquals(goldenIds, pusher.getDocIds());
