@@ -19,6 +19,7 @@ import static java.lang.Boolean.TRUE;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.Keyset;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -43,27 +44,6 @@ public class PrebuiltTransforms {
 
   private static final Logger log
       = Logger.getLogger(PrebuiltTransforms.class.getName());
-
-  // TODO (bmj): remove this and use the one in MetadataTransforms.
-  public enum Keyset {
-    METADATA("metadata"),
-    PARAMS("params");
-
-    private final String name;
-
-    private Keyset(String name) {
-      this.name = name;
-    }
-
-    public static Keyset from(String val) {
-      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
-    }
-
-    @Override
-    public String toString() {
-      return name;
-    }
-  }
 
   // Prevent instantiation.
   private PrebuiltTransforms() {}

@@ -18,6 +18,7 @@ import static java.util.Locale.US;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.Keyset;
 import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
@@ -75,8 +76,9 @@ import java.util.regex.Pattern;
  * metadata.transform.pipeline.regexFilter.when=not-found
  * metadata.transform.pipeline.regexFilter.decision=do-not-index
  * </code></pre>
+ *
+ * @since 4.1.4
  */
-// @since TODO(bmj)
 public class RegexFilter implements MetadataTransform {
   /**
    * Make decision based upon whether the regular expression matches or not.
@@ -114,27 +116,6 @@ public class RegexFilter implements MetadataTransform {
     }
 
     /** Returns the name of this {@code When} value. */
-    @Override
-    public String toString() {
-      return name;
-    }
-  };
-
-  // TODO (bmj): remove this and use the one in MetadataTransforms.
-  private enum Keyset {
-    METADATA("metadata"),
-    PARAMS("params");
-
-    private final String name;
-
-    private Keyset(String name) {
-      this.name = name;
-    }
-
-    public static Keyset from(String val) {
-      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
-    }
-
     @Override
     public String toString() {
       return name;
