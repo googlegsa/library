@@ -284,8 +284,16 @@ public class SkipDocumentFilter implements MetadataTransform {
     }
     log.config("skipOnMatch set to " + skipOnMatch);
 
-    corpora = Corpora.from(cfg.get("corpora"));
-    log.config("corpora set to " + corpora);
+    // Support newer "keyset" if specified, but stay backward compatible
+    // with corpora. Takes advantage of the fact that the Keyset names
+    // are a subset of the Corpora names.
+    if (cfg.containsKey("keyset")) {
+      corpora = Corpora.from(cfg.get("keyset"));
+      log.config("keyset set to " + corpora);
+    } else {
+      corpora = Corpora.from(cfg.get("corpora"));
+      log.config("corpora set to " + corpora);
+    }
 
     return new SkipDocumentFilter(propertyName, pattern, skipOnMatch, corpora);
   }
