@@ -678,21 +678,22 @@ class DocumentHandler implements HttpHandler {
         Note: short-circuits closing connection and so does not propagate
         errors that may happen related to document contents. */
     HEAD,
-    /** 404 response code; do NOT send headers.
+    /** 200 response code; do NOT send headers (other than Robots noindex).
         Note: short-circuits closing connection and so does not propagate
         errors that may happen related to document contents. */
-    HEAD_TRANSFORMED_TO_NOT_FOUND,
+    HEAD_TRANSFORMED_TO_NO_INDEX,
     /** Stream document bytes as adaptor gives them. */
     SEND_BODY,
     /** 404 response code with same timeouts and error handling as SEND_BODY. */
-    SEND_BODY_TRANSFORMED_TO_NOT_FOUND,
-    /** 200 response code; do send headers; drop document body; use same 
-        timeouts and error handling as SEND_BODY. */
+    SEND_BODY_TRANSFORMED_TO_NO_INDEX,
+    /** 200 response code; do send headers (other than Robots noindex);
+        drop document body; use same timeouts and error handling as SEND_BODY.*/
     SEND_BODY_TRANSFORMED_TO_HEAD,
     /** No file content to send but we send metadata and ACLs. */
     NO_CONTENT,
-    /** 404 response code; no metadata; no ACLs. */
-    NO_CONTENT_TRANSFORMED_TO_NOT_FOUND,
+    /** 204 or 304 response code; no metadata (other than Robots noindex);
+        no ACLs. */
+    NO_CONTENT_TRANSFORMED_TO_NO_INDEX
   }
 
   /**
@@ -774,9 +775,18 @@ class DocumentHandler implements HttpHandler {
       }
       if (state == State.NO_CONTENT) {
         startSending(false);
-      } else if (state == State.NO_CONTENT_TRANSFORMED_TO_NOT_FOUND) {
-        log.log(Level.INFO, "changed NO_CONTENT to NOT_FOUND {0}",
+      } else if (state == State.NO_CONTENT_TRANSFORMED_TO_NO_INDEX) {
+        log.log(Level.INFO, "changed NO_CONTENT to DO_NOT_INDEX {0}",
             docId.getUniqueId());
+        // Send no metadata, other than Robots noindex.
+        ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
+        // Respond with 304 instead of 204 when talking with non GSA requests
+        // such as browsers.
+        HttpExchanges.respond(ex,
+            (requestIsFromFullyTrustedClient(ex)
+                ? HttpURLConnection.HTTP_NO_CONTENT
+                : HttpURLConnection.HTTP_NOT_MODIFIED),
+            "text/plain", new byte[0]);
       } else {
         throw new IllegalStateException("unexpected state: " + state);
       }
@@ -789,9 +799,9 @@ class DocumentHandler implements HttpHandler {
           // We will need to make an OutputStream.
           break;
         case HEAD:
-        case HEAD_TRANSFORMED_TO_NOT_FOUND:
+        case HEAD_TRANSFORMED_TO_NO_INDEX:
         case SEND_BODY:
-        case SEND_BODY_TRANSFORMED_TO_NOT_FOUND:
+        case SEND_BODY_TRANSFORMED_TO_NO_INDEX:
         case SEND_BODY_TRANSFORMED_TO_HEAD:
           // Already called before. Provide saved OutputStream.
           return os;
@@ -800,7 +810,7 @@ class DocumentHandler implements HttpHandler {
         case NOT_FOUND:
           throw new IllegalStateException("respondNotFound already called");
         case NO_CONTENT:
-        case NO_CONTENT_TRANSFORMED_TO_NOT_FOUND:
+        case NO_CONTENT_TRANSFORMED_TO_NO_INDEX:
           throw new IllegalStateException("respondNoContent already called");
         default:
           throw new IllegalStateException("Already responded");
@@ -816,16 +826,18 @@ class DocumentHandler implements HttpHandler {
         if (state == State.HEAD) {
           startSending(false);
           os = new SinkOutputStream();
-        } else if (state == State.HEAD_TRANSFORMED_TO_NOT_FOUND) {
-          log.log(Level.INFO, "changed HEAD to NOT_FOUND {0}",
+        } else if (state == State.HEAD_TRANSFORMED_TO_NO_INDEX) {
+          log.log(Level.INFO, "changed HEAD to DO_NOT_INDEX {0}",
               docId.getUniqueId());
           // Follow the precedent of HEAD doing a short-circuit out
           // and potentially not reporting some later adaptor errors.
           os = new SinkOutputStream();
+          // Send no metadata, other than Robots noindex.
+          ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
           // Do not wait until call to complete() in order to short-circuit.
-          // The following line is a 404 without body (because for HEAD).
-          HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
-              Translation.HTTP_NOT_FOUND);
+          // The following line is a 200 without body (because for HEAD).
+          HttpExchanges.respondToHead(ex, HttpURLConnection.HTTP_OK,
+              "text/plain");
         } else {
           throw new IllegalStateException("unexpected state: " + state);
         }
@@ -847,22 +859,20 @@ class DocumentHandler implements HttpHandler {
                   .createPipeline(os, originalContentType, metadata);
             }
           }
-        } else if (state == State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND) {
-          log.log(Level.INFO, "changed SEND_BODY to NOT_FOUND {0}",
+        } else if (state == State.SEND_BODY_TRANSFORMED_TO_NO_INDEX) {
+          log.log(Level.INFO, "changed SEND_BODY to DO_NOT_INDEX {0}",
               docId.getUniqueId());
           // Not using startSending. Instead we stop header timer, start
-          // content timer, send not-found page, and setup a sink for
+          // content timer, discard metadata and content, and setup a sink for
           // bytes provided by adaptor instance itself.
           watchdog.processingCompleted(workingThread);
           watchdog.processingStarting(workingThread, contentTimeoutMillis);
-          int rc = HttpURLConnection.HTTP_NOT_FOUND;
+          // Send no body and no metadata, other than Robots noindex.
+          ex.getResponseHeaders().add("X-Robots-Tag", "noindex");
+          int rc = HttpURLConnection.HTTP_OK;
           HttpExchanges.startResponse(ex, rc, "text/plain", /*hasBody=*/ true);
           countingOs = new CountingOutputStream(new CloseNotifyOutputStream(
               ex.getResponseBody()));
-          log.finest("before writing chunked not-found response");
-          countingOs.write(
-              Translation.HTTP_NOT_FOUND.toString().getBytes(ENCODING));
-          log.finest("after writing chunked not-found response");
           os = new SinkOutputStream(countingOs);
         } else if (state == State.SEND_BODY_TRANSFORMED_TO_HEAD) {
           log.log(Level.INFO, "changed SEND_BODY to HEAD {0}",
@@ -1019,22 +1029,16 @@ class DocumentHandler implements HttpHandler {
               ex, HttpURLConnection.HTTP_NOT_MODIFIED, null, null);
           break;
 
-        case NO_CONTENT_TRANSFORMED_TO_NOT_FOUND:
-          // Normal NO_CONTENT does not stream document contents. NOT_FOUND does
-          // return a page in response (with "not found" message) but it also 
-          // does not stream repository's document contents. That  means that 
-          // neither case has any reason to report streaming errors. Therefore
-          // we can treat NO_CONTENT that became NOT_FOUND as we treat an
-          // adaptor proscribed NOT_FOUND.
         case NOT_FOUND:
           HttpExchanges.cannedRespond(ex, HttpURLConnection.HTTP_NOT_FOUND,
               Translation.HTTP_NOT_FOUND);
           break;
 
+        case NO_CONTENT_TRANSFORMED_TO_NO_INDEX:
         case NO_CONTENT:
           break;
 
-        case SEND_BODY_TRANSFORMED_TO_NOT_FOUND:
+        case SEND_BODY_TRANSFORMED_TO_NO_INDEX:
         case SEND_BODY_TRANSFORMED_TO_HEAD:
           // Treat adaptor code as if it was in normal SEND_BODY even when
           // transform overrides the sending logic.  If there are errors
@@ -1063,7 +1067,7 @@ class DocumentHandler implements HttpHandler {
           // has been called.
           break;
 
-        case HEAD_TRANSFORMED_TO_NOT_FOUND:
+        case HEAD_TRANSFORMED_TO_NO_INDEX:
           // Follow precedent of HEAD which already short-circuted completion.
         case HEAD:
           break;
@@ -1279,13 +1283,13 @@ class DocumentHandler implements HttpHandler {
       } else if (TransmissionDecision.DO_NOT_INDEX == decision) {
         switch (state) {
           case NO_CONTENT:
-            state = State.NO_CONTENT_TRANSFORMED_TO_NOT_FOUND;
+            state = State.NO_CONTENT_TRANSFORMED_TO_NO_INDEX;
             return;
           case HEAD:
-            state = State.HEAD_TRANSFORMED_TO_NOT_FOUND;
+            state = State.HEAD_TRANSFORMED_TO_NO_INDEX;
             return;
           case SEND_BODY:
-            state = State.SEND_BODY_TRANSFORMED_TO_NOT_FOUND;
+            state = State.SEND_BODY_TRANSFORMED_TO_NO_INDEX;
             return;
           default:
             throw new IllegalStateException(
