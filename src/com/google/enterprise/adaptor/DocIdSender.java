@@ -351,7 +351,7 @@ class DocIdSender extends AbstractDocIdPusher
     if (groupSource == null) {
       groupSource = config.getFeedName();
     }
-    log.log(Level.INFO, "Starting {0} push of {0} groups from source {1}",
+    log.log(Level.INFO, "Starting {0} push of {1} groups from source {2}",
         new Object[] { feedType, defs.size(), groupSource });
     String feedSourceName;
     if (feedType == INCREMENTAL) {

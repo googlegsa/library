@@ -177,10 +177,15 @@ public interface DocIdPusher {
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
    *
+   * <p>This method performs {@link DocIdPusher.FeedType INCREMENTAL} group
+   * pushes, using the default group source name, and the default
+   * {@link ExceptionHandler}.
+   *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
+   * @see #pushGroupDefinitions(Map, boolean, FeedType, String, ExceptionHandler)
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
@@ -199,11 +204,15 @@ public interface DocIdPusher {
    *
    * <p>If handler is {@code null}, then a default error handler is used.
    *
+   * <p>This method performs {@link DocIdPusher.FeedType INCREMENTAL} group
+   * pushes, using the default group source name.
+   *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
    * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
+   * @see #pushGroupDefinitions(Map, boolean, FeedType, String, ExceptionHandler)
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
