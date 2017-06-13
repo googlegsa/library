@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.io.IOException;
+import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -52,8 +53,8 @@ public class GsaCommunicationHandlerTest {
    * -validity 7300 -dname "CN=Unknown, OU=Unknown, O=Unknown, L=Unknown,
    *  ST=Unknown, C=Unknown"}.
    */
-  private static final String KEYSTORE_VALID_FILENAME
-      = "test/com/google/enterprise/adaptor/GsaCommunicationHandlerTest.valid.jks";
+  private static final String KEYSTORE_VALID_FILENAME =
+      "/com/google/enterprise/adaptor/GsaCommunicationHandlerTest.valid.jks";
 
   private Config config;
   private GsaCommunicationHandler gsa;
@@ -394,8 +395,10 @@ public class GsaCommunicationHandlerTest {
 
   @Test
   public void testKeyStore() throws Exception {
+    URL fileUrl =
+        GsaCommunicationHandlerTest.class.getResource(KEYSTORE_VALID_FILENAME);
     assertNotNull(GsaCommunicationHandler.getKeyPair("notadaptor",
-        KEYSTORE_VALID_FILENAME, "JKS", "notchangeit"));
+        fileUrl.getPath(), "JKS", "notchangeit"));
   }
 
   @Test
@@ -415,8 +418,10 @@ public class GsaCommunicationHandlerTest {
   @Test
   public void testKeyStoreNoAlias() throws Exception {
     thrown.expect(RuntimeException.class);
-    GsaCommunicationHandler.getKeyPair("notherealalias",
-        KEYSTORE_VALID_FILENAME, "JKS", "notchangeit");
+    URL url =
+        GsaCommunicationHandlerTest.class.getResource(KEYSTORE_VALID_FILENAME);
+    GsaCommunicationHandler.getKeyPair("notherealalias", url.getPath(), "JKS",
+        "notchangeit");
   }
 
   private static class NullAdaptor extends AbstractAdaptor {

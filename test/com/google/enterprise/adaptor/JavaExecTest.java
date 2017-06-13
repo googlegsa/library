@@ -36,9 +36,11 @@ import javax.management.ObjectName;
 /** Unit tests for {@link JavaExec}. */
 public class JavaExecTest {
   // Relative to WORKING_DIR
-  private static final File CHILD_JAR
-      = new File("../test/com/google/enterprise/adaptor/JavaExecTestChild.jar");
-  private static final File WORKING_DIR = new File("build/");
+  private static final File CHILD_JAR = new File(JavaExecTest.class
+      .getResource("/com/google/enterprise/adaptor/JavaExecTestChild.jar")
+      .getPath());
+  private static final File WORKING_DIR =
+      new File(JavaExecTest.class.getResource("/").getPath());
 
   private PrintStream savedStdout;
   private ByteArrayOutputStream stdoutBytes = new ByteArrayOutputStream();

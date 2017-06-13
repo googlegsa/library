@@ -29,8 +29,9 @@ import java.util.Map;
  * Tests for {@link StatRpcMethod}.
  */
 public class StatRpcMethodTest {
+  private Adaptor mockAdaptor = TestHelper.doNothingProxy(Adaptor.class);
   private RpcHandler.RpcMethod method = new StatRpcMethod(
-      new SnapshotMockJournal(), new AdaptorMock(), true, false, null);
+      new SnapshotMockJournal(), mockAdaptor, true, false, null);
 
   @Test
   public void testStat() throws Exception {
@@ -66,7 +67,7 @@ public class StatRpcMethodTest {
       versionMap.put("versionJvm", System.getProperty("java.version"));
       versionMap.put("versionAdaptorLibrary",
                      Translation.STATS_VERSION_UNKNOWN.toString(locale));
-      versionMap.put("typeAdaptor", AdaptorMock.class.getSimpleName());
+      versionMap.put("typeAdaptor", mockAdaptor.getClass().getSimpleName());
       versionMap.put("versionAdaptor",
                      Translation.STATS_VERSION_UNKNOWN.toString(locale));
       versionMap.put("cwd", System.getProperty("user.dir"));
@@ -119,12 +120,6 @@ public class StatRpcMethodTest {
       return new JournalSnapshot(this, 0, new Stats[] {
         new Stats(2, 100, 0),
       });
-    }
-  }
-
-  private class AdaptorMock extends WrapperAdaptor {
-    AdaptorMock() {
-      super(null);
     }
   }
 }

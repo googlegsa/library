@@ -14,13 +14,10 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.Keyset;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.text.DateFormat;
 import java.text.FieldPosition;
@@ -50,50 +47,52 @@ import java.util.logging.Logger;
  * (January 1, 1970, 00:00:00 GMT). Otherwise, a lenient
  * {@link SimpleDateFormat} with the format pattern will be used.
  * <p>
- * {@code date} The cut-off for the date value. Document's whose date
+ * {@code date} The cut-off for the date value. Documents whose date
  * value is before the configued {@code date} will not be indexed.
  * The configured {@code date} must be parsable by the configured date
  * {@code format}, unless {@code format} is "millis", in which
  * case the date must be specified in ISO8601 format. Only one of
  * {@code date} or {@code days} configuration may be specified.
  * <p>
- * {@code days} The cut-off for the date value. Document's whose date
+ * {@code days} The cut-off for the date value. Documents whose date
  * value is more than {@code days} before present will not be indexed.
  * This can be used to have a rolling window of indexed documents. Those
  * whose date have expired will be removed from the index.  Only one of
  * {@code date} or {@code days} configuration may be specified.
  * <p>
- * {@code corpora} The location of the date value to consider. The
- * {@code corpora} may be set to {@code metadata} or to {@code params}
- * to restrict the search to only metadata or params, respectively,
- * or to {@code metadata or params} to search both.
+ * {@code keyset} The location of the date value to consider. The
+ * {@code keyset} may be set to {@code metadata} or to {@code params}
+ * to restrict the search to metadata or params, respectively.
+ *  If {@code keyset} is not specified, it defaults to {@code metadata}.
  * <p>
  * Example 1: skip documents that have not been accessed for more than 3 years:
  * <pre><code>
-   metadata.transform.pipeline=dateFilter
-   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
-   metadata.transform.pipeline.dateFilter.key=Last_Access_Date
-   metadata.transform.pipeline.dateFilter.days=1095
-   </code></pre>
+ * metadata.transform.pipeline=dateFilter
+ * metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+ * metadata.transform.pipeline.dateFilter.key=Last_Access_Date
+ * metadata.transform.pipeline.dateFilter.days=1095
+ * </code></pre>
  * <p>
  * Example 2: skip pre-Y2K client records that used old-style US date formats:
  * <pre><code>
-   metadata.transform.pipeline=dateFilter
-   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
-   metadata.transform.pipeline.dateFilter.key=Last_Visit_Date
-   metadata.transform.pipeline.dateFilter.format=MM/dd/YY
-   metadata.transform.pipeline.dateFilter.date=01/01/00
-   </code></pre>
+ * metadata.transform.pipeline=dateFilter
+ * metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+ * metadata.transform.pipeline.dateFilter.key=Last_Visit_Date
+ * metadata.transform.pipeline.dateFilter.format=MM/dd/YY
+ * metadata.transform.pipeline.dateFilter.date=01/01/00
+ * </code></pre>
  * <p>
  * Example 3: skip documents that have not been modified since 2010:
  * <pre><code>
-   metadata.transform.pipeline=dateFilter
-   metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
-   metadata.transform.pipeline.dateFilter.corpora=params
-   metadata.transform.pipeline.dateFilter.key=Last-Modified-Millis-UTC
-   metadata.transform.pipeline.dateFilter.format=millis
-   metadata.transform.pipeline.dateFilter.date=2010-01-01
-   </code></pre>
+ * metadata.transform.pipeline=dateFilter
+ * metadata.transform.pipeline.dateFilter.factoryMethod=com.google.enterprise.adaptor.prebuilt.DateFilter.create
+ * metadata.transform.pipeline.dateFilter.keyset=params
+ * metadata.transform.pipeline.dateFilter.key=Last-Modified-Millis-UTC
+ * metadata.transform.pipeline.dateFilter.format=millis
+ * metadata.transform.pipeline.dateFilter.date=2010-01-01
+ * </code></pre>
+ *
+ * @since 4.1.4
  */
 public class DateFilter implements MetadataTransform {
   private static final Logger log
@@ -101,37 +100,14 @@ public class DateFilter implements MetadataTransform {
 
   private static final String ISO_8601_FORMAT = "yyyy-MM-dd";
 
-  /**
-   * Which collections of keys/values to search.  Metadata, params, or both.
-   */
-  private enum Corpora {
-    METADATA("metadata"),
-    PARAMS("params"),
-    METADATA_OR_PARAMS("metadata or params");
-
-    private final String name;
-
-    private Corpora(String n) {
-      name = n;
-    }
-
-    public static Corpora from(String val) {
-      if ("metadata".equalsIgnoreCase(val)) {
-        return Corpora.METADATA;
-      }
-      if ("params".equalsIgnoreCase(val)) {
-        return Corpora.PARAMS;
-      }
-      return METADATA_OR_PARAMS;
-    }
-
-    public String toString() {
-      return name;
-    }
-  };
-
   /** The name of the key (either Metadata key or params key) to match. */
   private final String key;
+
+  /**
+   * If {@code METADATA}, search the metadata for the specified key;
+   * if {@code PARAMS}, search the params for the specified key;
+   */
+  private final Keyset keyset;
 
   /** The DateFormat used to parse the date values. */
   private final String dateFormatString;
@@ -140,19 +116,12 @@ public class DateFilter implements MetadataTransform {
   /** The active DateValueFilter */
   private final DateValueFilter filter;
 
-  /**
-   * If {@code METADATA}, only search the metadata for the specified key;
-   * if {@code PARAMS}, only search the params for the specified key;
-   * if {@code METADATA_OR_PARAMS}, search both.
-   */
-  private Corpora corpora = Corpora.METADATA_OR_PARAMS;
-
-  private DateFilter(String key, String dateFormatStr, DateValueFilter filter,
-      Corpora corpora) {
+  private DateFilter(String key, Keyset keyset, String dateFormatStr,
+      DateValueFilter filter) {
     this.key = key;
+    this.keyset = keyset;
     this.dateFormatString = dateFormatStr;
     this.filter = filter;
-    this.corpora = corpora;
 
     // DateFormat is not thread-safe, so each thread gets its own instance.
     this.dateFormat = new ThreadLocal<DateFormat>() {
@@ -217,29 +186,25 @@ public class DateFilter implements MetadataTransform {
    * Conditionally adds a {@code Transmission-Decision} entry to the
    * {@code params Map}. The decision is based on settings of the
    * {@code key}, {@code pattern}, {@code decideOnMatch}, {@code decision},
-   * and {@code corpora} configuration variables (as discussed above).
+   * and {@code keyset} configuration variables (as discussed above).
    */
   @Override
   public void transform(Metadata metadata, Map<String, String> params) {
     String excludedDate;
 
-    switch (corpora) {
+    switch (keyset) {
       case METADATA:
         excludedDate = excludedByDateInMetadata(metadata);
         break;
       case PARAMS:
         excludedDate = excludedByDateInParams(params);
         break;
-      case METADATA_OR_PARAMS:
       default:
-        excludedDate = excludedByDateInParams(params);
-        if (excludedDate == null) {
-          excludedDate = excludedByDateInMetadata(metadata);
-        }
+        excludedDate = null;
     }
 
     String docId = params.get(MetadataTransform.KEY_DOC_ID);
-    if (Strings.isNullOrEmpty(docId)) {
+    if (null == docId || docId.isEmpty()) {
       docId = "with no docId";
     }
 
@@ -258,23 +223,26 @@ public class DateFilter implements MetadataTransform {
   public String toString() {
     return new StringBuilder("DateFilter(")
         .append(key).append(", ")
+        .append(keyset).append(", ")
         .append(dateFormatString).append(", ")
-        .append(filter.toString()).append(", ")
-        .append(corpora).append(")")
+        .append(filter.toString()).append(")")
         .toString();
   }
 
   public static DateFilter create(Map<String, String> cfg) {
     String key;
+    Keyset keyset;
     String format;
     DateValueFilter filter;
-    Corpora corpora;
 
     key = getTrimmedValue(cfg, "key");
     if (key == null) {
       throw new NullPointerException("key may not be null or empty");
     }
     log.config("key = " + key);
+
+    keyset = Keyset.from(getTrimmedValue(cfg, "keyset"));
+    log.config("keyset set to " + keyset);
 
     format = getTrimmedValue(cfg, "format");
     if (format == null) {
@@ -312,19 +280,22 @@ public class DateFilter implements MetadataTransform {
     log.log(Level.INFO, "Documents whose {0} date is earlier than {1} will be "
         + "skipped.", new Object[] { key, filter.toString() });
 
-    corpora = Corpora.from(getTrimmedValue(cfg, "corpora"));
-    log.config("corpora set to " + corpora);
-
-    return new DateFilter(key, format, filter, corpora);
+    return new DateFilter(key, keyset, format, filter);
   }
 
   private static String getTrimmedValue(Map<String, String> cfg, String key) {
     String value = cfg.get(key);
-    return (value == null) ? value : Strings.emptyToNull(value.trim());
+    if (value != null) {
+      value = value.trim();
+      if (value.length() > 0) {
+        return value;
+      }
+    }
+    return null;
   }
 
   /** A DateFormat that parses text of milliseconds since the epoch. */
-  @VisibleForTesting
+  // @VisibleForTesting
   static class MillisecondDateFormat extends DateFormat {
     @Override
     public StringBuffer format(Date date, StringBuffer buf, FieldPosition pos) {
@@ -354,8 +325,10 @@ public class DateFilter implements MetadataTransform {
     private final String dateStr;
 
     public AbsoluteDateValueFilter(Date oldestAllowed, String dateStr) {
-      Preconditions.checkArgument(oldestAllowed.compareTo(new Date()) < 0,
+      if (oldestAllowed.compareTo(new Date()) > 0) {
+        throw new IllegalArgumentException(
           oldestAllowed.toString() + " is in the future.");
+      }
       this.oldestAllowed = oldestAllowed;
       this.dateStr = dateStr;
     }
@@ -376,8 +349,10 @@ public class DateFilter implements MetadataTransform {
     private final long relativeMillis;
 
     public ExpiringDateValueFilter(int daysOld) {
-      Preconditions.checkArgument(daysOld > 0, "The number of days old for "
-          + "expired content must be greater than zero.");
+      if (daysOld <= 0) {
+        throw new IllegalArgumentException("The number of days old for "
+            + "expired content must be greater than zero.");
+      }
       this.daysOld = daysOld;
       this.relativeMillis = TimeUnit.DAYS.toMillis(daysOld);
     }

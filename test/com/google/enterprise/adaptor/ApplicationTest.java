@@ -243,6 +243,7 @@ public class ApplicationTest {
 
   @Test
   public void testBasicHttpsListen() throws Exception {
+    TestHelper.initSSLKeystores();
     config.setValue("server.secure", "true");
     app.start();
     assertTrue(adaptor.inited);

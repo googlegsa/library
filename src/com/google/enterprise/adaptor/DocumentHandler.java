@@ -46,7 +46,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
@@ -736,6 +735,7 @@ class DocumentHandler implements HttpHandler {
     private boolean lock;
     private TransmissionDecision forcedTransmissionDecision;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
+    private Map<String, String> params = new TreeMap<String, String>();
 
     public DocumentResponse(HttpExchange ex, DocId docId, Thread thread) {
       this.ex = ex;
@@ -1003,6 +1003,18 @@ class DocumentHandler implements HttpHandler {
       }
       this.forcedTransmissionDecision = transmissionDecision;
     }
+    
+    @Override
+    public void setParam(String key, String value) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      if (!key.startsWith("X-")) {
+        throw new IllegalArgumentException(
+            "The param key must start with 'X-'");
+      }
+      params.put(key, value);
+    }
 
     private long getWrittenContentSize() {
       return countingOs == null ? 0 : countingOs.getBytesWritten();
@@ -1224,7 +1236,6 @@ class DocumentHandler implements HttpHandler {
         log.log(Level.FINER, "Not performing Metadata transform.");
         return;
       }
-      Map<String, String> params = new HashMap<String, String>();
       params.put(KEY_DOC_ID, docId.getUniqueId());
       params.put(KEY_CONTENT_TYPE, finalContentType);
       if (null != lastModified) {
@@ -1253,7 +1264,7 @@ class DocumentHandler implements HttpHandler {
         }
       } catch (NumberFormatException e) {
         log.log(Level.WARNING,
-            "Failed changing last-modified date {0}",
+            "Failed changing last-modified date {0}",
             params.get(KEY_LAST_MODIFIED_MILLIS_UTC));
       }
       try {

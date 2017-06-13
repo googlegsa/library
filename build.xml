@@ -19,20 +19,12 @@
   <property name="javadoc.dir" location="${build.dir}/javadoc"/>
   <property name="resource.dir" location="resources"/>
   <property name="lib.dir" location="lib"/>
-  <property name="junit.jar" location="${lib.dir}/junit-4.8.2.jar"/>
   <property name="adaptor.pkg.dir" value="com/google/enterprise/adaptor"/>
   <property name="adaptor.pkg.name" value="com.google.enterprise.adaptor"/>
   <property name="adaptor.class" 
       value="${adaptor.pkg.name}.examples.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
   <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
-  <!-- Adaptor suffix for distribution files. Useful for placing version numbers
-       on our jars. -->
-  <condition property="adaptorlib.suffix" value="-${adaptorlib.version}">
-    <isset property="adaptorlib.version"/>
-  </condition>
-  <!-- If adaptorlib.version isn't set, simply use the current date. -->
-  <property name="adaptorlib.suffix" value="-${DSTAMP}"/>
 
   <path id="adaptorlib.build.classpath">
     <fileset dir="${lib.dir}">
@@ -65,14 +57,6 @@
 
   <path id="examples.run.classpath">
     <path refid="examples.build.classpath"/>
-    <fileset dir="${lib.dir}">
-      <include name="jackson-core-asl-1.5.5.jar"/>
-      <include name="jackson-jaxrs-1.5.5.jar"/>
-      <include name="jackson-mapper-asl-1.5.5.jar"/>
-      <include name="jersey-client-1.3.jar"/>
-      <include name="jersey-core-1.3.jar"/>
-      <include name="jsr311-api-1.1.1.jar"/>
-    </fileset>
   </path>
 
   <path id="opensaml.run.classpath">
@@ -123,6 +107,13 @@
     </uptodate>
   </target>
 
+  <path id="junit.classpath">
+    <fileset dir="${lib.dir}">
+      <include name="junit-4.11.jar"/>
+      <include name="hamcrest-core-1.3.jar"/>
+    </fileset>
+  </path>
+
   <target name="build"
     depends="-real-build,-check-instrument-uptodate,clean-instrument"
     description="Build source"/>
@@ -160,7 +151,7 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg value="-Xlint:unchecked"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath location="${junit.jar}"/>
+      <classpath refid="junit.classpath"/>
       <include name="JUnitLogFixFormatter.java"/>
     </javac>
 
@@ -172,7 +163,7 @@
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath location="${junit.jar}"/>
+      <classpath refid="junit.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
       <exclude name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
@@ -185,7 +176,7 @@
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="examples.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath location="${junit.jar}"/>
+      <classpath refid="junit.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
 
@@ -209,7 +200,7 @@
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath location="${junit.jar}"/>
+      <classpath refid="junit.classpath"/>
       <include name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
   </target>
@@ -221,7 +212,7 @@
       <arg value="--always"/>
     </exec>
     <!-- Set version if git describe failed. -->
-    <property name="adaptorlib.version" value="unknown"/>
+    <property name="adaptorlib.version" value="unknown-${DSTAMP}"/>
   </target>
 
   <target name="dist" description="Generate distribution binaries"
@@ -238,6 +229,15 @@
     <mkdir dir="${build.dir}/dist/staging"/>
     <mkdir dir="${build.dir}/dist/staging/examples"/>
     <mkdir dir="${dist.dir}"/>
+
+    <!-- Set the file name suffix from the version. Add a leading dash,
+         and strip a leading "v" prefix if it is followed by a digit. -->
+    <loadresource property="adaptorlib.suffix">
+      <propertyresource name="adaptorlib.version"/>
+      <filterchain>
+          <replaceregex pattern="^(v(?=\d))?" replace="-"/>
+      </filterchain>
+    </loadresource>
 
     <!-- Produce intermediate distribution files -->
 
@@ -485,31 +485,10 @@
       dir="${basedir}" maxmemory="512m">
       <sysproperty key="net.sourceforge.cobertura.datafile"
         file="${build-instrument.dir}/cobertura.ser"/>
-      <!-- test-keys.jks created with:
-           keytool -genkeypair -alias adaptor -keystore test/test-keys.jks
-             -keyalg RSA -validity 1000000 -storepass changeit -dname
-             "CN=localhost, OU=Unknown, O=Unknown, L=Unknown, ST=Unknown,
-             C=Unknown" -keypass changeit
-      -->
-      <sysproperty key="javax.net.ssl.keyStore"
-        file="${test.dir}/test-keys.jks"/>
-      <sysproperty key="javax.net.ssl.keyStoreType" value="jks"/>
-      <sysproperty key="javax.net.ssl.keyStorePassword" value="changeit"/>
-      <!-- test-cacerts.jks created with:
-           keytool -exportcert -alias adaptor -keystore test/test-keys.jks -rfc
-             -file tmp.crt -storepass changeit
-           keytool -importcert -keystore test/test-cacerts.jks -file tmp.crt
-             -storepass changeit -noprompt -alias adaptor
-           rm tmp.crt
-      -->
-      <sysproperty key="javax.net.ssl.trustStore"
-        file="${test.dir}/test-cacerts.jks"/>
-      <sysproperty key="javax.net.ssl.trustStoreType" value="jks"/>
-      <sysproperty key="javax.net.ssl.trustStorePassword" value="changeit"/>
       <classpath refid="adaptorlib.run.classpath"/>
       <classpath refid="examples.run.classpath"/>
       <classpath refid="cobertura.classpath"/>
-      <classpath location="${junit.jar}"/>
+      <classpath refid="junit.classpath"/>
       <classpath location="${build-instrument.dir}"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
@@ -530,7 +509,7 @@
   <target name="sim-test" depends="build">
     <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true"
       dir="${basedir}" maxmemory="512m">
-      <classpath location="${junit.jar}"/>
+      <classpath refid="junit.classpath"/>
       <classpath location="${build-src.dir}"/>
       <classpath refid="adaptorlib.run.classpath"/>
       <classpath location="${build-test.dir}"/>

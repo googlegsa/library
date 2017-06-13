@@ -135,6 +135,13 @@ import java.util.regex.Pattern;
  * "meta-value=" -- specifies a metadata value associated with
  * immediately preceding metadata-name<p>
  *
+ * "param-name=" -- specifies a parameter key, to be followed by a parameter-value.
+ * Parameters are supplied to {@link MetadataTransform MetadataTransforms} for use when making
+ * transforms or decisions.<p>
+ *
+ * "param-value=" -- specifies a parameter value associated with
+ * immediately preceding parameter-name<p>
+ *
  * "content" -- signals the beginning of binary content which
  * continues to the end of the file or stream<p>
  *
@@ -299,6 +306,8 @@ public class CommandStreamParser {
     MIME_TYPE("mime-type"),
     META_NAME("meta-name"),
     META_VALUE("meta-value"),
+    PARAM_NAME("param-name"),
+    PARAM_VALUE("param-value"),
     CONTENT("content"),
     AUTHZ_STATUS("authz-status"),
     SECURE("secure"),
@@ -466,6 +475,20 @@ public class CommandStreamParser {
 
     command = readCommand();
     while (command != null) {
+      // Look at the current command to see if we must send the
+      // accumulated ACL now, before the response is sent.
+      switch (command.getOperation()) {
+        case CONTENT:
+        case UP_TO_DATE:
+        case NOT_FOUND:
+          if (sendAclWithDocument) {
+            aclBuilder.setPermits(permits);
+            aclBuilder.setDenies(denies);
+            response.setAcl(aclBuilder.build());
+          }
+          break;
+        default:
+      }
       switch (command.getOperation()) {
         case ID:
           throw new IOException("Only one document ID can be specified in a retriever message");
@@ -482,6 +505,17 @@ public class CommandStreamParser {
               new Object[] {docId.getUniqueId(), metaName,
                 command.getArgument()});
           response.addMetadata(metaName, command.getArgument());
+          break;
+        case PARAM_NAME:
+          String paramName = command.getArgument();
+          command = readCommand();
+          if (command == null || command.getOperation() != Operation.PARAM_VALUE) {
+            throw new IOException("param-name must be immediately followed by param-value");
+          }
+          log.log(Level.FINEST, "Retriever: {0} has parameter {1}={2}",
+              new Object[] {docId.getUniqueId(), paramName,
+                command.getArgument()});
+          response.setParam(paramName, command.getArgument());
           break;
         case UP_TO_DATE:
           log.log(Level.FINEST, "Retriever: {0} is up to date.", docId.getUniqueId());
@@ -575,12 +609,6 @@ public class CommandStreamParser {
               + "'");
       }
       command = readCommand();
-    }
-    // Finish by putting accumulated ACL into response.
-    if (sendAclWithDocument) {
-      aclBuilder.setPermits(permits);
-      aclBuilder.setDenies(denies);
-      response.setAcl(aclBuilder.build());
     }
   }
 

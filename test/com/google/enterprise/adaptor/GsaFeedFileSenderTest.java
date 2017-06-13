@@ -36,7 +36,6 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.zip.GZIPInputStream;
-
 import javax.net.ssl.SSLContext;
 
 /**
@@ -53,6 +52,7 @@ public class GsaFeedFileSenderTest {
 
   @Before
   public void startup() throws IOException {
+    TestHelper.initSSLKeystores();
     server = HttpServer.create(new InetSocketAddress(0), 0);
     port = server.getAddress().getPort();
     server.start();

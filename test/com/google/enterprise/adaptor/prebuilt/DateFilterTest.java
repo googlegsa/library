@@ -18,15 +18,17 @@ import static org.junit.Assert.assertEquals;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 /** Unit tests for {@link DateFilter}. */
 public class DateFilterTest {
@@ -78,8 +80,8 @@ public class DateFilterTest {
     config.put("key", "lastModified");
     config.put("days", "365");
     DateFilter transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyyy-MM-dd, 365 days, "
-        + "metadata or params)", transform.toString());
+    assertEquals("DateFilter(lastModified, metadata, yyyy-MM-dd, 365 days)",
+        transform.toString());
   }
 
   @Test
@@ -89,8 +91,8 @@ public class DateFilterTest {
     config.put("format", "");
     config.put("days", "365");
     DateFilter transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyyy-MM-dd, 365 days, "
-        + "metadata or params)", transform.toString());
+    assertEquals("DateFilter(lastModified, metadata, yyyy-MM-dd, 365 days)",
+        transform.toString());
   }
 
   @Test
@@ -100,8 +102,8 @@ public class DateFilterTest {
     config.put("format", "millis");
     config.put("date", "2000-01-01");
     DateFilter transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, millis, 2000-01-01, "
-        + "metadata or params)", transform.toString());
+    assertEquals("DateFilter(lastModified, metadata, millis, 2000-01-01)",
+        transform.toString());
   }
 
   @Test
@@ -157,8 +159,8 @@ public class DateFilterTest {
     config.put("format", "yyMMddHHmmssZ");
     config.put("days", "365");
     MetadataTransform transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyMMddHHmmssZ, 365 days, "
-        + "metadata or params)", transform.toString());
+    assertEquals("DateFilter(lastModified, metadata, yyMMddHHmmssZ, 365 days)",
+        transform.toString());
   }
 
   @Test
@@ -167,41 +169,40 @@ public class DateFilterTest {
     config.put("key", "lastModified");
     config.put("date", "1977-06-18");
     MetadataTransform transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyyy-MM-dd, 1977-06-18, "
-        + "metadata or params)", transform.toString());
+    assertEquals("DateFilter(lastModified, metadata, yyyy-MM-dd, 1977-06-18)",
+        transform.toString());
   }
 
   @Test
-  public void testToString_CorporaMetadata() {
+  public void testToString_KeysetMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "metadata");
     config.put("days", "365");
-    config.put("corpora", "metadata");
     MetadataTransform transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyyy-MM-dd, 365 days, "
-        + "metadata)", transform.toString());
+    assertEquals("DateFilter(lastModified, metadata, yyyy-MM-dd, 365 days)",
+        transform.toString());
   }
 
   @Test
-  public void testToString_CorporaParams() {
+  public void testToString_KeysetParams() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("days", "365");
-    config.put("corpora", "params");
     MetadataTransform transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyyy-MM-dd, 365 days, "
-        + "params)", transform.toString());
+    assertEquals("DateFilter(lastModified, params, yyyy-MM-dd, 365 days)",
+        transform.toString());
   }
 
   @Test
-  public void testCreate_CorporaBogus() {
+  public void testCreate_KeysetBogus() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "bogus");
     config.put("days", "365");
-    config.put("corpora", "bogus");
+    thrown.expect(IllegalArgumentException.class);
     MetadataTransform transform = DateFilter.create(config);
-    assertEquals("DateFilter(lastModified, yyyy-MM-dd, 365 days, "
-        + "metadata or params)", transform.toString());
   }
 
 
@@ -211,8 +212,8 @@ public class DateFilterTest {
   public void testTransform_DoNotSkipUndatedDocument() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     Metadata metadata = new Metadata();
@@ -224,8 +225,8 @@ public class DateFilterTest {
   public void testTransform_RelativeDoNotSkipNewDocument() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", dateFormat.format(new Date()));
@@ -238,8 +239,8 @@ public class DateFilterTest {
   public void testTransform_RelativeSkipOldDocument() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "1977-06-18");
@@ -253,8 +254,8 @@ public class DateFilterTest {
   public void testTransform_RelativeWindow() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("days", "5");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", dateFormat.format(new Date(
@@ -273,8 +274,8 @@ public class DateFilterTest {
   public void testTransform_AbsoluteDoNotSkipNewDocument() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("date", "1977-06-18");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", dateFormat.format(new Date()));
@@ -287,8 +288,8 @@ public class DateFilterTest {
   public void testTransform_AbsoluteSkipOldDocument() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("date", "1977-06-18");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "1969-07-20");
@@ -301,8 +302,8 @@ public class DateFilterTest {
   public void testTransform_AbsoluteWindow() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("date", "1977-06-18");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "1977-06-18");
@@ -319,9 +320,9 @@ public class DateFilterTest {
   public void testTransform_LenientDateParsing() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("format", "yyyy-MM-dd");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "1969-07-21T02:56:15Z");
@@ -334,9 +335,9 @@ public class DateFilterTest {
   public void testTransform_CustomDateParsing() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("format", "MM/dd/yyyy");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "07/21/1969");
@@ -349,9 +350,9 @@ public class DateFilterTest {
   public void testTransform_MillisecondDateParsing() throws Exception {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("format", "millis");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", Long.toString(new Date().getTime()));
@@ -368,8 +369,8 @@ public class DateFilterTest {
   public void testTransform_DoNotSkipUnparsableDate() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "params");
     config.put("days", "365");
-    config.put("corpora", "params");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     params.put("lastModified", "07/21/1969");
@@ -382,8 +383,8 @@ public class DateFilterTest {
   public void testTransform_DateInMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "metadata");
     config.put("days", "365");
-    config.put("corpora", "metadata");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     Metadata metadata = new Metadata();
@@ -396,8 +397,8 @@ public class DateFilterTest {
   public void testTransform_RecentDateInMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "lastModified");
+    config.put("keyset", "metadata");
     config.put("days", "365");
-    config.put("corpora", "metadata");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     Metadata metadata = new Metadata();
@@ -410,8 +411,8 @@ public class DateFilterTest {
   public void testTransform_MultipleDatesInMetadata() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "modifiedHistory");
+    config.put("keyset", "metadata");
     config.put("days", "365");
-    config.put("corpora", "metadata");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     Metadata metadata = new Metadata();
@@ -425,39 +426,13 @@ public class DateFilterTest {
   public void testTransform_MultipleDatesInMetadataOneBad() {
     Map<String, String> config = new HashMap<String, String>();
     config.put("key", "modifiedHistory");
+    config.put("keyset", "metadata");
     config.put("days", "365");
-    config.put("corpora", "metadata");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
     Metadata metadata = new Metadata();
     metadata.add("modifiedHistory", "07/21/1969");
     metadata.add("modifiedHistory", "1977-06-18");
-    transform.transform(metadata, params);
-    assertEquals("do-not-index", params.get("Transmission-Decision"));
-  }
-
-  @Test
-  public void testTransform_DateInMetadataOrParams1() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key", "lastModified");
-    config.put("days", "365");
-    DateFilter transform = DateFilter.create(config);
-    Map<String, String> params = new HashMap<String, String>();
-    Metadata metadata = new Metadata();
-    metadata.add("lastModified", "1977-06-18");
-    transform.transform(metadata, params);
-    assertEquals("do-not-index", params.get("Transmission-Decision"));
-  }
-
-  @Test
-  public void testTransform_DateInMetadataOrParams2() {
-    Map<String, String> config = new HashMap<String, String>();
-    config.put("key", "lastModified");
-    config.put("days", "365");
-    DateFilter transform = DateFilter.create(config);
-    Map<String, String> params = new HashMap<String, String>();
-    params.put("lastModified", "1977-06-18");
-    Metadata metadata = new Metadata();
     transform.transform(metadata, params);
     assertEquals("do-not-index", params.get("Transmission-Decision"));
   }
@@ -483,7 +458,7 @@ public class DateFilterTest {
     config.put("days", "365");
     DateFilter transform = DateFilter.create(config);
     Map<String, String> params = new HashMap<String, String>();
-    params.put("lastModified", dateFormat.format(new Date()));
+    params.put("lastModified", "1977-06-18");
     Metadata metadata = new Metadata();
     metadata.add("lastModified", dateFormat.format(new Date()));
     transform.transform(metadata, params);
