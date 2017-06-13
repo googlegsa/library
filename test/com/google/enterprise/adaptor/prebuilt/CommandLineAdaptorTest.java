@@ -24,7 +24,6 @@ import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Metadata;
-import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import com.google.enterprise.adaptor.Request;
 import com.google.enterprise.adaptor.UserPrincipal;
 import com.google.enterprise.adaptor.prebuilt.StreamingCommand.InputSource;
