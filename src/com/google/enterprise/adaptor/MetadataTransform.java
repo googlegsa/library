@@ -57,6 +57,8 @@ public interface MetadataTransform {
    */
   public static final String KEY_TRANSMISSION_DECISION 
       = "Transmission-Decision";
+  public static final String KEY_FORCED_TRANSMISSION_DECISION
+      = "Forced-Transmission-Decision";
 
   /**
    * Identifies the location a configured key/value pair resides,

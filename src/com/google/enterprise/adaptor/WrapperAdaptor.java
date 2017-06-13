@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+
 import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;

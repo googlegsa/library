@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
@@ -215,6 +217,23 @@ public interface Response {
   public void setLock(boolean lock);
 
   /**
+   * Set a forced {@link TransmissionDecision} that can override transmission
+   * decisions made by {@link MetadataTransform MetadataTransforms}.
+   * <p>
+   * Some connectors send content that must be preserved in order for the
+   * connector to function properly, and transforms that decide to drop that
+   * content essentially break the connector. For instance, dropping folders
+   * disrupts graph traverser type connectors.
+   *
+   * @param transmissionDecision a
+   *     {@link MetadataTransform.TransmissionDecision TransmissionDecision}
+   *
+   * @since 4.1.4
+   */
+  public void setForcedTransmissionDecision(
+      TransmissionDecision transmissionDecision);
+
+  /**
    * Adds a parameter to a Map for use by
    * {@link MetadataTransform MetadataTransforms} when making
    * transforms or decisions. Params are data associated with the document,
@@ -237,6 +256,8 @@ public interface Response {
    * @throws IllegalArgumentException if key is not prefixed with {@code X-}
    * @throws IllegalStateException if the response has been sent
    * @throws NullPointerException if key is {@code null}
+   *
+   * @since 4.1.4
    */
   // TODO (bmj): Supply Params to ContentTransforms.
   public void setParam(String key, String value);

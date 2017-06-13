@@ -18,14 +18,15 @@ import static com.google.enterprise.adaptor.MetadataTransform.KEY_CONTENT_TYPE;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_CRAWL_ONCE;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_DISPLAY_URL;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_DOC_ID;
+import static com.google.enterprise.adaptor.MetadataTransform.KEY_FORCED_TRANSMISSION_DECISION;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_LAST_MODIFIED_MILLIS_UTC;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_LOCK;
 import static com.google.enterprise.adaptor.MetadataTransform.KEY_TRANSMISSION_DECISION;
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Map.Entry;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Strings;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -732,6 +733,7 @@ class DocumentHandler implements HttpHandler {
     private URI displayUrl;
     private boolean crawlOnce;
     private boolean lock;
+    private TransmissionDecision forcedTransmissionDecision;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
     private Map<String, String> params = new TreeMap<String, String>();
 
@@ -994,6 +996,15 @@ class DocumentHandler implements HttpHandler {
     }
 
     @Override
+    public void setForcedTransmissionDecision(
+        TransmissionDecision transmissionDecision) {
+      if (state != State.SETUP) {
+        throw new IllegalStateException("Already responded");
+      }
+      this.forcedTransmissionDecision = transmissionDecision;
+    }
+    
+    @Override
     public void setParam(String key, String value) {
       if (state != State.SETUP) {
         throw new IllegalStateException("Already responded");
@@ -1237,6 +1248,10 @@ class DocumentHandler implements HttpHandler {
       }
       params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
       params.put(KEY_LOCK, "" + lock);
+      if (forcedTransmissionDecision != null) {
+        params.put(KEY_FORCED_TRANSMISSION_DECISION,
+                   forcedTransmissionDecision.toString());
+      }
       metadataTransform.transform(metadata, params);
       finalContentType = params.get(KEY_CONTENT_TYPE);
       try {
@@ -1263,8 +1278,12 @@ class DocumentHandler implements HttpHandler {
       }
       crawlOnce = Boolean.parseBoolean(params.get(KEY_CRAWL_ONCE));
       lock = Boolean.parseBoolean(params.get(KEY_LOCK));
-      // TODO: make constants for this growing set of valid keys
-      considerNotSending(params.get(KEY_TRANSMISSION_DECISION), docId);
+      String transmissionDecision
+          = params.get(KEY_FORCED_TRANSMISSION_DECISION);
+      if (transmissionDecision == null) {
+        transmissionDecision = params.get(KEY_TRANSMISSION_DECISION);
+      }
+      considerNotSending(transmissionDecision, docId);
     }
 
     private void considerNotSending(String secondOpinion, DocId docId) {
