@@ -241,7 +241,7 @@
 
     <!-- Produce intermediate distribution files -->
 
-    <copy file="LICENSE.txt" todir="${dist.staging.dir}"/>
+    <copy file="LICENSE" todir="${dist.staging.dir}"/>
     <copy file="THIRDPARTYLICENSE.txt" todir="${dist.staging.dir}"/>
 
     <!-- adaptor.jar -->
