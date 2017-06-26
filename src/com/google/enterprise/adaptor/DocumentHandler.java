@@ -331,12 +331,15 @@ class DocumentHandler implements HttpHandler {
         adaptor.getDocContent(request, response);
       } catch (InterruptedException e) {
         journal.recordRequestProcessingFailure();
+        log.log(Level.INFO, "Retriever interrupted: " + docId, e);
         throw new RuntimeException("Retriever interrupted: " + docId, e);
       } catch (RuntimeException e) {
         journal.recordRequestProcessingFailure();
+        log.log(Level.WARNING, "Exception in retriever: " + docId, e);
         throw new RuntimeException("Exception in retriever: " + docId, e);
       } catch (IOException e) {
         journal.recordRequestProcessingFailure();
+        log.log(Level.WARNING, "Exception in retriever: " + docId, e);
         throw new IOException("Exception in retriever: " + docId, e);
       } finally {
         watchdog.processingCompleted();
