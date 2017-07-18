@@ -478,6 +478,151 @@ public class DocIdSenderTest {
   }
 
   @Test
+  @SuppressWarnings("unchecked")
+  public void testPushGroupsIncrementalThenFullThenFull() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental", "incremental", "full"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo", "foo-FULL1", "foo"),
+        fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(
+        ImmutableList.of("incremental", "incremental", "full", "incremental",
+                         "full"),
+        fileSender.feedtypes);
+    assertEquals(
+        ImmutableList.of("foo", "foo-FULL1", "foo", "foo-FULL2", "foo-FULL1"),
+        fileSender.groupsources);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPushGroupsFullThenIncrementalThenIncremental()
+      throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental", "full", "incremental"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo", "foo-FULL1"),
+        fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(
+        ImmutableList.of("incremental", "full", "incremental", "incremental"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo", "foo-FULL1", "foo-FULL1"),
+        fileSender.groupsources);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPushGroupsFullThenIncrementalThenFullThenIncremental()
+      throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental", "full", "incremental"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo", "foo-FULL1"),
+        fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(
+        ImmutableList.of("incremental", "full", "incremental", "incremental",
+                         "full"),
+        fileSender.feedtypes);
+    assertEquals(
+        ImmutableList.of("foo-FULL1", "foo", "foo-FULL1", "foo-FULL2",
+                         "foo-FULL1"),
+        fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(
+        ImmutableList.of("incremental", "full", "incremental", "incremental",
+                         "full", "incremental"),
+        fileSender.feedtypes);
+    assertEquals(
+        ImmutableList.of("foo-FULL1", "foo", "foo-FULL1", "foo-FULL2",
+                         "foo-FULL1", "foo-FULL2"),
+        fileSender.groupsources);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPushGroupsFromMultipleGroupSources() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "bar", null));
+
+    assertEquals(ImmutableList.of("incremental", "full", "incremental", "full"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo", "bar-FULL1", "bar"),
+        fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(
+        ImmutableList.of("incremental", "full", "incremental", "full",
+                         "incremental"),
+        fileSender.feedtypes);
+    assertEquals(
+        ImmutableList.of("foo-FULL1", "foo", "bar-FULL1", "bar", "foo-FULL1"),
+        fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "bar", null));
+
+    assertEquals(
+        ImmutableList.of("incremental", "full", "incremental", "full",
+                         "incremental", "incremental"),
+        fileSender.feedtypes);
+    assertEquals(
+        ImmutableList.of("foo-FULL1", "foo", "bar-FULL1", "bar", "foo-FULL1",
+                         "bar-FULL1"),
+        fileSender.groupsources);
+  }
+
+  @Test
   public void testPushGroupsNoGroupSource() throws Exception {
     config.setValue("feed.name", "default_source");
     assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),

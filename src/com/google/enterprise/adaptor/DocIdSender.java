@@ -231,7 +231,7 @@ class DocIdSender extends AbstractDocIdPusher
   }
 
   /**
-   * Issue: Full vs. Incremental Feeds for Groups.
+   * Issue: When full group pushes exceed permissible size of single feed.
    *
    * The problem with supplying all the group definitions in a single full
    * feed is the GSA limit to the size of a feed file (1GB). Although this
@@ -242,14 +242,10 @@ class DocIdSender extends AbstractDocIdPusher
    * A novel solution to this is to double-buffer the group definitions for
    * each data source. We maintain two pseudo data sources for each actual
    * data source (*-FULL1 and *-FULL2). Each "full" upload alternates between
-   * these two, using batches of incremental feeds. As each batch is processed,
-   * groups defined in that batch are re-assigned from the older data source
-   * to the newer one. Once all batches have been uploaded, the only groups
-   * remaining in the older data source are the ones that were missing from
-   * the newer feeds (in other words, deleted from the repository). We then
-   * "delete" these stale entries by sending an empty, but true full feed
-   * for the older data source. After this, the GSA should only have group
-   * definitions for the newer data source.
+   * these two, using batches of incremental feeds.
+   * Once all batches have been uploaded, We then "delete" the previous entries
+   * by sending an empty, but true full feed for the older data source. After
+   * this, the GSA should only have group definitions for the newer data source.
    *
    * If there is a failure mid-push, the GSA groups database may have entries
    * for both data sources. Since the adaptors do not maintain persistent
@@ -269,7 +265,9 @@ class DocIdSender extends AbstractDocIdPusher
    * INCREMENTAL feeds, then that group source will always be used. This is
    * also backward compatible. If a connector is upgraded to a new version that
    * supports FULL feeds, then the older incremental group source will
-   * eventually get deleted from the GSA.
+   * eventually get deleted from the GSA. If a connector does both FULL and
+   * INCREMENTAL feeds, then an incremental feed will the the last FULL feed
+   * name used for the source.
    */
   private String previousGroupSource(String source) {
     String prevSource = groupSources.get(source);
