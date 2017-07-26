@@ -288,11 +288,12 @@ public class HeartbeatHandlerTest {
         .setAdaptor(mockAdaptor)
         .setAuthzAuthority(mockAdaptor)
         .setWatchdog(watchdog)
-        .setHeaderTimeoutMillis(100)
-        .setContentTimeoutMillis(100)
+        .setHeaderTimeoutMillis(150)
+        .setContentTimeoutMillis(150)
         .build();
     HeartbeatHandler handler = createHeartbeatHandlerBuilder()
         .setWatchdog(watchdog2).setDocHandler(docHandler)
+        .setTimeoutMillis(150)
         .build();
     try {
       handler.handle(ex);

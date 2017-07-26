@@ -23,6 +23,7 @@ import static org.junit.Assert.fail;
 
 import com.google.common.base.Charsets;
 import com.google.common.collect.Lists;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -698,6 +699,77 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testForcedDecision() throws Exception {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Transmission-Decision", "do-not-index");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    MetadataTransformPipeline transform
+        = new MetadataTransformPipeline(transforms, Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setForcedTransmissionDecision(TransmissionDecision.AS_IS);
+        response.addMetadata("test key", "TESTING VALUE");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setMetadataTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
+        ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    // content remained as-is
+    assertArrayEquals(new byte[] {1, 2, 3}, ex.getResponseBytes());
+  }
+
+  @Test
+  public void testOverrideForcedDecision() throws Exception {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        params.put("Forced-Transmission-Decision", "do-not-index");
+        metadata.set("docid", params.get("DocId"));
+      }
+    });
+    MetadataTransformPipeline transform
+        = new MetadataTransformPipeline(transforms, Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setForcedTransmissionDecision(TransmissionDecision.AS_IS);
+        response.addMetadata("test key", "TESTING VALUE");
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setMetadataTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(404, ex.getResponseCode());
+    assertEquals(null,
+         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertArrayEquals("Error 404: Not Found".getBytes(), ex.getResponseBytes());
+  }
+
+  @Test
   public void testDroppingDocAfterNoContent() throws Exception {
     List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
     transforms.add(new MetadataTransform() {
@@ -764,6 +836,41 @@ public class DocumentHandlerTest {
     assertEquals("docid=test%20docId,test%20key=TESTING%20VALUE",
         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
     assertArrayEquals(new byte[0], ex.getResponseBytes());
+  }
+
+  @Test
+  public void testDroppingDocFromCustomParam() throws Exception {
+    List<MetadataTransform> transforms = new LinkedList<MetadataTransform>();
+    transforms.add(new MetadataTransform() {
+      @Override
+      public void transform(Metadata metadata, Map<String, String> params) {
+        if (params.containsKey("X-Do-Not-Index")) {
+          params.put("Transmission-Decision", "do-not-index");
+        }
+      }
+    });
+    MetadataTransformPipeline transform
+        = new MetadataTransformPipeline(transforms, Arrays.asList("t1"));
+    mockAdaptor = new MockAdaptor() {
+      @Override
+      public void getDocContent(Request request, Response response)
+          throws IOException, InterruptedException {
+        response.setParam("X-Do-Not-Index", null);
+        super.getDocContent(request, response);
+      }
+    };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(mockAdaptor)
+        .setFullAccessHosts(new String[] {remoteIp})
+        .setMetadataTransform(transform)
+        .build();
+    mockAdaptor.documentBytes = new byte[] {1, 2, 3};
+    handler.handle(ex);
+    assertEquals(404, ex.getResponseCode());
+    assertEquals(null,
+         ex.getResponseHeaders().getFirst("X-Gsa-External-Metadata"));
+    assertArrayEquals("Error 404: Not Found".getBytes(), ex.getResponseBytes());
   }
 
   @Test

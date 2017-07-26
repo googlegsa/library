@@ -21,6 +21,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.net.URL;
 
 /**
  * Tests for {@link DashboardHandler}.
@@ -33,9 +34,10 @@ public class DashboardHandlerTest {
 
   /** Returns entire static test file's contents. */
   private static byte[] readLocal(String basename) throws IOException {
-    String dirname = "test/com/google/enterprise/adaptor/resources/";
+    String dirname = "/com/google/enterprise/adaptor/resources/";
     String filename = dirname + basename;
-    RandomAccessFile f = new RandomAccessFile(filename, "r");
+    URL fileUrl = DashboardHandlerTest.class.getResource(filename);
+    RandomAccessFile f = new RandomAccessFile(fileUrl.getPath(), "r");
     byte b[] = new byte[(int) f.length()];
     f.readFully(b);
     f.close();

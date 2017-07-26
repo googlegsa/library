@@ -23,13 +23,14 @@
  */
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
-
 import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
+import java.util.Set;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
@@ -142,14 +143,23 @@ public class SkipDocumentFilter implements MetadataTransform {
    */
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
-    for (String value : metadata.getAllValues(propertyName)) {
+    Set<String> values = metadata.getAllValues(propertyName);
+    if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
+      if (metadata.getKeys().contains(propertyName)) {
+        log.log(Level.FINEST, "No values for key {0} in metadata.",
+            propertyName);
+      } else {
+        log.log(Level.FINEST, "No key {0} in metadata.", propertyName);
+      }
+    }
+    for (String value : values) {
       if (pattern.matcher(value).find()) {
         found = true;
         break;
       }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + propertyName + "' in metadata.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in metadata.",
+        new Object[] { (found ? "Did" : "Did not"), propertyName });
     return found;
   }
 
@@ -161,17 +171,22 @@ public class SkipDocumentFilter implements MetadataTransform {
   private boolean foundInParams(Map<String, String> params) {
     boolean found = false;
     if (params.containsKey(propertyName)) {
-      found = pattern.matcher(params.get(propertyName)).find();
+      String value = params.get(propertyName);
+      if (value == null) {
+        value = "";
+      }
+      found = pattern.matcher(value).find();
+    } else {
+      log.log(Level.FINEST, "No key {0} in params.", propertyName);
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + propertyName + "' in params.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in params.",
+        new Object[] { (found ? "Did" : "Did not"), propertyName });
     return found;
   }
 
   /**
-   * Adds a single {@code Map.Entry} to the {@code params Map}: key
-   * {@code Transmission-Decision}, value {@code TransmissionDecision.AS_IS} to
-   * indicate that the document is to be retained, or value
+   * Conditionally adds a single {@code Map.Entry} to the {@code params Map}:
+   * key {@code Transmission-Decision}, value
    * {@code TransmissionDecision.DO_NOT_INDEX} to indicate that the document is
    * to be skipped.  The decision is based on settings of the
    * {@code propertyName}, {@code pattern}, {@code skipOnMatch}, and
@@ -199,25 +214,25 @@ public class SkipDocumentFilter implements MetadataTransform {
     // determine the Transmission Decision based on skipMatch
     if (skipOnMatch) {
       if (found) {
-        log.info("Skipping document " + docId + ", because we found a match in "
-            + corpora);
+        log.log(Level.INFO,
+            "Skipping document {0}, because we found a match in {1}.",
+            new Object[] { docId, corpora });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
       } else {
-        log.info("Not skipping document " + docId + ", because we did not find "
-            + "a match in " + corpora);
-        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            TransmissionDecision.AS_IS.toString());
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we did not find a match in {1}.",
+            new Object[] { docId, corpora });
       }
     } else {
       if (found) {
-        log.info("Not skipping document " + docId + ", because we found a match"
-            + " in " + corpora);
-        params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
-            TransmissionDecision.AS_IS.toString());
+        log.log(Level.FINE, "No transmission decision for document {0}, "
+            + "because we found a match in {1}.",
+            new Object[] { docId, corpora });
       } else {
-        log.info("Skipping document " + docId + ", because we did not find a "
-            + "match in " + corpora);
+        log.log(Level.INFO,
+            "Skipping document {0}, because we did not find a match in {1}.",
+            new Object[] { docId, corpora });
         params.put(MetadataTransform.KEY_TRANSMISSION_DECISION,
             TransmissionDecision.DO_NOT_INDEX.toString());
       }
@@ -269,8 +284,16 @@ public class SkipDocumentFilter implements MetadataTransform {
     }
     log.config("skipOnMatch set to " + skipOnMatch);
 
-    corpora = Corpora.from(cfg.get("corpora"));
-    log.config("corpora set to " + corpora);
+    // Support newer "keyset" if specified, but stay backward compatible
+    // with corpora. Takes advantage of the fact that the Keyset names
+    // are a subset of the Corpora names.
+    if (cfg.containsKey("keyset")) {
+      corpora = Corpora.from(cfg.get("keyset"));
+      log.config("keyset set to " + corpora);
+    } else {
+      corpora = Corpora.from(cfg.get("corpora"));
+      log.config("corpora set to " + corpora);
+    }
 
     return new SkipDocumentFilter(propertyName, pattern, skipOnMatch, corpora);
   }

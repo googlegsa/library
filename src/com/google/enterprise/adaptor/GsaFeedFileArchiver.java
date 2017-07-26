@@ -28,7 +28,7 @@ import java.util.logging.Logger;
  * configured feed archive directory.  The feed archive directory is
  * specified using the {@code feed.archiveDirectory} configuration property.
  */
-public class GsaFeedFileArchiver implements FeedArchiver {
+class GsaFeedFileArchiver implements FeedArchiver {
   private static final Logger log =
       Logger.getLogger(GsaFeedFileArchiver.class.getName());
 

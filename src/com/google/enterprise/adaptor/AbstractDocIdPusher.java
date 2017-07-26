@@ -22,22 +22,18 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Abstract class providing most methods required for a {@code DocIdPusher}.
+ * This class provides an implementation of the forwarding methods of
+ * the {@link DocIdPusher} interface.
  */
-abstract class AbstractDocIdPusher implements DocIdPusher {
-  /**
-   * Calls {@code pushDocIds(docIds, null)}.
-   */
+public abstract class AbstractDocIdPusher implements DocIdPusher {
+  /** {@inheritDoc} */
   @Override
   public DocId pushDocIds(Iterable<DocId> docIds)
       throws InterruptedException {
     return pushDocIds(docIds, null);
   }
 
-  /**
-   * Calls {@link #pushRecords(Iterable, Adaptor.ExceptionHandler)} with empty
-   * metadata for each {@code Record}.
-   */
+  /** {@inheritDoc} */
   @Override
   public DocId pushDocIds(Iterable<DocId> docIds,
                           ExceptionHandler handler)
@@ -50,28 +46,21 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
     return record == null ? null : record.getDocId();
   }
 
-  /**
-   * Calls {@code pushRecords(records, null)}.
-   */
+  /** {@inheritDoc} */
   @Override
   public Record pushRecords(Iterable<Record> records)
       throws InterruptedException {
     return pushRecords(records, null);
   }
 
-  /**
-   * Calls {@code pushNamedResources(resources, null)}.
-   */
+  /** {@inheritDoc} */
   @Override
   public DocId pushNamedResources(Map<DocId, Acl> resources)
       throws InterruptedException {
     return pushNamedResources(resources, null);
   }
 
-  /**
-   * Calls
-   * {@code pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null, null)}.
-   */
+  /** {@inheritDoc} */
   @Override
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
@@ -79,10 +68,7 @@ abstract class AbstractDocIdPusher implements DocIdPusher {
     return pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null, null);
   }
 
-  /**
-   * Calls {@code pushGroupDefinitions(defs, caseSensitive, INCREMENTAL, null,
-   * handler)}.
-   */
+  /** {@inheritDoc} */
   @Override
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,

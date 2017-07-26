@@ -30,7 +30,7 @@ import java.util.zip.GZIPOutputStream;
 
 /** Takes an XML feed file for the GSA, sends it to GSA and
   then reads reply from GSA. */
-public class GsaFeedFileSender {
+class GsaFeedFileSender {
   private static final Logger log
       = Logger.getLogger(GsaFeedFileSender.class.getName());
   private static final Pattern DATASOURCE_FORMAT
@@ -63,7 +63,7 @@ public class GsaFeedFileSender {
     }
   }
 
-  public GsaFeedFileSender(String host, boolean secure, Charset gsaCharSet) {
+  GsaFeedFileSender(String host, boolean secure, Charset gsaCharSet) {
     this(makeHandlerUrl(host, secure, "xmlfeed"),
         makeHandlerUrl(host, secure, "xmlgroups"), gsaCharSet);
   }
@@ -94,7 +94,7 @@ public class GsaFeedFileSender {
     sb.append(CRLF).append(value).append(CRLF);
   }
 
-  private byte[] buildAllPostParametersForMessage(String datasource,
+  private byte[] buildMetadataAndUrlMessage(String datasource,
       String feedtype, String xmlDocument) {
     StringBuilder sb = new StringBuilder();
     buildPostParameter(sb, "datasource", "text/plain", datasource);
@@ -191,66 +191,22 @@ public class GsaFeedFileSender {
   }
 
   /**
-   * Sends XML with provided datasource name and provided feedtype.
+   * Sends XML with provided datasource name and feedtype "metadata-and-url".
    * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
    */
-  private void buildAndPostContent(String datasource, String feedtype,
-      String xmlString, boolean useCompression) throws IOException {
-    // TODO(pjo) - consider removing useCompression here.
+  void sendMetadataAndUrl(String datasource, String xmlString,
+      boolean useCompression) throws IOException {
     if (!DATASOURCE_FORMAT.matcher(datasource).matches()) {
       throw new IllegalArgumentException("Data source contains illegal "
           + "characters: " + datasource);
     }
-    byte msg[] = buildAllPostParametersForMessage(datasource, feedtype,
-        xmlString);
+    String feedtype = "metadata-and-url";
+    byte msg[] = buildMetadataAndUrlMessage(datasource, feedtype, xmlString);
     // GSA only allows request content up to 1 MB to be compressed
     if (msg.length >= 1 * 1024 * 1024) {
       useCompression = false;
     }
     sendMessage(feedDest, msg, useCompression);
-  }
-
-  /**
-   * Sends XML with provided datasource name and feedtype "metadata-and-url".
-   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
-   *
-   * @param datasource name for the source of documents
-   * @param xmlString the message (feed) to send
-   * @param useCompression whether or not to attempt using compressed messages
-   * @throws IOException when something goes wrong with GSA communications
-   */
-  public void sendMetadataAndUrl(String datasource, String xmlString,
-      boolean useCompression) throws IOException {
-    buildAndPostContent(datasource, "metadata-and-url", xmlString,
-        useCompression);
-  }
-
-  /**
-   * Sends XML with provided datasource name and feedtype "incremental".
-   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
-   *
-   * @param datasource name for the source of documents
-   * @param xmlString the message (feed) to send
-   * @param useCompression whether or not to attempt using compressed messages
-   * @throws IOException when something goes wrong with GSA communications
-   */
-  public void sendIncremental(String datasource, String xmlString,
-      boolean useCompression) throws IOException {
-    buildAndPostContent(datasource, "incremental", xmlString, useCompression);
-  }
-
-  /**
-   * Sends XML with provided datasource name and feedtype "full".
-   * Datasource name is limited to [a-zA-Z_][a-zA-Z0-9_-]*.
-   *
-   * @param datasource name for the source of documents
-   * @param xmlString the message (feed) to send
-   * @param useCompression whether or not to attempt using compressed messages
-   * @throws IOException when something goes wrong with GSA communications
-   */
-  public void sendFull(String datasource, String xmlString,
-      boolean useCompression) throws IOException {
-    buildAndPostContent(datasource, "full", xmlString, useCompression);
   }
 
   /**

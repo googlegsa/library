@@ -14,9 +14,13 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import com.google.enterprise.adaptor.testing.RecordingDocIdPusher;
+import com.google.enterprise.adaptor.testing.RecordingResponse;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -51,7 +56,7 @@ public class CommandStreamParserTest {
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     parser.readFromLister(pusher, null);
     assertEquals("123", pusher.getDocIds().get(0).getUniqueId());
     assertEquals("456", pusher.getDocIds().get(1).getUniqueId());
@@ -68,7 +73,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
@@ -82,7 +87,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
@@ -96,7 +101,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
@@ -107,7 +112,7 @@ public class CommandStreamParserTest {
     String source = "GSA Adaptor Data Version 1 [" + delimiter + "]" + delimiter + "id=123";
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     boolean catched = false;
     try {
@@ -163,7 +168,6 @@ public class CommandStreamParserTest {
   public void testRetriever() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n"
         + "id=123\n"
-        + "up-to-date\n"
         + "UNKNOWN_COMMAND=abcdefghi\n"
         + "meta-name=project\nmeta-value=plexi\n"
         + "last-modified=15\n"
@@ -179,21 +183,20 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
 
     parser.readFromRetriever(new DocId("123"), response);
-    assertTrue(response.isNotModified());
     assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
     Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
     assertEquals(new Date(15 * 1000), response.getLastModified());
     assertEquals(true, response.isSecure());
-    assertEquals(Arrays.asList(URI.create("http://example.com/doc")), response.getAnchorUris());
-    assertEquals(Arrays.asList("It is an example"), response.getAnchorTexts());
+    assertEquals(singletonList(new SimpleEntry<String, URI>(
+            "It is an example", URI.create("http://example.com/doc"))),
+        response.getAnchors());
     assertEquals(true, response.isNoIndex());
     assertEquals(true, response.isNoFollow());
     assertEquals(true, response.isNoArchive());
@@ -204,6 +207,25 @@ public class CommandStreamParserTest {
   }
 
   @Test
+  public void testRetrieverNotModified() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "last-modified=15\n"
+        + "up-to-date";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    RecordingResponse response = new RecordingResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    parser.readFromRetriever(new DocId("123"), response);
+    assertEquals(RecordingResponse.State.NOT_MODIFIED, response.getState());
+    assertEquals(new Date(15 * 1000), response.getLastModified());
+  }
+
+  @Test
   public void testRetrieverWithoutAcl() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n"
         + "id=isacltest\n"
@@ -211,8 +233,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -230,8 +251,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -276,8 +296,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -302,8 +321,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -325,8 +343,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -348,8 +365,7 @@ public class CommandStreamParserTest {
     InputStream inputStream
         = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     assertEquals(1, parser.getVersionNumber());
     parser.readFromRetriever(new DocId("isacltest"), response);
@@ -363,21 +379,18 @@ public class CommandStreamParserTest {
   public void testRetrieverMultipleMetadataValuesSameKey() throws IOException {
     String source = "GSA Adaptor Data Version 1 [\n]\n"
         + "id=123\n"
-        + "up-to-date\n"
         + "UNKNOWN_COMMAND=abcdefghi\n"
         + "meta-name=project\nmeta-value=plexi\n"
         + "meta-name=project\nmeta-value=klexa\ncontent\n2468";
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
 
     parser.readFromRetriever(new DocId("123"), response);
-    assertTrue(response.isNotModified());
     assertArrayEquals("2468".getBytes(), outputStream.toByteArray());
     Metadata metadata = response.getMetadata();
     assertEquals(1, metadata.getKeys().size());
@@ -385,6 +398,43 @@ public class CommandStreamParserTest {
     projectNames.add("plexi");
     projectNames.add("klexa");
     assertEquals(projectNames, metadata.getAllValues("project"));
+  }
+
+  @Test
+  public void testRetrieverInvalidDuplicateCommands() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "up-to-date\n"
+        + "meta-name=project\nmeta-value=klexa\n"
+        + "content\n2468";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    RecordingResponse response = new RecordingResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    thrown.expect(IllegalStateException.class);
+    parser.readFromRetriever(new DocId("123"), response);
+  }
+
+  @Test
+  public void testRetrieverInvalidCommandOrder() throws IOException {
+    String source = "GSA Adaptor Data Version 1 [\n]\n"
+        + "id=123\n"
+        + "up-to-date\n"
+        + "last-modified=15";
+
+    InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    RecordingResponse response = new RecordingResponse(outputStream);
+    CommandStreamParser parser = new CommandStreamParser(inputStream);
+    int version = parser.getVersionNumber();
+    assertEquals(1, version);
+
+    thrown.expect(IllegalStateException.class);
+    parser.readFromRetriever(new DocId("123"), response);
   }
 
   @Test
@@ -404,13 +454,12 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
     parser.readFromRetriever(new DocId("123\n\0"), response);
-    assertTrue(response.isNotModified());
+    assertEquals(RecordingResponse.State.NOT_MODIFIED, response.getState());
   }
 
   @Test
@@ -430,8 +479,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
     int version = parser.getVersionNumber();
     assertEquals(1, version);
@@ -457,8 +505,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source);
     ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-    WrapperAdaptor.GetContentsResponse response
-        = new WrapperAdaptor.GetContentsResponse(outputStream);
+    RecordingResponse response = new RecordingResponse(outputStream);
     CommandStreamParser parser = new CommandStreamParser(inputStream);
 
     parser.readFromRetriever(new DocId("5"), response);
@@ -483,8 +530,7 @@ public class CommandStreamParserTest {
 
      InputStream inputStream = new ByteArrayInputStream(source);
      ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-     WrapperAdaptor.GetContentsResponse response
-         = new WrapperAdaptor.GetContentsResponse(outputStream);
+     RecordingResponse response = new RecordingResponse(outputStream);
      CommandStreamParser parser = new CommandStreamParser(inputStream);
 
      parser.readFromRetriever(new DocId("5"), response);
@@ -544,7 +590,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     parser.readFromLister(pusher, null);
     assertEquals(0, pusher.getDocIds().size());
  }
@@ -556,7 +602,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     thrown.expect(IOException.class);
     parser.readFromLister(pusher, null);
  }
@@ -571,7 +617,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
     DocIdPusher.Record expected = new DocIdPusher.Record.Builder(new DocId("001"))
         .setCrawlImmediately(true)
         .setCrawlOnce(true)
@@ -610,7 +656,7 @@ public class CommandStreamParserTest {
 
     InputStream inputStream = new ByteArrayInputStream(source.getBytes("UTF-8"));
     CommandStreamParser parser = new CommandStreamParser(inputStream);
-    AccumulatingDocIdPusher pusher = new AccumulatingDocIdPusher();
+    RecordingDocIdPusher pusher = new RecordingDocIdPusher();
 
     parser.readFromLister(pusher, null);
     assertEquals(goldenIds, pusher.getDocIds());
