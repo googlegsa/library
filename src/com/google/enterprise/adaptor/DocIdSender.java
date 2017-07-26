@@ -266,7 +266,7 @@ class DocIdSender extends AbstractDocIdPusher
    * also backward compatible. If a connector is upgraded to a new version that
    * supports FULL feeds, then the older incremental group source will
    * eventually get deleted from the GSA. If a connector does both FULL and
-   * INCREMENTAL feeds, then an incremental feed will the the last FULL feed
+   * INCREMENTAL feeds, then an incremental feed will use the last FULL feed
    * name used for the source.
    */
   private String previousGroupSource(String source) {
