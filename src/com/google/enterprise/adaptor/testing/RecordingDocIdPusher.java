@@ -84,8 +84,8 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
   @Override
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
-      boolean caseSensitive, ExceptionHandler handler)
-      throws InterruptedException {
+      boolean caseSensitive, FeedType feedType, String sourceName,
+      ExceptionHandler exceptionHandler) throws InterruptedException {
     // Make a defensive copy of each group, which just requires a copy
     // of each group's collection of members. To preserve equality, we
     // must copy each List to a List, and each Set to a Set. Other JDK
