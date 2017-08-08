@@ -355,7 +355,7 @@ public class PrebuiltTransforms {
     String prefix = "key";
     List<Key> keys = new LinkedList<Key>();
     for (Map.Entry<String, String> me : config.entrySet()) {
-      if (!me.getKey().startsWith(prefix)) {
+      if (!me.getKey().startsWith(prefix) || me.getKey().startsWith("keyset")) {
         continue;
       }
       String number = me.getKey().substring(prefix.length());
