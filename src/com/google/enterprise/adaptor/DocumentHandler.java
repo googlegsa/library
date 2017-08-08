@@ -731,8 +731,8 @@ class DocumentHandler implements HttpHandler {
     private boolean noFollow;
     private boolean noArchive;
     private URI displayUrl;
-    private boolean crawlOnce;
-    private boolean lock;
+    private Boolean crawlOnce;
+    private Boolean lock;
     private TransmissionDecision forcedTransmissionDecision;
     private Map<String, Acl> fragments = new TreeMap<String, Acl>();
     private Map<String, String> params = new TreeMap<String, String>();
@@ -1106,22 +1106,32 @@ class DocumentHandler implements HttpHandler {
             String link = "display_url=" + percentEncode("" + displayUrl);
             ex.getResponseHeaders().add("X-Gsa-Doc-Controls", link);
           }
-          ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
-              "crawl_once=" + crawlOnce);
-          ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock=" + lock);
+          if (crawlOnce != null) {
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
+                "crawl_once=" + crawlOnce);
+          }
+          if (lock != null) {
+            ex.getResponseHeaders().add("X-Gsa-Doc-Controls", "lock=" + lock);
+          }
           ex.getResponseHeaders().add("X-Gsa-Doc-Controls",
               "scoring=" + scoring);
         } else {
           acl = checkAndWorkaroundGsa70Acl(acl);
           ex.getResponseHeaders().add("X-Gsa-External-Metadata",
               formUnqualifiedAclHeader(acl, docIdEncoder));
-          if (displayUrl != null || crawlOnce || lock) {
+          if (displayUrl != null || crawlOnce != null || lock != null) {
             // Emulate these crawl-time values by sending them in feeds
             // since they aren't supported at crawl-time on GSA 7.0.
-            pusher.asyncPushItem(new DocIdPusher.Record.Builder(docId)
-                .setResultLink(displayUrl).setCrawlOnce(crawlOnce).setLock(lock)
-                .build());
-            // TODO(ejona): figure out how to notice that a true went false
+            DocIdPusher.Record.Builder builder =
+                new DocIdPusher.Record.Builder(docId);
+            builder.setResultLink(displayUrl);
+            if (crawlOnce != null) {
+              builder.setCrawlOnce(crawlOnce);
+            }
+            if (lock != null) {
+              builder.setLock(lock);
+            }
+            pusher.asyncPushItem(builder.build());
           }
         }
         if (!anchorUris.isEmpty()) {
@@ -1246,8 +1256,12 @@ class DocumentHandler implements HttpHandler {
         origDisplayUrlStr = "" + displayUrl;
         params.put(KEY_DISPLAY_URL, origDisplayUrlStr);
       }
-      params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
-      params.put(KEY_LOCK, "" + lock);
+      if (crawlOnce != null) {
+        params.put(KEY_CRAWL_ONCE, "" + crawlOnce);
+      }
+      if (lock != null) {
+        params.put(KEY_LOCK, "" + lock);
+      }
       if (forcedTransmissionDecision != null) {
         params.put(KEY_FORCED_TRANSMISSION_DECISION,
                    forcedTransmissionDecision.toString());
@@ -1276,8 +1290,14 @@ class DocumentHandler implements HttpHandler {
         log.log(Level.WARNING, "Failed changing display URL {0}",
             params.get(KEY_DISPLAY_URL));
       }
-      crawlOnce = Boolean.parseBoolean(params.get(KEY_CRAWL_ONCE));
-      lock = Boolean.parseBoolean(params.get(KEY_LOCK));
+      String co = params.get(KEY_CRAWL_ONCE);
+      if (!Strings.isNullOrEmpty(co)) {
+        crawlOnce = Boolean.valueOf(co);
+      }
+      String lo = params.get(KEY_LOCK);
+      if (!Strings.isNullOrEmpty(lo)) {
+        lock = Boolean.valueOf(lo);
+      }
       String transmissionDecision
           = params.get(KEY_FORCED_TRANSMISSION_DECISION);
       if (transmissionDecision == null) {
