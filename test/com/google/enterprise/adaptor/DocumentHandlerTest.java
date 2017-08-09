@@ -2249,6 +2249,27 @@ public class DocumentHandlerTest {
   }
 
   @Test
+  public void testLockHeaderNoneSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertFalse(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("lock="));
+  }
+
+  @Test
   public void testCrawlOnceHeaderTrueSent() throws Exception {
     MockAdaptor adaptor = new MockAdaptor() {
           @Override
@@ -2290,6 +2311,27 @@ public class DocumentHandlerTest {
     assertEquals(200, ex.getResponseCode());
     assertTrue(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
         .contains("crawl_once=false"));
+  }
+
+  @Test
+  public void testCrawlOnceHeaderNoneSent() throws Exception {
+    MockAdaptor adaptor = new MockAdaptor() {
+          @Override
+          public void getDocContent(Request request, Response response)
+              throws IOException {
+            response.getOutputStream();
+          }
+        };
+    String remoteIp = ex.getRemoteAddress().getAddress().getHostAddress();
+    DocumentHandler handler = createHandlerBuilder()
+        .setAdaptor(adaptor)
+        .setFullAccessHosts(new String[]{remoteIp, "someUnknownHost!@#$"})
+        .setSendDocControls(true)
+        .build();
+    handler.handle(ex);
+    assertEquals(200, ex.getResponseCode());
+    assertFalse(ex.getResponseHeaders().get("X-Gsa-Doc-Controls")
+        .contains("crawl_once="));
   }
 
   @Test
