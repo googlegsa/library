@@ -1290,13 +1290,13 @@ class DocumentHandler implements HttpHandler {
         log.log(Level.WARNING, "Failed changing display URL {0}",
             params.get(KEY_DISPLAY_URL));
       }
-      String co = params.get(KEY_CRAWL_ONCE);
-      if (!Strings.isNullOrEmpty(co)) {
-        crawlOnce = Boolean.valueOf(co);
+      String crawlOnceStr = params.get(KEY_CRAWL_ONCE);
+      if (!Strings.isNullOrEmpty(crawlOnceStr)) {
+        crawlOnce = Boolean.valueOf(crawlOnceStr);
       }
-      String lo = params.get(KEY_LOCK);
-      if (!Strings.isNullOrEmpty(lo)) {
-        lock = Boolean.valueOf(lo);
+      String lockStr = params.get(KEY_LOCK);
+      if (!Strings.isNullOrEmpty(lockStr)) {
+        lock = Boolean.valueOf(lockStr);
       }
       String transmissionDecision
           = params.get(KEY_FORCED_TRANSMISSION_DECISION);
