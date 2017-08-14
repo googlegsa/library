@@ -25,7 +25,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** Unit tests for {@link PrebuiltTransfors}. */
@@ -35,7 +35,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMetadataOverwriteFalse() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("2.from", "author");
@@ -70,13 +70,13 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new HashMap<String, String>());
+    transform.transform(metadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
   @Test
   public void testCopyMetadataOverwriteTrue() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("2.from", "author");
     config.put("2.to", "contributors");
@@ -95,13 +95,13 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new HashMap<String, String>());
+    transform.transform(metadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
   @Test
   public void testCopyParamToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -113,13 +113,13 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -128,7 +128,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToExistingParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -140,13 +140,13 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -156,7 +156,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToParamOverwriteFalse() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "false");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -173,14 +173,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "red");
       golden.put("hue", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -190,7 +190,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToParamOverwriteTrue() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -207,14 +207,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "black");
       golden.put("hue", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -224,7 +224,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -239,7 +239,7 @@ public class PrebuiltTransformsTest {
       metadataGolden = golden.unmodifiableView();
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     params.put("author", "Fred");
     transform.transform(metadata, params);
@@ -248,7 +248,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToMultivalueMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("2.from", "author");
     config.put("2.from.keyset", "params");
     config.put("2.to", "contributors");
@@ -267,7 +267,7 @@ public class PrebuiltTransformsTest {
     Metadata metadata = new Metadata();
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("author", "Fred");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -275,7 +275,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMetadataToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -285,21 +285,21 @@ public class PrebuiltTransformsTest {
 
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("author", "Fred");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     transform.transform(metadata, params);
     assertEquals(paramsGolden, params);
   }
 
   @Test
   public void testCopyMultivalueMetadataToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -309,21 +309,21 @@ public class PrebuiltTransformsTest {
 
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("colour", "red");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     transform.transform(metadata, params);
     assertEquals(paramsGolden, params);
   }
 
   @Test
   public void testCopyMetadataToParamOverwrite() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -333,13 +333,13 @@ public class PrebuiltTransformsTest {
 
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("color", "red");
     transform.transform(metadata, params);
     assertEquals(paramsGolden, params);
@@ -347,7 +347,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config = Collections.unmodifiableMap(config);
     MetadataTransform transform
         = PrebuiltTransforms.copyMetadata(config);
@@ -357,7 +357,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyToStringWithKeysAndKeysetAndOverwrite() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -379,7 +379,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveMetadataToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.to", "color");
@@ -406,13 +406,13 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new HashMap<String, String>());
+    transform.transform(metadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
   @Test
   public void testMoveFromParamsToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -430,7 +430,7 @@ public class PrebuiltTransformsTest {
         = Collections.<String, String>emptyMap();
 
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -439,7 +439,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromParamsToExistingMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -459,7 +459,7 @@ public class PrebuiltTransformsTest {
 
     Metadata metadata = new Metadata();
     metadata.add("color", "red");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -468,7 +468,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromMetadataToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -479,14 +479,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
 
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
     assertEquals(paramsGolden, params);
@@ -494,7 +494,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromMetadataToExistingParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -505,14 +505,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
 
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("color", "red");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -521,7 +521,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromParamToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -533,13 +533,13 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
 
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -548,7 +548,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveParamToParamOverwriteFalse() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "false");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -561,12 +561,12 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "red");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -576,7 +576,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveParamToParamOverwriteTrue() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -589,12 +589,12 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -604,7 +604,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform
@@ -615,7 +615,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveToStringWithKeysAndKeysetAndOverwrite() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -637,7 +637,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "missing");
     config.put("key3", "author");
     config.put("keyy", "contributors");
@@ -659,13 +659,13 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new HashMap<String, String>());
+    transform.transform(metadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
   @Test
   public void testDeleteParams() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "missing");
     config.put("keyset1", "params");
     config.put("key2", "colour");
@@ -687,7 +687,7 @@ public class PrebuiltTransformsTest {
 
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("author", "Fred");
     params.put("colour", "red");
     transform.transform(metadata, params);
@@ -697,7 +697,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform
@@ -707,15 +707,15 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteToStringWithKeys() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key2", "colour");
     config.put("key3", "author");
     config.put("keyset3", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
-    String first = "(key=author,keyset=params)";
-    String second = "(key=colour,keyset=metadata)";
+    String first = "(key=colour,keyset=metadata)";
+    String second = "(key=author,keyset=params)";
     String expected = "DeleteTransform(keys=[" + first + ", " + second + "])";
     String actual = "" + transform;
     assertEquals(expected, actual);
@@ -723,7 +723,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteInvalidKeys() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "");
     config.put("keyy", "author");
     config = Collections.unmodifiableMap(config);
@@ -734,7 +734,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplacePattern() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "colour");
     config.put("key2", "missing");
     config.put("key4", "contributors");
@@ -759,13 +759,13 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new HashMap<String, String>());
+    transform.transform(metadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
   @Test
   public void testReplaceString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "false");
     config.put("key1", "colour");
     config.put("key2", "missing");
@@ -793,13 +793,13 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred [test]");
     metadata.add("contributors", "Ma[test]ry[test]");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new HashMap<String, String>());
+    transform.transform(metadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
   @Test
   public void testReplacePatternInParams() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "colour");
     config.put("keyset1", "params");
     config.put("key2", "missing");
@@ -819,7 +819,7 @@ public class PrebuiltTransformsTest {
     }
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("colour", "reed");
       golden.put("author", "Fred");
       paramsGolden = Collections.unmodifiableMap(golden);
@@ -828,7 +828,7 @@ public class PrebuiltTransformsTest {
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("author", "Fred");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "red");
     params.put("author", "Fred");
     transform.transform(metadata, params);
@@ -838,7 +838,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceStringInParams() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "colour");
     config.put("keyset1", "params");
     config.put("key2", "missing");
@@ -858,7 +858,7 @@ public class PrebuiltTransformsTest {
     }
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new HashMap<String, String>();
+      Map<String, String> golden = new LinkedHashMap<String, String>();
       golden.put("colour", "red herring");
       golden.put("author", "Fred [test]");
       paramsGolden = Collections.unmodifiableMap(golden);
@@ -867,7 +867,7 @@ public class PrebuiltTransformsTest {
     Metadata metadata = new Metadata();
     metadata.add("colour", "black [test]");
     metadata.add("author", "Fred [test]");
-    Map<String, String> params = new HashMap<String, String>();
+    Map<String, String> params = new LinkedHashMap<String, String>();
     params.put("colour", "red [test]");
     params.put("author", "Fred [test]");
     transform.transform(metadata, params);
@@ -877,7 +877,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
     config.put("replacement", "replace$0");
     config = Collections.unmodifiableMap(config);
@@ -890,7 +890,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceMissingStringAndPattern() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("replacement", "replace$0");
     config = Collections.unmodifiableMap(config);
 
@@ -901,7 +901,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceBothStringAndPattern() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
     config.put("pattern", "tofind");
     config.put("replacement", "replace$0");
@@ -914,7 +914,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceMissingReplacement() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
     config = Collections.unmodifiableMap(config);
 
@@ -925,7 +925,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDegenerateMove() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
@@ -945,7 +945,7 @@ public class PrebuiltTransformsTest {
       metadata.add("color", "black");
       unmodifiableMetadata = metadata.unmodifiableView();
     }
-    transform.transform(unmodifiableMetadata, new HashMap<String, String>());
+    transform.transform(unmodifiableMetadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, unmodifiableMetadata);
     assertEquals("CopyTransform(copies=[],overwrite=null,move=true)",
         transform.toString());
@@ -953,7 +953,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDegenerateCopy() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
@@ -973,7 +973,7 @@ public class PrebuiltTransformsTest {
       metadata.add("color", "black");
       unmodifiableMetadata = metadata.unmodifiableView();
     }
-    transform.transform(unmodifiableMetadata, new HashMap<String, String>());
+    transform.transform(unmodifiableMetadata, new LinkedHashMap<String, String>());
     assertEquals(metadataGolden, unmodifiableMetadata);
     assertEquals("CopyTransform(copies=[],overwrite=null,move=false)",
         transform.toString());
