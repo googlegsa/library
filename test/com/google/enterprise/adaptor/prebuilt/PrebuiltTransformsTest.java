@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -70,7 +71,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new LinkedHashMap<String, String>());
+    transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
@@ -95,7 +96,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new LinkedHashMap<String, String>());
+    transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
@@ -113,13 +114,13 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -140,13 +141,13 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -173,14 +174,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "red");
       golden.put("hue", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -207,14 +208,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("colour", "black");
       golden.put("color", "black");
       golden.put("hue", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -239,7 +240,7 @@ public class PrebuiltTransformsTest {
       metadataGolden = golden.unmodifiableView();
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     params.put("author", "Fred");
     transform.transform(metadata, params);
@@ -267,7 +268,7 @@ public class PrebuiltTransformsTest {
     Metadata metadata = new Metadata();
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("author", "Fred");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -285,14 +286,14 @@ public class PrebuiltTransformsTest {
 
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("author", "Fred");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     transform.transform(metadata, params);
     assertEquals(paramsGolden, params);
   }
@@ -309,14 +310,14 @@ public class PrebuiltTransformsTest {
 
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("colour", "red");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     transform.transform(metadata, params);
     assertEquals(paramsGolden, params);
   }
@@ -333,13 +334,13 @@ public class PrebuiltTransformsTest {
 
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("color", "red");
     transform.transform(metadata, params);
     assertEquals(paramsGolden, params);
@@ -406,7 +407,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new LinkedHashMap<String, String>());
+    transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
@@ -430,7 +431,7 @@ public class PrebuiltTransformsTest {
         = Collections.<String, String>emptyMap();
 
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -459,7 +460,7 @@ public class PrebuiltTransformsTest {
 
     Metadata metadata = new Metadata();
     metadata.add("color", "red");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -479,14 +480,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
 
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
     assertEquals(paramsGolden, params);
@@ -505,14 +506,14 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
 
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("color", "red");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -533,13 +534,13 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
 
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     transform.transform(metadata, params);
     assertEquals(metadataGolden, metadata);
@@ -561,12 +562,12 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "red");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -589,12 +590,12 @@ public class PrebuiltTransformsTest {
     final Metadata metadataGolden = new Metadata().unmodifiableView();
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("color", "black");
       paramsGolden = Collections.unmodifiableMap(golden);
     }
     Metadata metadata = new Metadata();
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "black");
     params.put("color", "red");
     transform.transform(metadata, params);
@@ -659,7 +660,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new LinkedHashMap<String, String>());
+    transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
@@ -687,7 +688,7 @@ public class PrebuiltTransformsTest {
 
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("author", "Fred");
     params.put("colour", "red");
     transform.transform(metadata, params);
@@ -759,7 +760,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred");
     metadata.add("contributors", "Mary");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new LinkedHashMap<String, String>());
+    transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
@@ -793,7 +794,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "Fred [test]");
     metadata.add("contributors", "Ma[test]ry[test]");
     metadata.add("contributors", "George");
-    transform.transform(metadata, new LinkedHashMap<String, String>());
+    transform.transform(metadata, new HashMap<String, String>());
     assertEquals(metadataGolden, metadata);
   }
 
@@ -819,7 +820,7 @@ public class PrebuiltTransformsTest {
     }
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("colour", "reed");
       golden.put("author", "Fred");
       paramsGolden = Collections.unmodifiableMap(golden);
@@ -828,7 +829,7 @@ public class PrebuiltTransformsTest {
     Metadata metadata = new Metadata();
     metadata.add("colour", "black");
     metadata.add("author", "Fred");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "red");
     params.put("author", "Fred");
     transform.transform(metadata, params);
@@ -858,7 +859,7 @@ public class PrebuiltTransformsTest {
     }
     final Map<String, String> paramsGolden;
     {
-      Map<String, String> golden = new LinkedHashMap<String, String>();
+      Map<String, String> golden = new HashMap<String, String>();
       golden.put("colour", "red herring");
       golden.put("author", "Fred [test]");
       paramsGolden = Collections.unmodifiableMap(golden);
@@ -867,7 +868,7 @@ public class PrebuiltTransformsTest {
     Metadata metadata = new Metadata();
     metadata.add("colour", "black [test]");
     metadata.add("author", "Fred [test]");
-    Map<String, String> params = new LinkedHashMap<String, String>();
+    Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "red [test]");
     params.put("author", "Fred [test]");
     transform.transform(metadata, params);
@@ -945,7 +946,7 @@ public class PrebuiltTransformsTest {
       metadata.add("color", "black");
       unmodifiableMetadata = metadata.unmodifiableView();
     }
-    transform.transform(unmodifiableMetadata, new LinkedHashMap<String, String>());
+    transform.transform(unmodifiableMetadata, new HashMap<String, String>());
     assertEquals(metadataGolden, unmodifiableMetadata);
     assertEquals("CopyTransform(copies=[],overwrite=null,move=true)",
         transform.toString());
@@ -973,7 +974,7 @@ public class PrebuiltTransformsTest {
       metadata.add("color", "black");
       unmodifiableMetadata = metadata.unmodifiableView();
     }
-    transform.transform(unmodifiableMetadata, new LinkedHashMap<String, String>());
+    transform.transform(unmodifiableMetadata, new HashMap<String, String>());
     assertEquals(metadataGolden, unmodifiableMetadata);
     assertEquals("CopyTransform(copies=[],overwrite=null,move=false)",
         transform.toString());
