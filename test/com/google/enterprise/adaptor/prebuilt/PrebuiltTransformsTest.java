@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
@@ -713,8 +714,14 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
-    assertEquals("DeleteTransform(keys=[(key=colour,keyset=metadata), "
-        + "(key=author,keyset=params)])", transform.toString());
+    String onePart = "(key=colour,keyset=metadata)";
+    String otherPart = "(key=author,keyset=params)";
+    String oneWay = "DeleteTransform(keys=["
+        + onePart + ", " + otherPart + "])";
+    String otherWay = "DeleteTransform(keys=["
+        + otherPart + ", " + onePart + "])";
+    String actual = "" + transform;
+    assertTrue(oneWay.equals(actual) || otherWay.equals(actual));
   }
 
   @Test
