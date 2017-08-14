@@ -382,6 +382,7 @@ public class DocIdSenderTest {
     assertEquals(ImmutableList.of("0", "1"), fileSender.xmlStrings);
     assertEquals(ImmutableList.of("0", "1"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
   }
 
   @Test
@@ -447,6 +448,7 @@ public class DocIdSenderTest {
     assertEquals(ImmutableList.of("0", "1"), fileSender.xmlStrings);
     assertEquals(ImmutableList.of("0", "1"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
   }
 
   @Test
@@ -475,6 +477,7 @@ public class DocIdSenderTest {
     assertEquals(ImmutableList.of("foo-FULL1", "foo", "foo-FULL2", "foo-FULL1"),
         fileSender.groupsources);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
   }
 
   @Test
@@ -640,6 +643,73 @@ public class DocIdSenderTest {
 
     assertEquals(Collections.singletonList("group_source"),
         fileSender.groupsources);
+  }
+
+  @Test
+  public void testPushGroupsFailure() throws Exception {
+    fileSender = new MockGsaFeedFileSender() {
+      @Override
+      public void sendGroups(String feedSource, String feedType,
+          String xmlString, boolean useCompression) throws IOException {
+        throw new IOException();
+      }
+    };
+
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    try {
+      docIdSender.pushGroupDefinitions(sampleGroups(),
+          EVERYTHING_CASE_SENSITIVE, new NeverRetryExceptionHandler());
+    } finally {
+      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
+    }
+
+    assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroups_threadSafe() throws Throwable {
+    final int threadCount = 5;
+    final int iterations = 10;
+
+    Thread[] threads = new Thread[threadCount];
+    final Throwable[] errors = new Throwable[threadCount];
+
+    // Start the threads.
+    for (int t = 0; t < threadCount; t++) {
+      // Collect errors in the threads to throw them from the test
+      // thread or the test won't fail.
+      final int tt = t;
+      threads[t] = new Thread() {
+          @Override public void run() {
+            try {
+              for (int i = 0; i < iterations; i++) {
+                docIdSender.pushGroupDefinitions(sampleGroups(),
+                    EVERYTHING_CASE_SENSITIVE, INCREMENTAL,
+                    "source" + tt, new NeverRetryExceptionHandler());
+              }
+            } catch (Throwable e) {
+              errors[tt] = e;
+            }
+          }
+        };
+      threads[t].start();
+    }
+
+    // Wait for each thread and check for errors.
+    StringBuilder builder = new StringBuilder();
+    for (int t = 0; t < threadCount; t++) {
+      threads[t].join();
+      if (errors[t] != null) {
+        builder.append(errors[t]).append("\n");
+      }
+    }
+    assertEquals(builder.toString(), 0, builder.length());
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(threadCount * iterations, fileArchiver.feeds.size());
+    assertEquals(threadCount * iterations, fileSender.groupsources.size());
   }
 
   /**
