@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
@@ -25,6 +26,7 @@ import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
 /** Unit tests for {@link PrebuiltTransfors}. */
@@ -34,7 +36,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMetadataOverwriteFalse() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("2.from", "author");
@@ -75,7 +77,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMetadataOverwriteTrue() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("2.from", "author");
     config.put("2.to", "contributors");
@@ -100,7 +102,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -127,7 +129,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToExistingParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -155,7 +157,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToParamOverwriteFalse() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "false");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -189,7 +191,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToParamOverwriteTrue() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -223,7 +225,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -247,7 +249,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyParamToMultivalueMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("2.from", "author");
     config.put("2.from.keyset", "params");
     config.put("2.to", "contributors");
@@ -274,7 +276,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMetadataToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -298,7 +300,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMultivalueMetadataToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -322,7 +324,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyMetadataToParamOverwrite() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -346,7 +348,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config = Collections.unmodifiableMap(config);
     MetadataTransform transform
         = PrebuiltTransforms.copyMetadata(config);
@@ -356,7 +358,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testCopyToStringWithKeysAndKeysetAndOverwrite() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -378,7 +380,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveMetadataToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.to", "color");
@@ -411,7 +413,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromParamsToMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -438,7 +440,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromParamsToExistingMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -467,7 +469,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromMetadataToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -493,7 +495,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromMetadataToExistingParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.to", "color");
     config.put("1.to.keyset", "params");
@@ -520,7 +522,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveFromParamToParam() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -547,7 +549,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveParamToParamOverwriteFalse() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "false");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -575,7 +577,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveParamToParamOverwriteTrue() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "true");
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
@@ -603,7 +605,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform
@@ -614,7 +616,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testMoveToStringWithKeysAndKeysetAndOverwrite() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "colour");
     config.put("1.from.keyset", "params");
     config.put("1.to", "color");
@@ -636,7 +638,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteMetadata() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "missing");
     config.put("key3", "author");
     config.put("keyy", "contributors");
@@ -664,7 +666,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteParams() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "missing");
     config.put("keyset1", "params");
     config.put("key2", "colour");
@@ -696,7 +698,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform
@@ -706,20 +708,21 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDeleteToStringWithKeys() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key2", "colour");
     config.put("key3", "author");
     config.put("keyset3", "params");
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
-    assertEquals("DeleteTransform(keys=[(key=colour,keyset=metadata), "
-        + "(key=author,keyset=params)])", transform.toString());
+    assertEquals("DeleteTransform("
+        + "keys=[(key=colour,keyset=metadata), (key=author,keyset=params)])",
+        transform.toString());
   }
 
   @Test
   public void testDeleteInvalidKeys() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "");
     config.put("keyy", "author");
     config = Collections.unmodifiableMap(config);
@@ -730,7 +733,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplacePattern() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "colour");
     config.put("key2", "missing");
     config.put("key4", "contributors");
@@ -761,7 +764,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("overwrite", "false");
     config.put("key1", "colour");
     config.put("key2", "missing");
@@ -795,7 +798,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplacePatternInParams() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "colour");
     config.put("keyset1", "params");
     config.put("key2", "missing");
@@ -834,7 +837,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceStringInParams() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("key1", "colour");
     config.put("keyset1", "params");
     config.put("key2", "missing");
@@ -873,7 +876,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceToString() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
     config.put("replacement", "replace$0");
     config = Collections.unmodifiableMap(config);
@@ -886,7 +889,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceMissingStringAndPattern() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("replacement", "replace$0");
     config = Collections.unmodifiableMap(config);
 
@@ -897,7 +900,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceBothStringAndPattern() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
     config.put("pattern", "tofind");
     config.put("replacement", "replace$0");
@@ -910,7 +913,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testReplaceMissingReplacement() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
     config = Collections.unmodifiableMap(config);
 
@@ -921,7 +924,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDegenerateMove() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
@@ -949,7 +952,7 @@ public class PrebuiltTransformsTest {
 
   @Test
   public void testDegenerateCopy() {
-    Map<String, String> config = new HashMap<String, String>();
+    Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("1.from", "color");
     config.put("1.to", "color");
     config = Collections.unmodifiableMap(config);
