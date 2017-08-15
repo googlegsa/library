@@ -78,7 +78,7 @@ class Journal {
   private long lastSuccessfulGroupPushStart;
   private long lastSuccessfulGroupPushEnd;
 
-  private class GroupPush {
+  private static class GroupPush {
     long currentGroupPushStart;
     CompletionStatus lastGroupPushStatus = CompletionStatus.SUCCESS;
   };
