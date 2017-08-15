@@ -715,11 +715,9 @@ public class PrebuiltTransformsTest {
     config = Collections.unmodifiableMap(config);
 
     MetadataTransform transform = PrebuiltTransforms.deleteMetadata(config);
-    String first = "(key=colour,keyset=metadata)";
-    String second = "(key=author,keyset=params)";
-    String expected = "DeleteTransform(keys=[" + first + ", " + second + "])";
-    String actual = "" + transform;
-    assertEquals(expected, actual);
+    assertEquals("DeleteTransform("
+        + "keys=[(key=colour,keyset=metadata), (key=author,keyset=params)])",
+        transform.toString());
   }
 
   @Test

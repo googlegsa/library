@@ -30,12 +30,12 @@ import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -220,7 +220,7 @@ public class Config {
    * values by default.
    */
   private Map<String, ValueComputer> computeMap
-      = new TreeMap<String, ValueComputer>();
+      = new HashMap<String, ValueComputer>();
 
   public Config() {
     String hostname = null;
@@ -1014,7 +1014,7 @@ public class Config {
    * @return map of all endings of prefix split into key value pairs
    */
   public synchronized Map<String, String> getValuesWithPrefix(String prefix) {
-    Map<String, String> values = new TreeMap<String, String>();
+    Map<String, String> values = new HashMap<String, String>();
     for (String key : config.stringPropertyNames()) {
       if (!key.startsWith(prefix)) {
         continue;
