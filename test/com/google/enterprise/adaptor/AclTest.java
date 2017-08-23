@@ -1214,6 +1214,22 @@ public class AclTest {
         createIdentity("permituser@domain", "domain/permitgroup")));
   }
 
+  @Test
+  public void testNullGetGroups() {
+    Acl acl = new Acl.Builder()
+        .setPermitUsers(user("permituser@domain"))
+        .setDenyUsers(user("denyuser@domain"))
+        .setPermitGroups(group("PermitGroup@Domain"))
+        .setDenyGroups(group("DenyGroup@Domain"))
+        .build();
+    assertEquals(AuthzStatus.DENY, acl.isAuthorizedLocal(
+        createIdentity("denyuser@domain", (List<String>) null)));
+    assertEquals(AuthzStatus.PERMIT, acl.isAuthorizedLocal(
+        createIdentity("permituser@domain", (List<String>) null)));
+    assertEquals(AuthzStatus.INDETERMINATE, acl.isAuthorizedLocal(
+        createIdentity("someuser@domain", (List<String>) null)));
+  }
+
   private AuthnIdentity createIdentity(String username, String... groups) {
     return createIdentity(username, Arrays.asList(groups));
   }
@@ -1221,8 +1237,9 @@ public class AclTest {
   private AuthnIdentity createIdentity(final String username,
       List<String> groups) {
     final UserPrincipal user = new UserPrincipal(username);
-    final Set<GroupPrincipal> groupSet = Collections.unmodifiableSet(
-        new TreeSet<GroupPrincipal>(GroupPrincipal.makeSet(groups)));
+    final Set<GroupPrincipal> groupSet = (groups == null) ? null
+        : Collections.unmodifiableSet(
+              new TreeSet<GroupPrincipal>(GroupPrincipal.makeSet(groups)));
     return new AuthnIdentity() {
       @Override
       public UserPrincipal getUser() {

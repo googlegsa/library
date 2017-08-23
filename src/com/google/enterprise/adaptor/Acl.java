@@ -249,7 +249,9 @@ public class Acl {
     }
 
     Set<GroupPrincipal> userGroups = userIdentity.getGroups();
-    if (!caseSensitive) {
+    if (userGroups == null) {
+      userGroups = Collections.<GroupPrincipal>emptySet();
+    } else if (!caseSensitive) {
       userGroups = Collections.unmodifiableSet(cmpWrap(userGroups));
     }
 
