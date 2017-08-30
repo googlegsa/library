@@ -84,8 +84,8 @@
       <!--include name="resolver-2.9.1.jar"/-->
       <!--include name="serializer-2.9.1.jar"/-->
       <!--include name="xalan-2.7.1.jar"/-->
-      <include name="xercesImpl-2.9.1.jar"/>
-      <!--include name="xml-apis-2.9.1.jar"/-->
+      <include name="xercesImpl-2.11.0.jar"/>
+      <include name="xml-apis-1.4.1.jar"/>
 
       <!-- Additional dependencies not included with opensaml. -->
       <include name="slf4j-jdk14-1.5.10.jar"/>
