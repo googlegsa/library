@@ -639,7 +639,7 @@ public class Config {
     return getValue("adaptor.fullListingSchedule");
   }
 
-  public long validateTimeout(String property) {
+  private long validateTimeout(String property) {
     String secondsAsString = getValue(property).trim();
     if ("0".equals(secondsAsString) || "".equals(secondsAsString)
         || secondsAsString.startsWith("-")) {

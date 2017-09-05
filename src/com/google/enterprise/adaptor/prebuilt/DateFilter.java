@@ -14,10 +14,10 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
-
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.Keyset;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.text.DateFormat;
 import java.text.FieldPosition;
@@ -91,34 +91,14 @@ import java.util.logging.Logger;
  * metadata.transform.pipeline.dateFilter.format=millis
  * metadata.transform.pipeline.dateFilter.date=2010-01-01
  * </code></pre>
+ *
+ * @since 4.1.4
  */
-// @since TODO(bmj)
 public class DateFilter implements MetadataTransform {
   private static final Logger log
       = Logger.getLogger(DateFilter.class.getName());
 
   private static final String ISO_8601_FORMAT = "yyyy-MM-dd";
-
-  // TODO (bmj): remove this and use the one in MetadataTransforms.
-  private enum Keyset {
-    METADATA("metadata"),
-    PARAMS("params");
-
-    private final String name;
-
-    private Keyset(String name) {
-      this.name = name;
-    }
-
-    public static Keyset from(String val) {
-      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
-    }
-
-    @Override
-    public String toString() {
-      return name;
-    }
-  };
 
   /** The name of the key (either Metadata key or params key) to match. */
   private final String key;

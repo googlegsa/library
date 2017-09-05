@@ -14,13 +14,15 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Locale.US;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
+import com.google.enterprise.adaptor.MetadataTransform.Keyset;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.regex.Pattern;
@@ -74,8 +76,9 @@ import java.util.regex.Pattern;
  * metadata.transform.pipeline.regexFilter.when=not-found
  * metadata.transform.pipeline.regexFilter.decision=do-not-index
  * </code></pre>
+ *
+ * @since 4.1.4
  */
-// @since TODO(bmj)
 public class RegexFilter implements MetadataTransform {
   /**
    * Make decision based upon whether the regular expression matches or not.
@@ -113,27 +116,6 @@ public class RegexFilter implements MetadataTransform {
     }
 
     /** Returns the name of this {@code When} value. */
-    @Override
-    public String toString() {
-      return name;
-    }
-  };
-
-  // TODO (bmj): remove this and use the one in MetadataTransforms.
-  private enum Keyset {
-    METADATA("metadata"),
-    PARAMS("params");
-
-    private final String name;
-
-    private Keyset(String name) {
-      this.name = name;
-    }
-
-    public static Keyset from(String val) {
-      return (val == null) ? METADATA : Keyset.valueOf(val.toUpperCase());
-    }
-
     @Override
     public String toString() {
       return name;
@@ -185,14 +167,22 @@ public class RegexFilter implements MetadataTransform {
    */
   private boolean foundInMetadata(Metadata metadata) {
     boolean found = false;
-    for (String value : metadata.getAllValues(key)) {
+    Set<String> values = metadata.getAllValues(key);
+    if (values.isEmpty() && log.isLoggable(Level.FINEST)) {
+      if (metadata.getKeys().contains(key)) {
+        log.log(Level.FINEST, "No values for key {0} in metadata.", key);
+      } else {
+        log.log(Level.FINEST, "No key {0} in metadata.", key);
+      }
+    }
+    for (String value : values) {
       if (pattern.matcher(value).find()) {
         found = true;
         break;
       }
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in metadata.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in metadata.",
+        new Object[] { (found ? "Did" : "Did not"), key });
     return found;
   }
 
@@ -204,10 +194,16 @@ public class RegexFilter implements MetadataTransform {
   private boolean foundInParams(Map<String, String> params) {
     boolean found = false;
     if (params.containsKey(key)) {
-      found = pattern.matcher(params.get(key)).find();
+      String value = params.get(key);
+      if (value == null) {
+        value = "";
+      }
+      found = pattern.matcher(value).find();
+    } else {
+      log.log(Level.FINEST, "No key {0} in params.", key);
     }
-    log.fine((found ? "Did" : "Did not") + " find matching pattern for key `"
-        + key + "' in params.");
+    log.log(Level.FINE, "{0} find matching pattern for key {1} in params.",
+        new Object[] { (found ? "Did" : "Did not"), key });
     return found;
   }
 

@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Locale.US;
+
 import com.google.enterprise.adaptor.testing.UnsupportedDocIdPusher;
 
 import java.net.URI;
@@ -31,14 +33,40 @@ import java.util.Map;
  * class.
  */
 public interface DocIdPusher {
+
+  /** Not as good as an enum for case sensitivity, but backward compatible. */
+  public static final boolean EVERYTHING_CASE_SENSITIVE = true;
+  public static final boolean EVERYTHING_CASE_INSENSITIVE = false;
+
+  /**
+   * FeedType used for group definition pushes.
+   *
+   * GSA 7.4.0 added support for full feeds of group definitions. A {@code FULL}
+   * feed replaces all groups from a given data source. An {@code INCREMENTAL}
+   * feed augments or updates existing group definitions for a given data source.
+   * When feeding GSAs earlier than 7.4.0, {@code INCREMENTAL} feeds are always
+   * used. {@code INCREMENTAL} is the default FeedType for the overloaded
+   * {@code pushGroupDefinitions} methods that do specify a FeedType.
+   *
+   * @since 4.1.4
+   */
+  public static enum FeedType {
+    FULL, INCREMENTAL;
+
+    public String toString() {
+      return name().toLowerCase(US);
+    }
+  }
+
   /**
    * Push {@code DocId}s immediately and block until they are successfully
    * provided to the GSA or the error handler gives up. This method can take a
    * while in error conditions, but is not something that generally needs to be
    * avoided.
    *
-   * <p>Equivalent to {@code pushDocIds(docIds, null)} and {@link
-   * #pushRecords(Iterable)} with default values for each {@code Record}.
+   * <p>Equivalent to {@link #pushDocIds(Iterable, ExceptionHandler)
+   * pushDocIds(docIds, null)}, and to {@link #pushRecords(Iterable)}
+   * with default values for each {@code Record}.
    *
    * @param docIds are document ids to be pushed
    * @return {@code null} on success, otherwise the first DocId to fail
@@ -73,7 +101,8 @@ public interface DocIdPusher {
    * while in error conditions, but is not something that generally needs to be
    * avoided.
    *
-   * <p>Equivalent to {@code pushRecords(records, null)}.
+   * <p>Equivalent to {@link #pushRecords(Iterable, ExceptionHandler)
+   * pushRecords(records, null)}.
    *
    * @param records are document ids to be pushed
    * @return {@code null} on success, otherwise the first Record to fail
@@ -112,7 +141,8 @@ public interface DocIdPusher {
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
    *
-   * <p>Equivalent to {@code pushNamedResources(resources, null)}.
+   * <p>Equivalent to {@link #pushNamedResources(Map, ExceptionHandler)
+   * pushNamedResources(resources, null)}.
    *
    * @param resources are labeled access control lists
    * @return {@code null} on success, otherwise the first DocId to fail
@@ -152,15 +182,24 @@ public interface DocIdPusher {
    * if errors arise.
    * 
    * <p>A group definition consists of a group being defined
-   * and members, which is a list of users and groups.
+   * and members, which is a collection of users and groups.
    *
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>This method performs {@link DocIdPusher.FeedType INCREMENTAL} group
+   * pushes, using the default group source name, and the default
+   * {@link ExceptionHandler}.
+   *
+   * <p>Equivalent to
+   * {@link #pushGroupDefinitions(Map, boolean, ExceptionHandler)
+   * pushGroupDefinitions(defs, caseSensitive, null)}.
    *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
+   * @see #pushGroupDefinitions(Map, boolean, FeedType, String, ExceptionHandler)
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
@@ -172,23 +211,67 @@ public interface DocIdPusher {
    * if errors arise.
    * 
    * <p>A group definition consists of a group being defined
-   * and members, which is a list of users and groups.
+   * and members, which is a collection of users and groups.
    *
    * <p>If you plan on using the return code, then the provided map should have
    * a predictable iteration order, like {@link java.util.TreeMap}.
    *
    * <p>If handler is {@code null}, then a default error handler is used.
    *
+   * <p>This method performs {@link DocIdPusher.FeedType INCREMENTAL} group
+   * pushes, using the default group source name.
+   *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
    * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
+   * @see #pushGroupDefinitions(Map, boolean, FeedType, String, ExceptionHandler)
    */
   public GroupPrincipal pushGroupDefinitions(
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, ExceptionHandler handler)
       throws InterruptedException;
+
+  /**
+   * Blocking call to push group definitions to GSA ends in success or
+   * when provided error handler gives up.  Can take significant time
+   * if errors arise.
+   *
+   * <p>A group definition consists of a group being defined
+   * and members, which is a list of users and groups.
+   *
+   * <p>If you plan on using the return code, then the provided map should have
+   * a predictable iteration order, like {@link java.util.TreeMap}.
+   *
+   * <p>An incremental push augments or updates any existing group definitions
+   * for the groupSource on the GSA. Otherwise, the supplied group definitions
+   * will wholly replace all existing definitions for the groupSource on the
+   * GSA.
+   *
+   * <p>A groupSource identifies the source of the group definitions.
+   * If provided, it must be a string of the form
+   * <code>[a-zA-Z_][a-zA-Z0-9_-]*</code> with at most 250 characters.
+   * If groupSource is {@code null}, then the {@code feed.name} configuration
+   * property is used.
+   *
+   * <p>If handler is {@code null}, then a default error handler is used.
+   *
+   * @param defs map of group definitions
+   * @param caseSensitive when comparing Principals
+   * @param feedType if INCREMENTAL, an incremental update is done; if FULL, a
+   *        full replacement is done.
+   * @param groupSource
+   * @param handler for dealing with errors pushing
+   * @return {@code null} on success, otherwise the first GroupPrincipal to fail
+   * @throws InterruptedException if interrupted and no definitions were sent
+   *
+   * @since 4.1.4
+   */
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, FeedType feedType, String groupSource,
+      ExceptionHandler handler) throws InterruptedException;
 
   /**
    * Immutable feed attributes for a document identified by its {@code DocId}.

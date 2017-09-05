@@ -77,7 +77,17 @@ class Journal {
   private long currentGroupPushStart;
   private long lastSuccessfulGroupPushStart;
   private long lastSuccessfulGroupPushEnd;
-  private CompletionStatus lastGroupPushStatus = CompletionStatus.SUCCESS;
+
+  private static class GroupPush {
+    long currentGroupPushStart;
+    CompletionStatus lastGroupPushStatus = CompletionStatus.SUCCESS;
+  };
+
+  private ThreadLocal<GroupPush> groupPush = new ThreadLocal<GroupPush>() {
+    @Override protected GroupPush initialValue() {
+      return new GroupPush();
+    }
+  };
 
   enum CompletionStatus {
     SUCCESS,
@@ -178,11 +188,15 @@ class Journal {
   /**
    * Record that a group push has started. Only one is tracked at a time.
    */
-  synchronized void recordGroupPushStarted() {
-    if (currentGroupPushStart != 0) {
+  void recordGroupPushStarted() {
+    GroupPush gp = groupPush.get();
+    if (gp.currentGroupPushStart != 0) {
       throw new IllegalStateException("Group push already started");
     }
-    currentGroupPushStart = timeProvider.currentTimeMillis();
+    gp.currentGroupPushStart = timeProvider.currentTimeMillis();
+    synchronized (this) {
+      this.currentGroupPushStart = gp.currentGroupPushStart;
+    }
   }
 
   /**
@@ -190,38 +204,50 @@ class Journal {
    */
   void recordGroupPushSuccessful() {
     long endTime = timeProvider.currentTimeMillis();
+    GroupPush gp = groupPush.get();
     synchronized (this) {
-      this.lastSuccessfulGroupPushStart = currentGroupPushStart;
+      this.lastSuccessfulGroupPushStart = gp.currentGroupPushStart;
       this.lastSuccessfulGroupPushEnd = endTime;
-      currentGroupPushStart = 0;
-      lastGroupPushStatus = CompletionStatus.SUCCESS;
+      this.currentGroupPushStart = 0;
     }
+    gp.currentGroupPushStart = 0;
+    gp.lastGroupPushStatus = CompletionStatus.SUCCESS;
   }
 
   /**
    * Record that the group push was interrupted prematurely.
    */
-  synchronized void recordGroupPushInterrupted() {
-    if (currentGroupPushStart == 0) {
+  void recordGroupPushInterrupted() {
+    GroupPush gp = groupPush.get();
+    if (gp.currentGroupPushStart == 0) {
       throw new IllegalStateException("Group push not started yet");
     }
-    currentGroupPushStart = 0;
-    lastGroupPushStatus = CompletionStatus.INTERRUPTION;
+    gp.currentGroupPushStart = 0;
+    gp.lastGroupPushStatus = CompletionStatus.INTERRUPTION;
+    synchronized (this) {
+      this.currentGroupPushStart = 0;
+    }
   }
 
   /**
    * Record that the group push completed unsuccessfully.
    */
-  synchronized void recordGroupPushFailed() {
-    if (currentGroupPushStart == 0) {
+  void recordGroupPushFailed() {
+    GroupPush gp = groupPush.get();
+    if (gp.currentGroupPushStart == 0) {
       throw new IllegalStateException("Group push not started yet");
     }
-    currentGroupPushStart = 0;
-    lastGroupPushStatus = CompletionStatus.FAILURE;
+    gp.currentGroupPushStart = 0;
+    gp.lastGroupPushStatus = CompletionStatus.FAILURE;
+    synchronized (this) {
+      this.currentGroupPushStart = 0;
+    }
   }
 
-  synchronized CompletionStatus getLastGroupPushStatus() {
-    return lastGroupPushStatus;
+  @VisibleForTesting
+  CompletionStatus getLastGroupPushStatus() {
+    GroupPush gp = groupPush.get();
+    return gp.lastGroupPushStatus;
   }
 
   void recordGsaContentRequest(DocId docId) {

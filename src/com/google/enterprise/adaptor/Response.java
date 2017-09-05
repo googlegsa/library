@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import com.google.enterprise.adaptor.testing.UnsupportedResponse;
 
 import java.io.IOException;
@@ -220,4 +221,50 @@ public interface Response {
    *     to unlocked documents
    */
   public void setLock(boolean lock);
+
+  /**
+   * Set a forced {@link TransmissionDecision} that can override transmission
+   * decisions made by {@link MetadataTransform MetadataTransforms}.
+   * <p>
+   * Some connectors send content that must be preserved in order for the
+   * connector to function properly, and transforms that decide to drop that
+   * content essentially break the connector. For instance, dropping folders
+   * disrupts graph traverser type connectors.
+   *
+   * @param transmissionDecision a
+   *     {@link MetadataTransform.TransmissionDecision TransmissionDecision}
+   *
+   * @since 4.1.4
+   */
+  public void setForcedTransmissionDecision(
+      TransmissionDecision transmissionDecision);
+
+  /**
+   * Adds a parameter to a Map for use by
+   * {@link MetadataTransform MetadataTransforms} when making
+   * transforms or decisions. Params are data associated with the document,
+   * but might not be indexed and searchable. Before the metadata transforms are
+   * called, the {@code params} are seeded with the document's {@link DocId},
+   * and values from {@link setLock}, {@link setCrawlOnce},
+   * {@code setDisplayUrl}, {@code setContentType}, and {@code setLastModified}.
+   * <p>
+   * To avoid possible name conflicts with parameter entries supplied by the
+   * library, the key of a connector-supplied parameter must start with
+   * {@code X-}.
+   * <p>
+   * Example:
+   * <pre>
+   * response.setParam("X-LastAccessDate", ISO8601.format(lastAccessDate));
+   * </pre>
+   *
+   * @param key a key for a Map entry
+   * @param value the value for the Map entry for key
+   * @throws IllegalArgumentException if key is not prefixed with {@code X-}
+   * @throws IllegalStateException if the response has been sent
+   * @throws NullPointerException if key is {@code null}
+   *
+   * @since 4.1.4
+   */
+  // TODO (bmj): Supply Params to ContentTransforms.
+  public void setParam(String key, String value);
 }
