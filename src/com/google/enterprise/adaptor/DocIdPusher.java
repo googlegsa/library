@@ -27,10 +27,10 @@ import java.util.Map;
 /**
  * Interface that allows at-will pushing of {@code DocId}s to the GSA.
  *
- * <p>This interface should not be implemented directly for unit testing.
- * Instead, use a mocking framework, such as Mockito, a
- * {@code java.lang.reflect.Proxy}, or extend the {@link UnsupportedDocIdPusher}
- * class.
+ * <p>Avoid implementing this interface in adaptor unit tests because
+ * new methods may be added in the future. Instead use
+ * {@link UnsupportedDocIdPusher}, or use an automated mock
+ * generator like Mockito or {@code java.lang.reflect.Proxy}.
  */
 public interface DocIdPusher {
 

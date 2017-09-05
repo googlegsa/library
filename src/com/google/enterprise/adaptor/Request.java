@@ -23,10 +23,10 @@ import java.util.Date;
  * Adaptor.getDocContent(Request, Response)} for describing the action that
  * should be taken.
  *
- * <p>This interface should not be implemented directly for unit testing.
- * Instead, use a mocking framework, such as Mockito, a
- * {@code java.lang.reflect.Proxy}, or extend the {@link UnsupportedRequest}
- * class.
+ * <p>Avoid implementing this interface in adaptor unit tests because
+ * new methods may be added in the future. Instead use
+ * {@link UnsupportedRequest}, or use an automated mock
+ * generator like Mockito or {@code java.lang.reflect.Proxy}.
  */
 public interface Request {
   /**

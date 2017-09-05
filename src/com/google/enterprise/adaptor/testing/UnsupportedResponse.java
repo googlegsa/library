@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.testing;
 
 import com.google.enterprise.adaptor.Acl;
+import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import com.google.enterprise.adaptor.Response;
 
 import java.io.IOException;
@@ -129,6 +130,19 @@ public class UnsupportedResponse implements Response {
   /** @throws UnsupportedOperationException always */
   @Override
   public void setLock(boolean lock) {
+    throw new UnsupportedOperationException("UnsupportedResponse was called");
+  }
+
+  /** @throws UnsupportedOperationException always */
+  @Override
+  public void setForcedTransmissionDecision(
+      TransmissionDecision transmissionDecision) {
+    throw new UnsupportedOperationException("UnsupportedResponse was called");
+  }
+
+  /** @throws UnsupportedOperationException always */
+  @Override
+  public void setParam(String key, String value) {
     throw new UnsupportedOperationException("UnsupportedResponse was called");
   }
 }

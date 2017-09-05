@@ -98,4 +98,14 @@ public class UnsupportedDocIdPusher implements DocIdPusher {
     throw new UnsupportedOperationException(
         "UnsupportedDocIdPusher was called");
   }
+
+  /** @throws UnsupportedOperationException always */
+  @Override
+  public GroupPrincipal pushGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> defs,
+      boolean caseSensitive, FeedType feedType, String groupSource,
+      ExceptionHandler handler) throws InterruptedException {
+    throw new UnsupportedOperationException(
+        "UnsupportedDocIdPusher was called");
+  }
 }
