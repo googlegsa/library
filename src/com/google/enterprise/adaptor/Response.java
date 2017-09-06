@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor;
 
 import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
+import com.google.enterprise.adaptor.testing.UnsupportedResponse;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -35,6 +36,11 @@ import java.util.Date;
  * {@link Request#hasChangedSinceLastAccess} and call {@link
  * #respondNotModified} when it is {@code true}. This prevents the Adaptor from
  * ever needing to retrieve the document contents and metadata.
+ *
+ * <p>Avoid implementing this interface in adaptor unit tests because
+ * new methods may be added in the future. Instead use
+ * {@link UnsupportedResponse}, or use an automated mock
+ * generator like Mockito or {@code java.lang.reflect.Proxy}.
  */
 public interface Response {
   /**

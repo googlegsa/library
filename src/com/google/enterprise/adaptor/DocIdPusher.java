@@ -16,6 +16,8 @@ package com.google.enterprise.adaptor;
 
 import static java.util.Locale.US;
 
+import com.google.enterprise.adaptor.testing.UnsupportedDocIdPusher;
+
 import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
@@ -24,6 +26,11 @@ import java.util.Map;
 
 /**
  * Interface that allows at-will pushing of {@code DocId}s to the GSA.
+ *
+ * <p>Avoid implementing this interface in adaptor unit tests because
+ * new methods may be added in the future. Instead use
+ * {@link UnsupportedDocIdPusher}, or use an automated mock
+ * generator like Mockito or {@code java.lang.reflect.Proxy}.
  */
 public interface DocIdPusher {
 

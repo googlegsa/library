@@ -14,12 +14,19 @@
 
 package com.google.enterprise.adaptor;
 
+import com.google.enterprise.adaptor.testing.UnsupportedRequest;
+
 import java.util.Date;
 
 /**
  * Interface provided to {@link Adaptor#getDocContent
  * Adaptor.getDocContent(Request, Response)} for describing the action that
  * should be taken.
+ *
+ * <p>Avoid implementing this interface in adaptor unit tests because
+ * new methods may be added in the future. Instead use
+ * {@link UnsupportedRequest}, or use an automated mock
+ * generator like Mockito or {@code java.lang.reflect.Proxy}.
  */
 public interface Request {
   /**
