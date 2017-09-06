@@ -261,7 +261,7 @@ public interface DocIdPusher {
    * @param caseSensitive when comparing Principals
    * @param feedType if INCREMENTAL, an incremental update is done; if FULL, a
    *        full replacement is done.
-   * @param groupSource
+   * @param groupSource the feed data source name
    * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail
    * @throws InterruptedException if interrupted and no definitions were sent
