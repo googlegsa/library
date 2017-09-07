@@ -14,6 +14,7 @@
 
 package com.google.enterprise.adaptor.testing;
 
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType;
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableSet;
 
@@ -42,8 +43,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
   private List<DocId> ids = new ArrayList<DocId>();
   private List<Record> records = new ArrayList<Record>();
   private Map<DocId, Acl> namedResources = new TreeMap<DocId, Acl>();
-  private Map<GroupPrincipal, Collection<Principal>> groups
-      = new TreeMap<GroupPrincipal, Collection<Principal>>();
+  private List<GroupPush> groupPushes = new ArrayList<GroupPush>();
 
   /**
    * Records the records and their {@link DocId} values.
@@ -73,6 +73,56 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
   }
 
   /**
+   * Records a push of group definitions.
+   */
+  public class GroupPush {
+    public boolean caseSensitive;
+    public FeedType feedType;
+    public String groupSource;
+    public Map<GroupPrincipal, Collection<Principal>> groups
+        = new TreeMap<GroupPrincipal, Collection<Principal>>();
+
+    public GroupPush(
+        Map<GroupPrincipal, ? extends Collection<Principal>> definitions,
+        boolean caseSensitive, FeedType feedType, String groupSource) {
+      this.caseSensitive = caseSensitive;
+      this.feedType = feedType;
+      this.groupSource = groupSource;
+      copyGroupDefinitions(definitions, this.groups);
+    }
+
+    public boolean equals(Object other) {
+      if (other == null || !(other instanceof GroupPush)) {
+        return false;
+      }
+      GroupPush gp = (GroupPush) other;
+      return caseSensitive == gp.caseSensitive
+          && feedType == gp.feedType
+          && groupSource.equals(gp.groupSource)
+          && groups.equals(gp.groups);
+    }
+  }
+
+  private void copyGroupDefinitions(
+      Map<GroupPrincipal, ? extends Collection<Principal>> source,
+      Map<GroupPrincipal, Collection<Principal>> target) {
+    // Make a defensive copy of each group, which just requires a copy
+    // of each group's collection of members. To preserve equality, we
+    // must copy each List to a List, and each Set to a Set. Other JDK
+    // Collection types use Object equality, and are not copied.
+    for (GroupPrincipal key : source.keySet()) {
+      Collection<Principal> members = source.get(key);
+      if (members instanceof List) {
+        target.put(key, unmodifiableList(new ArrayList<Principal>(members)));
+      } else if (members instanceof Set) {
+        target.put(key, unmodifiableSet(new LinkedHashSet<Principal>(members)));
+      } else {
+        target.put(key, members);
+      }
+    }
+  }
+
+  /**
    * Records the group definitions.
    *
    * <p>If a membership {@link Collection} for a group is a {@link List}
@@ -86,20 +136,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, FeedType feedType, String sourceName,
       ExceptionHandler exceptionHandler) throws InterruptedException {
-    // Make a defensive copy of each group, which just requires a copy
-    // of each group's collection of members. To preserve equality, we
-    // must copy each List to a List, and each Set to a Set. Other JDK
-    // Collection types use Object equality, and are not copied.
-    for (GroupPrincipal key : defs.keySet()) {
-      Collection<Principal> members = defs.get(key);
-      if (members instanceof List) {
-        groups.put(key, unmodifiableList(new ArrayList<Principal>(members)));
-      } else if (members instanceof Set) {
-        groups.put(key, unmodifiableSet(new LinkedHashSet<Principal>(members)));
-      } else {
-        groups.put(key, members);
-      }
-    }
+    groupPushes.add(new GroupPush(defs, caseSensitive, feedType, sourceName));
     return null;
   }
 
@@ -147,7 +184,23 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
    * @return an unmodifiable map of the recorded group definitions
    */
   public Map<GroupPrincipal, Collection<Principal>> getGroupDefinitions() {
+    Map<GroupPrincipal, Collection<Principal>> groups
+        = new TreeMap<GroupPrincipal, Collection<Principal>>();
+    for (GroupPush push : groupPushes) {
+      copyGroupDefinitions(push.groups, groups);
+    }
     return Collections.unmodifiableMap(groups);
+  }
+
+  /**
+   * Gets an unmodifiable list of {@link GroupPush group definition pushes}.
+   * Each entry in the list represents a recorded call to
+   * {@code pushGroupDefinitions}.
+   *
+   * @return an unmodifiable list of the recorded group definition pushes.
+   */
+  public List<GroupPush> getGroupPushes() {
+    return Collections.unmodifiableList(groupPushes);
   }
 
   /** Clears all of the recorded data. */
@@ -155,6 +208,6 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
     ids.clear();
     records.clear();
     namedResources.clear();
-    groups.clear();
+    groupPushes.clear();
   }
 }
