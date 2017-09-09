@@ -25,7 +25,7 @@ import java.util.Date;
  *
  * <p>Avoid implementing this interface in adaptor unit tests because
  * new methods may be added in the future. Instead use
- * {@link UnsupportedRequest}, or use an automated mock
+ * {@link DocRequest}, {@link UnsupportedRequest}, or an automated mock
  * generator like Mockito or {@code java.lang.reflect.Proxy}.
  */
 public interface Request {
