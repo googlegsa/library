@@ -322,7 +322,9 @@ class DocumentHandler implements HttpHandler {
         return;
       }
 
-      DocumentRequest request = new DocumentRequest(ex, docId);
+      Request request = new DocRequest(docId,
+          HttpExchanges.getIfModifiedSince(ex),
+          gsaSupports204 || !requestIsFromFullyTrustedClient(ex));
       DocumentResponse response
           = new DocumentResponse(ex, docId, Thread.currentThread());
       journal.recordRequestProcessingStart();
@@ -596,68 +598,6 @@ class DocumentHandler implements HttpHandler {
       }
     }
     return sb.toString();
-  }
-
-  private class DocumentRequest implements Request {
-    private final HttpExchange ex;
-    private final DocId docId;
-
-    private DocumentRequest(HttpExchange ex, DocId docId) {
-      this.ex = ex;
-      this.docId = docId;
-    }
-
-    @Override
-    public boolean hasChangedSinceLastAccess(Date lastModified) {
-      Date date = getLastAccessTime();
-      if (date == null) {
-        return true;
-      }
-      if (lastModified == null) {
-        throw new NullPointerException("last modified is null");
-      }
-      // Adjust last modified date time by stripping milliseconds part as
-      // last access time will not have milliseconds part.
-      Date lastModifiedAdjusted 
-          = new Date(1000 * (lastModified.getTime() / 1000));
-      log.log(Level.FINEST, "Last modified date time value {0} adjusted to {1}",
-          new Object[] {
-              lastModified.getTime(), lastModifiedAdjusted.getTime()});
-      return date.before(lastModifiedAdjusted);
-    }
-
-    @Override
-    public Date getLastAccessTime() {
-      return HttpExchanges.getIfModifiedSince(ex);
-    }
-
-    @Override
-    public DocId getDocId() {
-      return docId;
-    }
-
-    @Override
-    public String toString() {
-      return "Request(docId=" + docId
-          + ",lastAccessTime=" + getLastAccessTime() + ")";
-    }
-    
-    @Override
-    public boolean canRespondWithNoContent(Date lastModified) {
-      if (hasChangedSinceLastAccess(lastModified) 
-          || ((requestIsFromFullyTrustedClient(ex) && !gsaSupports204))) {
-        // return false as 
-        // (1) document has changed or
-        // (2) we are talking to GSA < 7.4
-        return false;
-      } else {
-        // return true as
-        // (1) document has not changed
-        // (2) we are either talking to GSA >= 7.4 or web browser
-        // Note: for web browser startSending will convert 204 to 304
-        return true;
-      }
-    }
   }
 
   /**

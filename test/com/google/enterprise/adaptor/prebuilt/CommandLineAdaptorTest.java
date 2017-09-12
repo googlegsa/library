@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import com.google.enterprise.adaptor.AuthnIdentity;
 import com.google.enterprise.adaptor.AuthzStatus;
 import com.google.enterprise.adaptor.DocId;
+import com.google.enterprise.adaptor.DocRequest;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.Request;
@@ -238,39 +239,6 @@ public class CommandLineAdaptorTest {
     }
   }
 
-  private static class ContentsRequestTestMock implements Request {
-    private DocId docId;
-    private Date lastCrawled;
-
-    public ContentsRequestTestMock(DocId docId) {
-      this.docId = docId;
-    }
-
-    @Override
-    public boolean hasChangedSinceLastAccess(Date lastModified) {
-      Date date = getLastAccessTime();
-      if (date == null) {
-        return true;
-      }
-      return date.before(lastModified);
-    }
-
-    @Override
-    public Date getLastAccessTime() {
-      return lastCrawled;
-    }
-
-    @Override
-    public DocId getDocId() {
-      return docId;
-    }
-    
-    @Override
-    public boolean canRespondWithNoContent(Date lastModified) {
-      return !hasChangedSinceLastAccess(lastModified);
-    }
-  }
-
   @Test
   public void testListerAndRetriever() throws Exception {
     CommandLineAdaptor adaptor = new CommandLineAdaptorTestMock();
@@ -322,8 +290,7 @@ public class CommandLineAdaptorTest {
 
     // Test retriever
     for (DocId docId : idList) {
-
-      ContentsRequestTestMock request = new ContentsRequestTestMock(docId);
+      Request request = new DocRequest(docId);
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       RecordingResponse response = new RecordingResponse(baos);
 

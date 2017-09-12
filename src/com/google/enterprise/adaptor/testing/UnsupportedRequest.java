@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.testing;
 
 import com.google.enterprise.adaptor.DocId;
+import com.google.enterprise.adaptor.DocRequest;
 import com.google.enterprise.adaptor.Request;
 
 import java.util.Date;
@@ -25,6 +26,8 @@ import java.util.Date;
  *
  * <p>This class is intended to be extended for unit testing, rather
  * than implementing the {@link Request} interface directly.
+ *
+ * @see DocRequest
  */
 public class UnsupportedRequest implements Request {
   /** @throws UnsupportedOperationException always */
