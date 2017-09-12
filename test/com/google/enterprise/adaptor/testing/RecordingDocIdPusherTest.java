@@ -160,16 +160,16 @@ public class RecordingDocIdPusherTest {
   @Test
   public void testPushGroupDefinitions_defaultSourceFullFullIncremental()
       throws Exception {
-    testPushGroupDefinitions_FullFullIncremental(null);
+    testPushGroupDefinitions_fullFullIncremental(null);
   }
 
   @Test
   public void testPushGroupDefinitions_singleSourceFullFullIncremental()
       throws Exception {
-    testPushGroupDefinitions_FullFullIncremental("groupSource");
+    testPushGroupDefinitions_fullFullIncremental("groupSource");
   }
 
-  private void testPushGroupDefinitions_FullFullIncremental(String source)
+  private void testPushGroupDefinitions_fullFullIncremental(String source)
       throws Exception {
     Map<GroupPrincipal, ? extends Set<Principal>> groups123 = ImmutableMap.of(
         new GroupPrincipal("group1"),
@@ -179,15 +179,15 @@ public class RecordingDocIdPusherTest {
         new GroupPrincipal("group3"),
             ImmutableSet.<Principal>of(new UserPrincipal("user3")));
     Map<GroupPrincipal, ? extends Set<Principal>> groups456 = ImmutableMap.of(
-        new GroupPrincipal("group400"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user400")),
-        new GroupPrincipal("group500"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user500")),
-        new GroupPrincipal("group600"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user600")));
-    Map<GroupPrincipal, ? extends Set<Principal>> groups500 = ImmutableMap.of(
-        new GroupPrincipal("group500"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user5000")));
+        new GroupPrincipal("group4"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user4")),
+        new GroupPrincipal("group5"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user5")),
+        new GroupPrincipal("group6"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user6")));
+    Map<GroupPrincipal, ? extends Set<Principal>> groups5 = ImmutableMap.of(
+        new GroupPrincipal("group5"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user500")));
 
     pusher.pushGroupDefinitions(groups123, EVERYTHING_CASE_SENSITIVE, FULL,
         source, null);
@@ -199,9 +199,9 @@ public class RecordingDocIdPusherTest {
     expected = Maps.newHashMap(groups456);
     assertEquals(expected, pusher.getGroupDefinitions());
 
-    pusher.pushGroupDefinitions(groups500, EVERYTHING_CASE_SENSITIVE,
+    pusher.pushGroupDefinitions(groups5, EVERYTHING_CASE_SENSITIVE,
         INCREMENTAL, source, null);
-    expected.putAll(groups500);
+    expected.putAll(groups5);
     assertEquals(expected, pusher.getGroupDefinitions());
 
     pusher.reset();
@@ -219,12 +219,12 @@ public class RecordingDocIdPusherTest {
         new GroupPrincipal("group3"),
             ImmutableSet.<Principal>of(new UserPrincipal("user3")));
     Map<GroupPrincipal, ? extends Set<Principal>> groups456 = ImmutableMap.of(
-        new GroupPrincipal("group400"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user400")),
-        new GroupPrincipal("group500"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user500")),
-        new GroupPrincipal("group600"),
-            ImmutableSet.<Principal>of(new UserPrincipal("user600")));
+        new GroupPrincipal("group4"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user4")),
+        new GroupPrincipal("group5"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user5")),
+        new GroupPrincipal("group6"),
+            ImmutableSet.<Principal>of(new UserPrincipal("user6")));
 
     pusher.pushGroupDefinitions(groups123, EVERYTHING_CASE_SENSITIVE, FULL,
         "foo", null);
@@ -239,7 +239,7 @@ public class RecordingDocIdPusherTest {
   }
 
   @Test
-  public void testGetGroupDefinitions_OneArgSingleSource() throws Exception {
+  public void testGetGroupDefinitions_oneArgSingleSource() throws Exception {
     Map<GroupPrincipal, ? extends List<Principal>> groups1 = ImmutableMap.of(
         new GroupPrincipal("group1"),
             ImmutableList.<Principal>of(new UserPrincipal("user1")));
@@ -249,7 +249,7 @@ public class RecordingDocIdPusherTest {
   }
 
   @Test
-  public void testGetGroupDefinitions_NoArgMultipleSources() throws Exception {
+  public void testGetGroupDefinitions_noArgMultipleSources() throws Exception {
     Map<GroupPrincipal, ? extends Set<Principal>> groups1 = ImmutableMap.of(
         new GroupPrincipal("group1"),
             ImmutableSet.<Principal>of(new UserPrincipal("user1")));
