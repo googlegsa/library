@@ -35,10 +35,11 @@ public class DocRequest implements Request {
 
   /**
    * Constructs a request with a null access time that supports HTTP
-   * 204 responses. A null access times implies that the document has
+   * 204 responses. A null access time implies that the document has
    * never been crawled.
    *
    * @param docId the requested document ID
+   * @throws NullPointerException if {@code docId} is null
    */
   public DocRequest(DocId docId) {
     this(docId, null);
@@ -49,6 +50,7 @@ public class DocRequest implements Request {
    *
    * @param docId the requested document ID
    * @param lastAccessTime the last time the document was crawled
+   * @throws NullPointerException if {@code docId} is null
    */
   public DocRequest(DocId docId, Date lastAccessTime) {
     this(docId, lastAccessTime, true);
@@ -57,12 +59,17 @@ public class DocRequest implements Request {
   /** Constructs a request.
    *
    * @param docId the requested document ID
-   * @param lastAccessTime the last time the document was crawled
+   * @param lastAccessTime the last time the document was crawled;
+   *     {@code null} implies that the document has never been crawled
    * @param isNoContentSupported {@code true} if an HTTP 204 response
    *     is allowed, and {@code false} otherwise
+   * @throws NullPointerException if {@code docId} is null
    */
   public DocRequest(DocId docId, Date lastAccessTime,
       boolean isNoContentSupported) {
+    if (docId == null) {
+      throw new NullPointerException("DocId is null");
+    }
     this.docId = docId;
     this.lastAccessTime = lastAccessTime;
     this.isNoContentSupported = isNoContentSupported;
