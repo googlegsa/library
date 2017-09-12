@@ -96,11 +96,9 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
     }
     Map<GroupPrincipal, Collection<Principal>> groups =
         groupsBySource.get(sourceName);
-    if (groups == null) {
+    if (groups == null || feedType == FeedType.FULL) {
       groups = new TreeMap<GroupPrincipal, Collection<Principal>>();
       groupsBySource.put(sourceName, groups);
-    } else if (feedType == FeedType.FULL) {
-      groups.clear();
     }
     // Make a defensive copy of each group, which just requires a copy
     // of each group's collection of members. To preserve equality, we
