@@ -28,6 +28,7 @@ import com.google.enterprise.adaptor.Principal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -39,11 +40,15 @@ import java.util.TreeMap;
  * the values it receives. This implementation is not thread-safe.
  */
 public class RecordingDocIdPusher extends AbstractDocIdPusher {
+  // If unspecified, the default group source name is the value of the feed.name
+  // configuration property.
+  private static final String DEFAULT_SOURCE = "${feed.name}";
+
   private List<DocId> ids = new ArrayList<DocId>();
   private List<Record> records = new ArrayList<Record>();
   private Map<DocId, Acl> namedResources = new TreeMap<DocId, Acl>();
-  private Map<GroupPrincipal, Collection<Principal>> groups
-      = new TreeMap<GroupPrincipal, Collection<Principal>>();
+  private Map<String, Map<GroupPrincipal, Collection<Principal>>> groupsBySource
+      = new HashMap<String, Map<GroupPrincipal, Collection<Principal>>>();
 
   /**
    * Records the records and their {@link DocId} values.
@@ -86,6 +91,15 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
       Map<GroupPrincipal, ? extends Collection<Principal>> defs,
       boolean caseSensitive, FeedType feedType, String sourceName,
       ExceptionHandler exceptionHandler) throws InterruptedException {
+    if (sourceName == null) {
+      sourceName = DEFAULT_SOURCE;
+    }
+    Map<GroupPrincipal, Collection<Principal>> groups =
+        groupsBySource.get(sourceName);
+    if (groups == null || feedType == FeedType.FULL) {
+      groups = new TreeMap<GroupPrincipal, Collection<Principal>>();
+      groupsBySource.put(sourceName, groups);
+    }
     // Make a defensive copy of each group, which just requires a copy
     // of each group's collection of members. To preserve equality, we
     // must copy each List to a List, and each Set to a Set. Other JDK
@@ -147,7 +161,39 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
    * @return an unmodifiable map of the recorded group definitions
    */
   public Map<GroupPrincipal, Collection<Principal>> getGroupDefinitions() {
-    return Collections.unmodifiableMap(groups);
+    switch (groupsBySource.size()) {
+      case 0:
+        return Collections.<GroupPrincipal, Collection<Principal>>emptyMap();
+      case 1:
+        return Collections.unmodifiableMap(
+            groupsBySource.values().iterator().next());
+      default:
+        throw new IllegalStateException("More than 1 group source");
+    }
+  }
+
+  /**
+   * Gets an unmodifiable map of the accumulated group definitions
+   * passed to any of the {@code pushGroupDefinitions} methods. In
+   * cases where the same {@link GroupPrincipal} has been passed
+   * multiple times in different calls to {@code pushGroupDefinitions},
+   * the most recently pushed one is included in the returned map.
+   *
+   * @param sourceName the group source for the group definitions
+   * @return an unmodifiable map of the recorded group definitions
+   */
+  public Map<GroupPrincipal, Collection<Principal>> getGroupDefinitions(
+      String sourceName) {
+    if (sourceName == null) {
+      sourceName = DEFAULT_SOURCE;
+    }
+    Map<GroupPrincipal, Collection<Principal>> groups =
+        groupsBySource.get(sourceName);
+    if (groups == null) {
+      return Collections.<GroupPrincipal, Collection<Principal>>emptyMap();
+    } else {
+      return Collections.unmodifiableMap(groups);
+    }
   }
 
   /** Clears all of the recorded data. */
@@ -155,6 +201,6 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
     ids.clear();
     records.clear();
     namedResources.clear();
-    groups.clear();
+    groupsBySource.clear();
   }
 }
