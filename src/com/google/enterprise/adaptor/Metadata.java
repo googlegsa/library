@@ -29,7 +29,8 @@ import java.util.TreeSet;
  * Allows storing multiple metadata values to a single key.
  * <p>
  * Null keys are invalid as arguments.  Null values are
- * invalid as arguments.
+ * invalid as arguments. Duplicate key-value pairs are not stored.
+ * Adding a key-value pair that is already present has no effect.
  * <p>
  * This class is mutable and not thread-safe.
  */
@@ -43,7 +44,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
 
   /**
    * Duplicate. 
-   * @param m all key value pairs that this instance should represent 
+   * @param m all key-value pairs that this instance should represent
    */
   public Metadata(Iterable<Entry<String, String>> m) {
     for (Entry<String, String> e : m) {
@@ -122,7 +123,7 @@ public class Metadata implements Iterable<Entry<String, String>> {
 
   /**
    * Replaces entries inside of this metadata with provided ones. 
-   * @param it all key value pairs that this instance should represent 
+   * @param it all key-value pairs that this instance should represent
    */
   public void set(Iterable<Entry<String, String>> it) {
     mappings.clear();

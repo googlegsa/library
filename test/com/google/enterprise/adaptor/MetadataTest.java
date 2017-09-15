@@ -344,6 +344,9 @@ public class MetadataTest {
     m2.add("foo", "bar");
     assertEquals(m1, m2);
 
+    m1.add("foo", "bar");
+    assertEquals(m1, m2);
+
     m1.set("foo", "high");
     m2.set("foo", "low");
     assertFalse(m1.equals(m2));
@@ -371,6 +374,9 @@ public class MetadataTest {
 
     m1.add("foo", "bar");
     m2.add("foo", "bar");
+    assertEquals(m1.hashCode(), m2.hashCode());
+
+    m1.add("foo", "bar");
     assertEquals(m1.hashCode(), m2.hashCode());
 
     m1.set("foo", "high");
