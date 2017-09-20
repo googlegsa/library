@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
