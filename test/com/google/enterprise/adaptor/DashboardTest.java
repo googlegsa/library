@@ -95,51 +95,59 @@ public class DashboardTest {
     Dashboard.JavaVersionStatusSource source =
         new Dashboard.JavaVersionStatusSource();
 
-    // Unix JVM (version) tests: minimum version that passes: 1.6.0_27
+    // Unix JVM (version) tests: minimum version that passes: 1.7.0_9
     Status status = source.retrieveStatus("1.6.0-google", /*isWindows=*/ false);
 
     assertNotNull(source.getName(locale));
-    assertEquals(Status.Code.WARNING, status.getCode());
+    assertEquals(Status.Code.ERROR, status.getCode());
 
     status = source.retrieveStatus("1.5.0-google", /*isWindows=*/ false);
     assertEquals(Status.Code.ERROR, status.getCode());
 
     status = source.retrieveStatus("1.7.0-google", /*isWindows=*/ false);
-    assertEquals(Status.Code.NORMAL, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
 
-    status = source.retrieveStatus("1.6.0.1", /*isWindows=*/ false);
+    status = source.retrieveStatus("1.7.0.1", /*isWindows=*/ false);
     assertEquals(Status.Code.ERROR, status.getCode());
 
-    // test lexically-greater but numerically-less component
-    status = source.retrieveStatus("1.6.0.3", /*isWindows=*/ false);
+    status = source.retrieveStatus("1.7.0.6", /*isWindows=*/ false);
     assertEquals(Status.Code.ERROR, status.getCode());
 
-    status = source.retrieveStatus("1.6.0.26", /*isWindows=*/ false);
-    assertEquals(Status.Code.ERROR, status.getCode());
-
-    status = source.retrieveStatus("1.6.0.27", /*isWindows=*/ false);
+    status = source.retrieveStatus("1.7.0.9", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
-    status = source.retrieveStatus("1.6.0.27_beta2", /*isWindows=*/ false);
+    status = source.retrieveStatus("1.7.0.9_beta2", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
-    status = source.retrieveStatus("1.6.1-google", /*isWindows=*/ false);
+    // test lexically-less but numerically-greater component
+    status = source.retrieveStatus("1.7.0.10", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
-    // Windows JVM (version) tests: minimum version that passes: 1.7.0_6
+    status = source.retrieveStatus("1.7.1-google", /*isWindows=*/ false);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    // test current dev version
+    status = source.retrieveStatus("1.8.0_112-google", /*isWindows=*/ false);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    // Windows JVM (version) tests: minimum version that passes: 1.7.0_9
     status = source.retrieveStatus("1.6.0-google", /*isWindows=*/ true);
     assertEquals(Status.Code.ERROR, status.getCode());
 
     status = source.retrieveStatus("1.7.0-google", /*isWindows=*/ true);
     assertEquals(Status.Code.WARNING, status.getCode());
 
-    status = source.retrieveStatus("1.7.0.5", /*isWindows=*/ true);
+    status = source.retrieveStatus("1.7.0.6", /*isWindows=*/ true);
     assertEquals(Status.Code.ERROR, status.getCode());
 
-    status = source.retrieveStatus("1.7.0.6", /*isWindows=*/ true);
+    status = source.retrieveStatus("1.7.0.9", /*isWindows=*/ true);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
-    status = source.retrieveStatus("1.7.0.6_1", /*isWindows=*/ true);
+    status = source.retrieveStatus("1.7.0.9_1", /*isWindows=*/ true);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    // test current dev version
+    status = source.retrieveStatus("1.8.0_144", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
     // test lexically-less but numerically-greater component
