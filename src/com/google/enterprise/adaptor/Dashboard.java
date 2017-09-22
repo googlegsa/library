@@ -260,10 +260,10 @@ class Dashboard {
     }
 
     Status retrieveStatus(String version, boolean isWindows) {
+      // TODO(jlacey): Require 1.8.0_20 if running Java 8, and warn about
+      // versions below 1.7.0_80, due to DH and 2048-bit encryption.
       final String allowedDelimiters = "[\\._\\-]"; // dot, _, or hyphen OK
-      final String unixMinimumJVM = "1.6.0_27";
-      final String windowsMinimumJVM = "1.7.0_6";
-      final String minVersion = isWindows ? windowsMinimumJVM : unixMinimumJVM;
+      final String minVersion = "1.7.0_9";
 
       Scanner versionScanner = new Scanner(version);
       Scanner minScanner = new Scanner(minVersion);
