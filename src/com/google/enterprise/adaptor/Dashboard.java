@@ -21,6 +21,7 @@ import com.sun.net.httpserver.HttpHandler;
 import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -252,6 +253,19 @@ class Dashboard {
   }
 
   static class JavaVersionStatusSource implements StatusSource {
+    /** Support levels for different Java versions. */
+    private enum Supported { NO, UNKNOWN, PARTIAL, YES };
+
+    /** An ordered map of Java versions to support levels. */
+    private static final Map<String, Supported> versions
+        = new LinkedHashMap<String, Supported>();
+
+    static {
+      versions.put("1.7.0_9", Supported.PARTIAL);
+      versions.put("1.7.0_80", Supported.YES);
+      versions.put("1.8.0_0", Supported.NO);
+      versions.put("1.8.0_20", Supported.YES);
+    }
 
     @Override
     public Status retrieveStatus() {
@@ -260,41 +274,88 @@ class Dashboard {
     }
 
     Status retrieveStatus(String version, boolean isWindows) {
-      // TODO(jlacey): Require 1.8.0_20 if running Java 8, and warn about
-      // versions below 1.7.0_80, due to DH and 2048-bit encryption.
       final String allowedDelimiters = "[\\._\\-]"; // dot, _, or hyphen OK
-      final String minVersion = "1.7.0_9";
 
-      Scanner versionScanner = new Scanner(version);
-      Scanner minScanner = new Scanner(minVersion);
-      versionScanner.useDelimiter(allowedDelimiters);
-      minScanner.useDelimiter(allowedDelimiters);
+      Supported answer = Supported.NO;
+      String minVersion = null; // Null is never seen (versions is not empty).
+   VERSIONS:
+      for (Map.Entry<String, Supported> entry : versions.entrySet()) {
+        minVersion = entry.getKey();
 
-      while (versionScanner.hasNextInt() && minScanner.hasNextInt()) {
-        int mine = versionScanner.nextInt();
-        int needed = minScanner.nextInt();
-        if (mine < needed) {
+        Scanner versionScanner = new Scanner(version);
+        Scanner minScanner = new Scanner(minVersion);
+        versionScanner.useDelimiter(allowedDelimiters);
+        minScanner.useDelimiter(allowedDelimiters);
+
+        while (versionScanner.hasNextInt() && minScanner.hasNextInt()) {
+          int mine = versionScanner.nextInt();
+          int needed = minScanner.nextInt();
+          if (mine < needed) {
+            return newStatus(answer, version, minVersion);
+          }
+          if (mine > needed) {
+            answer = entry.getValue();
+            continue VERSIONS;
+          }
+        }
+
+        // TODO(jlacey): These next 2 comments don't match the code. For
+        // example, "1.7.0_9-beta2" matches "1.7.0_9" despite non-digit end.
+        /** does supplied version have non-digit component (and thus
+            {@code hasNextInt()} returns {@code false})? */
+        if (minScanner.hasNextInt()) {
+          return newStatus(Supported.UNKNOWN, version, minVersion);
+        }
+
+        // if we made it here, either the supplied version matched the minimum
+        // allowed (exactly), or contains additional digit parts; either is OK.
+        return newStatus(entry.getValue(), version, minVersion);
+      }
+
+      // The supplied version is larger than any known version.
+      return newStatus(answer, version, minVersion);
+    }
+
+    /** Creates a full {@code Status} response for the support level. */
+    private Status newStatus(Supported answer, String actualVersion,
+        String minVersion) {
+      switch (answer) {
+        case NO:
           return new TranslationStatus(Status.Code.ERROR,
-              Translation.STATUS_JAVA_VERSION_UNSUPPORTED, version,
-              minVersion);
-        }
-        if (mine > needed) {
+              Translation.STATUS_JAVA_VERSION_UNSUPPORTED, actualVersion,
+              findVersion(minVersion, Supported.YES));
+        case UNKNOWN:
+          return new TranslationStatus(Status.Code.WARNING,
+              Translation.STATUS_JAVA_VERSION_UNKNOWN, actualVersion,
+              findVersion(minVersion, Supported.PARTIAL));
+        case PARTIAL:
+          return new TranslationStatus(Status.Code.WARNING,
+              Translation.STATUS_JAVA_VERSION_PARTIAL, actualVersion,
+              findVersion(minVersion, Supported.YES));
+        case YES:
           return new TranslationStatus(Status.Code.NORMAL,
-              Translation.STATUS_JAVA_VERSION_SUPPORTED, version);
-        }
+              Translation.STATUS_JAVA_VERSION_SUPPORTED, actualVersion);
+        default:
+          throw new AssertionError(answer.toString());
       }
+    }
 
-      /** does supplied version have non-digit component (and thus
-         {@code hasNextInt()} returns {@code false})? */
-      if (minScanner.hasNextInt()) {
-        return new TranslationStatus(Status.Code.WARNING,
-            Translation.STATUS_JAVA_VERSION_UNKNOWN, version, minVersion);
+    /**
+     * Finds the version after {@code minVersion} with a support level
+     * of {@code least} or higher.
+     */
+    private static String findVersion(String minVersion, Supported least) {
+      Iterator<Map.Entry<String, Supported>> it
+          = versions.entrySet().iterator();
+      // The versions map is not empty and minVersion must appear in it.
+      Map.Entry<String, Supported> entry = it.next();
+      while (!entry.getKey().equals(minVersion)) {
+        entry = it.next();
       }
-
-      // if we made it here, either the supplied version matched the minimum
-      // allowed (exactly), or contains additional digit parts -- either is OK.
-      return new TranslationStatus(Status.Code.NORMAL,
-          Translation.STATUS_JAVA_VERSION_SUPPORTED, version);
+      while (entry.getValue().compareTo(least) < 0 && it.hasNext()) {
+        entry = it.next();
+      }
+      return entry.getKey();
     }
 
     @Override

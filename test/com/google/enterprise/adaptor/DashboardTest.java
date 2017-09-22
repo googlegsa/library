@@ -14,8 +14,10 @@
 
 package com.google.enterprise.adaptor;
 
+import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
@@ -100,59 +102,109 @@ public class DashboardTest {
 
     assertNotNull(source.getName(locale));
     assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.5.0-google", /*isWindows=*/ false);
     assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0-google", /*isWindows=*/ false);
     assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_9"));
 
     status = source.retrieveStatus("1.7.0.1", /*isWindows=*/ false);
     assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0.6", /*isWindows=*/ false);
     assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0.9", /*isWindows=*/ false);
-    assertEquals(Status.Code.NORMAL, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0.9_beta2", /*isWindows=*/ false);
-    assertEquals(Status.Code.NORMAL, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     // test lexically-less but numerically-greater component
     status = source.retrieveStatus("1.7.0.10", /*isWindows=*/ false);
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
+
+    status = source.retrieveStatus("1.7.0.81", /*isWindows=*/ false);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    status = source.retrieveStatus("1.7.0.81_beta2", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
     status = source.retrieveStatus("1.7.1-google", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
+    status = source.retrieveStatus("1.8.0", /*isWindows=*/ false);
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.8.0_20"));
+
+    status = source.retrieveStatus("1.8.0_10", /*isWindows=*/ false);
+    assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.8.0_20"));
+
     // test current dev version
     status = source.retrieveStatus("1.8.0_112-google", /*isWindows=*/ false);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    status = source.retrieveStatus("9", /*isWindows=*/ false);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    status = source.retrieveStatus("9.0.1", /*isWindows=*/ false);
     assertEquals(Status.Code.NORMAL, status.getCode());
 
     // Windows JVM (version) tests: minimum version that passes: 1.7.0_9
     status = source.retrieveStatus("1.6.0-google", /*isWindows=*/ true);
     assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0-google", /*isWindows=*/ true);
     assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_9"));
 
     status = source.retrieveStatus("1.7.0.6", /*isWindows=*/ true);
     assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0.9", /*isWindows=*/ true);
-    assertEquals(Status.Code.NORMAL, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     status = source.retrieveStatus("1.7.0.9_1", /*isWindows=*/ true);
-    assertEquals(Status.Code.NORMAL, status.getCode());
-
-    // test current dev version
-    status = source.retrieveStatus("1.8.0_144", /*isWindows=*/ false);
-    assertEquals(Status.Code.NORMAL, status.getCode());
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
 
     // test lexically-less but numerically-greater component
     status = source.retrieveStatus("1.7.0.10", /*isWindows=*/ true);
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.7.0_80"));
+
+    status = source.retrieveStatus("1.7.0.80", /*isWindows=*/ true);
     assertEquals(Status.Code.NORMAL, status.getCode());
+
+    status = source.retrieveStatus("1.8.0", /*isWindows=*/ true);
+    assertEquals(Status.Code.WARNING, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.8.0_20"));
+
+    status = source.retrieveStatus("1.8.0_10", /*isWindows=*/ true);
+    assertEquals(Status.Code.ERROR, status.getCode());
+    assertThat(status.getMessage(locale), containsString("version 1.8.0_20"));
+
+    // test current dev version
+    status = source.retrieveStatus("1.8.0_144", /*isWindows=*/ true);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
+    // test an unexpected variation on a Java 9 version
+    status = source.retrieveStatus("1.9.0_1", /*isWindows=*/ true);
+    assertEquals(Status.Code.NORMAL, status.getCode());
+
   }
 
   @Test
