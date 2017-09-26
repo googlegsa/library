@@ -330,7 +330,7 @@ class DocIdSender extends AbstractDocIdPusher
       log.log(Level.WARNING,
           "GSA ver {0} does not accept group definitions", gsaVerString);
       journal.recordGroupPushFailed();
-      return defs.entrySet().iterator().next().getKey();
+      return defs.isEmpty() ? null : defs.entrySet().iterator().next().getKey();
     }
     if (feedType == FULL && !gsaVersion.isAtLeast("7.4.0-0")) {
       log.log(Level.WARNING,
@@ -461,7 +461,7 @@ class DocIdSender extends AbstractDocIdPusher
       fileArchiver.saveFeed(feedSourceName, groupsDefXml);
       journal.recordGroupPush(defs);
     } else {
-      last = defs.get(0).getKey();  // checked in pushGroupDefinitionsInternal()
+      last = defs.isEmpty() ? null : defs.get(0).getKey();
       log.log(Level.WARNING, "gave up pushing groups. First item: {0}", last);
       fileArchiver.saveFailedFeed(feedSourceName, groupsDefXml);
     }
