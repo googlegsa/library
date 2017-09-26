@@ -6,6 +6,7 @@
   <property file="build.properties"/>
   <property name="compile.java.version" value="1.6"/>
   <property name="compile.java.bootclasspath" value="${build.bootclasspath}"/>
+  <!-- A class name from the release after the desired version given above. -->
   <property name="compile.java.newerClassname" value="java.lang.AutoCloseable"/>
 
   <property name="src.dir" location="src"/>
@@ -125,8 +126,9 @@
     <available property="compile.java.isNewer"
       classname="${compile.java.newerClassname}"
       classpath="${compile.java.bootclasspath}" ignoresystemclasses="true"/>
-    <fail if="compile.java.isNewer"
-      message="build.bootclasspath is newer than JDK ${compile.java.version}."/>
+    <fail if="compile.java.isNewer">
+      Error: build.bootclasspath is newer than JDK ${compile.java.version}.
+    </fail>
 
     <!-- Compile adaptorlib. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
