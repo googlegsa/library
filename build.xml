@@ -6,6 +6,7 @@
   <property file="build.properties"/>
   <property name="compile.java.version" value="1.6"/>
   <property name="compile.java.bootclasspath" value="${build.bootclasspath}"/>
+  <property name="compile.java.newerClassname" value="java.lang.AutoCloseable"/>
 
   <property name="src.dir" location="src"/>
   <property name="prebuilt.dir" location="prebuilt"/>
@@ -120,6 +121,12 @@
 
   <target name="-real-build">
     <mkdir dir="${build-src.dir}"/>
+
+    <available property="compile.java.isNewer"
+      classname="${compile.java.newerClassname}"
+      classpath="${compile.java.bootclasspath}" ignoresystemclasses="true"/>
+    <fail if="compile.java.isNewer"
+      message="build.bootclasspath is newer than JDK ${compile.java.version}."/>
 
     <!-- Compile adaptorlib. -->
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
