@@ -123,6 +123,7 @@
   <target name="-real-build">
     <mkdir dir="${build-src.dir}"/>
 
+    <!-- Make sure that the bootclasspath isn't newer than expected. -->
     <available property="compile.java.isNewer"
       classname="${compile.java.newerClassname}"
       classpath="${compile.java.bootclasspath}" ignoresystemclasses="true"/>
