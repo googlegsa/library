@@ -323,11 +323,6 @@ class DocIdSender extends AbstractDocIdPusher
       ExceptionHandler handler) throws InterruptedException {
     int numGroups = 0;
     int numMembers = 0;
-    if (defs.isEmpty()) {
-      log.log(Level.FINE,
-          "called pushGroupDefinitions() with no groups to push");
-      return null;
-    }
     journal.recordGroupPushStarted();
     String gsaVerString = config.getGsaVersion();
     GsaVersion gsaVersion = new GsaVersion(gsaVerString);

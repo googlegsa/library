@@ -482,6 +482,63 @@ public class DocIdSenderTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testPushGroupsReplaceAllGroupsEmptyFullFeed() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(3, fileMaker.i);
+    assertEquals(expectedResult(Integer.MAX_VALUE,
+        sampleGroups(), emptyGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full", "full"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo", "foo-FULL1"),
+        fileSender.groupsources);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPushGroupsReplaceAllGroupsEmptyIncrementalFeed()
+      throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsIncrementalThenFullThenFull() throws Exception {
     config.setValue("gsa.version", "7.4.0-1");
     assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
