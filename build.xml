@@ -4,9 +4,14 @@
   
   <!-- Load build environment specific properties. -->
   <property file="build.properties"/>
+
   <property name="compile.java.version" value="1.6"/>
   <property name="compile.java.bootclasspath" value="${build.bootclasspath}"/>
-  <!-- A class name from the release after the desired version given above. -->
+  <!-- The build.bootclasspath property, if set, must match the Java version
+       set in compile.java.version. To detect errors in build.bootclasspath,
+       set compile.java.newerClassname to a class that was added in
+       the immediately following release of Java. For example, for
+       "1.6", pick a class added in Java 7. -->
   <property name="compile.java.newerClassname" value="java.lang.AutoCloseable"/>
 
   <property name="src.dir" location="src"/>
@@ -123,7 +128,7 @@
   <target name="-real-build">
     <mkdir dir="${build-src.dir}"/>
 
-    <!-- Make sure that the bootclasspath isn't newer than expected. -->
+    <!-- Make sure that the build.bootclasspath isn't newer than expected. -->
     <available property="compile.java.isNewer"
       classname="${compile.java.newerClassname}"
       classpath="${compile.java.bootclasspath}" ignoresystemclasses="true"/>
