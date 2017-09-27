@@ -127,6 +127,11 @@ public class Acl {
     public boolean equals(Object o) {
       return o instanceof CaseInsensitiveCmp;
     }
+
+    @Override
+    public int hashCode() {
+      return CaseInsensitiveCmp.class.hashCode();
+    }
   }
 
   /**

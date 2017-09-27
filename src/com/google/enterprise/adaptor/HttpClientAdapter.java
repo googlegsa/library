@@ -86,7 +86,7 @@ class HttpClientAdapter implements HttpClientInterface {
 
     @Override
     public void setFollowRedirects(boolean followRedirects) {
-      conn.setFollowRedirects(followRedirects);
+      HttpURLConnection.setFollowRedirects(followRedirects);
     }
 
     @Override

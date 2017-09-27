@@ -56,7 +56,7 @@ public class RpcHandlerTest {
     MockHttpExchange ex = makeExchange("POST", "/r", "/r");
     handler.handle(ex);
     assertEquals(409, ex.getResponseCode());
-    xsrfToken = (String) ex.getResponseHeaders().getFirst(
+    xsrfToken = ex.getResponseHeaders().getFirst(
         RpcHandler.XSRF_TOKEN_HEADER_NAME);
     assertNotNull(xsrfToken);
     sessionId = clientStore.retrieve(ex);

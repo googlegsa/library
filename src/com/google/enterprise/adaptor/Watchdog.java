@@ -97,7 +97,7 @@ class Watchdog {
         // Interrupter has interrupted this thread.
         // Clear the interrupt, if not already cleared, since we don't want to
         // interrupt this thread any further.
-        thread.interrupted();
+        Thread.interrupted();
       }
     }
   }
