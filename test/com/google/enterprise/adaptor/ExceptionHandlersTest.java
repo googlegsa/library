@@ -38,6 +38,6 @@ public class ExceptionHandlersTest {
     Thread.currentThread().interrupt();
     assertFalse(handler.handleException(new RuntimeException(), 1));
     // Clear flag
-    Thread.currentThread().interrupted();
+    Thread.interrupted();
   }
 }

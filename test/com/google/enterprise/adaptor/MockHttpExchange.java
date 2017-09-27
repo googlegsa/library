@@ -218,7 +218,7 @@ public class MockHttpExchange extends HttpExchange {
   }
 
   public byte[] getResponseBytes() {
-    return ((ByteArrayOutputStream) responseBodyOrig).toByteArray();
+    return responseBodyOrig.toByteArray();
   }
 
   private static class ClosingFilterOutputStream

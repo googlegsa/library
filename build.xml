@@ -125,8 +125,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8"
       target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
-      <compilerarg value="-Xlint:deprecation"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-rawtypes"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
@@ -138,7 +137,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
            includeantruntime="false" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="examples.build.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
@@ -149,7 +148,7 @@
     <javac srcdir="${lib.dir}" destdir="${build-test.dir}" debug="true"
            includeantruntime="true" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="junit.classpath"/>
       <include name="JUnitLogFixFormatter.java"/>
@@ -159,7 +158,7 @@
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
            includeantruntime="false" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-rawtypes"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
@@ -172,7 +171,7 @@
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
            includeantruntime="false" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="examples.build.classpath"/>
       <classpath location="${build-src.dir}"/>
@@ -184,8 +183,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
            includeantruntime="false" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
-      <compilerarg value="-Xlint:deprecation"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
@@ -196,7 +194,7 @@
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
            includeantruntime="false" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint:unchecked"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
