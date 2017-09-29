@@ -741,6 +741,10 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
+    // The emptyGroups will not trigger the failure condition in
+    // pushSizedBatchOfGroups() that I'm testing, but the empty full feed
+    // intended to remove previous group definitions will. The return
+    // from pushSizedBatchOfGroups() will be null, simulating SUCCESS.
     try {
       docIdSender.pushGroupDefinitions(emptyGroups(), EVERYTHING_CASE_SENSITIVE,
           FULL, null, new NeverRetryExceptionHandler());
