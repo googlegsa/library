@@ -18,6 +18,7 @@ import static com.google.enterprise.adaptor.DocIdPusher.EVERYTHING_CASE_SENSITIV
 import static com.google.enterprise.adaptor.DocIdPusher.FeedType.FULL;
 import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -723,6 +724,66 @@ public class DocIdSenderTest {
     }
 
     assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsFailureEmptyGroupDefs() throws Exception {
+    fileSender = new MockGsaFeedFileSender() {
+      @Override
+      public void sendGroups(String feedSource, String feedType,
+          String xmlString, boolean useCompression) throws IOException {
+        throw new IOException();
+      }
+    };
+
+    config.setValue("gsa.version", "7.4.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    try {
+      docIdSender.pushGroupDefinitions(emptyGroups(), EVERYTHING_CASE_SENSITIVE,
+          FULL, null, new NeverRetryExceptionHandler());
+    } finally {
+      assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
+    }
+
+    assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsUnsupportedGsaVersion() throws Exception {
+    config.setValue("gsa.version", "7.1.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    try {
+      assertNotNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+          EVERYTHING_CASE_SENSITIVE));
+    } finally {
+      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
+    }
+
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsUnsupportedGsaVersionEmptyGroupDefs()
+      throws Exception {
+    config.setValue("gsa.version", "7.1.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    try {
+      assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+          EVERYTHING_CASE_SENSITIVE));
+    } finally {
+      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
+    }
+
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
     assertTrue(fileArchiver.feeds.isEmpty());
   }
 
