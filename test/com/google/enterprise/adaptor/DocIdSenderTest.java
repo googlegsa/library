@@ -716,13 +716,10 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    try {
-      docIdSender.pushGroupDefinitions(sampleGroups(),
-          EVERYTHING_CASE_SENSITIVE, new NeverRetryExceptionHandler());
-    } finally {
-      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
-    }
+    assertNotNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, new NeverRetryExceptionHandler()));
 
+    assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
     assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
     assertTrue(fileArchiver.feeds.isEmpty());
   }
@@ -745,13 +742,11 @@ public class DocIdSenderTest {
     // pushSizedBatchOfGroups() that I'm testing, but the empty full feed
     // intended to remove previous group definitions will. The return
     // from pushSizedBatchOfGroups() will be null, simulating SUCCESS.
-    try {
-      docIdSender.pushGroupDefinitions(emptyGroups(), EVERYTHING_CASE_SENSITIVE,
-          FULL, null, new NeverRetryExceptionHandler());
-    } finally {
-      assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
-    }
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, null,
+        new NeverRetryExceptionHandler()));
 
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
     assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
     assertTrue(fileArchiver.feeds.isEmpty());
   }
@@ -762,13 +757,10 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    try {
-      assertNotNull(docIdSender.pushGroupDefinitions(sampleGroups(),
-          EVERYTHING_CASE_SENSITIVE));
-    } finally {
-      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
-    }
+    assertNotNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE));
 
+    assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
     assertTrue(fileArchiver.failedFeeds.isEmpty());
     assertTrue(fileArchiver.feeds.isEmpty());
   }
@@ -780,13 +772,10 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    try {
-      assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
-          EVERYTHING_CASE_SENSITIVE));
-    } finally {
-      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
-    }
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE));
 
+    assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
     assertTrue(fileArchiver.failedFeeds.isEmpty());
     assertTrue(fileArchiver.feeds.isEmpty());
   }
