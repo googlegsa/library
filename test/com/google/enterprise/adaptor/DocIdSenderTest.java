@@ -18,6 +18,7 @@ import static com.google.enterprise.adaptor.DocIdPusher.EVERYTHING_CASE_SENSITIV
 import static com.google.enterprise.adaptor.DocIdPusher.FeedType.FULL;
 import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
@@ -482,6 +483,63 @@ public class DocIdSenderTest {
 
   @Test
   @SuppressWarnings("unchecked")
+  public void testPushGroupsReplaceAllGroupsEmptyFullFeed() throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(3, fileMaker.i);
+    assertEquals(expectedResult(Integer.MAX_VALUE,
+        sampleGroups(), emptyGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full", "full"),
+        fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo", "foo-FULL1"),
+        fileSender.groupsources);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testPushGroupsReplaceAllGroupsEmptyIncrementalFeed()
+      throws Exception {
+    config.setValue("gsa.version", "7.4.0-1");
+    assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, "foo", null));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE, INCREMENTAL, "foo", null));
+
+    assertEquals(2, fileMaker.i);
+    assertEquals(
+        expectedResult(Integer.MAX_VALUE, sampleGroups(), emptyGroups()),
+        fileMaker.groupses);
+    assertEquals(ImmutableList.of("incremental", "full"), fileSender.feedtypes);
+    assertEquals(ImmutableList.of("foo-FULL1", "foo"), fileSender.groupsources);
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
   public void testPushGroupsIncrementalThenFullThenFull() throws Exception {
     config.setValue("gsa.version", "7.4.0-1");
     assertNull(docIdSender.pushGroupDefinitions(sampleGroups(),
@@ -658,14 +716,67 @@ public class DocIdSenderTest {
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
         config, adaptor);
 
-    try {
-      docIdSender.pushGroupDefinitions(sampleGroups(),
-          EVERYTHING_CASE_SENSITIVE, new NeverRetryExceptionHandler());
-    } finally {
-      assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
-    }
+    assertNotNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE, new NeverRetryExceptionHandler()));
 
+    assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
     assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsFailureEmptyGroupDefs() throws Exception {
+    fileSender = new MockGsaFeedFileSender() {
+      @Override
+      public void sendGroups(String feedSource, String feedType,
+          String xmlString, boolean useCompression) throws IOException {
+        throw new IOException();
+      }
+    };
+
+    config.setValue("gsa.version", "7.4.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    // The emptyGroups will not trigger the failure condition in
+    // pushSizedBatchOfGroups() that I'm testing, but the empty full feed
+    // intended to remove previous group definitions will. The return
+    // from pushSizedBatchOfGroups() will be null, simulating SUCCESS.
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE, FULL, null,
+        new NeverRetryExceptionHandler()));
+
+    assertEquals(CompletionStatus.SUCCESS, journal.getLastGroupPushStatus());
+    assertEquals(ImmutableList.of("0"), fileArchiver.failedFeeds);
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsUnsupportedGsaVersion() throws Exception {
+    config.setValue("gsa.version", "7.1.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    assertNotNull(docIdSender.pushGroupDefinitions(sampleGroups(),
+        EVERYTHING_CASE_SENSITIVE));
+
+    assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
+    assertTrue(fileArchiver.feeds.isEmpty());
+  }
+
+  @Test
+  public void testPushGroupsUnsupportedGsaVersionEmptyGroupDefs()
+      throws Exception {
+    config.setValue("gsa.version", "7.1.0-1");
+    docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
+        config, adaptor);
+
+    assertNull(docIdSender.pushGroupDefinitions(emptyGroups(),
+        EVERYTHING_CASE_SENSITIVE));
+
+    assertEquals(CompletionStatus.FAILURE, journal.getLastGroupPushStatus());
+    assertTrue(fileArchiver.failedFeeds.isEmpty());
     assertTrue(fileArchiver.feeds.isEmpty());
   }
 

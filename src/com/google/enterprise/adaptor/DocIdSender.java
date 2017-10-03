@@ -323,11 +323,6 @@ class DocIdSender extends AbstractDocIdPusher
       ExceptionHandler handler) throws InterruptedException {
     int numGroups = 0;
     int numMembers = 0;
-    if (defs.isEmpty()) {
-      log.log(Level.FINE,
-          "called pushGroupDefinitions() with no groups to push");
-      return null;
-    }
     journal.recordGroupPushStarted();
     String gsaVerString = config.getGsaVersion();
     GsaVersion gsaVersion = new GsaVersion(gsaVerString);
@@ -335,7 +330,7 @@ class DocIdSender extends AbstractDocIdPusher
       log.log(Level.WARNING,
           "GSA ver {0} does not accept group definitions", gsaVerString);
       journal.recordGroupPushFailed();
-      return defs.entrySet().iterator().next().getKey();
+      return defs.isEmpty() ? null : defs.keySet().iterator().next();
     }
     if (feedType == FULL && !gsaVersion.isAtLeast("7.4.0-0")) {
       log.log(Level.WARNING,
@@ -466,7 +461,9 @@ class DocIdSender extends AbstractDocIdPusher
       fileArchiver.saveFeed(feedSourceName, groupsDefXml);
       journal.recordGroupPush(defs);
     } else {
-      last = defs.get(0).getKey();  // checked in pushGroupDefinitionsInternal()
+      // Returning null mimics success, but works for
+      // pushGroupDefinitionsInternal() because defs is empty.
+      last = defs.isEmpty() ? null : defs.get(0).getKey();
       log.log(Level.WARNING, "gave up pushing groups. First item: {0}", last);
       fileArchiver.saveFailedFeed(feedSourceName, groupsDefXml);
     }
