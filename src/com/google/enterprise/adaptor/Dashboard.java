@@ -260,8 +260,6 @@ class Dashboard {
     }
 
     Status retrieveStatus(String version, boolean isWindows) {
-      // TODO(jlacey): Require 1.8.0_20 if running Java 8, and warn about
-      // versions below 1.7.0_80, due to DH and 2048-bit encryption.
       final String allowedDelimiters = "[\\._\\-]"; // dot, _, or hyphen OK
       final String minVersion = "1.7.0_9";
 
@@ -284,6 +282,8 @@ class Dashboard {
         }
       }
 
+      // TODO(jlacey): These next 2 comments don't match the code. For
+      // example, "1.7.0_9-beta2" matches "1.7.0_9" despite non-digit end.
       /** does supplied version have non-digit component (and thus
          {@code hasNextInt()} returns {@code false})? */
       if (minScanner.hasNextInt()) {
