@@ -92,8 +92,8 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
     } finally {
       tryClosingStatementAndResult(statementAndResult);
       tryClosingConnection(conn);
+      outstream.flush();
     }
-    outstream.forcePush();
   }
 
   /** Gives the bytes of a document referenced with id. */
@@ -263,7 +263,7 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
   }
 
   /**
-   * Mechanism that accepts stream of DocId instances, bufferes them,
+   * Mechanism that accepts stream of DocId instances, buffers them,
    * and sends them when it has accumulated maximum allowed amount per
    * feed file.
    */
@@ -280,14 +280,17 @@ public class DbAdaptorTemplate extends AbstractAdaptor {
         forcePush();
       }
     }
-    void forcePush() throws InterruptedException {
-      wrapped.pushDocIds(saved);
-      log.fine("sent " + saved.size() + " doc ids to pusher");
-      saved.clear();
+    private void forcePush() throws InterruptedException {
+      try {
+        wrapped.pushDocIds(saved);
+        log.fine("sent " + saved.size() + " doc ids to pusher");
+      } finally {
+        saved.clear();
+      }
     }
-    protected void finalize() throws Throwable {
+    void flush() throws InterruptedException {
       if (0 != saved.size()) {
-        log.severe("still have saved ids that weren't sent");
+        forcePush();
       }
     }
   }

@@ -20,7 +20,6 @@ import java.security.cert.Certificate;
 import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSessionContext;
-import javax.security.cert.X509Certificate;
 
 /**
  * Mock {@link SSLSession} for testing.
@@ -72,8 +71,9 @@ public class MockSslSession implements SSLSession {
     throw new UnsupportedOperationException();
   }
 
+  @Deprecated
   @Override
-  public X509Certificate[] getPeerCertificateChain() {
+  public javax.security.cert.X509Certificate[] getPeerCertificateChain() {
     throw new UnsupportedOperationException();
   }
 
