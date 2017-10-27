@@ -35,7 +35,6 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -90,28 +89,23 @@ public class DocIdSenderTest {
 
     docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
     assertEquals(4, fileMaker.i);
-    assertEquals(Arrays.asList(new String[] {
-      "testing", "testing", "testing", "testing",
-    }), fileMaker.names);
-    assertEquals(Arrays.asList(new List[] {
-      Arrays.asList(new DocIdPusher.Record[] {records[0], records[1]}),
-      Arrays.asList(new DocIdPusher.Record[] {records[2], records[3]}),
-      Arrays.asList(new DocIdPusher.Record[] {records[4]}),
-      Arrays.asList(new DocIdPusher.Record[] {records[5]}),
-    }), fileMaker.recordses);
-    assertEquals(Arrays.asList(new String[] {
-      "null", "null", "null", "null", "null", "null",
-    }), fileMaker.metadatases);
+    assertEquals(ImmutableList.of("testing", "testing", "testing", "testing"),
+        fileMaker.names);
+    assertEquals(
+        ImmutableList.of(
+            ImmutableList.of(records[0], records[1]),
+            ImmutableList.of(records[2], records[3]),
+            ImmutableList.of(records[4]),
+            ImmutableList.of(records[5])),
+        fileMaker.recordses);
+    assertEquals(
+        ImmutableList.of("null", "null", "null", "null", "null", "null"),
+        fileMaker.metadatases);
 
-    assertEquals(Arrays.asList(new String[] {
-      "testing", "testing", "testing", "testing",
-    }), fileSender.datasources);
-    assertEquals(Arrays.asList(new String[] {
-      "0", "1", "2", "3",
-    }), fileSender.xmlStrings);
-    assertEquals(Arrays.asList(new String[] {
-      "0", "1", "2", "3",
-    }), fileArchiver.feeds);
+    assertEquals(ImmutableList.of("testing", "testing", "testing", "testing"),
+        fileSender.datasources);
+    assertEquals(ImmutableList.of("0", "1", "2", "3"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0", "1", "2", "3"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
@@ -144,29 +138,26 @@ public class DocIdSenderTest {
 
     docIdSender.pushFullDocIdsFromAdaptor(runtimeExceptionHandler);
     assertEquals(4, fileMaker.i);
-    assertEquals(Arrays.asList(new String[] {
-      "testing", "testing", "testing", "testing",
-    }), fileMaker.names);
-    assertEquals(Arrays.asList(new List[] {
-      Arrays.asList(new DocIdPusher.Record[] {records[0], records[1]}),
-      Arrays.asList(new DocIdPusher.Record[] {records[2], records[3]}),
-      Arrays.asList(new DocIdPusher.Record[] {records[4]}),
-      Arrays.asList(new DocIdPusher.Record[] {records[5]}),
-    }), fileMaker.recordses);
-    assertEquals(Arrays.asList(new String[] {
-      "[foo=bar0, id=test0]", "[foo=bar2, id=test1]", "[foo=bar4, id=test2]",
-      "[foo=bar6, id=test3]", "[foo=bar8, id=test4]", "[]",
-    }), fileMaker.metadatases);
+    assertEquals(ImmutableList.of("testing", "testing", "testing", "testing"),
+        fileMaker.names);
+    assertEquals(
+        ImmutableList.of(
+            ImmutableList.of(records[0], records[1]),
+            ImmutableList.of(records[2], records[3]),
+            ImmutableList.of(records[4]),
+            ImmutableList.of(records[5])),
+        fileMaker.recordses);
+    assertEquals(
+        ImmutableList.of(
+            "[foo=bar0, id=test0]", "[foo=bar2, id=test1]",
+            "[foo=bar4, id=test2]", "[foo=bar6, id=test3]",
+            "[foo=bar8, id=test4]", "[]"),
+        fileMaker.metadatases);
 
-    assertEquals(Arrays.asList(new String[] {
-      "testing", "testing", "testing", "testing",
-    }), fileSender.datasources);
-    assertEquals(Arrays.asList(new String[] {
-      "0", "1", "2", "3",
-    }), fileSender.xmlStrings);
-    assertEquals(Arrays.asList(new String[] {
-      "0", "1", "2", "3",
-    }), fileArchiver.feeds);
+    assertEquals(ImmutableList.of("testing", "testing", "testing", "testing"),
+        fileSender.datasources);
+    assertEquals(ImmutableList.of("0", "1", "2", "3"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0", "1", "2", "3"), fileArchiver.feeds);
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
 
@@ -252,7 +243,7 @@ public class DocIdSenderTest {
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
                                   config, adaptor);
-    List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
+    List<DocId> ids = ImmutableList.of(new DocId("test"));
     NeverRetryExceptionHandler errorHandler = new NeverRetryExceptionHandler();
 
     docIdSender.pushDocIds(ids, errorHandler);
@@ -271,7 +262,7 @@ public class DocIdSenderTest {
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
                                   config, adaptor);
-    List<DocId> ids = Arrays.asList(new DocId[] {new DocId("test")});
+    List<DocId> ids = ImmutableList.of(new DocId("test"));
     NeverRetryExceptionHandler errorHandler = new NeverRetryExceptionHandler() {
       @Override
       public boolean handleException(Exception ex, int ntries) {
@@ -297,7 +288,7 @@ public class DocIdSenderTest {
     };
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
                                   config, adaptor);
-    List<DocId> ids = Arrays.asList(new DocId("test"), new DocId("test2"));
+    List<DocId> ids = ImmutableList.of(new DocId("test"), new DocId("test2"));
 
     Thread.currentThread().interrupt();
     thrown.expect(InterruptedException.class);
@@ -325,7 +316,7 @@ public class DocIdSenderTest {
     config.setValue("feed.maxUrls", "1");
     docIdSender = new DocIdSender(fileMaker, fileSender, fileArchiver, journal,
                                   config, adaptor);
-    List<DocId> ids = Arrays.asList(new DocId("test"), new DocId("test2"));
+    List<DocId> ids = ImmutableList.of(new DocId("test"), new DocId("test2"));
 
     Thread.currentThread().interrupt();
     assertEquals(new DocId("test2"), docIdSender.pushDocIds(ids));
@@ -964,12 +955,8 @@ public class DocIdSenderTest {
     assertEquals(Collections.singletonList(Collections.singletonList(
         new DocIdSender.AclItem(new DocId("test"), Acl.EMPTY)
     )), fileMaker.recordses);
-    assertEquals(Arrays.asList(new String[] {
-      "0"
-    }), fileSender.xmlStrings);
-    assertEquals(Arrays.asList(new String[] {
-      "0"
-    }), fileArchiver.feeds);
+    assertEquals(ImmutableList.of("0"), fileSender.xmlStrings);
+    assertEquals(ImmutableList.of("0"), fileArchiver.feeds);
     assertTrue(fileMaker.groupses.isEmpty());
     assertTrue(fileArchiver.failedFeeds.isEmpty());
   }
@@ -1041,7 +1028,7 @@ public class DocIdSenderTest {
     int i;
 
     public MockGsaFeedFileMaker() {
-      super(null, new AclTransform(Arrays.<AclTransform.Rule>asList()));
+      super(null, new AclTransform(ImmutableList.<AclTransform.Rule>of()));
     }
 
     @Override
