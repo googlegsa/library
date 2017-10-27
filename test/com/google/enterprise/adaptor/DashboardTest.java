@@ -66,7 +66,7 @@ public class DashboardTest {
     config.setKey("gsa.characterEncoding", "UTF-8");
     config.setKey("server.hostname", "localhost");
     Dashboard.ConfigRpcMethod method = new Dashboard.ConfigRpcMethod(config);
-    Map map = (Map) method.run(null);
+    Map<?, ?> map = (Map) method.run(null);
     assertEquals(golden, map);
   }
 
@@ -86,7 +86,7 @@ public class DashboardTest {
     MockStatusSource source = new MockStatusSource("mock", status);
     sources.add(source);
     Dashboard.StatusRpcMethod method = new Dashboard.StatusRpcMethod(sources);
-    List list = (List) method.run(null);
+    List<?> list = (List) method.run(null);
     assertEquals(golden, list);
   }
 

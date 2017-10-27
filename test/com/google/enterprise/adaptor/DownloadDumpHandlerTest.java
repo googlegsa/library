@@ -176,7 +176,7 @@ public class DownloadDumpHandlerTest {
 
       /** generate neither versionStats nor simpleStats maps */
       @Override
-      public Object run(List request) {
+      public Object run(List<?> request) {
         Map<String, Object> results = new HashMap<String, Object>();
         Map<String, Object> otherStats = new HashMap<String, Object>();
         otherStats.put("someBooleanValue", false);
@@ -218,7 +218,7 @@ public class DownloadDumpHandlerTest {
 
       /** generate neither versionStats nor simpleStats maps */
       @Override
-      public Object run(List request) {
+      public Object run(List<?> request) {
         Map<String, Object> results = new HashMap<String, Object>();
         Map<String, Object> simpleStats = new TreeMap<String, Object>();
         // keys get sorted into alphabetic order in golden map below
@@ -320,7 +320,7 @@ public class DownloadDumpHandlerTest {
     }
 
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       Map<String, Object> golden = new HashMap<String, Object>();
       Map<String, Object> simpleStats = new HashMap<String, Object>();
       simpleStats.put("isIncrementalSupported", false);

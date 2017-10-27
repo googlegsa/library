@@ -132,7 +132,7 @@ public class RpcHandlerTest {
   public void testValidCallWithResponse() throws Exception {
     handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
       @Override
-      public Object run(List request) throws Exception {
+      public Object run(List<?> request) throws Exception {
         if (request.size() == 1 && request.get(0).equals("input")) {
           return "some response";
         } else {
@@ -167,7 +167,7 @@ public class RpcHandlerTest {
   public void testValidCallWithBrokenResponse() throws Exception {
     handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
       @Override
-      public Object run(List request) throws Exception {
+      public Object run(List<?> request) throws Exception {
         return null;
       }
     });
@@ -186,7 +186,7 @@ public class RpcHandlerTest {
   public void testExceptionWithMessage() throws Exception {
     handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
       @Override
-      public Object run(List request) throws Exception {
+      public Object run(List<?> request) throws Exception {
         throw new RuntimeException("some error");
       }
     });
@@ -205,7 +205,7 @@ public class RpcHandlerTest {
   public void testExceptionWithoutMessage() throws Exception {
     handler.registerRpcMethod("someName", new RpcHandler.RpcMethod() {
       @Override
-      public Object run(List request) throws Exception {
+      public Object run(List<?> request) throws Exception {
         throw new RuntimeException();
       }
     });
@@ -252,7 +252,7 @@ public class RpcHandlerTest {
 
   private static class ErroringRpcMethod implements RpcHandler.RpcMethod {
     @Override
-    public Object run(List request) throws Exception {
+    public Object run(List<?> request) throws Exception {
       throw new RuntimeException();
     }
   }

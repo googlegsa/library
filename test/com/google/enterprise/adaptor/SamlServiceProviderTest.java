@@ -1002,6 +1002,7 @@ public class SamlServiceProviderTest {
   }
 
   private static class RedirectDecoder extends HTTPRedirectDeflateDecoder {
+    @SuppressWarnings("rawtypes") // The super class does not use generics.
     @Override
     protected String getActualReceiverEndpointURI(
         SAMLMessageContext messageContext) {

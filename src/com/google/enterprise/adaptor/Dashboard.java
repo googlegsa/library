@@ -119,14 +119,14 @@ class Dashboard {
 
   private class StartFeedPushRpcMethod implements RpcHandler.RpcMethod {
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       return gsaCommHandler.checkAndScheduleImmediatePushOfDocIds();
     }
   }
   
   private class StopAdaptorRpcMethod implements RpcHandler.RpcMethod {
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       Thread thread = new Thread(shutdownHook);
       thread.start();
       // return true as an indication that server accepted request to stop
@@ -138,7 +138,7 @@ class Dashboard {
       implements RpcHandler.RpcMethod {
 
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       return gsaCommHandler.checkAndScheduleIncrementalPushOfDocIds();
     }
   }
@@ -156,7 +156,7 @@ class Dashboard {
     }
 
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       return circularLog.writeOut();
     }
 
@@ -174,7 +174,7 @@ class Dashboard {
     }
 
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       TreeMap<String, String> configMap = new TreeMap<String, String>();
       for (String key : config.getAllKeys()) {
         configMap.put(key, config.getValue(key));
@@ -201,7 +201,7 @@ class Dashboard {
     }
 
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       Map<StatusSource, Status> statuses = retrieveStatuses();
       List<Object> flatStatuses = new ArrayList<Object>(statuses.size());
       // TODO(ejona): choose locale based on Accept-Languages.
@@ -228,7 +228,7 @@ class Dashboard {
      * Requires two parameters: string to encode and security level.
      */
     @Override
-    public Object run(List request) {
+    public Object run(List<?> request) {
       if (request.size() < 2) {
         throw new IllegalArgumentException("Required parameters are: string to "
             + "encode and security level");

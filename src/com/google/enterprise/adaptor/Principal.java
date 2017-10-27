@@ -166,7 +166,7 @@ public abstract class Principal implements Comparable<Principal> {
    * objects: {@code principal.equals(principal.parse().toPrincipal())} is
    * always {@code true}.
    */
-  static class ParsedPrincipal<T extends Principal> {
+  static class ParsedPrincipal {
     public final boolean isGroup;
     public final String plainName;
     public final String domain;
