@@ -24,7 +24,7 @@
       and scroll down to <b>List of Trusted IP Addresses</b>. Add the IP address
       for the adaptor to the list.</p>
     <li>Add the URLs provided by the adaptor to the <b>Follow Patterns</b> on the GSA.
-      <p>In the Admin console, go to <b>Content Sources &gt; Web Crawl &gt Start and
+      <p>In the Admin console, go to <b>Content Sources &gt; Web Crawl &gt; Start and
       Block URLs </b>, and scroll down to <b>Follow Patterns</b>. Add an entry like
       {@code hostname:port/} where {@code hostname} is the hostname of the machine
       that hosts the adaptor and {@code port} defaults to 5678 (read on to 
@@ -152,7 +152,7 @@ feed.name=mydocfeedtogsa</pre>
     one. Setting up security is required before users can access non-public
     documents directly from the adaptor.
 
-  <h3>Creating Self-Signed Certificates</h3>
+  <h2>Creating Self-Signed Certificates</h2>
   <p>In the GSA's Admin Console, go to <b>Administration &gt; SSL Settings</b>.
     Under the <b>Create a New SSL Certificate</b> heading change <b>Host
     Name</b> to GSA's hostname written exactly as the adaptor will use.
@@ -211,7 +211,7 @@ feed.name=mydocfeedtogsa</pre>
   <pre>keytool -importcert -keystore cacerts.jks -storepass changeit -file adaptor.crt -alias adaptor</pre>
   <p>Answer "yes" to "Trust this certificate?"
 
-  <h3>Exchanging Certificates</h3>
+  <h2>Exchanging Certificates</h2>
   <p>To allow the adaptor to trust the GSA, execute:
   <pre>keytool -importcert -keystore cacerts.jks -storepass changeit -file gsa.crt -alias gsa</pre>
   <p>Answer "yes" to "Trust this certificate?"
@@ -223,7 +223,7 @@ feed.name=mydocfeedtogsa</pre>
     Choose "adaptor.crt" in the adaptor's directory and click <b>Save
     Settings</b>.
 
-  <h3>Flipping the Switch</h3>
+  <h2>Flipping the Switch</h2>
   <p>Now that everything is prepared, you can flip the security switch with the
     adaptor by adding a line to your <code>adaptor-config.properties</code>:
   <pre>server.secure=true</pre>
@@ -243,7 +243,7 @@ feed.name=mydocfeedtogsa</pre>
     com.google.enterprise.adaptor.examples.AdaptorWithCrawlTimeMetadataTemplate
   </pre>
 
-  <h3>Enable Stricter Security (optional)</h3>
+  <h2>Enable Stricter Security (optional)</h2>
   <p>There are additional security options you can control on the GSA.
     You may want to try running an adaptor with server.secure set before
     enabling these stricter features.

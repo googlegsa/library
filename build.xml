@@ -34,7 +34,8 @@
   <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
 
   <!-- Use add-modules with Java 9 and higher. -->
-  <condition property="java.modules" value="" else="--add-modules java.se.ee">
+  <condition property="java.modules"
+      value="" else="--add-modules java.xml.bind">
     <matches string="${ant.java.version}" pattern="^1\.[678]$"/>
   </condition>
 
@@ -414,6 +415,7 @@
       <link href="http://download.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="http://download.oracle.com/javase/6/docs/api/"/>
       <link href="http://commons.apache.org/proper/commons-daemon/apidocs/"/>
+      <arg line="${java.modules}"/>
       <arg value="-quiet"/>
       <arg value="-notimestamp"/>
     </javadoc>
