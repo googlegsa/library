@@ -54,7 +54,7 @@ public class GsaFeedFileMakerTest {
         + "</gsafeed>\n";
     String xml = meker.makeMetadataAndUrlXml("t3sT",
         new ArrayList<DocIdPusher.Record>());
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -92,7 +92,7 @@ public class GsaFeedFileMakerTest {
     ids.add(new DocIdPusher.Record.Builder(new DocId("empty-not-null-metadata"))
         .setMetadata(new Metadata()).build());
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -151,7 +151,7 @@ public class GsaFeedFileMakerTest {
         .setDeleteFromIndex(true).build());
 
     String xml = meker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -214,7 +214,7 @@ public class GsaFeedFileMakerTest {
         .build()));
 
     String xml = meker.makeMetadataAndUrlXml("test", acls);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -247,7 +247,7 @@ public class GsaFeedFileMakerTest {
         new AclTransform.MatchData(null, "pu2", null, null))));
     meker = new GsaFeedFileMaker(encoder, aclTransform);
     String xml = meker.makeMetadataAndUrlXml("test", acls);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -283,7 +283,7 @@ public class GsaFeedFileMakerTest {
     meker = new GsaFeedFileMaker(encoder, aclTransform,
         true /* 6.14 workaround */, false);
     String xml = meker.makeMetadataAndUrlXml("test", records);
-    xml = xml.replace("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -310,7 +310,7 @@ public class GsaFeedFileMakerTest {
     meker = new GsaFeedFileMaker(encoder, aclTransform, false,
         true /* 7.0 workaround */);
     String xml = meker.makeMetadataAndUrlXml("test", records);
-    xml = xml.replace("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -336,7 +336,7 @@ public class GsaFeedFileMakerTest {
           new Acl.Builder()
             .setInheritFrom(new DocId("docid2"), "generated").build());
     String xml = meker.makeMetadataAndUrlXml("test", Arrays.asList(acl));
-    xml = xml.replace("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -350,7 +350,7 @@ public class GsaFeedFileMakerTest {
         + "</xmlgroups>\n";
     String xml = meker.makeGroupDefinitionsXml(
         new TreeMap<GroupPrincipal, List<Principal>>().entrySet(), true);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -378,7 +378,7 @@ public class GsaFeedFileMakerTest {
     members.add(new UserPrincipal("MacLeod\\Duncan"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -431,7 +431,7 @@ public class GsaFeedFileMakerTest {
     members2.add(new UserPrincipal("plump"));
     groupDefs.put(new GroupPrincipal("sounds"), members2);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -465,7 +465,7 @@ public class GsaFeedFileMakerTest {
     members.add(new GroupPrincipal("badguys", "3vil"));
     groupDefs.put(new GroupPrincipal("immortals"), members);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), true);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -499,7 +499,7 @@ public class GsaFeedFileMakerTest {
           new AclTransform.MatchData(null, "Clan MacLeod", null, null))));
     meker = new GsaFeedFileMaker(encoder, aclTransform);
     String xml = meker.makeGroupDefinitionsXml(groupDefs.entrySet(), false);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -585,7 +585,7 @@ public class GsaFeedFileMakerTest {
         .setDeleteFromIndex(true).build());
 
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -671,7 +671,7 @@ public class GsaFeedFileMakerTest {
         .setDeleteFromIndex(true).build());
 
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 
@@ -711,7 +711,7 @@ public class GsaFeedFileMakerTest {
 
     ArrayList<DocIdPusher.Record> ids = new ArrayList<DocIdPusher.Record>();
     String xml = lclMeker.makeMetadataAndUrlXml("t3sT", ids);
-    xml = xml.replaceAll("\r\n", "\n");
+    xml = xml.replaceAll("\r?\n\\s*", "\n");
     assertEquals(golden, xml);
   }
 }

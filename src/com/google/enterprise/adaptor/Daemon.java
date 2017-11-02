@@ -74,7 +74,8 @@ public class Daemon implements org.apache.commons.daemon.Daemon {
           "Missing argument: adaptor class name");
     }
     Adaptor adaptor
-        = Class.forName(args[0]).asSubclass(Adaptor.class).newInstance();
+        = Class.forName(args[0]).asSubclass(Adaptor.class)
+            .getDeclaredConstructor().newInstance();
     args = Arrays.copyOfRange(args, 1, args.length);
 
     app = Application.daemonMain(adaptor, args);
