@@ -62,7 +62,7 @@ public class PrebuiltTransforms {
   // Returns overwrite config as a Boolean, or null if overwrite is unspecified.
   private static Boolean getOverwrite(Map<String, String> cfg) {
     String overwrite = getTrimmedValue(cfg, "overwrite");
-    return (overwrite == null) ? null : new Boolean(overwrite);
+    return (overwrite == null) ? null : Boolean.valueOf(overwrite);
   }
 
   /**
