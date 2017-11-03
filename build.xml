@@ -146,9 +146,7 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8"
       target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint"/>
-      <compilerarg
-          line="-Xlint:-path -Xlint:-serial -Xlint:-rawtypes -Xlint:-options"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
@@ -181,9 +179,7 @@
     <javac srcdir="${test.dir}" destdir="${build-test.dir}" debug="true"
            includeantruntime="false" encoding="utf-8"
            target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg value="-Xlint"/>
-      <compilerarg
-          line="-Xlint:-path -Xlint:-serial -Xlint:-rawtypes -Xlint:-options"/>
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>

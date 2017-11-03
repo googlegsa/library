@@ -313,6 +313,7 @@ class SamlIdentityProvider {
       this.requestUri = requestUri.toASCIIString();
     }
 
+    @SuppressWarnings("rawtypes") // The super class does not use generics.
     @Override
     protected String getActualReceiverEndpointURI(
         SAMLMessageContext messageContext) {

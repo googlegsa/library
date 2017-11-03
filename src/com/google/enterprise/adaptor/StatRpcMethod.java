@@ -46,7 +46,7 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
     this.isIncrementalPushSupported = isIncrementalPushSupported;
     this.configFile = configFile;
 
-    Class adaptorClass = adaptor.getClass();
+    Class<?> adaptorClass = adaptor.getClass();
     if (adaptorClass.getPackage() != null) {
       adaptorVersion = adaptorClass.getPackage().getImplementationVersion();
       adaptorType = adaptorClass.getPackage().getImplementationTitle();
@@ -57,7 +57,7 @@ class StatRpcMethod implements RpcHandler.RpcMethod {
   }
 
   @Override
-  public Object run(List request) {
+  public Object run(List<?> request) {
     // TODO(ejona): choose locale based on Accept-Languages.
     Locale locale = Locale.ENGLISH;
 

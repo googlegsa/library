@@ -72,7 +72,7 @@ class CronScheduler {
     if (!(future instanceof CronFuture)) {
       throw new IllegalArgumentException("Provided future is not a CronFuture");
     }
-    CronFuture cronFuture = (CronFuture) future;
+    CronFuture<?> cronFuture = (CronFuture) future;
     CronPattern compiledPattern = CronPattern.create(pattern);
     cronFuture.getCronFilterRunnable().setPattern(compiledPattern);
   }

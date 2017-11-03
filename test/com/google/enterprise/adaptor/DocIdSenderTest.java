@@ -858,16 +858,17 @@ public class DocIdSenderTest {
   @Test
   @SuppressWarnings("unchecked")
   public void testExpectedResultEmptyGroups() {
-    assertEquals(ImmutableList.<List>of(ImmutableList.<Map.Entry>of()),
-                 expectedResult(2, emptyGroups()));
+    assertEquals(ImmutableList.of(
+          ImmutableList.<Map.Entry<GroupPrincipal, Collection<Principal>>>of()),
+        expectedResult(2, emptyGroups()));
   }
 
   @Test
   @SuppressWarnings("unchecked")
   public void testExpectedResultSingleBatch() {
     assertEquals(
-        ImmutableList.<List>of(
-            ImmutableList.<Map.Entry>of(
+        ImmutableList.of(
+            ImmutableList.of(
                 mapEntry("g1", "u1"),
                 mapEntry("g2", "u2"),
                 mapEntry("g3", "u3"))),
@@ -885,8 +886,8 @@ public class DocIdSenderTest {
   @SuppressWarnings("unchecked")
   public void testExpectedResultExactBatch() {
     assertEquals(
-        ImmutableList.<List>of(
-            ImmutableList.<Map.Entry>of(
+        ImmutableList.of(
+            ImmutableList.of(
                 mapEntry("g1", "u1"),
                 mapEntry("g2", "u2"))),
         expectedResult(2,
@@ -901,11 +902,11 @@ public class DocIdSenderTest {
   @SuppressWarnings("unchecked")
   public void testExpectedResultMultipleBatchs() {
     assertEquals(
-        ImmutableList.<List>of(
-            ImmutableList.<Map.Entry>of(
+        ImmutableList.of(
+            ImmutableList.of(
                 mapEntry("g1", "u1"),
                 mapEntry("g2", "u2")),
-            ImmutableList.<Map.Entry>of(
+            ImmutableList.of(
                 mapEntry("g3", "u3"))),
         expectedResult(2,
             ImmutableMap.<GroupPrincipal, Collection<Principal>>of(
@@ -921,13 +922,13 @@ public class DocIdSenderTest {
   @SuppressWarnings("unchecked")
   public void testExpectedResultMultipleGroupMaps() {
     assertEquals(
-        ImmutableList.<List>of(
-            ImmutableList.<Map.Entry>of(
+        ImmutableList.of(
+            ImmutableList.of(
                 mapEntry("g1", "u1"),
                 mapEntry("g2", "u2")),
-            ImmutableList.<Map.Entry>of(
+            ImmutableList.of(
                 mapEntry("g3", "u3")),
-            ImmutableList.<Map.Entry>of(
+            ImmutableList.of(
                 mapEntry("g4", "u4"),
                 mapEntry("g5", "u5"))),
         expectedResult(2,

@@ -116,10 +116,10 @@ class RpcHandler implements HttpHandler {
       return;
     }
     String method;
-    List params;
+    List<?> params;
     Object id;
     try {
-      Map request = (Map) requestObj;
+      Map<?, ?> request = (Map) requestObj;
       method = (String) request.get("method");
       params = (List) request.get("params");
       id = request.get("id");
@@ -174,6 +174,6 @@ class RpcHandler implements HttpHandler {
      *
      * @throws Exception when something goes wrong
      */
-    public Object run(List request) throws Exception;
+    public Object run(List<?> request) throws Exception;
   }
 }
