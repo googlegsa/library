@@ -14,6 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
+import static java.util.Locale.US;
+
 import com.google.common.annotations.VisibleForTesting;
 
 import java.io.ByteArrayInputStream;
@@ -107,9 +109,19 @@ class GsaFeedFileSender {
   private byte[] buildGroupsXmlMessage(String groupsource, String feedtype,
       String xmlDocument) {
     StringBuilder sb = new StringBuilder();
-    buildPostParameter(sb, "groupsource", "text/plain", groupsource);
-    buildPostParameter(sb, "feedtype", "text/plain", feedtype);
-    buildPostParameter(sb, "data", "text/xml", xmlDocument);
+    String ft = feedtype.toLowerCase(US);
+    if (ft.equals("full") || ft.equals("incremental")) {
+      buildPostParameter(sb, "groupsource", "text/plain", groupsource);
+      buildPostParameter(sb, "feedtype", "text/plain", feedtype);
+      buildPostParameter(sb, "data", "text/xml", xmlDocument);
+    } else if (ft.equals("cleanup")) {
+      buildPostParameter(sb, "cleanup", "text/plain", groupsource);
+    } else if (ft.equals("replace")) {
+      buildPostParameter(sb, "replace", "text/plain", groupsource);
+      buildPostParameter(sb, "data", "text/xml", xmlDocument);
+    } else {
+      throw new IllegalArgumentException("invalid feedtype: " + feedtype);
+    }
     sb.append("--").append(BOUNDARY).append("--").append(CRLF);
     return toEncodedBytes("" + sb);
   }

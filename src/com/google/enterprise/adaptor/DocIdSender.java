@@ -418,13 +418,11 @@ class DocIdSender extends AbstractDocIdPusher
         oldGroupSource = previousGroupSource(groupSource);
         groupSources.put(groupSource, feedSourceName);
       }
-      // Delete any entries from the previous group source by pushing an
-      // empty full feed.
+      // Delete any entries from the previous group source by pushing a
+      // cleanup feed.
       log.log(Level.FINE, "Deleting entries from previous group source {0}",
           oldGroupSource);
-      List<Map.Entry<GroupPrincipal, T>> emptyList = Collections.emptyList();
-      pushSizedBatchOfGroups(emptyList, caseSensitive, FULL, oldGroupSource,
-          handler);
+      cleanupGroups(oldGroupSource, handler);
     }
     journal.recordGroupPushSuccessful();
     return null;
@@ -471,6 +469,33 @@ class DocIdSender extends AbstractDocIdPusher
     return last;
   }
 
+  private void cleanupGroups(String feedSourceName,
+      ExceptionHandler handler) throws InterruptedException {
+    boolean keepGoing = true;
+    boolean success = false;
+    log.log(Level.INFO, "Cleanup groups from {0}", feedSourceName);
+    for (int ntries = 1; keepGoing; ntries++) {
+      try {
+        fileSender.sendGroups(feedSourceName, "cleanup", "", false);
+        keepGoing = false;  // Sent.
+        success = true;
+      } catch (IOException ex) {
+        log.log(Level.WARNING, "failed to cleanup groups", ex);
+        keepGoing = handler.handleException(ex, ntries);
+      }
+      if (keepGoing) {
+        log.log(Level.INFO, "trying again... number of attempts: {0}", ntries);
+      }
+    }
+    if (success) {
+      log.log(Level.INFO, "cleanup of groups from {0} succeeded",
+          feedSourceName);
+      fileArchiver.saveFeed(feedSourceName, "cleanup");
+    } else {
+      log.log(Level.WARNING, "gave up groups cleanup from {0}", feedSourceName);
+      fileArchiver.saveFailedFeed(feedSourceName, "cleanup");
+    }
+  }
 
   private <T extends Item> T pushSizedBatchOfItems(List<T> items,
                                          ExceptionHandler handler)
