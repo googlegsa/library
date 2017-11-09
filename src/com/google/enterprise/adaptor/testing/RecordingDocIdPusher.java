@@ -96,7 +96,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
     }
     Map<GroupPrincipal, Collection<Principal>> groups =
         groupsBySource.get(sourceName);
-    if (groups == null || feedType == FeedType.FULL) {
+    if (groups == null || feedType == FeedType.REPLACE) {
       groups = new TreeMap<GroupPrincipal, Collection<Principal>>();
       groupsBySource.put(sourceName, groups);
     }

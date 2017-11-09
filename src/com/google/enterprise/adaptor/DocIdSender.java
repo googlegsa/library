@@ -14,8 +14,8 @@
 
 package com.google.enterprise.adaptor;
 
-import static com.google.enterprise.adaptor.DocIdPusher.FeedType.FULL;
 import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.REPLACE;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -231,9 +231,10 @@ class DocIdSender extends AbstractDocIdPusher
   }
 
   /**
-   * Issue: When full group pushes exceed permissible size of single feed.
+   * Issue: When full replacement group pushes exceed permissible size of
+   * single feed.
    *
-   * The problem with supplying all the group definitions in a single full
+   * The problem with supplying all the group definitions in a single REPLACE
    * feed is the GSA limit to the size of a feed file (1GB). Although this
    * is a large limit, several of our customers would easily exceed that.
    * One customer has 100,000 groups averaging 10,000 members each. Another
@@ -241,21 +242,21 @@ class DocIdSender extends AbstractDocIdPusher
    *
    * A novel solution to this is to double-buffer the group definitions for
    * each data source. We maintain two pseudo data sources for each actual
-   * data source (*-FULL1 and *-FULL2). Each "full" upload alternates between
+   * data source (*-REPL1 and *-REPL2). Each REPLACE upload alternates between
    * these two, using batches of incremental feeds.
    * Once all batches have been uploaded, We then "delete" the previous entries
-   * by sending an empty, but true full feed for the older data source. After
+   * by sending a "cleanup" feed for the older data source. After
    * this, the GSA should only have group definitions for the newer data source.
    *
    * If there is a failure mid-push, the GSA groups database may have entries
    * for both data sources. Since the adaptors do not maintain persistent
    * state, on a restart it will not know which is "older" vs. "newer".
    * This is not fatal however, as the only downside might be some deleted
-   * groups persisting through one or two "full" pushes before they get
+   * groups persisting through one or two REPLACE pushes before they get
    * cleaned up.
    *
    * This maps the connector-supplied group source to the last used pseudonym,
-   * e.g. {@code foo -> foo-FULL1}.
+   * e.g. {@code foo -> foo-REPL1}.
    */
   private Map<String, String> groupSources = new HashMap<String, String>();
 
@@ -264,9 +265,9 @@ class DocIdSender extends AbstractDocIdPusher
    * group source, returns the supplied source. If a connector only ever does
    * INCREMENTAL feeds, then that group source will always be used. This is
    * also backward compatible. If a connector is upgraded to a new version that
-   * supports FULL feeds, then the older incremental group source will
-   * eventually get deleted from the GSA. If a connector does both FULL and
-   * INCREMENTAL feeds, then an incremental feed will use the last FULL feed
+   * supports REPLACE feeds, then the older incremental group source will
+   * eventually get deleted from the GSA. If a connector does both REPLACE and
+   * INCREMENTAL feeds, then an incremental feed will use the last REPLACE feed
    * name used for the source.
    */
   private String previousGroupSource(String source) {
@@ -276,8 +277,8 @@ class DocIdSender extends AbstractDocIdPusher
 
   /** Returns the alternate to the previous group source. */
   private String alternateGroupSource(String source) {
-    return (source + "-FULL1").equals(groupSources.get(source))
-        ? (source + "-FULL2") : (source + "-FULL1");
+    return (source + "-REPL1").equals(groupSources.get(source))
+        ? (source + "-REPL2") : (source + "-REPL1");
   }
 
   /*
@@ -332,7 +333,7 @@ class DocIdSender extends AbstractDocIdPusher
       journal.recordGroupPushFailed();
       return defs.isEmpty() ? null : defs.keySet().iterator().next();
     }
-    if (feedType == FULL && !gsaVersion.isAtLeast("7.4.0-0")) {
+    if (feedType == REPLACE && !gsaVersion.isAtLeast("7.4.0-0")) {
       log.log(Level.WARNING,
           "GSA ver {0} does not support per-source replacement of all groups",
           gsaVerString);
@@ -411,20 +412,18 @@ class DocIdSender extends AbstractDocIdPusher
       log.finer("mean size of groups: " + mean);
     }
 
-    if (feedType == FULL) {
+    if (feedType == REPLACE) {
       String oldGroupSource;
       synchronized (groupSources) {
         // Remember the latest target group source fed.
         oldGroupSource = previousGroupSource(groupSource);
         groupSources.put(groupSource, feedSourceName);
       }
-      // Delete any entries from the previous group source by pushing an
-      // empty full feed.
+      // Delete any entries from the previous group source by pushing a
+      // cleanup feed.
       log.log(Level.FINE, "Deleting entries from previous group source {0}",
           oldGroupSource);
-      List<Map.Entry<GroupPrincipal, T>> emptyList = Collections.emptyList();
-      pushSizedBatchOfGroups(emptyList, caseSensitive, FULL, oldGroupSource,
-          handler);
+      cleanupGroups(oldGroupSource, handler);
     }
     journal.recordGroupPushSuccessful();
     return null;
@@ -471,6 +470,33 @@ class DocIdSender extends AbstractDocIdPusher
     return last;
   }
 
+  private void cleanupGroups(String feedSourceName,
+      ExceptionHandler handler) throws InterruptedException {
+    boolean keepGoing = true;
+    boolean success = false;
+    log.log(Level.INFO, "Cleanup groups from {0}", feedSourceName);
+    for (int ntries = 1; keepGoing; ntries++) {
+      try {
+        fileSender.sendGroups(feedSourceName, "cleanup", "", false);
+        keepGoing = false;  // Sent.
+        success = true;
+      } catch (IOException ex) {
+        log.log(Level.WARNING, "Failed to cleanup groups", ex);
+        keepGoing = handler.handleException(ex, ntries);
+      }
+      if (keepGoing) {
+        log.log(Level.INFO, "Trying again... Number of attempts: {0}", ntries);
+      }
+    }
+    if (success) {
+      log.log(Level.INFO, "Cleanup of groups from {0} succeeded",
+          feedSourceName);
+      fileArchiver.saveFeed(feedSourceName, "cleanup");
+    } else {
+      log.log(Level.WARNING, "Gave up groups cleanup from {0}", feedSourceName);
+      fileArchiver.saveFailedFeed(feedSourceName, "cleanup");
+    }
+  }
 
   private <T extends Item> T pushSizedBatchOfItems(List<T> items,
                                          ExceptionHandler handler)

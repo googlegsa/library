@@ -284,30 +284,20 @@ public class GsaFeedFileSenderTest {
   }
 
   @Test
-  public void testGroupsSuccess_Full() throws Exception {
+  public void testGroupsSuccess_Cleanup() throws Exception {
     final String payload = "<someXmlString/>";
     final String groupsource = "docspot";
     final String goldenResponse
         = "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"groupsource\"\r\n"
+        + "Content-Disposition: form-data; name=\"cleanup\"\r\n"
         + "Content-Type: text/plain\r\n"
         + "\r\n"
         + groupsource + "\r\n"
-        + "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"feedtype\"\r\n"
-        + "Content-Type: text/plain\r\n"
-        + "\r\n"
-        + "full\r\n"
-        + "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"data\"\r\n"
-        + "Content-Type: text/xml\r\n"
-        + "\r\n"
-        + payload + "\r\n"
         + "--<<--\r\n";
     MockHttpHandler handler
         = new MockHttpHandler(200, "Success".getBytes(charset));
     server.createContext("/xmlgroups", handler);
-    sender.sendGroups(groupsource, "full", payload, false);
+    sender.sendGroups(groupsource, "cleanup", payload, false);
     assertEquals("POST", handler.getRequestMethod());
     assertEquals(URI.create("/xmlgroups"), handler.getRequestUri());
     assertEquals("multipart/form-data; boundary=<<",
@@ -320,5 +310,11 @@ public class GsaFeedFileSenderTest {
   public void testGroupsInvalidGroupSource() throws Exception {
     thrown.expect(IllegalArgumentException.class);
     sender.sendGroups("bad#source", "full", "<payload/>", false);
+  }
+
+  @Test
+  public void testGroupsInvalidFeedType() throws Exception {
+    thrown.expect(IllegalArgumentException.class);
+    sender.sendGroups("groupsource", "invalid", "<payload/>", false);
   }
 }

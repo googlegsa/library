@@ -16,8 +16,8 @@ package com.google.enterprise.adaptor.testing;
 
 import static com.google.enterprise.adaptor.DocIdPusher.EVERYTHING_CASE_INSENSITIVE;
 import static com.google.enterprise.adaptor.DocIdPusher.EVERYTHING_CASE_SENSITIVE;
-import static com.google.enterprise.adaptor.DocIdPusher.FeedType.FULL;
 import static com.google.enterprise.adaptor.DocIdPusher.FeedType.INCREMENTAL;
+import static com.google.enterprise.adaptor.DocIdPusher.FeedType.REPLACE;
 import static com.google.enterprise.adaptor.DocIdPusher.Record;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -189,12 +189,12 @@ public class RecordingDocIdPusherTest {
         new GroupPrincipal("group5"),
             ImmutableSet.<Principal>of(new UserPrincipal("user500")));
 
-    pusher.pushGroupDefinitions(groups123, EVERYTHING_CASE_SENSITIVE, FULL,
+    pusher.pushGroupDefinitions(groups123, EVERYTHING_CASE_SENSITIVE, REPLACE,
         source, null);
     Map<GroupPrincipal, Set<Principal>> expected = Maps.newHashMap(groups123);
     assertEquals(expected, pusher.getGroupDefinitions());
 
-    pusher.pushGroupDefinitions(groups456, EVERYTHING_CASE_SENSITIVE, FULL,
+    pusher.pushGroupDefinitions(groups456, EVERYTHING_CASE_SENSITIVE, REPLACE,
         source, null);
     expected = Maps.newHashMap(groups456);
     assertEquals(expected, pusher.getGroupDefinitions());
@@ -226,9 +226,9 @@ public class RecordingDocIdPusherTest {
         new GroupPrincipal("group6"),
             ImmutableSet.<Principal>of(new UserPrincipal("user6")));
 
-    pusher.pushGroupDefinitions(groups123, EVERYTHING_CASE_SENSITIVE, FULL,
+    pusher.pushGroupDefinitions(groups123, EVERYTHING_CASE_SENSITIVE, REPLACE,
         "foo", null);
-    pusher.pushGroupDefinitions(groups456, EVERYTHING_CASE_SENSITIVE, FULL,
+    pusher.pushGroupDefinitions(groups456, EVERYTHING_CASE_SENSITIVE, REPLACE,
         "bar", null);
     assertEquals(groups123, pusher.getGroupDefinitions("foo"));
     assertEquals(groups456, pusher.getGroupDefinitions("bar"));
@@ -257,10 +257,10 @@ public class RecordingDocIdPusherTest {
         new GroupPrincipal("group2"),
             ImmutableSet.<Principal>of(new UserPrincipal("user2")));
 
-    pusher.pushGroupDefinitions(groups1, EVERYTHING_CASE_SENSITIVE, FULL, "foo",
-        null);
-    pusher.pushGroupDefinitions(groups2, EVERYTHING_CASE_SENSITIVE, FULL, "bar",
-        null);
+    pusher.pushGroupDefinitions(groups1, EVERYTHING_CASE_SENSITIVE, REPLACE,
+        "foo", null);
+    pusher.pushGroupDefinitions(groups2, EVERYTHING_CASE_SENSITIVE, REPLACE,
+        "bar", null);
 
     thrown.expect(IllegalStateException.class);
     pusher.getGroupDefinitions();
