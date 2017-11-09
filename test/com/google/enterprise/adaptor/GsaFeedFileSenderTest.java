@@ -284,67 +284,6 @@ public class GsaFeedFileSenderTest {
   }
 
   @Test
-  public void testGroupsSuccess_Full() throws Exception {
-    final String payload = "<someXmlString/>";
-    final String groupsource = "docspot";
-    final String goldenResponse
-        = "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"groupsource\"\r\n"
-        + "Content-Type: text/plain\r\n"
-        + "\r\n"
-        + groupsource + "\r\n"
-        + "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"feedtype\"\r\n"
-        + "Content-Type: text/plain\r\n"
-        + "\r\n"
-        + "full\r\n"
-        + "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"data\"\r\n"
-        + "Content-Type: text/xml\r\n"
-        + "\r\n"
-        + payload + "\r\n"
-        + "--<<--\r\n";
-    MockHttpHandler handler
-        = new MockHttpHandler(200, "Success".getBytes(charset));
-    server.createContext("/xmlgroups", handler);
-    sender.sendGroups(groupsource, "full", payload, false);
-    assertEquals("POST", handler.getRequestMethod());
-    assertEquals(URI.create("/xmlgroups"), handler.getRequestUri());
-    assertEquals("multipart/form-data; boundary=<<",
-        handler.getRequestHeaders().getFirst("Content-Type"));
-    assertEquals(goldenResponse,
-        new String(handler.getRequestBytes(), charset));
-  }
-
-  @Test
-  public void testGroupsSuccess_Replace() throws Exception {
-    final String payload = "<someXmlString/>";
-    final String groupsource = "docspot";
-    final String goldenResponse
-        = "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"replace\"\r\n"
-        + "Content-Type: text/plain\r\n"
-        + "\r\n"
-        + groupsource + "\r\n"
-        + "--<<\r\n"
-        + "Content-Disposition: form-data; name=\"data\"\r\n"
-        + "Content-Type: text/xml\r\n"
-        + "\r\n"
-        + payload + "\r\n"
-        + "--<<--\r\n";
-    MockHttpHandler handler
-        = new MockHttpHandler(200, "Success".getBytes(charset));
-    server.createContext("/xmlgroups", handler);
-    sender.sendGroups(groupsource, "replace", payload, false);
-    assertEquals("POST", handler.getRequestMethod());
-    assertEquals(URI.create("/xmlgroups"), handler.getRequestUri());
-    assertEquals("multipart/form-data; boundary=<<",
-        handler.getRequestHeaders().getFirst("Content-Type"));
-    assertEquals(goldenResponse,
-        new String(handler.getRequestBytes(), charset));
-  }
-
-  @Test
   public void testGroupsSuccess_Cleanup() throws Exception {
     final String payload = "<someXmlString/>";
     final String groupsource = "docspot";

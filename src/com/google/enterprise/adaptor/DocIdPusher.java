@@ -41,9 +41,10 @@ public interface DocIdPusher {
   /**
    * FeedType used for group definition pushes.
    *
-   * GSA 7.4.0 added support for full feeds of group definitions. A {@code FULL}
-   * feed replaces all groups from a given data source. An {@code INCREMENTAL}
-   * feed augments or updates existing group definitions for a given data source.
+   * GSA 7.4.0 added support for full feeds of group definitions.
+   * A {@code REPLACE} feed replaces all groups from a given data source.
+   * An {@code INCREMENTAL} feed augments or updates existing group definitions
+   * for a given data source.
    * When feeding GSAs earlier than 7.4.0, {@code INCREMENTAL} feeds are always
    * used. {@code INCREMENTAL} is the default FeedType for the overloaded
    * {@code pushGroupDefinitions} methods that do specify a FeedType.
@@ -51,7 +52,7 @@ public interface DocIdPusher {
    * @since 4.1.4
    */
   public static enum FeedType {
-    FULL, INCREMENTAL;
+    INCREMENTAL, REPLACE;
 
     public String toString() {
       return name().toLowerCase(US);
@@ -259,8 +260,8 @@ public interface DocIdPusher {
    *
    * @param defs map of group definitions
    * @param caseSensitive when comparing Principals
-   * @param feedType if INCREMENTAL, an incremental update is done; if FULL, a
-   *        full replacement is done.
+   * @param feedType if INCREMENTAL, an incremental update is done;
+   *        if REPLACE, a full replacement is done.
    * @param groupSource the feed data source name
    * @param handler for dealing with errors pushing
    * @return {@code null} on success, otherwise the first GroupPrincipal to fail

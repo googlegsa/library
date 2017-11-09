@@ -106,19 +106,20 @@ class GsaFeedFileSender {
     return toEncodedBytes("" + sb);
   }
 
+  /**
+   * Builds the multipart HTTP message for uploading group definitions.
+   * @throws NullPointerException if feedtype is null.
+   */
   private byte[] buildGroupsXmlMessage(String groupsource, String feedtype,
       String xmlDocument) {
     StringBuilder sb = new StringBuilder();
     String ft = feedtype.toLowerCase(US);
-    if (ft.equals("full") || ft.equals("incremental")) {
+    if (ft.equals("incremental")) {
       buildPostParameter(sb, "groupsource", "text/plain", groupsource);
       buildPostParameter(sb, "feedtype", "text/plain", feedtype);
       buildPostParameter(sb, "data", "text/xml", xmlDocument);
     } else if (ft.equals("cleanup")) {
       buildPostParameter(sb, "cleanup", "text/plain", groupsource);
-    } else if (ft.equals("replace")) {
-      buildPostParameter(sb, "replace", "text/plain", groupsource);
-      buildPostParameter(sb, "data", "text/xml", xmlDocument);
     } else {
       throw new IllegalArgumentException("invalid feedtype: " + feedtype);
     }
