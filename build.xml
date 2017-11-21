@@ -146,7 +146,8 @@
     <javac srcdir="${src.dir}" destdir="${build-src.dir}" debug="true"
       includeantruntime="false" encoding="utf-8"
       target="${compile.java.version}" source="${compile.java.version}">
-      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
+      <!-- Do not suppress options warnings on this first call. -->
+      <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
       <classpath refid="adaptorlib.build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
