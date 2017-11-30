@@ -17,6 +17,7 @@ package com.google.enterprise.adaptor;
 import static org.junit.Assume.assumeTrue;
 
 import com.google.enterprise.adaptor.testing.RecordingDocIdPusher;
+import com.google.enterprise.adaptor.testing.UnsupportedAdaptorContext;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -64,7 +65,7 @@ public class TestHelper {
     for (Map.Entry<String, String> entry : configEntries.entrySet()) {
       config.setValue(entry.getKey(), entry.getValue());
     }
-    adaptor.init(new WrapperAdaptor.WrapperAdaptorContext(null) {
+    adaptor.init(new UnsupportedAdaptorContext() {
       @Override
       public DocIdPusher getDocIdPusher() {
         return pusher;
