@@ -14,6 +14,10 @@
 
 package com.google.enterprise.adaptor.testing;
 
+import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
+
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
@@ -48,11 +52,11 @@ public class RecordingResponse implements Response {
   private State state = State.SETUP;
   private String contentType;
   private Date lastModified;
-  private Metadata metadata = new Metadata();
+  private final Metadata metadata = new Metadata();
   private Acl acl;
-  private Map<String, Acl> namedResources = new TreeMap<String, Acl>();
+  private final Map<String, Acl> namedResources = new TreeMap<String, Acl>();
   private boolean secure;
-  private List<Map.Entry<String, URI>> anchors =
+  private final List<Map.Entry<String, URI>> anchors =
       new ArrayList<Map.Entry<String, URI>>();
   private boolean noIndex;
   private boolean noFollow;
@@ -61,7 +65,7 @@ public class RecordingResponse implements Response {
   private boolean crawlOnce;
   private boolean lock;
   private TransmissionDecision forcedTransmissionDecision;
-  private Map<String, String> params = new TreeMap<String, String>();
+  private final Map<String, String> params = new TreeMap<String, String>();
 
   /**
    * Constructs a mock {@code Response} with a {@code ByteArrayOutputStream}.
@@ -266,7 +270,7 @@ public class RecordingResponse implements Response {
   }
 
   public Map<String, Acl> getNamedResources() {
-    return namedResources;
+    return unmodifiableMap(namedResources);
   }
 
   public boolean isSecure() {
@@ -274,12 +278,12 @@ public class RecordingResponse implements Response {
   }
 
   /**
-   * Gets a modifiable list of the accumulated anchors.
+   * Gets an unmodifiable list of the accumulated anchors.
    *
-   * @return a modifiable list of the accumulated anchors
+   * @return a unmodifiable list of the accumulated anchors
    */
   public List<Map.Entry<String, URI>> getAnchors() {
-    return anchors;
+    return unmodifiableList(anchors);
   }
 
   public boolean isNoIndex() {
@@ -311,11 +315,11 @@ public class RecordingResponse implements Response {
   }
 
   /**
-   * Gets a modifiable map of the accumulated params.
+   * Gets an unmodifiable map of the accumulated params.
    *
-   * @return a modifiable map of the accumulated params
+   * @return an unmodifiable map of the accumulated params
    */
   public Map<String, String> getParams() {
-    return params;
+    return unmodifiableMap(params);
   }
 }
