@@ -16,6 +16,7 @@ package com.google.enterprise.adaptor.testing;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
+import static java.util.Collections.unmodifiableSet;
 
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Metadata;
@@ -26,11 +27,13 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
-import java.util.AbstractMap.SimpleEntry;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 /**
@@ -176,7 +179,7 @@ public class RecordingResponse implements Response {
     if (uri == null) {
       throw new NullPointerException();
     }
-    anchors.add(new SimpleEntry<String, URI>(text, uri));
+    anchors.add(new SimpleImmutableEntry<String, URI>(text, uri));
   }
 
   @Override
@@ -227,7 +230,7 @@ public class RecordingResponse implements Response {
     this.lock = lock;
   }
 
-  // TODO(bmj): @Override
+  @Override
   public void setForcedTransmissionDecision(TransmissionDecision decision) {
     if (state != State.SETUP) {
       throw new IllegalStateException("Already responded " + state);
@@ -277,12 +280,103 @@ public class RecordingResponse implements Response {
   }
 
   /**
-   * Gets an unmodifiable list of the accumulated anchors.
+   * Gets an unmodifiable multimap of the accumulated anchors.
    *
-   * @return a unmodifiable list of the accumulated anchors
+   * @return a unmodifiable multimap of the accumulated anchors
    */
-  public List<Map.Entry<String, URI>> getAnchors() {
-    return unmodifiableList(anchors);
+  public AnchorMap getAnchors() {
+    return new AnchorMap(anchors);
+  }
+
+  /**
+   * An immutable multimap that supports duplicate, ordered key-value pairs.
+   * The anchor texts are the keys, and the anchor URIs are the values.
+   * <p>
+   * This class is consistent with Guava's {@code LinkedListMultimap},
+   * although it does not extend that class, or implement the
+   * {@code ListMultimap} interface or all of its methods.
+   */
+  public static class AnchorMap {
+    private final List<Map.Entry<String, URI>> anchors;
+
+    private AnchorMap(List<Map.Entry<String, URI>> anchors) {
+      this.anchors = unmodifiableList(anchors);
+    }
+
+    @Override
+    public String toString() {
+      return anchors.toString();
+    }
+
+    public boolean isEmpty() {
+      return anchors.isEmpty();
+    }
+
+    public int size() {
+      return anchors.size();
+    }
+
+    /**
+     * Gets an unmodifiable list of the anchors. The list is in
+     * insertion order, and may be empty, but will never be
+     * {@code null}. The keys (anchor texts) may be {@code null}.
+     * The values (anchor URIs) will not be {@code null}.
+     *
+     * @return an unmodifiable list of the accumulated anchors
+     */
+    public List<Map.Entry<String, URI>> entries() {
+      return anchors;
+    }
+
+    /**
+     * Gets an unmodifiable list of the anchor texts. The list is in
+     * insertion order and may contain duplicates and nulls.
+     *
+     * @return a unmodifiable list of the accumulated anchor texts
+     */
+    public List<String> keyList() {
+      List<String> texts = new ArrayList<String>(anchors.size());
+      for (Map.Entry<String, URI> entry : anchors) {
+        texts.add(entry.getKey());
+      }
+      return unmodifiableList(texts);
+    }
+
+    /**
+     * Gets an unmodifiable set of the unique anchor texts. The set is
+     * in insertion order based on the first appearance of each key,
+     * and may contain {@code null}.
+     *
+     * @return a unmodifiable set of the accumulated anchor texts
+     */
+    public Set<String> keySet() {
+      Set<String> texts = new LinkedHashSet<String>(anchors.size());
+      for (Map.Entry<String, URI> entry : anchors) {
+        texts.add(entry.getKey());
+      }
+      return unmodifiableSet(texts);
+    }
+
+    /**
+     * Gets an unmodifiable list of the accumulated anchor URIs
+     * that match the given text. The text may be {@code null}. The
+     * list is in insertion order, and may be empty, but will
+     * never be {@code null}. The URIs will not be {@code null}.
+     *
+     * @param text the anchor text to get the URIs for
+     * @return a unmodifiable list of the accumulated anchor URIs
+     */
+    public List<URI> get(String text) {
+      List<URI> uris = new ArrayList<URI>();
+      for (Map.Entry<String, URI> entry : anchors) {
+        // TODO(jlacey): This is just Objects.equals in Java 7.
+        if ((text == null && entry.getKey() == null)
+            || (text != null && text.equals(entry.getKey()))) {
+          uris.add(entry.getValue());
+        }
+      }
+      return unmodifiableList(uris);
+    }
   }
 
   public boolean isNoIndex() {
