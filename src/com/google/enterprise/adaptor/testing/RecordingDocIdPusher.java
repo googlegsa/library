@@ -15,6 +15,7 @@
 package com.google.enterprise.adaptor.testing;
 
 import static java.util.Collections.unmodifiableList;
+import static java.util.Collections.unmodifiableMap;
 import static java.util.Collections.unmodifiableSet;
 
 import com.google.enterprise.adaptor.AbstractDocIdPusher;
@@ -44,10 +45,11 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
   // configuration property.
   private static final String DEFAULT_SOURCE = "${feed.name}";
 
-  private List<DocId> ids = new ArrayList<DocId>();
-  private List<Record> records = new ArrayList<Record>();
-  private Map<DocId, Acl> namedResources = new TreeMap<DocId, Acl>();
-  private Map<String, Map<GroupPrincipal, Collection<Principal>>> groupsBySource
+  private final List<DocId> ids = new ArrayList<DocId>();
+  private final List<Record> records = new ArrayList<Record>();
+  private final Map<DocId, Acl> namedResources = new TreeMap<DocId, Acl>();
+  private final Map<String, Map<GroupPrincipal, Collection<Principal>>>
+      groupsBySource
       = new HashMap<String, Map<GroupPrincipal, Collection<Principal>>>();
 
   /**
@@ -125,7 +127,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
    * @return an unmodifiable list of the recorded {@link DocId DocIds}
    */
   public List<DocId> getDocIds() {
-    return Collections.unmodifiableList(ids);
+    return unmodifiableList(ids);
   }
 
   /**
@@ -135,7 +137,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
    * @return an unmodifiable list of the recorded {@link Record Records}
    */
   public List<Record> getRecords() {
-    return Collections.unmodifiableList(records);
+    return unmodifiableList(records);
   }
 
   /**
@@ -148,7 +150,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
    * @return an unmodifiable map of the recorded named resources
    */
   public Map<DocId, Acl> getNamedResources() {
-    return Collections.unmodifiableMap(namedResources);
+    return unmodifiableMap(namedResources);
   }
 
   /**
@@ -165,8 +167,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
       case 0:
         return Collections.<GroupPrincipal, Collection<Principal>>emptyMap();
       case 1:
-        return Collections.unmodifiableMap(
-            groupsBySource.values().iterator().next());
+        return unmodifiableMap(groupsBySource.values().iterator().next());
       default:
         throw new IllegalStateException("More than 1 group source");
     }
@@ -192,7 +193,7 @@ public class RecordingDocIdPusher extends AbstractDocIdPusher {
     if (groups == null) {
       return Collections.<GroupPrincipal, Collection<Principal>>emptyMap();
     } else {
-      return Collections.unmodifiableMap(groups);
+      return unmodifiableMap(groups);
     }
   }
 
