@@ -16,7 +16,6 @@ package com.google.enterprise.adaptor.testing;
 
 import static java.util.Collections.unmodifiableList;
 import static java.util.Collections.unmodifiableMap;
-import static java.util.Collections.unmodifiableSet;
 
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.Metadata;
