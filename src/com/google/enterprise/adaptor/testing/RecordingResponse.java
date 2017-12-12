@@ -41,6 +41,11 @@ import java.util.TreeMap;
  * values it receives, and implements the interface semantics of the
  * methods that must be called last. This implementation is not
  * thread-safe.
+ * <p>
+ * Methods that return collections all return unmodifiable views of
+ * the recorded values. The collections cannot be changed directly,
+ * but they will reflect changes to the recorded values that are made
+ * through the {@code Response} interface.
  */
 public class RecordingResponse implements Response {
   /**
@@ -271,6 +276,12 @@ public class RecordingResponse implements Response {
     return acl;
   }
 
+  /**
+   * Gets an unmodifiable view of the named resources as a {@code Map}
+   * from URI fragments to ACLs.
+   *
+   * @return an unmodifiable view of the named resources
+   */
   public Map<String, Acl> getNamedResources() {
     return unmodifiableMap(namedResources);
   }
@@ -280,17 +291,18 @@ public class RecordingResponse implements Response {
   }
 
   /**
-   * Gets an unmodifiable multimap of the accumulated anchors.
+   * Gets an unmodifiable view of the accumulated anchors as a multimap.
    *
-   * @return a unmodifiable multimap of the accumulated anchors
+   * @return a unmodifiable view of the accumulated anchors
    */
   public AnchorMap getAnchors() {
     return new AnchorMap(anchors);
   }
 
   /**
-   * An immutable multimap that supports duplicate, ordered key-value pairs.
-   * The anchor texts are the keys, and the anchor URIs are the values.
+   * An unmodifiable view of the accumulated anchors as a multimap
+   * that supports duplicate, ordered key-value pairs. The anchor
+   * texts are the keys, and the anchor URIs are the values.
    * <p>
    * This class is consistent with Guava's {@code LinkedListMultimap},
    * although it does not extend that class, or implement the
@@ -408,9 +420,9 @@ public class RecordingResponse implements Response {
   }
 
   /**
-   * Gets an unmodifiable map of the accumulated params.
+   * Gets an unmodifiable view of the accumulated params as a {@code Map}.
    *
-   * @return an unmodifiable map of the accumulated params
+   * @return an unmodifiable view of the accumulated params
    */
   public Map<String, String> getParams() {
     return unmodifiableMap(params);
