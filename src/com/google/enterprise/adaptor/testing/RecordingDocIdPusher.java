@@ -39,6 +39,11 @@ import java.util.TreeMap;
 /**
  * A fake implementation of {@link DocIdPusher} that simply records
  * the values it receives. This implementation is not thread-safe.
+ * <p>
+ * Methods that return collections all return unmodifiable views of
+ * the recorded values. The collections cannot be changed directly,
+ * but they will reflect changes to the recorded values that are made
+ * through the {@code DocIdPusher} interface.
  */
 public class RecordingDocIdPusher extends AbstractDocIdPusher {
   // If unspecified, the default group source name is the value of the feed.name

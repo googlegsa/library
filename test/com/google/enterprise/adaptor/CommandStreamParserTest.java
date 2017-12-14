@@ -196,7 +196,7 @@ public class CommandStreamParserTest {
     assertEquals(true, response.isSecure());
     assertEquals(singletonList(new SimpleEntry<String, URI>(
             "It is an example", URI.create("http://example.com/doc"))),
-        response.getAnchors());
+        response.getAnchors().entries());
     assertEquals(true, response.isNoIndex());
     assertEquals(true, response.isNoFollow());
     assertEquals(true, response.isNoArchive());
