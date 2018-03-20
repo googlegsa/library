@@ -513,12 +513,12 @@ public class PrebuiltTransforms {
     }
 
     private void replaceInParams(String key, Map<String, String> params) {
-      String original = getTrimmedValue(params, key);
+      String original = params.get(key);
       if (original == null) {
         log.log(Level.FINE, "No param value for {0}. Skipping", key);
         return;
       }
-      if (overwrite || params.get(key) == null) {
+      if (overwrite) {
         log.log(Level.FINE,
             "Replacing {1} with {2} in param value of {0}: {3}",
             new Object[] {key, toMatch, replacement, original});
