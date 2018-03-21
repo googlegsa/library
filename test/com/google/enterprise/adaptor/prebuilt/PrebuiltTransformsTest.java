@@ -987,7 +987,9 @@ public class PrebuiltTransformsTest {
     config.put("keyset1", "params");
     config.put("key2", "author");
     config.put("keyset2", "metadata");
-    config.put("pattern", "[ ]+ ");
+    // Pattern with leading and trailing whitespace matches 2 or more spaces,
+    // replacing them with a single space.
+    config.put("pattern", " + ");
     config.put("replacement", " ");
     config = Collections.unmodifiableMap(config);
 
@@ -1009,6 +1011,8 @@ public class PrebuiltTransformsTest {
 
     Metadata metadata = new Metadata();
     metadata.add("author", "J.    D.  Salinger");
+    // Metadata and Param values with leading and trailing whitespace that
+    // that should match pattern.
     metadata.add("author", "   J.   K.  Rowlings   ");
     Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "burnt   orange   ");
