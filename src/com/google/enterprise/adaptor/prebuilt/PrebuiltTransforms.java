@@ -424,8 +424,25 @@ public class PrebuiltTransforms {
    *pattern=(Java|C|Perl)
    *replacement=$1 (but it should be x86 assembler)</code></pre>
    *
+   * <p>Notes about some specific patterns:
+   * <pre><code>pattern=.*</code></pre>
+   * <p>This is a standard pattern that will match anything, but in
+   * Java it matches twice, first the entire string, and then the
+   * empty string at the end of the value, so the {@code replacement}
+   * string will be included twice in the result. Instead, use
+   * {@code pattern=^.*} or {@code pattern=.+}, depending on whether
+   * you want to match an empty original value or not.
+   *
+   * <pre><code>pattern=^
+   *pattern=$</code></pre>
+   * <p>These patterns will match the empty string at the beginning
+   * and end of the value, respectively. The {@code replacement}
+   * string will be appended to the beginning or end of the existing
+   * value.
+   *
    * @param config transform configuration
    * @return transform
+   * @see Pattern
    */
   public static MetadataTransform replaceMetadata(Map<String, String> config) {
     Boolean overwrite = getOverwrite(config);
