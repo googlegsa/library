@@ -1058,6 +1058,113 @@ public class PrebuiltTransformsTest {
     assertEquals(paramsGolden, params);
   }
 
+  // These next 3 tests are showing the behavior of patterns from the
+  // replaceMetadata javadoc.
+  @Test
+  public void testReplacePatternDotStar() {
+    Map<String, String> config = new LinkedHashMap<String, String>();
+    config.put("key1", "colour");
+    config.put("keyset1", "params");
+    config.put("key2", "author");
+    config.put("keyset2", "metadata");
+    config.put("pattern", ".*");
+    config.put("replacement", "test");
+    config = Collections.unmodifiableMap(config);
+
+    MetadataTransform transform = PrebuiltTransforms.replaceMetadata(config);
+
+    final Metadata metadataGolden;
+    {
+      Metadata golden = new Metadata();
+      golden.add("author", "testtest");
+      metadataGolden = golden.unmodifiableView();
+    }
+    final Map<String, String> paramsGolden;
+    {
+      Map<String, String> golden = new HashMap<String, String>();
+      golden.put("colour", "testtest");
+      paramsGolden = Collections.unmodifiableMap(golden);
+    }
+
+    Metadata metadata = new Metadata();
+    metadata.add("author", "J.D. Salinger");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("colour", "red");
+    transform.transform(metadata, params);
+    assertEquals(metadataGolden, metadata);
+    assertEquals(paramsGolden, params);
+  }
+
+  @Test
+  public void testReplacePatternPrepend() {
+    Map<String, String> config = new LinkedHashMap<String, String>();
+    config.put("key1", "colour");
+    config.put("keyset1", "params");
+    config.put("key2", "author");
+    config.put("keyset2", "metadata");
+    config.put("pattern", "^");
+    config.put("replacement", "test");
+    config = Collections.unmodifiableMap(config);
+
+    MetadataTransform transform = PrebuiltTransforms.replaceMetadata(config);
+
+    final Metadata metadataGolden;
+    {
+      Metadata golden = new Metadata();
+      golden.add("author", "testJ.D. Salinger");
+      metadataGolden = golden.unmodifiableView();
+    }
+    final Map<String, String> paramsGolden;
+    {
+      Map<String, String> golden = new HashMap<String, String>();
+      golden.put("colour", "testred");
+      paramsGolden = Collections.unmodifiableMap(golden);
+    }
+
+    Metadata metadata = new Metadata();
+    metadata.add("author", "J.D. Salinger");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("colour", "red");
+    transform.transform(metadata, params);
+    assertEquals(metadataGolden, metadata);
+    assertEquals(paramsGolden, params);
+  }
+
+  @Test
+  public void testReplacePatternAppend() {
+    Map<String, String> config = new LinkedHashMap<String, String>();
+    config.put("key1", "colour");
+    config.put("keyset1", "params");
+    config.put("key2", "author");
+    config.put("keyset2", "metadata");
+    config.put("pattern", "$");
+    config.put("replacement", "test");
+    config = Collections.unmodifiableMap(config);
+
+    MetadataTransform transform = PrebuiltTransforms.replaceMetadata(config);
+
+    final Metadata metadataGolden;
+    {
+      Metadata golden = new Metadata();
+      golden.add("author", "J.D. Salingertest");
+      metadataGolden = golden.unmodifiableView();
+    }
+    final Map<String, String> paramsGolden;
+    {
+      Map<String, String> golden = new HashMap<String, String>();
+      golden.put("colour", "redtest");
+      paramsGolden = Collections.unmodifiableMap(golden);
+    }
+
+    Metadata metadata = new Metadata();
+    metadata.add("author", "J.D. Salinger");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("colour", "red");
+    transform.transform(metadata, params);
+    assertEquals(metadataGolden, metadata);
+    assertEquals(paramsGolden, params);
+  }
+
   @Test
   public void testReplaceToString() {
     Map<String, String> config = new LinkedHashMap<String, String>();
