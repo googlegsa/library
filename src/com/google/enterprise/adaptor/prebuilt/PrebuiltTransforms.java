@@ -440,6 +440,12 @@ public class PrebuiltTransforms {
    * string will be appended to the beginning or end of the existing
    * value.
    *
+   * <pre><code>pattern=^.*
+   *replacement=$0 and more</code></pre>
+   * {@code $0} in the {@code replacement} string refers to the
+   * matched value. Note that the pattern may have multiple matches
+   * in the original value.
+   *
    * @param config transform configuration
    * @return transform
    * @see Pattern
