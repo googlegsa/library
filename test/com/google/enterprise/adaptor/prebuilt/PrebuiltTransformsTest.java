@@ -999,7 +999,7 @@ public class PrebuiltTransformsTest {
     {
       Metadata golden = new Metadata();
       golden.add("author", "J. D. Salinger");
-      golden.add("author", " J. K. Rowlings ");
+      golden.add("author", " J. K. Rowling ");
       metadataGolden = golden.unmodifiableView();
     }
     final Map<String, String> paramsGolden;
@@ -1013,7 +1013,7 @@ public class PrebuiltTransformsTest {
     metadata.add("author", "J.    D.  Salinger");
     // Metadata and Param values with leading and trailing whitespace that
     // that should match pattern.
-    metadata.add("author", "   J.   K.  Rowlings   ");
+    metadata.add("author", "   J.   K.  Rowling   ");
     Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "burnt   orange   ");
     transform.transform(metadata, params);
@@ -1038,7 +1038,7 @@ public class PrebuiltTransformsTest {
     {
       Metadata golden = new Metadata();
       golden.add("author", "J. D. Salinger");
-      golden.add("author", " J. K. Rowlings ");
+      golden.add("author", " J. K. Rowling ");
       metadataGolden = golden.unmodifiableView();
     }
     final Map<String, String> paramsGolden;
@@ -1050,7 +1050,7 @@ public class PrebuiltTransformsTest {
 
     Metadata metadata = new Metadata();
     metadata.add("author", "J.  D.  Salinger");
-    metadata.add("author", "  J.  K.  Rowlings  ");
+    metadata.add("author", "  J.  K.  Rowling  ");
     Map<String, String> params = new HashMap<String, String>();
     params.put("colour", "burnt  orange  ");
     transform.transform(metadata, params);
