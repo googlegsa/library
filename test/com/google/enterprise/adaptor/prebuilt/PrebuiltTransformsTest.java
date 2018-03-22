@@ -981,6 +981,41 @@ public class PrebuiltTransformsTest {
   }
 
   @Test
+  public void testReplacePatternReplacement() {
+    Map<String, String> config = new LinkedHashMap<String, String>();
+    config.put("key1", "colour");
+    config.put("keyset1", "params");
+    config.put("key2", "author");
+    config.put("keyset2", "metadata");
+    config.put("pattern", "[^r]");
+    config.put("replacement", "$0$0");
+    config = Collections.unmodifiableMap(config);
+
+    MetadataTransform transform = PrebuiltTransforms.replaceMetadata(config);
+
+    final Metadata metadataGolden;
+    {
+      Metadata golden = new Metadata();
+      golden.add("author", "ppeerssoonn");
+      metadataGolden = golden.unmodifiableView();
+    }
+    final Map<String, String> paramsGolden;
+    {
+      Map<String, String> golden = new HashMap<String, String>();
+      golden.put("colour", "reedd");
+      paramsGolden = Collections.unmodifiableMap(golden);
+    }
+
+    Metadata metadata = new Metadata();
+    metadata.add("author", "person");
+    Map<String, String> params = new HashMap<String, String>();
+    params.put("colour", "red");
+    transform.transform(metadata, params);
+    assertEquals(metadataGolden, metadata);
+    assertEquals(paramsGolden, params);
+  }
+
+  @Test
   public void testReplaceToString() {
     Map<String, String> config = new LinkedHashMap<String, String>();
     config.put("string", "tofind");
