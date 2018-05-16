@@ -19,6 +19,8 @@ import static org.junit.Assert.assertTrue;
 
 import com.sun.net.httpserver.HttpExchange;
 
+import org.apache.commons.lang.StringEscapeUtils;
+
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
@@ -96,7 +98,7 @@ public class SamlIdentityProviderTest {
     ex.getRequestHeaders().set("Host", "bruteforce.mtv.corp.google.com:5678");
     identityProvider.getSingleSignOnHandler().handle(ex);
     assertEquals(200, ex.getResponseCode());
-    String response = new String(ex.getResponseBytes(), "UTF-8");
+    String response = StringEscapeUtils.unescapeHtml(new String(ex.getResponseBytes(), "UTF-8"));
     assertTrue(response.contains("action=\"https://entyo36.hot.corp.google.com/"
         + "security-manager/samlassertionconsumer\""));
     assertTrue(response.contains("SAMLResponse"));
@@ -108,11 +110,14 @@ public class SamlIdentityProviderTest {
     assertTrue(samlResponse.contains("https://entyo36.hot.corp.google.com/"
         + "security-manager/samlassertionconsumer"));
     assertTrue(samlResponse.contains("user1"));
-    assertTrue(samlResponse.contains(
-        "<saml2:AttributeStatement><saml2:Attribute Name=\"member-of\">"
-        + "<saml2:AttributeValue>group1</saml2:AttributeValue>"
-        + "<saml2:AttributeValue>group2</saml2:AttributeValue>"
-        + "</saml2:Attribute></saml2:AttributeStatement>"));
+    assertTrue(
+        samlResponse.contains(
+            "<saml2:AttributeStatement><saml2:Attribute Name=\"member-of\">"
+                + "<saml2:AttributeValue xmlns=\"http://www.w3.org/2001/XMLSchema-instance\">group1"
+                + "</saml2:AttributeValue>"
+                + "<saml2:AttributeValue xmlns=\"http://www.w3.org/2001/XMLSchema-instance\">group2"
+                + "</saml2:AttributeValue>"
+                + "</saml2:Attribute></saml2:AttributeStatement>"));
   }
 
   @Test
