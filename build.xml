@@ -1,4 +1,5 @@
-<project name="plexi" default="build" basedir=".">
+<project xmlns:ivy="antlib:org.apache.ivy.ant" name="plexi" default="build"
+  basedir=".">
   <description>Adaptor Library</description>
   <tstamp/>
   
@@ -32,7 +33,16 @@
   <property name="adaptor.class" 
       value="${adaptor.pkg.name}.examples.AdaptorTemplate"/>
   <property name="adaptor.args" value=""/>
-  <property name="cobertura.dir" value="${basedir}/../cobertura/"/>
+
+  <!-- Ivy settings -->
+  <property name="ivy.install.version" value="2.4.0" />
+  <condition property="ivy.home" value="${env.IVY_HOME}">
+    <isset property="env.IVY_HOME" />
+  </condition>
+  <property name="ivy.home" value="${user.home}/.ant" />
+  <property name="ivy.jar.dir" value="${ivy.home}/lib" />
+  <property name="ivy.jar.file" value="${ivy.jar.dir}/ivy.jar" />
+  <property name="reports.dir" value="${build.dir}/report"/>
 
   <!-- Use add-modules with Java 9 and higher. -->
   <condition property="java.modules"
@@ -40,78 +50,27 @@
     <matches string="${ant.java.version}" pattern="^1\.[678]$"/>
   </condition>
 
-  <path id="adaptorlib.build.classpath">
+  <path id="build.classpath">
     <fileset dir="${lib.dir}">
-      <include name="json_simple-1.1.jar"/>
       <include name="gdata-core-1.0.jar"/>
       <include name="gdata-gsa-1.0.jar"/>
-      <include name="joda-time-1.6.jar"/>
-      <include name="opensaml-2.3.2.jar"/>
-      <include name="openws-1.3.1.jar"/>
-      <include name="xmltooling-1.2.2.jar"/>
-      <include name="guava-17.0.jar"/>
-      <include name="jsr305.jar"/>
-      <include name="gson-2.0.jar"/>
-      <include name="velocity-1.5.jar"/>
-      <include name="commons-daemon-1.0.15.jar"/>
     </fileset>
+    <path refid="ivy.compile"/>
   </path>
 
-  <path id="adaptorlib.run.classpath">
-    <path refid="adaptorlib.build.classpath"/>
+  <path id="run.classpath">
+    <path refid="build.classpath"/>
     <pathelement location="${resource.dir}"/>
-    <path refid="opensaml.run.classpath"/>
+    <path refid="ivy.runtime"/>
   </path>
 
-  <path id="examples.build.classpath">
-    <fileset dir="${lib.dir}">
-      <include name="opencsv-2.3.jar"/>
-    </fileset>
+  <path id="test.classpath">
+    <path refid="run.classpath"/>
+    <path refid="ivy.test"/>
   </path>
 
-  <path id="examples.run.classpath">
-    <path refid="examples.build.classpath"/>
-  </path>
-
-  <path id="opensaml.run.classpath">
-    <fileset dir="${lib.dir}">
-      <include name="bcprov-jdk15-1.45.jar"/>
-      <!--include name="commons-codec-1.3.jar"/-->
-      <include name="commons-collections-3.1.jar"/>
-      <!--include name="commons-httpclient-3.1.jar"/-->
-      <include name="commons-lang-2.1.jar"/>
-      <!--include name="jcip-annotations-1.0.jar"/-->
-      <!--include name="jcl-over-slf4j-1.5.10.jar"/-->
-      <include name="joda-time-1.6.jar"/>
-      <!--include name="jul-to-slf4j-1.5.10.jar"/-->
-      <!--include name="log4j-over-slf4j-1.5.10.jar"/-->
-      <!--include name="not-yet-commons-ssl-0.3.9.jar"/-->
-      <include name="opensaml-2.3.2.jar"/>
-      <include name="openws-1.3.1.jar"/>
-      <include name="slf4j-api-1.5.10.jar"/>
-      <include name="velocity-1.5.jar"/>
-      <include name="xmlsec-1.4.3.jar"/>
-      <include name="xmltooling-1.2.2.jar"/>
-
-      <!-- Libraries that are supposed to be endorsed, that we aren't having
-           endorsed. -->
-      <!--include name="resolver-2.9.1.jar"/-->
-      <!--include name="serializer-2.9.1.jar"/-->
-      <!--include name="xalan-2.7.1.jar"/-->
-      <include name="xercesImpl-2.11.0.jar"/>
-      <include name="xml-apis-1.4.1.jar"/>
-
-      <!-- Additional dependencies not included with opensaml. -->
-      <include name="slf4j-jdk14-1.5.10.jar"/>
-      <include name="commons-logging-api-1.1.1.jar"/>
-    </fileset>
-  </path>
-
-  <path id="cobertura.classpath">
-    <fileset dir="${cobertura.dir}" erroronmissingdir="false">
-        <include name="cobertura.jar"/>
-        <include name="lib/**/*.jar"/>
-    </fileset>
+  <path id="misc.classpath">
+    <path refid="ivy.misc"/>
   </path>
 
   <target name="-check-instrument-uptodate">
@@ -121,15 +80,8 @@
     </uptodate>
   </target>
 
-  <path id="junit.classpath">
-    <fileset dir="${lib.dir}">
-      <include name="junit-4.11.jar"/>
-      <include name="hamcrest-core-1.3.jar"/>
-    </fileset>
-  </path>
-
   <target name="build"
-    depends="-real-build,-check-instrument-uptodate,clean-instrument"
+    depends="get-dependencies,-real-build,-check-instrument-uptodate,clean-instrument"
     description="Build source"/>
 
   <target name="-real-build">
@@ -150,7 +102,7 @@
       <!-- Do not suppress options warnings on this first call. -->
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="adaptorlib.build.classpath"/>
+      <classpath refid="build.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
       <exclude name="${adaptor.pkg.dir}/experimental/**"/>
       <include name="${adaptor.pkg.dir}/**"/>
@@ -162,7 +114,7 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="examples.build.classpath"/>
+      <classpath refid="misc.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
 
@@ -173,7 +125,7 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="junit.classpath"/>
+      <classpath refid="test.classpath"/>
       <include name="JUnitLogFixFormatter.java"/>
     </javac>
 
@@ -183,9 +135,8 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="junit.classpath"/>
+      <classpath refid="test.classpath"/>
       <exclude name="${adaptor.pkg.dir}/examples/**"/>
       <exclude name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
@@ -196,9 +147,9 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="examples.build.classpath"/>
+      <classpath refid="misc.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="junit.classpath"/>
+      <classpath refid="test.classpath"/>
       <include name="${adaptor.pkg.dir}/examples/**"/>
     </javac>
 
@@ -208,8 +159,8 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="adaptorlib.build.classpath"/>
-      <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
+      <classpath refid="build.classpath"/>
+      <classpath refid="misc.classpath"/>
       <include name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
 
@@ -219,9 +170,8 @@
            target="${compile.java.version}" source="${compile.java.version}">
       <compilerarg line="-Xlint -Xlint:-path -Xlint:-serial -Xlint:-options"/>
       <bootclasspath path="${compile.java.bootclasspath}"/>
-      <classpath refid="adaptorlib.build.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="junit.classpath"/>
+      <classpath refid="test.classpath"/>
       <include name="${adaptor.pkg.dir}/experimental/**"/>
     </javac>
   </target>
@@ -285,9 +235,9 @@
       <fileset dir="${resource.dir}"/>
     </jar>
 
-    <!-- lib/ -->
+    <!-- libraries (lib/* + Ivy-resolved dependencies) -->
     <!-- Concatenate dependent JARs together into a comma-delimited list. -->
-    <pathconvert pathsep="," refid="adaptorlib.run.classpath"
+    <pathconvert pathsep="," refid="run.classpath"
       property="tmp.adaptorlib.fileset">
       <!-- We remove the lib.dir from the paths to prevent trouble with comma
            and space in lib.dir. It also makes it nicer <echo>ing
@@ -297,6 +247,8 @@
     <copy todir="${dist.staging.dir}/lib">
       <fileset dir="${lib.dir}" includes="${tmp.adaptorlib.fileset}"/>
     </copy>
+    <ivy:retrieve conf="compile,runtime"
+      pattern="${dist.staging.dir}/lib/[artifact]-[revision].[ext]"/>
 
     <!-- adaptor-withlib.jar -->
     <jar destfile="${build.dir}/dist/adaptor-withlib.tmp.jar"
@@ -315,7 +267,7 @@
     </zip>
 
     <!-- adaptor-examples.jar -->
-    <pathconvert pathsep="," refid="examples.run.classpath"
+    <pathconvert pathsep="," refid="misc.classpath"
       property="tmp.examples.zipgroup">
       <map from="${lib.dir}/" to=""/>
     </pathconvert>
@@ -407,9 +359,8 @@
     <javadoc sourcepath="${src.dir}" destdir="${javadoc.dir}"
         overview="${src.dir}/overview.html"
         packagenames="${adaptor.pkg.name},${adaptor.pkg.name}.**">
-      <classpath refid="adaptorlib.build.classpath"/>
-      <classpath refid="examples.build.classpath"/>
-      <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
+      <classpath refid="build.classpath"/>
+      <classpath refid="misc.classpath"/>
       <link href="https://docs.oracle.com/javase/6/docs/jre/api/net/httpserver/spec/"/>
       <link href="https://docs.oracle.com/javase/6/docs/api/"/>
       <link href="http://commons.apache.org/proper/commons-daemon/apidocs/"/>
@@ -427,7 +378,7 @@
   <target name="run" depends="build" description="Run default adaptor">
     <java classpath="${build-src.dir}" fork="true" classname="${adaptor.class}">
       <jvmarg line="${java.modules}"/>
-      <classpath refid="adaptorlib.run.classpath"/>
+      <classpath refid="run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
@@ -444,7 +395,7 @@
     <java classpath="${build-src.dir}" fork="true"
       classname="${adaptor.pkg.name}.examples.GroupDefinitionsWriter">
       <jvmarg line="${java.modules}"/>
-      <classpath refid="adaptorlib.run.classpath"/>
+      <classpath refid="run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
@@ -462,7 +413,7 @@
     <java classpath="${build-src.dir}" fork="true"
       classname="${adaptor.pkg.name}.examples.GroupDefinitionsFromCsv">
       <jvmarg line="${java.modules}"/>
-      <classpath refid="adaptorlib.run.classpath"/>
+      <classpath refid="run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
@@ -480,7 +431,7 @@
     <java classpath="${build-src.dir}" fork="true"
       classname="${adaptor.pkg.name}.examples.GroupDefinitionsScaleTester">
       <jvmarg line="${java.modules}"/>
-      <classpath refid="adaptorlib.run.classpath"/>
+      <classpath refid="run.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="logging.properties"/>
       <sysproperty key="javax.net.ssl.keyStore" file="keys.jks"/>
@@ -496,8 +447,8 @@
   <target name="sim" depends="build" description="run simulator">
     <java classpath="${build-src.dir}" fork="true"
         classname="com.google.enterprise.adaptor.experimental.Sim">
-      <classpath refid="adaptorlib.run.classpath"/>
-      <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
+      <classpath refid="run.classpath"/>
+      <classpath refid="misc.classpath"/>
       <sysproperty key="java.util.logging.config.file"
         value="logging.properties"/>
     </java>
@@ -512,10 +463,9 @@
       <jvmarg line="${java.modules}"/>
       <sysproperty key="net.sourceforge.cobertura.datafile"
         file="${build-instrument.dir}/cobertura.ser"/>
-      <classpath refid="adaptorlib.run.classpath"/>
-      <classpath refid="examples.run.classpath"/>
-      <classpath refid="cobertura.classpath"/>
-      <classpath refid="junit.classpath"/>
+      <classpath refid="misc.classpath"/>
+      <classpath refid="test.classpath"/>
+      <classpath refid="ivy.buildtools"/>
       <classpath location="${build-instrument.dir}"/>
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
@@ -535,11 +485,10 @@
   <target name="sim-test" depends="build">
     <junit printsummary="yes" haltonfailure="yes" forkmode="once" fork="true"
       dir="${basedir}" maxmemory="512m">
-      <classpath refid="junit.classpath"/>
+      <classpath refid="test.classpath"/>
       <classpath location="${build-src.dir}"/>
-      <classpath refid="adaptorlib.run.classpath"/>
       <classpath location="${build-test.dir}"/>
-      <classpath location="${lib.dir}/commons-fileupload-1.3.jar"/>
+      <classpath refid="misc.classpath"/>
       <formatter type="plain" usefile="false"/>
       <formatter classname="JUnitLogFixFormatter" usefile="false"/>
       <batchtest>
@@ -551,7 +500,7 @@
   </target>
 
   <target name="instrument" depends="build" description="Instrument classes">
-    <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
+    <taskdef classpathref="ivy.buildtools" resource="tasks.properties"/>
     <cobertura-instrument datafile="${build-instrument.dir}/cobertura.ser"
       todir="${build-instrument.dir}">
       <fileset dir="${build-src.dir}">
@@ -566,30 +515,51 @@
   </target>
 
   <target name="coverage-report" description="Generates code coverage report">
-    <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
+    <taskdef classpathref="ivy.buildtools" resource="tasks.properties"/>
     <cobertura-report datafile="${build-instrument.dir}/cobertura.ser"
       srcdir="${src.dir}" destdir="${build.dir}/coverage"/>
   </target>
 
+  <!-- Ivy targets -->
+  <target name="download-ivy" unless="offline">
+    <mkdir dir="${ivy.jar.dir}"/>
+    <!-- Auto-download Ivy -->
+    <get src="http://repo2.maven.org/maven2/org/apache/ivy/ivy/${ivy.install.version}/ivy-${ivy.install.version}.jar"
+      dest="${ivy.jar.file}" usetimestamp="true"/>
+  </target>
+	
+	<target name="init-ivy" depends="download-ivy">
+    <path id="ivy.lib.path">
+      <fileset dir="${ivy.jar.dir}" includes="*.jar" />
+    </path>
+    <taskdef resource="org/apache/ivy/ant/antlib.xml"
+      uri="antlib:org.apache.ivy.ant" classpathref="ivy.lib.path" />
+  </target>
+
+  <target name="get-dependencies" depends="init-ivy"
+    description="Download dependencies and setup classpaths">
+    <ivy:resolve/>
+    <ivy:report todir='${reports.dir}/ivy' graph='false' xml='false'/>
+
+    <ivy:cachepath pathid="ivy.compile" conf="compile"/>
+    <ivy:cachepath pathid="ivy.runtime" conf="runtime"/>
+    <ivy:cachepath pathid="ivy.test" conf="test"/>
+    <ivy:cachepath pathid="ivy.misc" conf="misc"/>
+    <ivy:cachepath pathid="ivy.buildtools" conf="buildtools"/>
+  </target>
+
   <!-- Eclipse: run 'ant eclipse' to generate Eclipse project files -->
-  <target name="eclipse" depends="clean-eclipse">
-    <taskdef name="eclipse" classname="prantl.ant.eclipse.EclipseTask">
-      <classpath>
-        <pathelement location="${lib.dir}/ant-eclipse-jvm1.2-1.0.jar"/>
-      </classpath>
-    </taskdef>
+  <target name="eclipse" depends="get-dependencies,clean-eclipse">
+    <taskdef name="eclipse" classname="prantl.ant.eclipse.EclipseTask"
+      classpathref="ivy.buildtools" />
     <eclipse mode="java">
       <project name="gsa-adaptors-library"/>
       <classpath>
         <output path="build/"/>
         <source path="${src.dir}" output="build/src"/>
         <source path="${test.dir}" output="build/test"/>
-        <library pathref="adaptorlib.build.classpath"/>
-        <library pathref="examples.build.classpath"/>
-        <library pathref="junit.classpath"/>
-        <library path="${lib.dir}/commons-fileupload-1.3.jar"/>
-        <library pathref="adaptorlib.run.classpath"/>
-        <library pathref="examples.run.classpath"/>
+        <library pathref="test.classpath"/>
+        <library pathref="misc.classpath"/>
         <library path="${resource.dir}"/>
         <library path="${test-resource.dir}"/>
       </classpath>
@@ -602,7 +572,9 @@
     <delete file=".project"/>
   </target>
 
-  <target name="clean-all" depends="clean,clean-instrument,clean-eclipse"
-    description="deep clean">
+  <target name="clean-all" 
+    depends="init-ivy,clean,clean-instrument,clean-eclipse"
+    description="deep clean, purge ivy cache">
+    <ivy:cleancache/>
   </target>
 </project>

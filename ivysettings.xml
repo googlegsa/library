@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ivysettings>
+  <!-- Overriding default configuration -->
+  <settings defaultResolver="default" />
+  <resolvers>
+    <chain name="public">
+      <ibiblio name="maven2-default" m2compatible="true" />
+
+      <!-- OpenSAML -->
+      <ibiblio name="shibboleth" m2compatible="true"
+        root="https://build.shibboleth.net/nexus/content/repositories/releases"/>
+      <!-- ant-eclipse -->
+      <ibiblio name="conjars" m2compatible="true"
+        root="http://conjars.org/repo"/>
+    </chain>
+  </resolvers>
+
+  <include url="${ivy.default.settings.dir}/ivysettings-shared.xml" />
+  <include url="${ivy.default.settings.dir}/ivysettings-local.xml" />
+  <include url="${ivy.default.settings.dir}/ivysettings-main-chain.xml" />
+  <include url="${ivy.default.settings.dir}/ivysettings-default-chain.xml" />
+</ivysettings>

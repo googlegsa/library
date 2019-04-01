@@ -15,7 +15,6 @@
 package com.google.enterprise.adaptor.prebuilt;
 
 import static com.google.enterprise.adaptor.TestHelper.getDocIds;
-import static java.util.Map.Entry;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 

@@ -17,7 +17,6 @@ package com.google.enterprise.adaptor.testing;
 import com.google.enterprise.adaptor.Acl;
 import com.google.enterprise.adaptor.DocId;
 import com.google.enterprise.adaptor.DocIdPusher;
-import com.google.enterprise.adaptor.DocIdPusher.Record;
 import com.google.enterprise.adaptor.ExceptionHandler;
 import com.google.enterprise.adaptor.GroupPrincipal;
 import com.google.enterprise.adaptor.Principal;

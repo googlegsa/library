@@ -14,7 +14,6 @@
 
 package com.google.enterprise.adaptor.prebuilt;
 
-import static com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 import static java.util.Arrays.asList;
 
 import com.google.common.annotations.VisibleForTesting;

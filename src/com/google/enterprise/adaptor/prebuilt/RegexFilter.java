@@ -18,7 +18,6 @@ import static java.util.Locale.US;
 
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
-import com.google.enterprise.adaptor.MetadataTransform.Keyset;
 import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
 
 import java.util.Map;

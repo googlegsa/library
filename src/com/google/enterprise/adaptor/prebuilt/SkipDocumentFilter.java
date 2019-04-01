@@ -26,8 +26,6 @@ package com.google.enterprise.adaptor.prebuilt;
 import com.google.common.base.Strings;
 import com.google.enterprise.adaptor.Metadata;
 import com.google.enterprise.adaptor.MetadataTransform;
-import com.google.enterprise.adaptor.MetadataTransform.TransmissionDecision;
-
 import java.util.Map;
 import java.util.Set;
 import java.util.logging.Level;
