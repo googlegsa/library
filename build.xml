@@ -14,9 +14,9 @@
        "1.6", pick a class added in Java 7. -->
   <property name="compile.java.newerClassname" value="java.lang.AutoCloseable"/>
 
-  <property name="src.dir" location="src"/>
+  <property name="src.dir" location="src/main/java"/>
   <property name="prebuilt.dir" location="prebuilt"/>
-  <property name="test.dir" location="test"/>
+  <property name="test.dir" location="src/test/java"/>
   <property name="test.class" value="*Test"/>
   <property name="build.dir" location="build"/>
   <property name="build-src.dir" location="${build.dir}/src"/>
@@ -24,7 +24,8 @@
   <property name="build-instrument.dir" location="${build.dir}/instrument"/>
   <property name="dist.dir" location="dist"/>
   <property name="javadoc.dir" location="${build.dir}/javadoc"/>
-  <property name="resource.dir" location="resources"/>
+  <property name="resource.dir" location="src/main/resources"/>
+  <property name="test-resource.dir" location="src/test/resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="adaptor.pkg.dir" value="com/google/enterprise/adaptor"/>
   <property name="adaptor.pkg.name" value="com.google.enterprise.adaptor"/>
@@ -519,8 +520,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <classpath location="${resource.dir}"/>
-      <!-- Some resources are in the test directory itself. -->
-      <classpath location="${test.dir}"/>
+      <classpath location="${test-resource.dir}"/>
       <formatter type="plain" usefile="false"/>
       <formatter classname="JUnitLogFixFormatter" usefile="false"/>
       <batchtest>
