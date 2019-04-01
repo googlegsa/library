@@ -25,6 +25,7 @@
   <property name="dist.dir" location="dist"/>
   <property name="javadoc.dir" location="${build.dir}/javadoc"/>
   <property name="resource.dir" location="resources"/>
+  <property name="test-resource.dir" location="test-resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="adaptor.pkg.dir" value="com/google/enterprise/adaptor"/>
   <property name="adaptor.pkg.name" value="com.google.enterprise.adaptor"/>
@@ -519,8 +520,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <classpath location="${resource.dir}"/>
-      <!-- Some resources are in the test directory itself. -->
-      <classpath location="${test.dir}"/>
+      <classpath location="${test-resource.dir}"/>
       <formatter type="plain" usefile="false"/>
       <formatter classname="JUnitLogFixFormatter" usefile="false"/>
       <batchtest>
