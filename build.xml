@@ -25,6 +25,7 @@
   <property name="dist.dir" location="dist"/>
   <property name="javadoc.dir" location="${build.dir}/javadoc"/>
   <property name="resource.dir" location="resources"/>
+  <property name="test-resource.dir" location="test-resources"/>
   <property name="lib.dir" location="lib"/>
   <property name="adaptor.pkg.dir" value="com/google/enterprise/adaptor"/>
   <property name="adaptor.pkg.name" value="com.google.enterprise.adaptor"/>
@@ -519,8 +520,7 @@
       <classpath location="${build-src.dir}"/>
       <classpath location="${build-test.dir}"/>
       <classpath location="${resource.dir}"/>
-      <!-- Some resources are in the test directory itself. -->
-      <classpath location="${test.dir}"/>
+      <classpath location="${test-resource.dir}"/>
       <formatter type="plain" usefile="false"/>
       <formatter classname="JUnitLogFixFormatter" usefile="false"/>
       <batchtest>
@@ -569,5 +569,40 @@
     <taskdef classpathref="cobertura.classpath" resource="tasks.properties"/>
     <cobertura-report datafile="${build-instrument.dir}/cobertura.ser"
       srcdir="${src.dir}" destdir="${build.dir}/coverage"/>
+  </target>
+
+  <!-- Eclipse: run 'ant eclipse' to generate Eclipse project files -->
+  <target name="eclipse" depends="clean-eclipse">
+    <taskdef name="eclipse" classname="prantl.ant.eclipse.EclipseTask">
+      <classpath>
+        <pathelement location="${lib.dir}/ant-eclipse-jvm1.2-1.0.jar"/>
+      </classpath>
+    </taskdef>
+    <eclipse mode="java">
+      <project name="gsa-adaptors-library"/>
+      <classpath>
+        <output path="build/"/>
+        <source path="${src.dir}" output="build/src"/>
+        <source path="${test.dir}" output="build/test"/>
+        <library pathref="adaptorlib.build.classpath"/>
+        <library pathref="examples.build.classpath"/>
+        <library pathref="junit.classpath"/>
+        <library path="${lib.dir}/commons-fileupload-1.3.jar"/>
+        <library pathref="adaptorlib.run.classpath"/>
+        <library pathref="examples.run.classpath"/>
+        <library path="${resource.dir}"/>
+        <library path="${test-resource.dir}"/>
+      </classpath>
+    </eclipse>
+  </target>
+
+  <target name="clean-eclipse">
+    <delete dir="bin" includeEmptyDirs="true"/>
+    <delete file=".classpath"/>
+    <delete file=".project"/>
+  </target>
+
+  <target name="clean-all" depends="clean,clean-instrument,clean-eclipse"
+    description="deep clean">
   </target>
 </project>
